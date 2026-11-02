@@ -1,0 +1,36 @@
+name: Feature request
+description: A capability, an API or a platform behaviour that is missing
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Title format: `<area>: <the capability>`, for example
+        `expo: support expo-video`.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What you cannot do today, and what it costs you.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What should happen
+      description: Precise enough that someone could tell whether it works. For a React Native or Expo API, name it and say how it behaves on iOS or Android.
+    validations:
+      required: true
+
+  - type: textarea
+    id: platform
+    attributes:
+      label: Platform facts
+      description: What Tizen, EFL or Samsung document about it, with links, and the TV models or Tizen versions it has to run on.
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What you do instead today

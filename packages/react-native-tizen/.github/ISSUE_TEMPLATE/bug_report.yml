@@ -1,0 +1,98 @@
+name: Bug report
+description: Something in the runtime, the CLI or the simulator is broken
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        One bug per issue. Title format: `<area>: <what is broken>`, for example
+        `input: Back exits the app from a nested screen`.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where it breaks
+      options:
+        - On a TV
+        - In the simulator
+        - Building, packaging or signing
+        - Installing or running on a TV (sdb, run, logs)
+        - Metro or bundling
+        - Something else
+    validations:
+      required: true
+
+  - type: input
+    id: tv
+    attributes:
+      label: TV model and year
+      description: The model code from the TV's settings (Support, About This TV), or `simulator`.
+      placeholder: "QE55Q80C, 2023"
+    validations:
+      required: true
+
+  - type: input
+    id: tizen
+    attributes:
+      label: Tizen version
+      description: "`rn-tizen devices` prints it for every connected TV."
+      placeholder: "9.0"
+    validations:
+      required: true
+
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: This package, react-native, expo, and your OS.
+      placeholder: "@kromatv/react-native-tizen 0.1.0, react-native-tvos 0.88.0-0, expo 58.0.16, macOS 26.1"
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: From a fresh start. A small app or a change to `example/` that shows it is ideal.
+      placeholder: |
+        1. rn-tizen run --device 192.168.1.107
+        2. Press Down twice, then Enter
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual
+      placeholder: |
+        Expected: the second row gets the focus.
+        Actual: the focus stays on the first row.
+    validations:
+      required: true
+
+  - type: textarea
+    id: doctor
+    attributes:
+      label: "`rn-tizen doctor` output"
+      description: Run it in the app's directory and paste everything it prints.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: |
+        The app's logs from `rn-tizen run --level debug` or `rn-tizen logs --level debug`. For a build failure, the output of the failing command with `--verbose`. For a native crash, the backtrace (`rn-tizen simulator crash` in the simulator). Cut it to the part around the failure.
+      render: shell
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched open and closed issues for this
+          required: true
+        - label: I removed IP addresses, DUIDs, certificate names and tokens I do not want public
+          required: true
