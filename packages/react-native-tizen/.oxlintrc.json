@@ -1,0 +1,206 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "react", "import"],
+  "categories": {
+    "correctness": "off"
+  },
+  "jsPlugins": [
+    {
+      "name": "react-compiler",
+      "specifier": "eslint-plugin-react-hooks"
+    },
+    {
+      "name": "sonarjs",
+      "specifier": "eslint-plugin-sonarjs"
+    }
+  ],
+  "rules": {
+    "react-compiler/config": "error",
+    "react-compiler/error-boundaries": "error",
+    "react-compiler/gating": "error",
+    "react-compiler/globals": "error",
+    "react-compiler/immutability": "error",
+    "react-compiler/incompatible-library": "error",
+    "react-compiler/preserve-manual-memoization": "error",
+    "react-compiler/purity": "error",
+    "react-compiler/refs": "error",
+    "react-compiler/set-state-in-effect": "error",
+    "react-compiler/set-state-in-render": "error",
+    "react-compiler/static-components": "error",
+    "react-compiler/unsupported-syntax": "error",
+    "react-compiler/use-memo": "error",
+    "no-nested-ternary": "error",
+    "no-debugger": "error",
+    "no-eval": "error",
+    "no-constant-condition": "error",
+    "no-var": "error",
+    "no-useless-constructor": "error",
+    "react/no-array-index-key": "error",
+    "typescript/no-empty-interface": "error",
+    "typescript/no-explicit-any": "error",
+    "unicorn/no-document-cookie": "error"
+  },
+  "ignorePatterns": ["**/dist", "**/build", "example/tizen"],
+  "overrides": [
+    {
+      "files": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.cjs", "**/*.mjs"],
+      "excludeFiles": ["**/*.test.ts", "**/*.test.tsx"],
+      "rules": {
+        "import/no-duplicates": "error",
+        "sonarjs/avoid-mutating-nested-properties-of-shallow-clones": "error",
+        "sonarjs/block-scoped-var": "error",
+        "sonarjs/call-argument-line": "error",
+        "sonarjs/class-name": [
+          "error",
+          {
+            "format": "^\\$?[A-Z][a-zA-Z0-9]*$"
+          }
+        ],
+        "sonarjs/code-eval": "error",
+        "sonarjs/cognitive-complexity": ["error", 15],
+        "sonarjs/comma-or-logical-or-case": "error",
+        "sonarjs/constructor-for-side-effects": "error",
+        "sonarjs/cors": "error",
+        "sonarjs/dynamically-constructed-templates": "error",
+        "sonarjs/encryption-secure-mode": "error",
+        "sonarjs/file-permissions": "error",
+        "sonarjs/fixme-tag": "error",
+        "sonarjs/for-loop-increment-sign": "error",
+        "sonarjs/function-inside-loop": "error",
+        "sonarjs/generator-without-yield": "error",
+        "sonarjs/hardcoded-secret-signatures": "error",
+        "sonarjs/hashing": "error",
+        "sonarjs/label-position": "error",
+        "sonarjs/max-switch-cases": ["error", 30],
+        "sonarjs/memoize-cache-key": "error",
+        "sonarjs/misplaced-loop-counter": "error",
+        "sonarjs/no-all-duplicated-branches": "error",
+        "sonarjs/no-case-label-in-switch": "error",
+        "sonarjs/no-clear-text-protocols": "error",
+        "sonarjs/no-dead-store": "error",
+        "sonarjs/no-debounce-throttle-in-render": "error",
+        "sonarjs/no-default-utility-imports": "error",
+        "sonarjs/no-delete-var": "error",
+        "sonarjs/no-duplicate-in-composite": "error",
+        "sonarjs/no-duplicated-branches": "error",
+        "sonarjs/no-element-overwrite": "error",
+        "sonarjs/no-empty-collection": "error",
+        "sonarjs/no-equals-in-for-termination": "error",
+        "sonarjs/no-fallthrough": "error",
+        "sonarjs/no-floating-point-equality": "error",
+        "sonarjs/no-global-this": "error",
+        "sonarjs/no-globals-shadowing": "error",
+        "sonarjs/no-gratuitous-expressions": "error",
+        "sonarjs/no-hardcoded-ip": "error",
+        "sonarjs/no-hardcoded-passwords": [
+          "error",
+          {
+            "passwordWords": ["password", "pwd", "passwd", "passphrase"]
+          }
+        ],
+        "sonarjs/no-hardcoded-secrets": [
+          "error",
+          {
+            "secretWords": "api[_.-]?key,auth,credential,secret,token",
+            "randomnessSensibility": 5
+          }
+        ],
+        "sonarjs/no-hook-setter-in-body": "error",
+        "sonarjs/no-identical-conditions": "error",
+        "sonarjs/no-identical-expressions": "error",
+        "sonarjs/no-identical-functions": "error",
+        "sonarjs/no-ignored-exceptions": "error",
+        "sonarjs/no-internal-api-use": "error",
+        "sonarjs/no-invariant-returns": "error",
+        "sonarjs/no-inverted-boolean-check": "error",
+        "sonarjs/no-labels": "error",
+        "sonarjs/no-literal-call": "error",
+        "sonarjs/no-nested-assignment": "error",
+        "sonarjs/no-nested-conditional": "error",
+        "sonarjs/no-nested-functions": [
+          "error",
+          {
+            "threshold": 5
+          }
+        ],
+        "sonarjs/no-nested-template-literals": "error",
+        "sonarjs/no-os-command-from-path": "error",
+        "sonarjs/no-parameter-reassignment": "error",
+        "sonarjs/no-primitive-wrappers": "error",
+        "sonarjs/no-redundant-assignments": "error",
+        "sonarjs/no-redundant-boolean": "error",
+        "sonarjs/no-redundant-jump": "error",
+        "sonarjs/no-same-line-conditional": "error",
+        "sonarjs/no-unenclosed-multiline-block": "error",
+        "sonarjs/no-uniq-key": "error",
+        "sonarjs/no-unthrown-error": "error",
+        "sonarjs/no-unused-collection": "error",
+        "sonarjs/no-use-of-empty-return-value": "error",
+        "sonarjs/no-useless-catch": "error",
+        "sonarjs/no-useless-increment": "error",
+        "sonarjs/no-useless-react-setstate": "error",
+        "sonarjs/no-weak-cipher": "error",
+        "sonarjs/no-weak-keys": "error",
+        "sonarjs/non-existent-operator": "error",
+        "sonarjs/prefer-default-last": "error",
+        "sonarjs/prefer-native-axios-alternative": "error",
+        "sonarjs/prefer-native-jquery-alternative": "error",
+        "sonarjs/prefer-native-lodash-alternative": "error",
+        "sonarjs/prefer-promise-shorthand": "error",
+        "sonarjs/prefer-type-guard": "error",
+        "sonarjs/prefer-while": "error",
+        "sonarjs/production-debug": "error",
+        "sonarjs/pseudo-random": "error",
+        "sonarjs/public-static-readonly": "error",
+        "sonarjs/publicly-writable-directories": "error",
+        "sonarjs/redundant-type-aliases": "error",
+        "sonarjs/review-blockchain-mnemonic": "error",
+        "sonarjs/stateful-regex": "error",
+        "sonarjs/super-linear-regex": "error",
+        "sonarjs/todo-tag": "error",
+        "sonarjs/unverified-certificate": "error",
+        "sonarjs/unverified-hostname": "error",
+        "sonarjs/updated-loop-counter": "error",
+        "sonarjs/use-type-alias": "error",
+        "sonarjs/weak-ssl": "error",
+        "sonarjs/xml-parser-xxe": "error",
+        "unicorn/prefer-dom-node-dataset": "error",
+        "unicorn/prefer-set-has": "error"
+      }
+    },
+    {
+      "files": ["**/*.test.ts", "**/*.test.tsx"],
+      "rules": {
+        "sonarjs/assertions-in-test-cases": "error",
+        "sonarjs/async-test-assertions": "error",
+        "sonarjs/explicit-test-skip": "error",
+        "sonarjs/hooks-before-test-cases": "error",
+        "sonarjs/inverted-assertion-arguments": "error",
+        "sonarjs/no-code-after-done": "error",
+        "sonarjs/no-duplicate-parameterized-test-case": "error",
+        "sonarjs/no-duplicate-test-title": "error",
+        "sonarjs/no-empty-parameterized-test-dataset": "error",
+        "sonarjs/no-empty-test-file": "error",
+        "sonarjs/no-empty-test-title": "error",
+        "sonarjs/no-exclusive-tests": "error",
+        "sonarjs/no-fixed-wait-in-tests": "error",
+        "sonarjs/no-incomplete-assertions": "error",
+        "sonarjs/no-interpolation-in-inline-snapshots": "error",
+        "sonarjs/no-same-argument-assert": "error",
+        "sonarjs/no-skipped-tests": "error",
+        "sonarjs/parameterized-tests": "error",
+        "sonarjs/prefer-specific-assertions": "error",
+        "sonarjs/stable-tests": "error",
+        "sonarjs/synchronous-suite-callback": "error",
+        "sonarjs/test-check-exception": "error",
+        "sonarjs/vitest-mock-at-module-scope": "error"
+      }
+    },
+    {
+      "files": ["src/config/tizen-config.ts"],
+      "rules": {
+        "sonarjs/no-clear-text-protocols": "off"
+      }
+    }
+  ]
+}
