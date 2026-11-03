@@ -1,3 +1,4 @@
+import { FixableError } from '../errors.ts';
 import type { Task } from '../task.ts';
 import type { SimulatorInstance } from './instance.ts';
 import { runInstanceScript } from './simulator.ts';
@@ -15,7 +16,10 @@ async function waitForForward(url: string): Promise<void> {
     if (reachable) return;
     await new Promise((resolve) => setTimeout(resolve, FORWARD_POLL_MS));
   }
-  throw new Error(`The simulator's live screen did not come up at ${url}`);
+  throw new FixableError(
+    `The simulator's live screen did not come up at ${url}`,
+    'Check the instance with `rn-tizen simulator status`, then run `rn-tizen simulator view` again.',
+  );
 }
 
 /** Where the live screen of `instance` is on this Mac. */

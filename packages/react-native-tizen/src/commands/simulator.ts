@@ -1,4 +1,5 @@
 import { join } from 'node:path';
+import { z } from 'zod';
 import { cacheDir } from '../cache-dir.ts';
 import {
   COMMON_OPTIONS,
@@ -44,6 +45,9 @@ import { prepareSimulator, runInSimulator } from './simulator-run.ts';
 import { printSimulatorStatus } from './simulator-status.ts';
 
 const DEFAULT_LOG_LINES = 200;
+const MAX_LOG_LINES = 100_000;
+
+const lineCountSchema = z.coerce.number().int().nonnegative().max(MAX_LOG_LINES);
 
 const OPTIONS = {
   instance: {
@@ -98,6 +102,13 @@ interface Invocation {
 }
 
 type Action = (invocation: Invocation) => Promise<void>;
+
+function lineCount(value: string | undefined): number {
+  if (value === undefined) return DEFAULT_LOG_LINES;
+  const parsed = lineCountSchema.safeParse(value);
+  if (parsed.success) return parsed.data;
+  throw new UsageError(`--lines must be a whole number of lines, got ${value}`, 'simulator');
+}
 
 function requirePositionals(invocation: Invocation, what: string): readonly string[] {
   if (invocation.positionals.length > 0) return invocation.positionals;
@@ -211,8 +222,8 @@ const ACTIONS: Readonly<Record<string, Action>> = {
     );
   },
   logs: async ({ flags, reporter, instance }) => {
+    const lines = lineCount(flags.lines);
     await requireRunningVm(reporter.task());
-    const lines = Number(flags.lines ?? DEFAULT_LOG_LINES);
     await printLog(instance, { lines, follow: flags.follow === true });
   },
   crash: async ({ reporter, instance }) => {

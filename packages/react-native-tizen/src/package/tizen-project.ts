@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { copyFile, cp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { basename, extname, join, resolve } from 'node:path';
 import type { AppProject } from '../app/app-project.ts';
+import { claimTizenDir } from '../app/tizen-dir.ts';
 import type { AppBundle } from '../bundle/bundle-app.ts';
 import { BYTECODE_FILE } from '../bundle/bundle-app.ts';
 import { FixableError } from '../errors.ts';
@@ -98,9 +99,9 @@ async function writeResources(inputs: TizenProjectInputs, dir: string): Promise<
  */
 export async function writeTizenProject(inputs: TizenProjectInputs): Promise<string> {
   const dir = inputs.app.tizenDir;
+  claimTizenDir(dir);
   await mkdir(join(dir, 'lib'), { recursive: true });
   await mkdir(join(dir, 'shared', 'res'), { recursive: true });
-  await writeFile(join(dir, '.gitignore'), '*\n');
   await renderShellFile(PROJECT_FILE, projectValues(inputs.profile, inputs.app.config), dir);
   await renderShellFile(MANIFEST_FILE, manifestValues(inputs.app.config, inputs.profile), dir);
   await copyShellSources(SHELL_DIR, dir);

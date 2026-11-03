@@ -336,6 +336,26 @@ Open questions for the TV: does a held remote key repeat, at what rate and with
 which flag; does a grab of volume keys succeed; what the 123 and app buttons
 send; whether `XF86BTVoice` also wakes the assistant; the minus key's name.
 
+## 13. The network remote
+
+What `rn-tizen key` drives (`src/remote/`): the TV's remote API, a WebSocket
+on the LAN. Samsung does not document it for third parties; the facts below
+come from a client library that ships against it, and from the TV.
+
+| Fact | Tag | Source |
+|------|-----|--------|
+| The remote is a WebSocket at `wss://<tv>:8002/api/v2/channels/samsung.remote.control?name=<name>&token=<token>`; the name is base64, the token is sent only once the TV issued one. Port 8001 is the same API without TLS | D | [samtvws] `connection.py` `_format_websocket_url`, `_is_ssl_connection`; `helper.py` `serialize_string` |
+| The client turns certificate verification off for 8002 (`sslopt = {"cert_reqs": ssl.CERT_NONE}`) | D | [samtvws] `connection.py` `open()` |
+| Node's built-in WebSocket fails the TLS handshake with the TV; the `ws` package with `rejectUnauthorized: false` is accepted. Under Bun, `ws` is accepted given `tls: { rejectUnauthorized: false }`: Bun's `ws` ignores the top-level option, as it does against a local self-signed server | H, 2026-11-03, Node 26.5, Bun 1.4 | `src/remote/tv-socket.ts`, a handshake with each |
+| The TV answers a connection it accepts with `ms.channel.connect`, the token it issued in `data.token`; one the viewer refused with `ms.channel.unauthorized`; a failure with `ms.error` and `data.message` | D | [samtvws] `event.py`; `connection.py` `open()`, `_check_for_token`, `_websocket_event` |
+| `ms.channel.timeOut` is in no source here; `rn-tizen` treats it as an unanswered request | I | `src/remote/remote-session.ts` |
+| A key press is `{"method":"ms.remote.control","params":{"Cmd":"Click","DataOfCmd":"KEY_ENTER","Option":"false","TypeOfRemote":"SendRemoteKey"}}`; `Press` and `Release` hold a key | D | [samtvws] `remote.py` `send_key`, `command.py` |
+| Without a token the TV asks its viewer to allow the client by name. With the token it issued, it accepts with nobody at the TV and issues no new token | H, 2026-11-03 | `rn-tizen key`, then a handshake with the saved token |
+
+What it means here: `rn-tizen key` opens the socket through `ws`, giving both
+spellings of the TLS option so one code path runs under Node and Bun, bounds a
+message at 64 KiB, and keeps the token mode 0600 in the state directory.
+
 ## Sources
 
 | ID | Source |
@@ -372,3 +392,4 @@ send; whether `XF86BTVoice` also wakes the assistant; the minus key's name.
 | with-tizen, platform-tizen | this package: `src/metro/with-tizen.ts`, `react-native-overrides/Libraries/Utilities/Platform.tizen.ts` |
 | wayland | Wayland protocol, `wl_keyboard.key`: https://wayland.freedesktop.org/docs/html/apa.html#protocol-spec-wl_keyboard |
 | android-keyup | Android, `Activity.onKeyUp`: https://developer.android.com/reference/android/app/Activity#onKeyUp(int,%20android.view.KeyEvent) |
+| samtvws | samsung-tv-ws-api, `samsungtvws/connection.py`, `remote.py`, `event.py`, `helper.py`, `command.py` on `master`, read 2026-11-03: https://github.com/xchwarze/samsung-tv-ws-api/tree/master/samsungtvws |

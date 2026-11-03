@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
 import type { AppProject } from '../app/app-project.ts';
 import { BYTECODE_FILE } from '../bundle/bundle-app.ts';
+import { CommandError } from '../exec.ts';
 import { writeAppConfig } from '../package/app-config-file.ts';
 import { RUNTIME_CONFIG_FILE, runtimeConfig, type LogEndpoint } from '../package/runtime-config.ts';
 import { instanceEnv, type SimulatorInstance } from './instance.ts';
@@ -41,18 +42,16 @@ async function writeResources(
 }
 
 function archive(dir: string) {
-  const tar = spawn(
-    '/usr/bin/tar',
-    ['-c', '-h', '--no-mac-metadata', '--no-xattrs', '-C', dir, '.'],
-    {
-      stdio: ['ignore', 'pipe', 'inherit'],
-      env: { ...process.env, COPYFILE_DISABLE: '1' },
-    },
-  );
+  const command = ['/usr/bin/tar', '-c', '-h', '--no-mac-metadata', '--no-xattrs', '-C', dir, '.'];
+  const [program = '', ...args] = command;
+  const tar = spawn(program, args, {
+    stdio: ['ignore', 'pipe', 'inherit'],
+    env: { ...process.env, COPYFILE_DISABLE: '1' },
+  });
   const done = new Promise<void>((resolve, reject) => {
     tar.on('error', reject);
     tar.on('close', (exitCode) =>
-      exitCode === 0 ? resolve() : reject(new Error(`tar exited with ${exitCode}`)),
+      exitCode === 0 ? resolve() : reject(new CommandError(command, exitCode, '')),
     );
   });
   return { stream: tar.stdout, done };

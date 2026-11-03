@@ -1,4 +1,4 @@
-import type { Paint } from '../paint.ts';
+import type { Paint, TextOutput } from '../paint.ts';
 import { formatLogEntry, isAtLeast, type LogEntry, type LogLevel } from './log-line.ts';
 import type { LogListener } from './log-server.ts';
 
@@ -9,7 +9,7 @@ interface LogPrinterOptions {
   readonly transform?: (entry: LogEntry) => LogEntry;
   readonly minimum: LogLevel;
   readonly held: boolean;
-  readonly out?: NodeJS.WriteStream;
+  readonly out?: TextOutput;
 }
 
 /**
@@ -19,7 +19,7 @@ interface LogPrinterOptions {
  */
 export class LogPrinter implements LogListener {
   private readonly options: LogPrinterOptions;
-  private readonly out: NodeJS.WriteStream;
+  private readonly out: TextOutput;
   private held: boolean;
   private readonly pending: string[] = [];
 

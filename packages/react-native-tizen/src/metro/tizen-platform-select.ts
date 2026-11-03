@@ -46,17 +46,20 @@ export interface BabelPlugin {
   readonly visitor: { CallExpression(path: { readonly node: CallExpression }): void };
 }
 
+function isNode<T extends AstNode>(node: AstNode, type: T['type']): node is T {
+  return node.type === type;
+}
+
 function isIdentifier(node: AstNode, name: string): boolean {
-  return node.type === 'Identifier' && (node as Identifier).name === name;
+  return isNode<Identifier>(node, 'Identifier') && node.name === name;
 }
 
 function isPlatformSelect(callee: AstNode): boolean {
-  if (callee.type !== 'MemberExpression') return false;
-  const member = callee as MemberExpression;
   return (
-    member.computed !== true &&
-    isIdentifier(member.object, 'Platform') &&
-    isIdentifier(member.property, 'select')
+    isNode<MemberExpression>(callee, 'MemberExpression') &&
+    callee.computed !== true &&
+    isIdentifier(callee.object, 'Platform') &&
+    isIdentifier(callee.property, 'select')
   );
 }
 
@@ -64,8 +67,8 @@ function staticKey(member: ObjectMember): string | null {
   if (member.computed === true) return null;
   if (member.type === 'ObjectMethod' && member.kind !== 'method') return null;
   if (member.type !== 'ObjectProperty' && member.type !== 'ObjectMethod') return null;
-  if (member.key.type === 'Identifier') return (member.key as Identifier).name;
-  if (member.key.type === 'StringLiteral') return (member.key as StringLiteral).value;
+  if (isNode<Identifier>(member.key, 'Identifier')) return member.key.name;
+  if (isNode<StringLiteral>(member.key, 'StringLiteral')) return member.key.value;
   return null;
 }
 
@@ -82,11 +85,11 @@ export function tizenPlatformSelectPlugin({ types }: BabelApi): BabelPlugin {
     visitor: {
       CallExpression(path) {
         const [spec] = path.node.arguments;
-        if (!isPlatformSelect(path.node.callee) || spec?.type !== 'ObjectExpression') return;
-        const keys = (spec as ObjectExpression).properties.map(staticKey);
+        if (!isPlatformSelect(path.node.callee) || spec === undefined) return;
+        if (!isNode<ObjectExpression>(spec, 'ObjectExpression')) return;
+        const keys = spec.properties.map(staticKey);
         if (keys.includes(null) || keys.includes('tizen')) return;
-        const android = keys.indexOf('android');
-        const member = (spec as ObjectExpression).properties[android];
+        const member = spec.properties[keys.indexOf('android')];
         if (member !== undefined) member.key = types.identifier('tizen');
       },
     },

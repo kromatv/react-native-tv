@@ -1,5 +1,5 @@
 import { run } from '../exec.ts';
-import { colorsEnabled, painter, type Paint } from '../paint.ts';
+import { colorsEnabled, painter, type Paint, type TextOutput } from '../paint.ts';
 import type { Task } from '../task.ts';
 import { formatDuration } from './format.ts';
 
@@ -10,7 +10,7 @@ const TITLE_WIDTH = 22;
 
 interface ReporterOptions {
   readonly verbose: boolean;
-  readonly out?: NodeJS.WriteStream;
+  readonly out?: TextOutput;
   readonly env?: NodeJS.ProcessEnv;
 }
 
@@ -21,7 +21,7 @@ interface ReporterOptions {
 export class Reporter {
   readonly paint: Paint;
   readonly verbose: boolean;
-  private readonly out: NodeJS.WriteStream;
+  private readonly out: TextOutput;
   private readonly animated: boolean;
   private spinning = false;
 

@@ -43,6 +43,10 @@ export const ANDROID_BRANCH_FILES = [
   'Libraries/Components/TextInput/TextInputState.js',
 ] as const;
 
+function isNode<T extends AstNode>(node: AstNode, type: T['type']): node is T {
+  return node.type === type;
+}
+
 function takesAndroidBranch(filename: string | null | undefined): boolean {
   if (!filename) return false;
   const path = filename.replaceAll('\\', '/');
@@ -50,7 +54,7 @@ function takesAndroidBranch(filename: string | null | undefined): boolean {
 }
 
 function isIdentifier(node: AstNode, name: string): boolean {
-  return node.type === 'Identifier' && (node as Identifier).name === name;
+  return isNode<Identifier>(node, 'Identifier') && node.name === name;
 }
 
 function isPlatformOs(node: MemberExpression): boolean {

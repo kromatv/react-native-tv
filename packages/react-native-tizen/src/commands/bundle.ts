@@ -10,7 +10,7 @@ import {
 } from '../cli/command.ts';
 import { formatPath } from '../cli/format.ts';
 import { Reporter } from '../cli/reporter.ts';
-import { bundleDir, bundleStep } from '../pipeline/package-steps.ts';
+import { bundleStep } from '../pipeline/package-steps.ts';
 
 const OPTIONS = {
   out: {
@@ -40,7 +40,7 @@ export const bundleCommand: Command = {
       resolve(context.cwd, values.project ?? '.'),
       entryPath(values, context),
     );
-    const outDir = values.out === undefined ? bundleDir(app) : resolve(context.cwd, values.out);
+    const outDir = values.out === undefined ? undefined : resolve(context.cwd, values.out);
     const bundle = await bundleStep(reporter, app, outDir);
     reporter.field('Bytecode', formatPath(bundle.bytecode, context.cwd));
     reporter.field('Assets', formatPath(bundle.assetsDir, context.cwd));

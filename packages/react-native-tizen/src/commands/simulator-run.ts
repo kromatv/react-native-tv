@@ -1,8 +1,10 @@
+import { existsSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
 import { loadAppProject, type AppProject } from '../app/app-project.ts';
 import { entryPath, type CommandContext } from '../cli/command.ts';
 import { parseLevel, untilInterrupted } from '../cli/log-level-option.ts';
 import { parsePort } from '../cli/log-options.ts';
+import { FixableError } from '../errors.ts';
 import { Reporter } from '../cli/reporter.ts';
 import { LogPrinter } from '../logs/log-printer.ts';
 import { listenForLogs, type LogServer } from '../logs/log-server.ts';
@@ -63,6 +65,14 @@ export async function prepareSimulator(
   return { app, runtime };
 }
 
+function givenBytecode(path: string): SimulatorBundle {
+  if (existsSync(path)) return { bytecode: path };
+  throw new FixableError(
+    `The bytecode ${path} does not exist`,
+    'Pass --bundle the .hbc that `rn-tizen bundle` wrote, or leave it out to bundle the app.',
+  );
+}
+
 function describeInstance(instance: SimulatorInstance): string {
   return `${instance.name}  screen :${instance.display}, live screen ${viewerUrl(instance)}`;
 }
@@ -99,7 +109,7 @@ export async function runInSimulator(
     const bundle: SimulatorBundle =
       flags.bundle === undefined
         ? await bundleStep(reporter, app)
-        : { bytecode: resolve(context.cwd, flags.bundle) };
+        : givenBytecode(resolve(context.cwd, flags.bundle));
     await reporter.step(
       'Start',
       async (task) => {

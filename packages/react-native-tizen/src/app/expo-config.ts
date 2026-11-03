@@ -1,22 +1,28 @@
-import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { z } from 'zod';
+import { CommandError, lastLines, runSync } from '../exec.ts';
 
 const MAX_OUTPUT_BYTES = 16 * 1024 * 1024;
+const ERROR_LINES = 12;
 
 const READ_CONFIG = `
 const { writeFileSync } = require('node:fs');
 const { createRequire } = require('node:module');
 const { join } = require('node:path');
 const [root, visibility, out] = process.argv.slice(1);
-const { getConfig } = createRequire(join(root, 'package.json'))('expo/config');
-const { exp } = getConfig(root, {
-  isPublicConfig: visibility === 'public',
-  skipSDKVersionRequirement: true,
-});
-writeFileSync(out, JSON.stringify(exp));
+try {
+  const { getConfig } = createRequire(join(root, 'package.json'))('expo/config');
+  const { exp } = getConfig(root, {
+    isPublicConfig: visibility === 'public',
+    skipSDKVersionRequirement: true,
+  });
+  writeFileSync(out, JSON.stringify(exp));
+} catch (error) {
+  process.stderr.write(String(error instanceof Error ? error.message : error));
+  process.exit(1);
+}
 `;
 
 const expoConfigSchema = z.record(z.string(), z.unknown());
@@ -25,10 +31,6 @@ const expoConfigSchema = z.record(z.string(), z.unknown());
 export interface ReadExpoConfigOptions {
   /** The public config, as `Constants.expoConfig` sees it, rather than the whole one. */
   readonly isPublicConfig?: boolean;
-}
-
-function lastLines(text: string, count: number): string {
-  return text.trim().split('\n').slice(-count).join('\n');
 }
 
 /**
@@ -44,17 +46,14 @@ export function readExpoConfig(
   const dir = mkdtempSync(join(tmpdir(), 'rn-tizen-config-'));
   const out = join(dir, 'config.json');
   try {
-    const result = spawnSync('node', ['-e', READ_CONFIG, root, visibility, out], {
+    runSync(['node', '-e', READ_CONFIG, root, visibility, out], {
       cwd: root,
-      encoding: 'utf8',
-      maxBuffer: MAX_OUTPUT_BYTES,
-      stdio: ['ignore', 'pipe', 'pipe'],
+      maxBytes: MAX_OUTPUT_BYTES,
     });
-    if (result.error !== undefined) throw result.error;
-    if (result.status !== 0) {
-      throw new Error(lastLines(result.stderr, 12) || `node exited with ${String(result.status)}`);
-    }
     return expoConfigSchema.parse(JSON.parse(readFileSync(out, 'utf8')));
+  } catch (error) {
+    if (!(error instanceof CommandError)) throw error;
+    throw new Error(lastLines(error.output, ERROR_LINES).join('\n') || error.message);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

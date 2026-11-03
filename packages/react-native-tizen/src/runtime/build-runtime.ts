@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import type { AppPackages, ResolvedPackage } from '../app/app-packages.ts';
+import { FixableError } from '../errors.ts';
 import { cacheDir } from '../cache-dir.ts';
 import { generateReactNativeSpecs } from '../codegen/react-native-specs.ts';
 import { RUNTIME_DIR } from '../package-paths.ts';
@@ -87,6 +88,11 @@ export async function compileRuntime(task: Task, inputs: RuntimeInputs): Promise
     },
     targets: ['react-native-tizen'],
   });
-  if (!existsSync(dirs.library)) throw new Error(`The runtime build produced no ${dirs.library}`);
+  if (!existsSync(dirs.library)) {
+    throw new FixableError(
+      `The runtime build produced no ${dirs.library}`,
+      'Run again with --verbose to see what CMake and Ninja printed.',
+    );
+  }
   return dirs.library;
 }

@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs';
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { basename, dirname, join } from 'node:path';
+import { FixableError } from '../errors.ts';
 import { cacheDir } from '../cache-dir.ts';
 import type { Task } from '../task.ts';
 import { archiveFileName, pinnedDependency } from './dependencies.ts';
@@ -94,6 +95,19 @@ async function extractFullIcuData(task: Task, full: string): Promise<void> {
   await task.run(['tar', '-xzf', archive, '-C', dirname(full), '--strip-components=4', member]);
 }
 
+async function readCachedIcuData(full: string): Promise<IcuCommonData> {
+  try {
+    return readIcuCommonData(new Uint8Array(await readFile(full)));
+  } catch (error) {
+    await rm(full, { force: true });
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new FixableError(
+      `The ICU data in the cache was unreadable (${reason}), so rn-tizen removed it`,
+      'Run the command again: it extracts the data again from the verified archive.',
+    );
+  }
+}
+
 async function writeTrimmedIcuData(
   task: Task,
   version: string,
@@ -102,7 +116,7 @@ async function writeTrimmedIcuData(
 ): Promise<void> {
   const full = join(cacheDir(), 'icu', version, icuDataFileName(version));
   if (!existsSync(full)) await extractFullIcuData(task, full);
-  const data = readIcuCommonData(new Uint8Array(await readFile(full)));
+  const data = await readCachedIcuData(full);
   await mkdir(dirname(trimmed), { recursive: true });
   await writeAtomically(trimmed, writeIcuCommonData(trimIcuData(data, languages)));
 }

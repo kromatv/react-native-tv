@@ -70,16 +70,19 @@
     "lint": "oxlint --ignore-path .gitignore --deny-warnings .",
     "format": "oxfmt .",
     "check": "bun run lint && oxfmt --check .",
-    "check:fix": "oxlint --ignore-path .gitignore --fix . && oxfmt ."
+    "check:fix": "oxlint --ignore-path .gitignore --fix . && oxfmt .",
+    "check:packed": "bun scripts/check-packed-install.ts"
   },
   "dependencies": {
     "@formatjs/intl-numberformat": "10.0.2",
     "@formatjs/intl-pluralrules": "7.0.2",
     "@formatjs/intl-relativetimeformat": "13.0.1",
+    "ws": "8.22.1",
     "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",
+    "@types/ws": "^8.18.2",
     "@vitest/coverage-istanbul": "5.0.5",
     "eslint-plugin-react-hooks": "7.1.1",
     "eslint-plugin-sonarjs": "4.2.2",

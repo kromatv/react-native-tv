@@ -1,9 +1,8 @@
-import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { AppProject } from '../app/app-project.ts';
-import { resolveTizenConfig } from '../config/tizen-config.ts';
+import { fakeApp } from '../app/app.fixtures.ts';
 import { platformProfile, SUPPORTED_PLATFORMS } from '../tizen/platform-profiles.ts';
 import { writeTizenProject } from './tizen-project.ts';
 
@@ -18,19 +17,7 @@ function file(name: string): string {
 }
 
 function inputs(tizen: Record<string, unknown>) {
-  const installed = { name: 'installed', version: '1.0.0', dir: root };
-  const app: AppProject = {
-    root,
-    config: resolveTizenConfig({ name: 'Demo', tizen: { package: 'org.example.demo', ...tizen } }),
-    entryFile: join(root, 'index.ts'),
-    packages: {
-      reactNative: installed,
-      expo: installed,
-      expoModulesCore: installed,
-      expoModulesJsi: installed,
-    },
-    tizenDir: join(root, 'tizen'),
-  };
+  const app = fakeApp(root, tizen);
   const assetsDir = join(root, 'assets');
   mkdirSync(assetsDir);
   return {
@@ -72,5 +59,19 @@ describe('writeTizenProject', () => {
         'tizen-manifest.xml',
       ]),
     );
+  });
+
+  it('writes into a tizen/ that ignores itself', async () => {
+    const dir = await writeTizenProject(inputs({}));
+
+    expect(readFileSync(join(dir, '.gitignore'), 'utf8')).toBe('*\n');
+  });
+
+  it("leaves a tizen/ of the app's own untouched", async () => {
+    mkdirSync(join(root, 'tizen'));
+    writeFileSync(join(root, 'tizen', 'config.xml'), '<widget />');
+
+    await expect(writeTizenProject(inputs({}))).rejects.toThrow("is the app's own");
+    expect(readdirSync(join(root, 'tizen'))).toEqual(['config.xml']);
   });
 });

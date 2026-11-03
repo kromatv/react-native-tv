@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { z } from 'zod';
 import { requirePackage } from '../app/app-packages.ts';
+import { FixableError } from '../errors.ts';
 
 /** The generators behind a library's TurboModule bases (`<library>JSI.h`). */
 export const MODULE_GENERATORS = ['generateModuleH'] as const;
@@ -81,7 +82,12 @@ export async function loadCodegen(reactNativeDir: string): Promise<Codegen> {
       await mkdir(directory, { recursive: true });
       const files = generators.flatMap((name) => {
         const generate = allGenerators[name];
-        if (generate === undefined) throw new Error(`@react-native/codegen has no ${name}`);
+        if (generate === undefined) {
+          throw new FixableError(
+            `@react-native/codegen has no ${name}`,
+            "Install a react-native that rn-tizen supports: its package.json's peerDependencies name it.",
+          );
+        }
         return [...generate(libraryName, schema, undefined, false, undefined, true)].map(
           ([fileName, contents]) => ({ path: join(directory, fileName), contents }),
         );

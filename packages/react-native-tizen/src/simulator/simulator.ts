@@ -3,6 +3,8 @@ import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { AppProject } from '../app/app-project.ts';
+import { UsageError } from '../cli/command.ts';
+import { FixableError } from '../errors.ts';
 import { cacheDir } from '../cache-dir.ts';
 import { findNativeLibraries } from '../libraries/find-native-libraries.ts';
 import { PACKAGE_ROOT } from '../package-paths.ts';
@@ -115,8 +117,9 @@ export async function ensureVm(task: Task, app: AppProject): Promise<VmPreparati
 export async function requireRunningVm(task: Task): Promise<void> {
   const state = await instanceState();
   if (state === null) {
-    throw new Error(
-      'The simulator VM does not exist yet: run `rn-tizen simulator run` in your app.',
+    throw new FixableError(
+      'The simulator VM does not exist yet',
+      'Run `rn-tizen simulator run` in your app: it creates the VM.',
     );
   }
   if (state.status !== 'Running') await startInstance(task);
@@ -135,7 +138,12 @@ export async function startApp(task: Task, instance: SimulatorInstance): Promise
 export async function hostAddress(task: Task): Promise<string> {
   const output = await guestRun(task, ['getent', 'ahostsv4', 'host.lima.internal']);
   const address = output.trim().split(/\s+/)[0];
-  if (!address) throw new Error('The simulator VM cannot resolve host.lima.internal');
+  if (!address) {
+    throw new FixableError(
+      'The simulator VM cannot resolve host.lima.internal, the address of this Mac',
+      'Check the VM network: `limactl shell rn-tizen-sim getent ahostsv4 host.lima.internal` should print an address.',
+    );
+  }
   return address;
 }
 
@@ -188,7 +196,9 @@ export async function sendControl(
   command: 'open-url' | 'tile' | 'voice',
   argument: string,
 ): Promise<void> {
-  if (/[\r\n]/.test(argument)) throw new Error(`The ${command} argument cannot hold a line break`);
+  if (/[\r\n]/.test(argument)) {
+    throw new UsageError(`The ${command} argument cannot hold a line break`, 'simulator');
+  }
   await runInstanceScript(task, instance, 'control', [command, argument]);
 }
 

@@ -65,7 +65,7 @@ config plugin option `supportsBackgroundPlayback` is read too
 
 | What | Where |
 |---|---|
-| The generated .NET project | `tizen/` in the app. It ignores itself (`tizen/.gitignore` is `*`), so it never reaches git. Delete it at any time. |
+| The generated .NET project | `tizen/` in the app. It ignores itself (`tizen/.gitignore` is `*`), so it never reaches git. Delete it at any time. A `tizen/` that holds files and does not ignore itself is the app's own: `rn-tizen` refuses to build over it. |
 | The bundle | `tizen/build/bundle/` (`index.tizen.js`, `index.tizen.hbc`, `assets/`) |
 | The signed package | `tizen/bin/Release/<target framework>/<package>-<version>.tpk`, `tizen90` for Tizen 9.0 (TizenFX API 9, not the Tizen version) |
 | Third-party licences | `res/THIRD_PARTY_NOTICES.md` in every package |
@@ -158,6 +158,11 @@ that ships with the app's `react-native`.
 | `--out <dir>` | Where to write the bundle (default `tizen/build/bundle`) |
 | `--entry <file>` | The entry to bundle (default: the app's `main`) |
 
+Every bundle replaces the `assets/` folder of the directory it writes to, so
+`--out` must be a new or empty directory, or one `rn-tizen bundle` wrote
+before (it leaves a `.rn-tizen-bundle` file there). Anything else, such as
+`--out .` in the app, fails before a file changes.
+
 ### `rn-tizen package`
 
 Builds a signed `.tpk` from scratch or incrementally: the native runtime, the
@@ -221,6 +226,44 @@ Ctrl+C. Use it to follow an app launched from the TV's own menu.
 |---|---|
 | `--port <port>` | The port the app was packaged with (default `8099`) |
 | `--level <level>` | The quietest level to show (default `info`) |
+
+### `rn-tizen key`
+
+Presses remote keys on a TV, in order, through the TV's network remote: the
+Samsung remote API on port 8002
+([tizen-input.md](reference/tizen-input.md#13-the-network-remote)). The app in
+front can be any app, not only a development build.
+
+```sh
+rn-tizen key Down Down Enter --device 192.168.1.50
+rn-tizen key Back --device 192.168.1.50
+rn-tizen key KEY_CH_LIST --device 192.168.1.50
+```
+
+A key is a name (`up`, `down`, `left`, `right`, `enter`, `back`, `exit`, `info`,
+`play`, `pause`, `playpause`, `stop`, `rewind`, `fastforward`, the four colors,
+`0` to `9`, in any case) or any `KEY_*` code as written. The first time,
+the TV asks its viewer to allow `rn-tizen`; the token it then issues is saved
+(see [Where things go](#where-things-go)), so later presses need nobody at the
+TV. A TV that refused is unblocked in its Device Connection Manager.
+
+| Option | |
+|---|---|
+| `--device, -d <ip>` | The TV's IP address |
+
+### `rn-tizen screenshot`
+
+Saves what a development build draws as a PNG: the app captures its own window
+and sends it over its log connection, so it works on a retail TV, which blocks
+system screen capture. It shows the app's UI only, never the video plane. It
+goes through the `run` or `logs` already holding the log port, else listens on
+it until the app connects.
+
+| Option | |
+|---|---|
+| `--device, -d <ip>` | The TV whose app to capture (default: the only one connected) |
+| `--out <file.png>` | Where to save it (default `tv/<ip>/screenshot.png` in the cache) |
+| `--port <port>` | The port the app was packaged with (default `8099`) |
 
 ### `rn-tizen perf`
 

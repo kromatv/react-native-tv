@@ -3,6 +3,7 @@ import type { Readable } from 'node:stream';
 import { z } from 'zod';
 import { findProgram } from '../doctor/find-program.ts';
 import { FixableError } from '../errors.ts';
+import { CommandError } from '../exec.ts';
 import type { Task } from '../task.ts';
 
 export const LIMA_INSTANCE = 'rn-tizen-sim';
@@ -29,6 +30,14 @@ export interface GuestStreams {
   readonly env?: Readonly<Record<string, string>>;
 }
 
+const HOMEBREW_BIN = '/opt/homebrew/bin';
+
+function limactl(): string {
+  const path = findProgram('limactl', [HOMEBREW_BIN]);
+  if (path === null) throw new FixableError('Lima is not installed', 'brew install lima');
+  return path;
+}
+
 /** Fails with what to install unless this Mac can run the simulator's VM. */
 export function requireLima(): void {
   if (process.platform !== 'darwin' || process.arch !== 'arm64') {
@@ -37,14 +46,12 @@ export function requireLima(): void {
       'Use a Mac with an M-series chip, or a real TV (rn-tizen run).',
     );
   }
-  if (findProgram('limactl', ['/opt/homebrew/bin']) === null) {
-    throw new FixableError('Lima is not installed', 'brew install lima');
-  }
+  limactl();
 }
 
 function guestCommand(command: readonly string[], env: Readonly<Record<string, string>>): string[] {
   const assignments = Object.entries(env).map(([name, value]) => `${name}=${value}`);
-  return ['limactl', 'shell', '--workdir', '/', LIMA_INSTANCE, 'env', ...assignments, ...command];
+  return [limactl(), 'shell', '--workdir', '/', LIMA_INSTANCE, 'env', ...assignments, ...command];
 }
 
 /** Runs `command` in the VM as a task step: quiet unless `--verbose`, its output in any error. */
@@ -59,27 +66,27 @@ export function guestRun(
 
 /** Runs `command` in the VM with its streams wired to the Mac's as given; stderr is inherited. */
 export function guestSpawn(command: readonly string[], streams: GuestStreams = {}): Promise<void> {
-  const [program, ...args] = guestCommand(command, streams.env ?? {});
+  const shell = guestCommand(command, streams.env ?? {});
   const stdio: StdioOptions = [
     streams.stdin ? 'pipe' : 'ignore',
     streams.stdout ?? 'inherit',
     'inherit',
   ];
   return new Promise((resolve, reject) => {
-    const child = spawn(program ?? 'limactl', args, { stdio });
+    const [program = '', ...args] = shell;
+    const child = spawn(program, args, { stdio });
     if (streams.stdin && child.stdin) streams.stdin.pipe(child.stdin);
     child.on('error', reject);
     child.on('close', (exitCode) => {
       if (exitCode === 0) resolve();
-      else reject(new Error(`${command.join(' ')} failed in the simulator (exit ${exitCode})`));
+      else reject(new CommandError(shell, exitCode, ''));
     });
   });
 }
 
-function captureStdout(command: readonly string[]): Promise<string> {
-  const [program, ...args] = command;
+function limactlStdout(args: readonly string[]): Promise<string> {
   return new Promise((resolve, reject) => {
-    const child = spawn(program ?? 'limactl', args, { stdio: ['ignore', 'pipe', 'ignore'] });
+    const child = spawn(limactl(), args, { stdio: ['ignore', 'pipe', 'ignore'] });
     const chunks: Buffer[] = [];
     child.stdout.on('data', (chunk: Buffer) => chunks.push(chunk));
     child.on('error', reject);
@@ -89,9 +96,7 @@ function captureStdout(command: readonly string[]): Promise<string> {
 
 /** The VM's state, or null when it was never created. */
 export async function instanceState(): Promise<InstanceState | null> {
-  const output = (
-    await captureStdout(['limactl', 'list', '--format', 'json', LIMA_INSTANCE])
-  ).trim();
+  const output = (await limactlStdout(['list', '--format', 'json', LIMA_INSTANCE])).trim();
   return output === '' ? null : instanceSchema.parse(JSON.parse(output));
 }
 
@@ -109,7 +114,7 @@ export async function createInstance(
 ): Promise<void> {
   const name = `--name=${LIMA_INSTANCE}`;
   await task.run([
-    'limactl',
+    limactl(),
     'create',
     name,
     '--tty=false',
@@ -122,7 +127,7 @@ export async function createInstance(
 /** Points a stopped VM's mounts at `params`. */
 export async function editInstance(task: Task, params: MountParams): Promise<void> {
   await task.run([
-    'limactl',
+    limactl(),
     'edit',
     '--tty=false',
     '--set',
@@ -135,7 +140,7 @@ export async function editInstance(task: Task, params: MountParams): Promise<voi
 export async function addMount(task: Task, location: string): Promise<void> {
   const mount = JSON.stringify({ location, writable: false });
   await task.run([
-    'limactl',
+    limactl(),
     'edit',
     '--tty=false',
     '--set',
@@ -145,13 +150,13 @@ export async function addMount(task: Task, location: string): Promise<void> {
 }
 
 export async function startInstance(task: Task): Promise<void> {
-  await task.run(['limactl', 'start', '--tty=false', LIMA_INSTANCE]);
+  await task.run([limactl(), 'start', '--tty=false', LIMA_INSTANCE]);
 }
 
 export async function stopInstance(task: Task): Promise<void> {
-  await task.run(['limactl', 'stop', LIMA_INSTANCE]);
+  await task.run([limactl(), 'stop', LIMA_INSTANCE]);
 }
 
 export async function deleteInstance(task: Task): Promise<void> {
-  await task.run(['limactl', 'delete', '--force', LIMA_INSTANCE]);
+  await task.run([limactl(), 'delete', '--force', LIMA_INSTANCE]);
 }

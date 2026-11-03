@@ -1,7 +1,7 @@
-import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { basename } from 'node:path';
 import { findLlvmTools } from '../doctor/find-program.ts';
+import { runSync } from '../exec.ts';
 import type { LogEntry } from './log-line.ts';
 import {
   type CrashFrame,
@@ -28,6 +28,23 @@ function parseSymbolizerOutput(output: string): (string | null)[] {
     });
 }
 
+function symbolize(
+  symbolizer: string,
+  library: string,
+  frames: readonly CrashFrame[],
+): (string | null)[] {
+  const addresses = frames.map((frame) => `0x${frame.offset}`);
+  try {
+    const output = runSync(
+      [symbolizer, '--obj', library, '--no-inlines', '--demangle', ...addresses],
+      { timeoutMs: SYMBOLIZE_TIMEOUT_MS },
+    );
+    return parseSymbolizerOutput(output);
+  } catch {
+    return [];
+  }
+}
+
 /**
  * Resolves frames in `library` (an unstripped build of the library the TV
  * runs) with `llvm-symbolizer`; frames in other libraries stay unnamed. Null
@@ -40,12 +57,7 @@ export function llvmFrameResolver(library: string): FrameResolver | null {
   return (frames: readonly CrashFrame[]) => {
     const own = frames.filter((frame) => frame.library === name);
     if (own.length === 0) return frames.map(() => null);
-    const result = spawnSync(
-      symbolizer,
-      ['--obj', library, '--no-inlines', '--demangle', ...own.map((frame) => `0x${frame.offset}`)],
-      { encoding: 'utf8', timeout: SYMBOLIZE_TIMEOUT_MS },
-    );
-    const names = result.status === 0 ? parseSymbolizerOutput(result.stdout) : [];
+    const names = symbolize(symbolizer, library, own);
     let next = 0;
     return frames.map((frame) => {
       if (frame.library !== name) return null;

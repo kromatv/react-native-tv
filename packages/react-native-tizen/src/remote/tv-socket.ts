@@ -1,7 +1,16 @@
-declare global {
-  interface WebSocketInit {
+import WebSocket from 'ws';
+
+declare module 'ws' {
+  interface ClientOptions {
     readonly tls?: { readonly rejectUnauthorized: boolean };
   }
+}
+
+const MAX_MESSAGE_BYTES = 64 * 1024;
+
+function messageText(data: WebSocket.RawData): string {
+  const chunks = Array.isArray(data) ? data : [data];
+  return Buffer.concat(chunks.map((chunk) => new Uint8Array(chunk))).toString('utf8');
 }
 
 /** What a remote session hears from its connection. */
@@ -21,17 +30,22 @@ export interface TvConnection {
 export type OpenTvConnection = (url: string, events: TvConnectionEvents) => TvConnection;
 
 /**
- * Opens a WebSocket that accepts the TV's self-signed certificate, through the
- * `tls` option of Bun's WebSocket, which the CLI runs on.
+ * Opens a WebSocket that accepts the TV's self-signed certificate, under Node
+ * and Bun alike.
  */
 export const openTvConnection: OpenTvConnection = (url, events) => {
-  const init: WebSocketInit = { tls: { rejectUnauthorized: false } };
-  const socket = new WebSocket(url, init);
-  socket.addEventListener('message', (event) => events.onMessage(String(event.data)));
-  socket.addEventListener('close', (event) =>
-    events.onClosed(event.reason === '' ? `closed with code ${event.code}` : event.reason),
+  // Samsung TVs serve the remote API on 8002 with a self-signed certificate.
+  // Node's ws reads rejectUnauthorized at the top level, Bun's built-in ws from tls.
+  const socket = new WebSocket(url, {
+    rejectUnauthorized: false,
+    tls: { rejectUnauthorized: false },
+    maxPayload: MAX_MESSAGE_BYTES,
+  });
+  socket.on('message', (data: WebSocket.RawData) => events.onMessage(messageText(data)));
+  socket.on('close', (code: number, reason: Buffer) =>
+    events.onClosed(reason.length === 0 ? `closed with code ${code}` : reason.toString()),
   );
-  socket.addEventListener('error', () => events.onClosed('the connection failed'));
+  socket.on('error', (error: Error) => events.onClosed(error.message || 'the connection failed'));
   return {
     send: (text) => socket.send(text),
     close: () => socket.close(),

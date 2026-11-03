@@ -6,6 +6,8 @@ import { Readable, Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { FixableError } from '../errors.ts';
 
+const NETWORK_HINT = 'Check the network connection, then try again.';
+
 async function sha256Of(path: string): Promise<string> {
   const hash = createHash('sha256');
   await pipeline(createReadStream(path), hash);
@@ -31,12 +33,12 @@ export async function downloadVerified(
   destination: string,
 ): Promise<void> {
   if (existsSync(destination) && (await sha256Of(destination)) === sha256) return;
-  const response = await fetch(url);
+  const response = await fetch(url).catch((error: unknown) => {
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new FixableError(`Downloading ${url} failed: ${reason}`, NETWORK_HINT);
+  });
   if (!response.ok || response.body === null) {
-    throw new FixableError(
-      `Downloading ${url} failed: HTTP ${response.status}`,
-      'Check the network connection, then try again.',
-    );
+    throw new FixableError(`Downloading ${url} failed: HTTP ${response.status}`, NETWORK_HINT);
   }
   await mkdir(dirname(destination), { recursive: true });
   const partial = `${destination}.part-${process.pid}`;

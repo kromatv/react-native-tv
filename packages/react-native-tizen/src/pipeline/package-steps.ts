@@ -1,6 +1,7 @@
 import { statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import type { AppProject } from '../app/app-project.ts';
+import { claimTizenDir } from '../app/tizen-dir.ts';
 import { bundleApp, type AppBundle } from '../bundle/bundle-app.ts';
 import { formatSize } from '../cli/format.ts';
 import { ensureIcuData } from '../runtime/icu-data.ts';
@@ -29,15 +30,19 @@ export function bundleDir(app: AppProject): string {
   return join(app.tizenDir, 'build', 'bundle');
 }
 
-/** Bundles the app into Hermes bytecode, as one step. */
+/** Bundles the app into Hermes bytecode, as one step, into `outDir` or else the app's `tizen/`. */
 export function bundleStep(
   reporter: Reporter,
   app: AppProject,
-  outDir = bundleDir(app),
+  outDir?: string,
 ): Promise<AppBundle> {
   return reporter.step(
     'JavaScript bundle',
-    (task) => bundleApp(task, app, outDir),
+    (task) => {
+      if (outDir !== undefined) return bundleApp(task, app, outDir);
+      claimTizenDir(app.tizenDir);
+      return bundleApp(task, app, bundleDir(app));
+    },
     (bundle) => formatSize(statSync(bundle.bytecode).size),
   );
 }
@@ -58,6 +63,7 @@ function icuDataStep(reporter: Reporter, app: AppProject): Promise<string> {
  */
 export async function packageSteps(reporter: Reporter, request: PackageRequest): Promise<string> {
   const { sdk, app, target, shell } = request;
+  claimTizenDir(app.tizenDir);
   const profile = await reporter.step(
     'Security profile',
     (task) => signingProfile(task, sdk, request.profile ?? app.config.profile),
