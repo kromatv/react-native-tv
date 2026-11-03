@@ -1,6 +1,6 @@
 import { FixableError } from '../errors.ts';
 import { newestPlatformFor, runsOn, SUPPORTED_PLATFORMS } from '../tizen/platform-profiles.ts';
-import type { DeviceCapabilities } from '../tizen/sdb-output.ts';
+import type { DeviceCapabilities } from '../sdb/capabilities.ts';
 import {
   archFromDevice,
   DEFAULT_TARGET,
@@ -30,7 +30,7 @@ interface TargetSources {
   readonly arch?: string;
   readonly platform?: string;
   readonly configPlatform?: string;
-  readonly device?: DeviceCapabilities;
+  readonly device?: Pick<DeviceCapabilities, 'cpuArch' | 'platformVersion'>;
 }
 
 function chooseArch(sources: TargetSources) {

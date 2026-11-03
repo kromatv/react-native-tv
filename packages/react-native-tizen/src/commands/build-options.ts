@@ -6,8 +6,7 @@ import { Reporter } from '../cli/reporter.ts';
 import { chooseTarget, TARGET_OPTIONS } from '../cli/target-options.ts';
 import type { LogEndpoint } from '../package/runtime-config.ts';
 import { platformProfile, type PlatformProfile } from '../tizen/platform-profiles.ts';
-import { resolveDevice, type Device } from '../tizen/sdb.ts';
-import { deviceHost } from '../tizen/sdb-output.ts';
+import { resolveDevice, type Device } from '../tizen/devices.ts';
 import { locateTizenSdk, type TizenSdk } from '../tizen/tizen-sdk.ts';
 import type { TizenTarget } from '../tizen/target.ts';
 
@@ -16,7 +15,7 @@ export const BUILD_OPTIONS = {
   device: {
     type: 'string',
     short: 'd',
-    placeholder: '<ip|serial>',
+    placeholder: '<ip>',
     description: 'The TV to build for, whose CPU and Tizen version become the defaults',
   },
   ...TARGET_OPTIONS,
@@ -71,7 +70,7 @@ export function openBuild(flags: BuildFlags, context: CommandContext): BuildBase
 
 /** Finds the TV at `address`, or the only one connected, as a step. */
 export function findDevice(base: BuildBase, address: string | undefined): Promise<Device> {
-  return base.reporter.step('TV', (task) => resolveDevice(task, base.sdk, address), describeDevice);
+  return base.reporter.step('TV', () => resolveDevice(address), describeDevice);
 }
 
 /** Settles the target and the log endpoint, and prints what was settled. */
@@ -96,7 +95,7 @@ export function settleBuild(
     release: flags.release,
     host: flags['log-host'],
     port: flags['log-port'],
-    deviceHost: device === null ? null : deviceHost(device.serial),
+    deviceHost: device?.address.host ?? null,
   });
   const where = relative(cwd, app.root);
   const location = where === '' ? '' : `  ${reporter.paint('gray', where)}`;

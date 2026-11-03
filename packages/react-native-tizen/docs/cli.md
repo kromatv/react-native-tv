@@ -16,6 +16,11 @@ Every command prints one line per step. `--verbose` (`-v`) also prints what the
 underlying tools print (CMake, Ninja, Metro, dotnet, the Tizen CLI). When a
 tool fails, the last lines it printed are shown with the error.
 
+`rn-tizen` talks to the TV itself, over sdb's protocol on port 26101: Tizen
+Studio's `sdb` is never run. A TV takes one sdb connection at a time, so while
+Tizen Studio's `sdb` or Device Manager is connected to it, `rn-tizen` cannot
+reach it: `sdb disconnect <tv ip>` frees it.
+
 `rn-tizen <command> --help` lists a command's options.
 
 ## Configuration
@@ -69,9 +74,10 @@ config plugin option `supportsBackgroundPlayback` is read too
 | Linkable sysroots | `~/.cache/react-native-tizen/sysroots/` |
 | Source archives | `~/.cache/react-native-tizen/downloads/`, shared with CMake |
 | Remote pairing tokens | `~/.local/state/react-native-tizen/remote/<tv>.token`, readable by you only, out of the cache so a cache wipe does not unpair; one an older `rn-tizen` left in the cache moves there on first use |
+| TVs reached before | `~/.local/state/react-native-tizen/devices.json`, most recent first |
 
 `RN_TIZEN_CACHE_DIR` moves the cache; `XDG_CACHE_HOME` is honoured too, and
-`XDG_STATE_HOME` moves the tokens.
+`XDG_STATE_HOME` moves the tokens and the TV list.
 `TIZEN_SDK_DIR` points at Tizen Studio when it is not in `~/tizen-studio`, and
 `TIZEN_LLVM_DIR` at a clang and lld that are not Homebrew's.
 
@@ -95,9 +101,9 @@ supported ones.
 Checks everything a build, a signature and an install need, and prints the
 exact fix for each problem: Tizen Studio, its GCC runtime and rootstrap for the
 target, Homebrew's LLVM (clang and lld), CMake 3.24 or newer, Ninja, the .NET
-SDK, Node.js, an active security profile, the connected TVs, ccache, and the
-app's config when run in an app. Exits 1 when a check fails; a warning (no TV
-connected, no ccache) does not fail it.
+SDK, Node.js, an active security profile, the TVs reached before (each one
+probed), ccache, and the app's config when run in an app. Exits 1 when a check
+fails; a warning (no TV answers, no ccache) does not fail it.
 
 | Option | |
 |---|---|
@@ -107,11 +113,13 @@ connected, no ccache) does not fail it.
 
 ### `rn-tizen devices`
 
-Lists the TVs sdb can reach, with each one's model, CPU and Tizen version.
+Probes every TV `rn-tizen` reached before and lists each one's model, CPU and
+Tizen version, or why it did not answer. A TV is remembered once `devices
+--connect`, `run` or `package` reaches it with `--device`.
 
 | Option | |
 |---|---|
-| `--connect <ip>` | Connect to the TV at this address first (port 26101 unless given) |
+| `--connect <ip>` | Connect to the TV at this address first, and remember it (port 26101 unless given) |
 
 ```sh
 rn-tizen devices --connect 192.168.1.50
@@ -159,7 +167,7 @@ seconds rather than after a build.
 
 | Option | |
 |---|---|
-| `--device, -d <ip\|serial>` | The TV to build for; its CPU and Tizen version become the defaults |
+| `--device, -d <ip>` | The TV to build for; its CPU and Tizen version become the defaults |
 | `--arch <arch>` | Override the CPU |
 | `--platform <version>` | Override the Tizen version |
 | `--profile <name>` | Sign with this security profile |
@@ -194,8 +202,9 @@ plus:
 | `--level <level>` | The quietest log level to show: `debug`, `info`, `warn` or `error` (default `info`) |
 | `--no-logs` | Exit once the app is launched |
 
-Without `--device`, it uses the only TV connected. A TV sdb does not know yet is
-connected first. The log listener starts before the build, so a port already in
+Without `--device`, it uses the only TV reached before that answers. `Install`
+pushes the package to the TV and installs it, replacing any earlier install;
+`Launch` starts it. The log listener starts before the build, so a port already in
 use fails before anything compiles, and nothing the app logs at startup is lost.
 
 ```sh

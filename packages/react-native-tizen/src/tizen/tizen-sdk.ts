@@ -7,7 +7,6 @@ import { rootstrapName, type TizenArch, type TizenTarget } from './target.ts';
 /** The pieces of a Tizen Studio installation this tool drives. */
 export interface TizenSdk {
   readonly root: string;
-  readonly sdb: string;
   readonly tizenCli: string;
   readonly packageManager: string;
 }
@@ -25,8 +24,7 @@ function packageManagerInstall(sdk: TizenSdk, pkg: string): string {
 /** Finds Tizen Studio from `TIZEN_SDK_DIR`, then `~/tizen-studio`. */
 export function locateTizenSdk(env: NodeJS.ProcessEnv = process.env): TizenSdk {
   const root = env.TIZEN_SDK_DIR ?? join(homedir(), 'tizen-studio');
-  const sdb = join(root, 'tools', 'sdb');
-  if (!existsSync(sdb)) {
+  if (!existsSync(join(root, 'sdk.version'))) {
     throw new FixableError(
       `Tizen Studio not found at ${root}`,
       'Install Tizen Studio (https://developer.tizen.org/development/tizen-studio/download), or set TIZEN_SDK_DIR to where it is.',
@@ -34,7 +32,6 @@ export function locateTizenSdk(env: NodeJS.ProcessEnv = process.env): TizenSdk {
   }
   return {
     root,
-    sdb,
     tizenCli: join(root, 'tools', 'ide', 'bin', 'tizen'),
     packageManager: join(root, 'package-manager', 'package-manager-cli.bin'),
   };

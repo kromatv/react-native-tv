@@ -35,7 +35,7 @@ const DEVICE_ARCH: Record<string, TizenArch> = {
   x86_64: 'x86_64',
 };
 
-/** Maps the `cpu_arch` a device reports through `sdb capability` to a build arch. */
+/** Maps the `cpu_arch` a TV reports through sdb's `capability:` service to a build arch. */
 export function archFromDevice(cpuArch: string): TizenArch | null {
   return DEVICE_ARCH[cpuArch.trim()] ?? null;
 }

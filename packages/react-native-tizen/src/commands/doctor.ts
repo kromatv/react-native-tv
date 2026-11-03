@@ -34,18 +34,13 @@ const MARKS: Record<CheckStatus, readonly [string, 'green' | 'yellow' | 'red' | 
 };
 
 function sdkChecks(task: Task, sdk: TizenSdk | null, target: TizenTarget): Promise<CheckResult>[] {
-  const titles = ['GCC runtime', 'Rootstrap', 'Security profile', 'TVs'];
+  const titles = ['GCC runtime', 'Rootstrap', 'Security profile'];
   if (sdk === null) {
     return titles.map((title) =>
       Promise.resolve({ title, status: 'skip', detail: 'needs Tizen Studio' } as const),
     );
   }
-  return [
-    checkGcc(sdk, target),
-    checkRootstrap(sdk, target),
-    checkSecurityProfile(task, sdk),
-    checkDevices(task, sdk),
-  ];
+  return [checkGcc(sdk, target), checkRootstrap(sdk, target), checkSecurityProfile(task, sdk)];
 }
 
 function locate(): { sdk: TizenSdk | null; result: CheckResult } {
@@ -85,6 +80,7 @@ export const doctorCommand: Command = {
     const results = await Promise.all([
       Promise.resolve(studio.result),
       ...sdkChecks(task, studio.sdk, target),
+      checkDevices(),
       checkLlvm(task),
       checkCMake(task),
       checkNinja(task),

@@ -16,7 +16,7 @@ body:
         - On a TV
         - In the simulator
         - Building, packaging or signing
-        - Installing or running on a TV (sdb, run, logs)
+        - Installing or running on a TV (devices, run, logs)
         - Metro or bundling
         - Something else
     validations:

@@ -14,8 +14,7 @@ import { LogPrinter } from '../logs/log-printer.ts';
 import { listenForLogs, type LogServer } from '../logs/log-server.ts';
 import { packageSteps } from '../pipeline/package-steps.ts';
 import { RUNTIME_LIBRARY } from '../runtime/build-runtime.ts';
-import { deviceHost } from '../tizen/sdb-output.ts';
-import { installPackage, launchPackage } from '../tizen/tizen-cli.ts';
+import { installApp, launchApp } from '../tizen/install-app.ts';
 import { BUILD_OPTIONS, findDevice, openBuild, settleBuild } from './build-options.ts';
 
 const OPTIONS = {
@@ -48,7 +47,7 @@ export const runCommand: Command = {
     const base = openBuild(flags, context);
     const device = await findDevice(base, flags.device);
     const build = settleBuild('run', flags, base, device, context.cwd);
-    const { reporter, sdk, app, log } = build;
+    const { reporter, app, log } = build;
     const printer = new LogPrinter({
       paint: reporter.paint,
       minimum,
@@ -56,7 +55,7 @@ export const runCommand: Command = {
       transform: crashSymbolizer(join(app.tizenDir, 'lib', RUNTIME_LIBRARY)),
     });
     const listening = log !== null && flags['no-logs'] !== true;
-    const peer = deviceHost(device.serial);
+    const peer = device.address.host;
     const server: LogServer | null = listening
       ? await listenForLogs(log.port, printer, { peer })
       : null;
@@ -64,12 +63,10 @@ export const runCommand: Command = {
       const tpk = await packageSteps(reporter, { ...build, profile: flags.profile });
       await reporter.step(
         'Install',
-        (task) => installPackage(task, sdk, device.serial, tpk),
+        (task) => installApp(task, device, tpk, app.config.packageId),
         () => device.serial,
       );
-      await reporter.step('Launch', (task) =>
-        launchPackage(task, sdk, device.serial, app.config.packageId),
-      );
+      await reporter.step('Launch', () => launchApp(device, app.config.packageId));
       if (server === null) return;
       reporter.line();
       reporter.note(`Logs from ${app.config.packageId}. Press Ctrl+C to stop.`);

@@ -222,7 +222,8 @@ The checklists are written for web apps; none says it excludes .NET (I).
 | `sdb connect <TV IP>`. "Port 26101 is an internal device port. It cannot be opened separately." | D | [sam-testfaq] Q5, [sam-device] |
 | No root through sdb. "sdb logging feature is not supported on Samsung TVs." | D | [sam-testfaq] Q21, Q22 |
 | On the retail test TV, `dlog`, `sdb shell` and `sdb pull` are blocked. | H | |
-| Which sdb commands a retail TV allows (`capability`, `push`, `forward`): undocumented. | | |
+| Which sdb services a retail TV answers: undocumented by Samsung. Seen on this TV: `capability:`, `sync:` pushes under `/home/owner/share/tmp/`, and `shell:0 <command>` forms such as `0 vd_appinstall` and `0 execute`; see [sdb-protocol.md](sdb-protocol.md). | H | |
+| The TV takes one sdb host connection at a time; a second one is reset before its banner. | H | [sdb-protocol.md](sdb-protocol.md) |
 | Tizen Studio error codes: 1009 uninstall fail, 1010 install fail (often certificates), 1013 run fail. | D | [sam-device] |
 | Samsung's CLI page says "Only ".wgt" files can be installed on a TV" and that `tizen run -p` takes the application id. The first is dated: `.tpk` installs. | D, H | [sam-cli] |
 | `tizen install` and `tizen run` against an unknown serial print "There is no <serial> target." and exit 1. | O | |
@@ -299,7 +300,7 @@ Unknowns worth a hardware or Samsung answer:
 - glibc, ICU and .NET runtime on Tizen 6.0 to 8.0 sets; the 2023 framework (v2.1 or .NET 6).
 - Whether a `tizen90` (API9) shell runs on Tizen 10.0's .NET 8.
 - Whether .NET apps see `XF86Exit`; Smart Hub deep links and prelaunch for .NET apps.
-- Retail sdb command set, Developer mode lifetime, and the meaning of `mountinstall`.
+- Developer mode lifetime, and the meaning of `mountinstall`.
 
 ## 7. Graphics resolution on UHD panels
 

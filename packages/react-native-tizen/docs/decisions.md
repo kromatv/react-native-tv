@@ -191,6 +191,21 @@ store build must clear them with Samsung's content manager first; a release
 `rn-tizen package` says so.
 
 
+## The CLI reaches the TV itself
+
+`rn-tizen` speaks sdb's wire protocol to the TV's daemon on port 26101 (`src/sdb/`):
+the handshake, `capability:`, a `sync:` push and the TV's `0 vd_appinstall` and
+`0 execute` commands, as Tizen Studio's `sdb` sends them on the same TV
+([sdb-protocol.md](reference/sdb-protocol.md)). Tizen Studio's `sdb` is never
+run, and with no sdb server on the machine, `rn-tizen` remembers the TVs it
+reached in its state directory.
+
+Consequence: each command opens its own connection and closes it, because the
+TV takes one at a time; while Tizen Studio is connected to a TV, `rn-tizen`
+cannot reach it, and says so. Only the commands seen on hardware are sent, so
+another model year that answers differently fails with the TV's own words
+rather than a guess at a fallback.
+
 ## The package ships JavaScript, and the CLI runs on Node
 
 Node refuses to strip types from a file under `node_modules`, and everything a

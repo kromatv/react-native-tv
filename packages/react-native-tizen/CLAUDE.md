@@ -25,6 +25,7 @@ from memory.
 | Code | Reference |
 |------|-----------|
 | `shell/`, `src/package/`, `src/tizen/`, manifests, signing | `tizen-tv-platform.md` |
+| `src/sdb/`, `src/tizen/devices.ts`, `src/tizen/install-app.ts` | `sdb-protocol.md` |
 | `runtime/host/src/input/` | `tizen-input.md` |
 | `<TextInput>`: `views/TextInput*`, `fabric/TextInput*`, `input/KeyboardFocus`, `input/Ime*` | `text-input.md` |
 | video, `expo-video` | `tizen-media-playback.md` |
