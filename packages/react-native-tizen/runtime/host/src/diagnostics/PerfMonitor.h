@@ -53,7 +53,7 @@ class PerfMonitor final {
   void probeJavaScript();
 
   const Sources sources_;
-  const std::chrono::steady_clock::time_point createdAt_;
+  const std::chrono::steady_clock::time_point createdAt_{std::chrono::steady_clock::now()};
   const std::shared_ptr<JsProbe> probe_;
   Ecore_Timer *check_{nullptr};
   Ecore_Animator *animator_{nullptr};

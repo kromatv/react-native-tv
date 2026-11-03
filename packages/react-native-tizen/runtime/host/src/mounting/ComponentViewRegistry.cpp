@@ -17,6 +17,13 @@ Registry &registry() {
   return shared;
 }
 
+ComponentViewFactory factoryFor(const std::string &componentName) {
+  auto &shared = registry();
+  std::lock_guard lock(shared.mutex);
+  const auto found = shared.factories.find(componentName);
+  return found == shared.factories.end() ? ComponentViewFactory{} : found->second;
+}
+
 } // namespace
 
 void registerComponentView(std::string componentName, ComponentViewFactory factory) {
@@ -26,16 +33,8 @@ void registerComponentView(std::string componentName, ComponentViewFactory facto
 }
 
 std::unique_ptr<ComponentView> createComponentView(Evas *evas, const facebook::react::ShadowView &shadowView) {
-  auto &shared = registry();
-  std::unique_lock lock(shared.mutex);
-  auto found = shared.factories.find(shadowView.componentName);
-  if (found == shared.factories.end()) {
-    lock.unlock();
-    return std::make_unique<ComponentView>(evas, shadowView.tag);
-  }
-  auto factory = found->second;
-  lock.unlock();
-  return factory(evas, shadowView.tag);
+  if (const auto factory = factoryFor(shadowView.componentName)) return factory(evas, shadowView.tag);
+  return std::make_unique<ComponentView>(evas, shadowView.tag);
 }
 
 } // namespace rntizen

@@ -8,19 +8,21 @@
 
 #include <sys/stat.h>
 
+#include <array>
 #include <cstring>
+#include <string_view>
 
 namespace rntizen {
 namespace {
 
 std::string languageOf(const char *locale) {
-  char language[ULOC_LANG_CAPACITY] = {};
+  std::array<char, ULOC_LANG_CAPACITY> language{};
   UErrorCode status = U_ZERO_ERROR;
-  uloc_getLanguage(locale, language, sizeof(language), &status);
-  return U_SUCCESS(status) ? language : "";
+  uloc_getLanguage(locale, language.data(), static_cast<int32_t>(language.size()), &status);
+  return U_SUCCESS(status) ? language.data() : "";
 }
 
-const char *shippedLocaleFor(const std::string &language) {
+const char *shippedLocaleFor(std::string_view language) {
   const char *first = nullptr;
   for (int32_t index = 0; index < uloc_countAvailable(); index += 1) {
     const char *locale = uloc_getAvailable(index);
@@ -34,8 +36,7 @@ const char *shippedLocaleFor(const std::string &language) {
 
 void useIcuData(const std::string &resourceDir) {
   const std::string file = resourceDir + "/" U_ICUDATA_NAME ".dat";
-  struct stat info {};
-  if (stat(file.c_str(), &info) != 0) {
+  if (struct stat info {}; stat(file.c_str(), &info) != 0) {
     log(LogLevel::Error, "No ICU data at " + file + ": Intl and locale-aware strings will fail");
     return;
   }

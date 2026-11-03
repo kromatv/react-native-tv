@@ -15,7 +15,7 @@ namespace {
 struct Registry {
   std::mutex mutex;
   std::vector<facebook::react::ComponentDescriptorProvider> providers;
-  std::set<std::string> names;
+  std::set<std::string, std::less<>> names;
 };
 
 Registry &registry() {
@@ -39,7 +39,7 @@ std::shared_ptr<const facebook::react::ComponentDescriptorProviderRegistry> prov
 void registerComponentDescriptor(facebook::react::ComponentDescriptorProvider provider) {
   auto &shared = registry();
   std::lock_guard lock(shared.mutex);
-  shared.names.insert(provider.name);
+  shared.names.emplace(provider.name);
   shared.providers.push_back(std::move(provider));
 }
 

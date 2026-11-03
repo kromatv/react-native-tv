@@ -26,7 +26,7 @@ double average(double total, int count) {
 folly::dynamic mountTop(const TransactionStats &transactions) {
   std::vector<std::pair<std::string, ComponentMountCost>> costs(
       transactions.components.begin(), transactions.components.end());
-  std::sort(costs.begin(), costs.end(), [](const auto &left, const auto &right) { return left.second.ms > right.second.ms; });
+  std::ranges::sort(costs, [](const auto &left, const auto &right) { return left.second.ms > right.second.ms; });
   folly::dynamic top = folly::dynamic::array;
   for (std::size_t index = 0; index < costs.size() && index < kMountTopSize; ++index) {
     const auto &[name, cost] = costs[index];

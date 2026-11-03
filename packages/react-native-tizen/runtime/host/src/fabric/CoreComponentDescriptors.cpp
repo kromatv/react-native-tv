@@ -24,7 +24,7 @@ class ModalHostViewComponentDescriptor final
   using ConcreteComponentDescriptor::ConcreteComponentDescriptor;
 
   void adopt(facebook::react::ShadowNode &shadowNode) const override {
-    auto &layoutable = static_cast<facebook::react::YogaLayoutableShadowNode &>(shadowNode);
+    const auto &layoutable = static_cast<const facebook::react::YogaLayoutableShadowNode &>(shadowNode);
     const auto &state = static_cast<const ConcreteState &>(*shadowNode.getState()).getData();
     layoutable.setSize(state.screenSize);
     layoutable.setPositionType(YGPositionTypeAbsolute);

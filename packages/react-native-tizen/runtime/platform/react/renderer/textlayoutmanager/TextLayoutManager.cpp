@@ -6,7 +6,6 @@ namespace facebook::react {
 
 TextLayoutManager::TextLayoutManager(const std::shared_ptr<const ContextContainer> &contextContainer)
     : contextContainer_(contextContainer),
-      textMeasureCache_(kSimpleThreadSafeCacheSizeCap),
       measurer_(contextContainer->at<std::shared_ptr<const TextMeasurer>>(TextMeasurer::contextKey)) {}
 
 TextMeasurement TextLayoutManager::measure(
@@ -20,7 +19,7 @@ TextMeasurement TextLayoutManager::measure(
        .paragraphAttributes = paragraphAttributes,
        .layoutConstraints = layoutConstraints,
        .pointScaleFactor = layoutContext.pointScaleFactor},
-      [&] {
+      [this, &attributedString, &paragraphAttributes, &layoutConstraints, &layoutContext] {
         TextMeasurement result{};
         result.size = measurer_->measure(
             attributedString, paragraphAttributes, layoutConstraints.maximumSize, layoutContext.pointScaleFactor);

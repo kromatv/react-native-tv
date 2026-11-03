@@ -63,7 +63,7 @@ FrameStats::Window FrameStats::take(Clock::time_point now) {
   }
   if (gaps_.size() >= kMinGapsForPeriod) {
     auto middle = gaps_.begin() + static_cast<std::ptrdiff_t>(gaps_.size() / 2);
-    std::nth_element(gaps_.begin(), middle, gaps_.end());
+    std::ranges::nth_element(gaps_, middle);
     periodMs_ = std::clamp(*middle, kMinPeriodMs, kMaxPeriodMs);
   }
   auto finished = std::exchange(window_, Window{});

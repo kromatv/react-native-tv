@@ -3,6 +3,8 @@
 #include "../logging/Log.h"
 #include "../threading/MainThread.h"
 
+#include <format>
+#include <memory>
 #include <utility>
 
 namespace rntizen {
@@ -12,7 +14,7 @@ namespace {
 using WeakLoop = std::weak_ptr<AnimationFrameLoop>;
 
 void deleteAnimator(Ecore_Animator *animator) {
-  delete static_cast<WeakLoop *>(ecore_animator_del(animator));
+  const std::unique_ptr<WeakLoop> loop(static_cast<WeakLoop *>(ecore_animator_del(animator)));
 }
 
 } // namespace
@@ -51,7 +53,7 @@ void AnimationFrameLoop::stop() {
 void AnimationFrameLoop::startOnMainThread(std::function<void()> onFrame) {
   onFrame_ = std::move(onFrame);
   if (animator_ != nullptr) return;
-  animator_ = ecore_animator_add(tick, new WeakLoop(weak_from_this()));
+  animator_ = ecore_animator_add(tick, std::make_unique<WeakLoop>(weak_from_this()).release());
   frames_ = 0;
   startedAt_ = std::chrono::steady_clock::now();
 }
@@ -61,9 +63,7 @@ void AnimationFrameLoop::stopOnMainThread() {
     deleteAnimator(std::exchange(animator_, nullptr));
     const auto elapsed =
         std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - startedAt_).count();
-    log(LogLevel::Debug,
-        "Native animated: " + std::to_string(frames_) + " frames in " + std::to_string(elapsed) +
-            " ms on the main loop");
+    log(LogLevel::Debug, std::format("Native animated: {} frames in {} ms on the main loop", frames_, elapsed));
   }
   if (!ticking_) onFrame_ = nullptr;
 }

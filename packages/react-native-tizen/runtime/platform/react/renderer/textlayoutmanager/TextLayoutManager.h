@@ -31,11 +31,9 @@ class TextLayoutManager {
       const TextLayoutContext &layoutContext,
       const LayoutConstraints &layoutConstraints) const;
 
- protected:
-  std::shared_ptr<const ContextContainer> contextContainer_;
-  TextMeasureCache textMeasureCache_;
-
  private:
+  std::shared_ptr<const ContextContainer> contextContainer_;
+  TextMeasureCache textMeasureCache_{kSimpleThreadSafeCacheSizeCap};
   std::shared_ptr<const TextMeasurer> measurer_;
 };
 

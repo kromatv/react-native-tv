@@ -3,6 +3,7 @@
 #include <react/renderer/telemetry/TransactionTelemetry.h>
 
 #include <chrono>
+#include <functional>
 #include <map>
 #include <string>
 
@@ -13,6 +14,9 @@ struct ComponentMountCost {
   int mutations{0};
   double ms{0};
 };
+
+/// What each kind of component cost, by component name.
+using ComponentMountCosts = std::map<std::string, ComponentMountCost, std::less<>>;
 
 /// What the Fabric transactions mounted in one window cost, in milliseconds.
 /// Commit and layout run on the JavaScript thread; diff and mount on the main
@@ -26,7 +30,7 @@ struct TransactionStats {
   double mountTotal{0};
   double mountMax{0};
   double latencyMax{0};
-  std::map<std::string, ComponentMountCost> components;
+  ComponentMountCosts components;
 };
 
 /// Whether `recordTransaction` keeps anything. Off until a development build's
@@ -42,7 +46,7 @@ void recordTransaction(
     int mutations,
     std::chrono::steady_clock::time_point mountStart,
     std::chrono::steady_clock::time_point mountEnd,
-    const std::map<std::string, ComponentMountCost> &components);
+    const ComponentMountCosts &components);
 
 /// What was recorded since the last call, which starts a new window.
 TransactionStats takeTransactionStats();

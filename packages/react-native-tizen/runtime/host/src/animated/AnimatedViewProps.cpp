@@ -15,7 +15,7 @@ void applyAnimatedProps(
   using namespace facebook::react;
   auto *view = mountingManager.findView(tag);
   const auto handle = mountingManager.componentHandle(tag);
-  if (view == nullptr || !view->props() || !handle) return;
+  if (view == nullptr || !view->props() || !handle.has_value()) return;
   const auto *descriptor = scheduler.findComponentDescriptorByHandle_DO_NOT_USE_THIS_IS_BROKEN(*handle);
   if (descriptor == nullptr) return;
   view->updateProps(

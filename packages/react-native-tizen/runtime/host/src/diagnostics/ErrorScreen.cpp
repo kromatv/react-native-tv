@@ -1,6 +1,6 @@
 #include "ErrorScreen.h"
 
-#include <cstdlib>
+#include "../Malloced.h"
 
 namespace rntizen {
 
@@ -15,11 +15,8 @@ constexpr const char *kStyle =
     " hint='+ font_size=24 color=#ffd9d9'";
 
 std::string escaped(const std::string &text) {
-  char *markup = evas_textblock_text_utf8_to_markup(nullptr, text.c_str());
-  if (markup == nullptr) return {};
-  std::string result(markup);
-  std::free(markup);
-  return result;
+  const Malloced<char> markup(evas_textblock_text_utf8_to_markup(nullptr, text.c_str()));
+  return markup == nullptr ? std::string() : std::string(markup.get());
 }
 
 std::string markupFor(const ErrorReport &report) {

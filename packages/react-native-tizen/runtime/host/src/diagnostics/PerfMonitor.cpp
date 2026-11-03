@@ -13,6 +13,7 @@
 #include <unistd.h>
 
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -39,11 +40,11 @@ double millis(Duration duration) {
 double processCpuSeconds() {
   std::FILE *file = std::fopen("/proc/self/stat", "r");
   if (file == nullptr) return 0;
-  char buffer[1024];
-  const std::size_t length = std::fread(buffer, 1, sizeof buffer - 1, file);
+  std::array<char, 1024> buffer{};
+  const std::size_t length = std::fread(buffer.data(), 1, buffer.size() - 1, file);
   std::fclose(file);
   buffer[length] = '\0';
-  const char *afterName = std::strrchr(buffer, ')');
+  const char *afterName = std::strrchr(buffer.data(), ')');
   if (afterName == nullptr) return 0;
   unsigned long user = 0;
   unsigned long system = 0;
@@ -69,7 +70,7 @@ struct PerfMonitor::JsProbe {
 };
 
 PerfMonitor::PerfMonitor(Sources sources)
-    : sources_(std::move(sources)), createdAt_(Clock::now()), probe_(std::make_shared<JsProbe>()) {
+    : sources_(std::move(sources)), probe_(std::make_shared<JsProbe>()) {
   check_ = ecore_timer_add(kCheckIntervalSeconds, onCheck, this);
   onCheck(this);
 }

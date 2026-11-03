@@ -32,14 +32,13 @@ class TextInputShadowNode final : public facebook::react::ConcreteViewShadowNode
 
   void setTextLayoutManager(std::shared_ptr<const facebook::react::TextLayoutManager> textLayoutManager);
 
- protected:
+ private:
   facebook::react::Size measureContent(
       const facebook::react::LayoutContext &layoutContext,
       const facebook::react::LayoutConstraints &layoutConstraints) const override;
 
   void layout(facebook::react::LayoutContext layoutContext) override;
 
- private:
   void updateStateIfNeeded(const facebook::react::LayoutContext &layoutContext);
   facebook::react::AttributedString treeAttributedString(const facebook::react::LayoutContext &layoutContext) const;
   facebook::react::AttributedString mostRecentAttributedString(const facebook::react::LayoutContext &layoutContext) const;

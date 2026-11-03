@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <bit>
 #include <cstring>
+#include <memory>
 #include <utility>
 
 namespace rntizen {
@@ -61,16 +62,17 @@ std::optional<ScreenCapture> readSnapshot(Evas_Object *snapshot) {
 void onRenderPost(void *data, Evas *evas, void *) {
   auto *job = static_cast<CaptureJob *>(data);
   auto capture = readSnapshot(job->snapshot);
-  if (!capture && --job->framesLeft > 0) {
+  if (!capture.has_value()) --job->framesLeft;
+  if (!capture.has_value() && job->framesLeft > 0) {
     evas_object_del(job->snapshot);
     job->snapshot = addSnapshot(evas, job->width, job->height);
     return;
   }
   evas_event_callback_del_full(evas, EVAS_CALLBACK_RENDER_POST, onRenderPost, job);
   runOnMainThread([job, capture = std::move(capture)]() mutable {
-    evas_object_del(job->snapshot);
-    job->done(std::move(capture));
-    delete job;
+    const std::unique_ptr<CaptureJob> finished(job);
+    evas_object_del(finished->snapshot);
+    finished->done(std::move(capture));
   });
 }
 
@@ -86,9 +88,9 @@ void captureHostWindow(CaptureDone done) {
   int width = 0;
   int height = 0;
   evas_object_geometry_get(window, nullptr, nullptr, &width, &height);
-  auto *job = new CaptureJob{
-      .snapshot = addSnapshot(evas, width, height), .width = width, .height = height, .done = std::move(done)};
-  evas_event_callback_add(evas, EVAS_CALLBACK_RENDER_POST, onRenderPost, job);
+  auto job = std::make_unique<CaptureJob>(CaptureJob{
+      .snapshot = addSnapshot(evas, width, height), .width = width, .height = height, .done = std::move(done)});
+  evas_event_callback_add(evas, EVAS_CALLBACK_RENDER_POST, onRenderPost, job.release());
 }
 
 } // namespace rntizen

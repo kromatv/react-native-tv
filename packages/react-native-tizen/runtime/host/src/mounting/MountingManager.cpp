@@ -6,6 +6,7 @@
 #include "ComponentViewRegistry.h"
 
 #include <chrono>
+#include <format>
 #include <map>
 #include <string>
 
@@ -38,7 +39,7 @@ std::optional<facebook::react::ComponentHandle> MountingManager::componentHandle
 void MountingManager::dispatchCommand(facebook::react::Tag tag, const std::string &name, const folly::dynamic &args) {
   auto *view = findView(tag);
   if (view == nullptr) {
-    log(LogLevel::Debug, "Dropping " + name + " for view " + std::to_string(tag) + ", which is not mounted");
+    log(LogLevel::Debug, std::format("Dropping {} for view {}, which is not mounted", name, tag));
     return;
   }
   view->handleCommand(name, args);
@@ -66,7 +67,7 @@ void MountingManager::performTransaction(const facebook::react::MountingCoordina
     }
     return;
   }
-  std::map<std::string, ComponentMountCost> components;
+  ComponentMountCosts components;
   for (const auto &mutation : transaction->getMutations()) {
     const auto before = std::chrono::steady_clock::now();
     apply(mutation);
@@ -116,9 +117,9 @@ void MountingManager::apply(const facebook::react::ShadowViewMutation &mutation)
       auto *parent = findView(mutation.parentTag);
       auto *child = findView(mutation.newChildShadowView.tag);
       if (parent == nullptr || child == nullptr) {
+        const auto *missing = parent == nullptr ? "no parent" : "no child";
         log(LogLevel::Warning,
-            "Cannot insert view " + std::to_string(mutation.newChildShadowView.tag) + " into " +
-                std::to_string(mutation.parentTag) + ": " + (parent == nullptr ? "no parent" : "no child"));
+            std::format("Cannot insert view {} into {}: {}", mutation.newChildShadowView.tag, mutation.parentTag, missing));
         return;
       }
       if (child->layoutMetrics() != mutation.newChildShadowView.layoutMetrics) {

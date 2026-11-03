@@ -24,7 +24,7 @@ Recorder &recorder() {
   return shared;
 }
 
-std::atomic<bool> enabled{false};
+std::atomic enabled{false};
 
 double millisBetween(TelemetryTimePoint start, TelemetryTimePoint end) {
   if (start == kTelemetryUndefinedTimePoint || end == kTelemetryUndefinedTimePoint || end < start) return 0;
@@ -46,7 +46,7 @@ void recordTransaction(
     int mutations,
     std::chrono::steady_clock::time_point mountStart,
     std::chrono::steady_clock::time_point mountEnd,
-    const std::map<std::string, ComponentMountCost> &components) {
+    const ComponentMountCosts &components) {
   if (!transactionStatsEnabled()) return;
   const double commit = millisBetween(telemetry.getCommitStartTime(), telemetry.getCommitEndTime());
   const double layout = millisBetween(telemetry.getLayoutStartTime(), telemetry.getLayoutEndTime());
