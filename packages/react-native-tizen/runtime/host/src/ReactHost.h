@@ -60,6 +60,8 @@ class ReactHost final {
   VoiceController &voice();
 
  private:
+  void start();
+  void stop();
   void createWindow();
   void createInstance();
   void loadBundle();

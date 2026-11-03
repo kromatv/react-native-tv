@@ -11,6 +11,7 @@
 #include <app.h>
 
 #include <chrono>
+#include <utility>
 
 namespace rntizen {
 
@@ -21,6 +22,15 @@ ReactHost::ReactHost(const std::string &resourceDir)
       launchUrl_(std::make_shared<LaunchUrl>()),
       lifetime_(std::make_shared<ReactHost *>(this)),
       weakHost_(lifetime_) {
+  try {
+    start();
+  } catch (...) {
+    stop();
+    throw;
+  }
+}
+
+void ReactHost::start() {
   openMainThreadSync();
   controlLink_ = openDevelopmentLinks(config_);
   installCrashReporter();
@@ -53,29 +63,34 @@ ReactHost::ReactHost(const std::string &resourceDir)
 
 ReactHost::~ReactHost() {
   const auto started = std::chrono::steady_clock::now();
-  lifetime_.reset();
-  perfMonitor_.reset();
-  remoteInput_.reset();
-  closeMainThreadSync();
-  instanceGate_->close();
-  stopReactNative();
-  keyboardFocus_.reset();
-  textMeasurer_.reset();
-  alertDialog_.reset();
-  errorScreen_.reset();
-  if (window_ != nullptr) evas_object_del(window_);
+  stop();
   const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - started);
   log(LogLevel::Debug, "React Native stopped in " + std::to_string(elapsed.count()) + " ms");
   setLogSink(nullptr);
 }
 
+void ReactHost::stop() {
+  lifetime_.reset();
+  perfMonitor_.reset();
+  remoteInput_.reset();
+  closeMainThreadSync();
+  if (instanceGate_ != nullptr) instanceGate_->close();
+  stopReactNative();
+  keyboardFocus_.reset();
+  textMeasurer_.reset();
+  alertDialog_.reset();
+  errorScreen_.reset();
+  if (window_ != nullptr) evas_object_del(std::exchange(window_, nullptr));
+}
+
 void ReactHost::stopReactNative() {
+  if (jsThread_ == nullptr) return;
   jsThread_->runWhileParked([this] { presenter_.reset(); });
   jsThread_->runOnQueueSync([this] {
     modules_.reset();
     instance_.reset();
   });
-  timerManager_->quit();
+  if (timerManager_ != nullptr) timerManager_->quit();
   jsThread_->quitSynchronous();
 }
 
