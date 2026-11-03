@@ -15,16 +15,20 @@ Verified on a Samsung TV running Tizen 9.0 (armv7), built from macOS.
 ### 1. Install the tools
 
 - [Tizen Studio](https://developer.tizen.org/development/tizen-studio/download)
-  with, from its Package Manager, `TIZEN-9.0-NativeAppDevelopment-CLI` and the
-  Samsung Certificate Extension.
+  with, from its Package Manager, `TIZEN-9.0-NativeAppDevelopment-CLI` (the
+  rootstrap and GCC runtime the native build links against) and the Samsung
+  Certificate Extension. `rn-tizen` never runs Tizen Studio's `sdb` or `tizen`
+  tools: it reaches the TV and signs the package itself.
 - LLVM, CMake, Ninja and .NET:
 
   ```sh
   brew install llvm lld cmake ninja dotnet ccache
   ```
 
-- A Samsung certificate for your TV: Tizen Studio, Tools, Certificate Manager,
-  a Samsung profile with your TV's DUID. Make it the active profile.
+- A Samsung certificate for your TV, once: in Tizen Studio, Tools, Certificate
+  Manager, create a Samsung profile with your TV's DUID and make it the active
+  profile. Samsung issues both its certificates, and a retail TV takes no
+  other. `rn-tizen` reads the profile from there.
 - [Node.js](https://nodejs.org) 22.13 or newer, which runs the CLI and Expo.
 
 ### 2. Add the package

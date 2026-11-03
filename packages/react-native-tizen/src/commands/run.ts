@@ -60,7 +60,10 @@ export const runCommand: Command = {
       ? await listenForLogs(log.port, printer, { peer })
       : null;
     try {
-      const tpk = await packageSteps(reporter, { ...build, profile: flags.profile });
+      const tpk = await packageSteps(reporter, {
+        ...build,
+        signing: { profile: flags.profile, author: flags.author, distributor: flags.distributor },
+      });
       await reporter.step(
         'Install',
         (task) => installApp(task, device, tpk, app.config.packageId),

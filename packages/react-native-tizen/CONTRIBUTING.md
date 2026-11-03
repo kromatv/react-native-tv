@@ -12,8 +12,10 @@ the only host verified so far.
 - [Bun](https://bun.sh) 1.4 or newer. CI runs the version in `.bun-version`.
 - [Tizen Studio](https://developer.tizen.org/development/tizen-studio/download).
   From its Package Manager, install `TIZEN-9.0-NativeAppDevelopment-CLI`, which
-  carries the Tizen 9.0 rootstrap the runtime links against, and the Samsung
-  Certificate Extension. Set `TIZEN_SDK_DIR` if it is not in `~/tizen-studio`.
+  carries the Tizen 9.0 rootstrap and the GCC runtime the runtime links against,
+  and the Samsung Certificate Extension. Set `TIZEN_SDK_DIR` if it is not in
+  `~/tizen-studio`. Its `sdb` and `tizen` tools are not used: `rn-tizen` speaks
+  to the TV and signs packages itself.
 - Homebrew's LLVM and lld, which cross-compile the runtime, plus the build tools:
 
   ```sh
@@ -23,8 +25,10 @@ the only host verified so far.
   CMake must be 3.24 or newer and the .NET SDK 6.0 or newer. ccache is optional.
   Set `TIZEN_LLVM_DIR` to use a clang and lld that are not Homebrew's.
 - Node.js, which runs Expo's CLI when the app is bundled.
-- A Samsung certificate profile: in Tizen Studio, Tools, Certificate Manager,
-  create a Samsung profile with your TV's DUID and make it the active profile.
+- A Samsung certificate profile, once: in Tizen Studio, Tools, Certificate
+  Manager, create a Samsung profile with your TV's DUID and make it the active
+  profile. Samsung issues its author and distributor certificates; `rn-tizen`
+  reads them from that profile.
 - For the simulator: [Lima](https://lima-vm.io) 2.0 or newer (`brew install
   lima`) and about 8 GB of free disk.
 

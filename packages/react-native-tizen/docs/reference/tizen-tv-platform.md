@@ -227,7 +227,7 @@ The checklists are written for web apps; none says it excludes .NET (I).
 | Tizen Studio error codes: 1009 uninstall fail, 1010 install fail (often certificates), 1013 run fail. | D | [sam-device] |
 | Samsung's CLI page says "Only ".wgt" files can be installed on a TV" and that `tizen run -p` takes the application id. The first is dated: `.tpk` installs. | D, H | [sam-cli] |
 | `tizen install` and `tizen run` against an unknown serial print "There is no <serial> target." and exit 1. | O | |
-| `tizen package` exits 0 when signing did not happen; success is read from its output. | O | `src/tizen/tizen-cli.ts` |
+| `tizen package` exits 0 when signing did not happen; success is read from its output. `rn-tizen` no longer runs it: see [tizen-package-signing.md](tizen-package-signing.md). | O | |
 | A successful `tizen run` means the launch request was sent, not that the app runs (the native-only TPK "launched"). | H | |
 | With .NET SDK 10.0.107 and `Tizen.NET.Sdk/1.2.1`, a `net6.0-tizen9.0` project fails with `NETSDK1139: The target platform identifier tizen was not recognized` until the Tizen .NET workload is installed; `tizen90` builds with the SDK alone. | O | 2026-11-02, generated shell in a temp directory |
 | The generated shell (`tizen90`, Tizen.NET 12.0.0.18510, `<profile name="tv" />`, `api-version="9.0"`) builds to `bin/Release/tizen90/<package>-<version>.tpk`, signed with Tizen.NET's default certificate, and the manifest inside keeps both values. | O | same |

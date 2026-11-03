@@ -1,7 +1,7 @@
 import { basename } from 'node:path';
-import type { Task } from '../task.ts';
 import { DEVELOPER_MODE_HINT, listDevices } from '../tizen/devices.ts';
-import { CERTIFICATE_HINT, listSecurityProfiles } from '../tizen/tizen-cli.ts';
+import { FixableError } from '../errors.ts';
+import { resolveSigning } from '../tizen/signing-identity.ts';
 import { locateGccToolchain, locateRootstrap, type TizenSdk } from '../tizen/tizen-sdk.ts';
 import { rootstrapName, type TizenTarget } from '../tizen/target.ts';
 import { checking, failed, passed, type CheckResult } from './check-result.ts';
@@ -23,14 +23,17 @@ export function checkRootstrap(sdk: TizenSdk, target: TizenTarget): Promise<Chec
   });
 }
 
-/** An active security profile, which signs every package. */
-export function checkSecurityProfile(task: Task, sdk: TizenSdk): Promise<CheckResult> {
-  return checking('Security profile', async () => {
-    const profiles = await listSecurityProfiles(task, sdk);
-    const active = profiles.find((profile) => profile.active);
-    if (active !== undefined) return passed('Security profile', `${active.name} (active)`);
-    const detail = profiles.length === 0 ? 'none' : `${profiles.length} profiles, none active`;
-    return failed('Security profile', detail, CERTIFICATE_HINT);
+/** The certificates of the active signing profile open with their passwords and have not expired. */
+export function checkCertificates(): Promise<CheckResult> {
+  return checking('Certificates', async () => {
+    try {
+      const { name, distributor } = await resolveSigning({});
+      const until = new Date(distributor.validTo).toISOString().slice(0, 10);
+      return passed('Certificates', `${name} (active), distributor until ${until}`);
+    } catch (error) {
+      if (!(error instanceof FixableError)) throw error;
+      return failed('Certificates', error.message, error.hint);
+    }
   });
 }
 

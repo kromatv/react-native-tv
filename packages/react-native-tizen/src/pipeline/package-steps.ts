@@ -11,7 +11,8 @@ import { featureNotes } from '../package/feature-notes.ts';
 import type { LogEndpoint } from '../package/runtime-config.ts';
 import { writeTizenProject } from '../package/tizen-project.ts';
 import type { PlatformProfile } from '../tizen/platform-profiles.ts';
-import { signingProfile, signPackage } from '../tizen/tizen-cli.ts';
+import { signPackage } from '../signing/sign-package.ts';
+import { resolveSigning, type SigningRequest } from '../tizen/signing-identity.ts';
 import type { TizenSdk } from '../tizen/tizen-sdk.ts';
 import type { TizenTarget } from '../tizen/target.ts';
 import { runtimeSteps } from './runtime-steps.ts';
@@ -22,7 +23,7 @@ interface PackageRequest {
   readonly target: TizenTarget;
   readonly shell: PlatformProfile;
   readonly log: LogEndpoint | null;
-  readonly profile: string | undefined;
+  readonly signing: SigningRequest;
 }
 
 /** Where the bundle of an app is written before it is packaged. */
@@ -56,6 +57,10 @@ function icuDataStep(reporter: Reporter, app: AppProject): Promise<string> {
   );
 }
 
+function until(date: string): string {
+  return new Date(date).toISOString().slice(0, 10);
+}
+
 /**
  * Builds a signed `.tpk` from scratch or incrementally: the native runtime, the
  * bytecode bundle, the generated `tizen/` project, then .NET and signing.
@@ -64,10 +69,14 @@ function icuDataStep(reporter: Reporter, app: AppProject): Promise<string> {
 export async function packageSteps(reporter: Reporter, request: PackageRequest): Promise<string> {
   const { sdk, app, target, shell } = request;
   claimTizenDir(app.tizenDir);
-  const profile = await reporter.step(
-    'Security profile',
-    (task) => signingProfile(task, sdk, request.profile ?? app.config.profile),
-    (name) => name,
+  const signing = await reporter.step(
+    'Certificates',
+    () =>
+      resolveSigning({
+        ...request.signing,
+        profile: request.signing.profile ?? app.config.profile,
+      }),
+    (resolved) => `${resolved.name}, distributor until ${until(resolved.distributor.validTo)}`,
   );
   for (const note of featureNotes(app.config.features, request.log === null)) reporter.note(note);
   const runtimeLibrary = await runtimeSteps(reporter, sdk, app, target);
@@ -86,8 +95,8 @@ export async function packageSteps(reporter: Reporter, request: PackageRequest):
   );
   await reporter.step(
     'Signing',
-    (task) => signPackage(task, sdk, tpk, profile),
-    () => profile,
+    () => signPackage(tpk, signing.identity),
+    () => signing.name,
   );
   return tpk;
 }

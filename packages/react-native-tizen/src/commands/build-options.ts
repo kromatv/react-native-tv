@@ -23,7 +23,19 @@ export const BUILD_OPTIONS = {
     type: 'string',
     placeholder: '<name>',
     description:
-      'The security profile to sign with (default: expo.tizen.profile, else the active one)',
+      'The Tizen Studio signing profile (default: expo.tizen.profile, else the active one)',
+  },
+  author: {
+    type: 'string',
+    placeholder: '<file.p12>',
+    description:
+      "The author certificate, instead of the profile's (password in RN_TIZEN_AUTHOR_PASSWORD)",
+  },
+  distributor: {
+    type: 'string',
+    placeholder: '<file.p12>',
+    description:
+      "The distributor certificate, instead of the profile's (password in RN_TIZEN_DISTRIBUTOR_PASSWORD)",
   },
   ...LOG_OPTIONS,
 } as const;
@@ -33,6 +45,8 @@ interface BuildFlags {
   readonly arch?: string;
   readonly platform?: string;
   readonly profile?: string;
+  readonly author?: string;
+  readonly distributor?: string;
   readonly release?: boolean;
   readonly dev?: boolean;
   readonly 'log-host'?: string;

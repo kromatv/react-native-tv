@@ -13,11 +13,13 @@ rn-tizen run --device 192.168.1.50      # build, install, launch, print logs
 ```
 
 Every command prints one line per step. `--verbose` (`-v`) also prints what the
-underlying tools print (CMake, Ninja, Metro, dotnet, the Tizen CLI). When a
+underlying tools print (CMake, Ninja, Metro, dotnet). When a
 tool fails, the last lines it printed are shown with the error.
 
-`rn-tizen` talks to the TV itself, over sdb's protocol on port 26101: Tizen
-Studio's `sdb` is never run. A TV takes one sdb connection at a time, so while
+`rn-tizen` talks to the TV itself, over sdb's protocol on port 26101, and signs
+packages itself: Tizen Studio's `sdb` and `tizen` tools are never run. Tizen
+Studio is still where the native build's rootstrap and GCC runtime come from,
+and where Samsung's certificates are created, once. A TV takes one sdb connection at a time, so while
 Tizen Studio's `sdb` or Device Manager is connected to it, `rn-tizen` cannot
 reach it: `sdb disconnect <tv ip>` frees it.
 
@@ -51,7 +53,7 @@ Expo's own config loader). Only `package` is required.
 | `icon` | `expo.icon`, else a default | A PNG, relative to the app. |
 | `privileges` | `["internet"]` | Tizen privileges. A short name expands to `http://tizen.org/privilege/<name>`; a full URI is kept as written. |
 | `platform` | `9.0` | The oldest Tizen version the package runs on. |
-| `profile` | the active one | The Tizen Studio security profile that signs the package. |
+| `profile` | the active one | The Tizen Studio signing profile whose certificates sign the package. |
 | `locales` | `["en"]` | The locales `Intl` formats in, as BCP 47 tags (`fr`, `pt-BR`). Each adds its ICU data (by language) to the package and FormatJS's data to the bundle; any other locale falls back to the device's, then to the first listed. |
 | `voice` | off | `true`, or `{ "searchUrl": "myapp://search?q={query}" }`: Samsung's voice assistant. See [tv-features.md](tv-features.md#voice). |
 | `preview` | off | `{ "endpoint": "<http or https URL>" }` for a public Smart Hub preview, `{ "refreshMinutes": 30 }` (10 or more) for a personal one the app publishes. See [tv-features.md](tv-features.md#smart-hub-preview). |
@@ -78,7 +80,9 @@ config plugin option `supportsBackgroundPlayback` is read too
 
 `RN_TIZEN_CACHE_DIR` moves the cache; `XDG_CACHE_HOME` is honoured too, and
 `XDG_STATE_HOME` moves the tokens and the TV list.
-`TIZEN_SDK_DIR` points at Tizen Studio when it is not in `~/tizen-studio`, and
+`TIZEN_SDK_DIR` points at Tizen Studio when it is not in `~/tizen-studio`,
+`TIZEN_SDK_DATA_DIR` at its data directory (the one holding `profile/profiles.xml`)
+when its `sdk.info` does not name it, and
 `TIZEN_LLVM_DIR` at a clang and lld that are not Homebrew's.
 
 ## Targets
@@ -101,7 +105,8 @@ supported ones.
 Checks everything a build, a signature and an install need, and prints the
 exact fix for each problem: Tizen Studio, its GCC runtime and rootstrap for the
 target, Homebrew's LLVM (clang and lld), CMake 3.24 or newer, Ninja, the .NET
-SDK, Node.js, an active security profile, the TVs reached before (each one
+SDK, Node.js, the certificates of the active signing profile (opened with their
+passwords, not expired), the TVs reached before (each one
 probed), ccache, and the app's config when run in an app. Exits 1 when a check
 fails; a warning (no TV answers, no ccache) does not fail it.
 
@@ -166,16 +171,27 @@ before (it leaves a `.rn-tizen-bundle` file there). Anything else, such as
 ### `rn-tizen package`
 
 Builds a signed `.tpk` from scratch or incrementally: the native runtime, the
-bundle, the `tizen/` project, the .NET build, then signing with the security
-profile. It checks the profile first, so a machine without one fails in
-seconds rather than after a build.
+bundle, the `tizen/` project, the .NET build, then signing. It opens the
+certificates first, so a missing profile, a wrong password or an expired
+certificate fails in seconds rather than after a build.
+
+The certificates come from Tizen Studio's `profiles.xml`
+(`~/tizen-studio-data/profile/profiles.xml`, or the data directory
+`TIZEN_SDK_DATA_DIR` names): the profile `--profile` or `expo.tizen.profile`
+names, else the active one. Their passwords come from the profile; on macOS,
+Tizen Studio keeps them in the login keychain, which `rn-tizen` reads.
+`--author` and `--distributor` replace either half with a `.p12` file.
+Samsung issues both halves for a TV, once, through Tizen Studio's Certificate
+Manager: a retail TV refuses a self-signed author certificate.
 
 | Option | |
 |---|---|
 | `--device, -d <ip>` | The TV to build for; its CPU and Tizen version become the defaults |
 | `--arch <arch>` | Override the CPU |
 | `--platform <version>` | Override the Tizen version |
-| `--profile <name>` | Sign with this security profile |
+| `--profile <name>` | Sign with this signing profile |
+| `--author <file.p12>` | Sign with this author certificate instead of the profile's; its password in `RN_TIZEN_AUTHOR_PASSWORD` |
+| `--distributor <file.p12>` | Sign with this distributor certificate instead of the profile's; its password in `RN_TIZEN_DISTRIBUTOR_PASSWORD` |
 | `--dev` | Build for development: the app streams its logs to this computer |
 | `--log-host <ip>` | With `--dev`, where the app streams its logs (default: this computer's LAN address, on the TV's subnet when `--device` is given) |
 | `--log-port <port>` | With `--dev`, the port it streams to (default `8099`) |

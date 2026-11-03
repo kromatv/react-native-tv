@@ -206,6 +206,22 @@ cannot reach it, and says so. Only the commands seen on hardware are sent, so
 another model year that answers differently fails with the TV's own words
 rather than a guess at a fallback.
 
+## Packages are signed in TypeScript, with Samsung's certificates
+
+`rn-tizen` signs the `.tpk` itself (`src/signing/`): the author signature and the
+distributor signature `tizen package -t tpk` writes, byte for byte, from the
+certificates of a Tizen Studio profile or of `.p12` files given on the command
+line. PKCS#12 is read in TypeScript, RC2 included, because Node's OpenSSL 3 has
+none and Samsung encrypts its certificates with it.
+
+Consequence: the one part of Tizen Studio a TV still needs is Samsung's
+Certificate Manager, used once, since a retail TV takes an author and a
+distributor only from Samsung's chains: a self-signed author is refused on
+hardware ([tizen-package-signing.md](reference/tizen-package-signing.md)
+section 5). Where Tizen Studio and Tizen's validator disagree, a file named like
+a signature below the package root, the package follows the validator: the TV
+refused Tizen Studio's package and installed this one.
+
 ## The package ships JavaScript, and the CLI runs on Node
 
 Node refuses to strip types from a file under `node_modules`, and everything a

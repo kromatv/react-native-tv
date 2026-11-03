@@ -7,8 +7,8 @@ import { failed, passed, type CheckResult, type CheckStatus } from '../doctor/ch
 import {
   checkDevices,
   checkGcc,
+  checkCertificates,
   checkRootstrap,
-  checkSecurityProfile,
 } from '../doctor/tizen-checks.ts';
 import {
   checkCcache,
@@ -19,7 +19,6 @@ import {
   checkNode,
 } from '../doctor/toolchain-checks.ts';
 import { FixableError } from '../errors.ts';
-import type { Task } from '../task.ts';
 import { locateTizenSdk, type TizenSdk } from '../tizen/tizen-sdk.ts';
 import type { TizenTarget } from '../tizen/target.ts';
 
@@ -33,14 +32,14 @@ const MARKS: Record<CheckStatus, readonly [string, 'green' | 'yellow' | 'red' | 
   skip: ['-', 'gray'],
 };
 
-function sdkChecks(task: Task, sdk: TizenSdk | null, target: TizenTarget): Promise<CheckResult>[] {
-  const titles = ['GCC runtime', 'Rootstrap', 'Security profile'];
+function sdkChecks(sdk: TizenSdk | null, target: TizenTarget): Promise<CheckResult>[] {
+  const titles = ['GCC runtime', 'Rootstrap'];
   if (sdk === null) {
     return titles.map((title) =>
       Promise.resolve({ title, status: 'skip', detail: 'needs Tizen Studio' } as const),
     );
   }
-  return [checkGcc(sdk, target), checkRootstrap(sdk, target), checkSecurityProfile(task, sdk)];
+  return [checkGcc(sdk, target), checkRootstrap(sdk, target)];
 }
 
 function locate(): { sdk: TizenSdk | null; result: CheckResult } {
@@ -79,7 +78,8 @@ export const doctorCommand: Command = {
     const studio = locate();
     const results = await Promise.all([
       Promise.resolve(studio.result),
-      ...sdkChecks(task, studio.sdk, target),
+      ...sdkChecks(studio.sdk, target),
+      checkCertificates(),
       checkDevices(),
       checkLlvm(task),
       checkCMake(task),

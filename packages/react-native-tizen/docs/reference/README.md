@@ -14,6 +14,7 @@ and ends with what the facts mean for this package.
 | [react-native-platform-contract.md](react-native-platform-contract.md) | the host: startup, Fabric mounting, events, TurboModules, TV events, the native animated driver |
 | [expo-modules-contract.md](expo-modules-contract.md) | `globalThis.expo`, Expo native modules and views, `expo` startup |
 | [intl.md](intl.md) | `Intl`, `localeCompare`, case mapping: Hermes' Intl and its gaps, the ICU compiled in and its data, FormatJS, what Tizen ships |
+| [tizen-package-signing.md](tizen-package-signing.md) | `src/signing/`, `src/tizen/signing-identity.ts`, `profiles-file.ts`: which files a signature covers, its XML, the certificates a TV takes, PKCS#12 and `profiles.xml` |
 | [sdb-protocol.md](sdb-protocol.md) | `src/sdb/`, `src/tizen/devices.ts`, `install-app.ts`: sdb's packets and streams, the services a TV answers, what an install and a launch send |
 | [tizen-network.md](tizen-network.md) | local network discovery: mDNS one-shot queries, Tizen's DNS-SD API, what the simulator's network allows |
 | [tizen-smart-hub-preview.md](tizen-smart-hub-preview.md) | the tiles above the app on Samsung's home bar: preview JSON, the service app, `PAYLOAD` deep links, `expo.tizen.preview` |

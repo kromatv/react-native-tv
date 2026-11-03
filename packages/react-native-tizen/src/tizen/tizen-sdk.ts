@@ -4,10 +4,9 @@ import { join } from 'node:path';
 import { FixableError } from '../errors.ts';
 import { rootstrapName, type TizenArch, type TizenTarget } from './target.ts';
 
-/** The pieces of a Tizen Studio installation this tool drives. */
+/** The pieces of a Tizen Studio installation a build reads: its rootstrap and GCC runtime. */
 export interface TizenSdk {
   readonly root: string;
-  readonly tizenCli: string;
   readonly packageManager: string;
 }
 
@@ -32,7 +31,6 @@ export function locateTizenSdk(env: NodeJS.ProcessEnv = process.env): TizenSdk {
   }
   return {
     root,
-    tizenCli: join(root, 'tools', 'ide', 'bin', 'tizen'),
     packageManager: join(root, 'package-manager', 'package-manager-cli.bin'),
   };
 }
