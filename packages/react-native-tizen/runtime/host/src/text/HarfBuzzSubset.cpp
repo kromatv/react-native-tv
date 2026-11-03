@@ -4,6 +4,9 @@
 
 #include <dlfcn.h>
 
+#include <bit>
+#include <optional>
+
 namespace rntizen {
 
 namespace {
@@ -15,11 +18,11 @@ void *openLibrary(const char *name) {
 
 template <typename Function>
 bool bind(void *library, const char *name, Function &function) {
-  function = reinterpret_cast<Function>(dlsym(library, name));
+  function = std::bit_cast<Function>(dlsym(library, name));
   return function != nullptr;
 }
 
-bool resolve(HarfBuzzSubset &api) {
+bool bindAll(HarfBuzzSubset &api) {
   void *core = openLibrary("libharfbuzz.so.0");
   void *subset = openLibrary("libharfbuzz-subset.so.0");
   if (core == nullptr || subset == nullptr) return false;
@@ -35,16 +38,17 @@ bool resolve(HarfBuzzSubset &api) {
       bind(subset, "hb_subset_or_fail", api.subset);
 }
 
+std::optional<HarfBuzzSubset> resolve() {
+  if (HarfBuzzSubset api{}; bindAll(api)) return api;
+  log(LogLevel::Warning, "HarfBuzz's subsetter is unavailable: variable fonts draw at their default instance");
+  return std::nullopt;
+}
+
 } // namespace
 
 const HarfBuzzSubset *harfBuzzSubset() {
-  static const HarfBuzzSubset *const resolved = [] {
-    static HarfBuzzSubset api{};
-    if (resolve(api)) return &api;
-    log(LogLevel::Warning, "HarfBuzz's subsetter is unavailable: variable fonts draw at their default instance");
-    return static_cast<HarfBuzzSubset *>(nullptr);
-  }();
-  return resolved;
+  static const std::optional<HarfBuzzSubset> resolved = resolve();
+  return resolved.has_value() ? &*resolved : nullptr;
 }
 
 } // namespace rntizen

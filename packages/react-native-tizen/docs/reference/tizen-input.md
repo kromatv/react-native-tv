@@ -289,8 +289,9 @@ flutter-tizen's "handled by the app first but not by the system" list
 
 ### What the host does
 
-`runtime/host/src/input/RemoteInput.cpp` follows the event contract above,
-steps 1 to 3; the key table and grab list are `RemoteKeyMap.cpp`. A long press
+`runtime/host/src/input/RemotePresses.cpp` follows the event contract above,
+steps 1 to 3, for the keys `RemoteInput.cpp` grabs and hears on the window;
+the key table and grab list are `RemoteKeyMap.cpp`. A long press
 is offered for `select`, the arrows and `playPause` only, the keys tvOS reports
 holds for: a held Rewind or Fast forward becomes a chapter key on Samsung's
 remote already. A key whose release never comes (a long press the TV turned
@@ -305,7 +306,10 @@ While a `<TextInput>` has the keyboard, `ReactHost` hands every key to
 `KeyboardFocus` before `RemoteInput` maps it (step 5), unless the native alert or
 the error screen shows: `KeyboardFocus` offers it to the window's Ecore IMF
 context (`ImeSession`), then to the field, and remembers which of the two took
-each keycode so its release goes there too. A key the field passes on (an
+each keycode so its release goes there too. A release the field takes still
+ends the press `RemotePresses` tracked for that keycode, as a lost release
+does: a hold that started before the field took the keyboard gets its
+`long<Type>` 1. A key the field passes on (an
 arrow at its edge, a media key) is a remote key as usual. See
 [text-input.md](text-input.md).
 
@@ -324,7 +328,7 @@ Verified in simulator (**S**), with the shapes `useTVEventHandler` received:
 
 | Where | Problem | Tag |
 |-------|---------|-----|
-| `RemoteInput.cpp` | Step 4 (key down events, `enableKeyDownEvents`) and step 6 (`tag`) are not done | D |
+| `RemotePresses.cpp` | Step 4 (key down events, `enableKeyDownEvents`) and step 6 (`tag`) are not done | D |
 | `ImeSession.cpp` | Step 5 runs in the simulator against `xim` with no input method server; the TV's panel, commits, preedit, `Select` and `Cancel` are unverified | S, I |
 | `RemoteInput.cpp` | Grabbing is unverified for the chapter keys, `XF86AudioRecord`, `XF86ChannelGuide`, `XF86SimpleMenu`, `XF86Caption`; a failed grab now logs a warning | I |
 | `RemoteKeyMap.cpp` | `voice` is not a react-native-tvos event type; it is a Tizen addition | D [rntvos] |

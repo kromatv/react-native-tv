@@ -20,15 +20,14 @@ KeyboardFocus::KeyboardFocus(Evas *evas) : evas_(evas) {
 }
 
 KeyboardFocus::~KeyboardFocus() {
-  auto &all = keyboards();
-  all.erase(std::remove(all.begin(), all.end(), this), all.end());
+  std::erase(keyboards(), this);
   if (auto *client = std::exchange(focused_, nullptr)) client->keyboardLost();
   ime_.reset();
 }
 
 KeyboardFocus *KeyboardFocus::of(Evas *evas) {
   const auto &all = keyboards();
-  const auto found = std::find_if(all.begin(), all.end(), [evas](auto *keyboard) { return keyboard->evas_ == evas; });
+  const auto found = std::ranges::find_if(all, [evas](const auto *keyboard) { return keyboard->evas_ == evas; });
   return found == all.end() ? nullptr : *found;
 }
 
@@ -57,13 +56,14 @@ bool KeyboardFocus::hasFocus(const KeyboardClient &client) const {
 }
 
 bool KeyboardFocus::handleKey(const Ecore_Event_Key &key, bool isDown) {
+  using enum Taker;
   const auto taken = takenKeys_.find(key.keycode);
   const bool held = taken != takenKeys_.end();
   if (!isDown) {
     if (!held) return false;
     const auto taker = taken->second;
     takenKeys_.erase(taken);
-    if (taker == Taker::InputMethod) {
+    if (taker == InputMethod) {
       if (ime_) ime_->filter(key, false);
     } else if (focused_ != nullptr) {
       focused_->keyUp(key);
@@ -71,14 +71,14 @@ bool KeyboardFocus::handleKey(const Ecore_Event_Key &key, bool isDown) {
     return true;
   }
   if (focused_ == nullptr) return held;
-  const auto taker = held ? taken->second : Taker::InputMethod;
-  if (taker == Taker::InputMethod && ime().filter(key, true)) {
-    takenKeys_[key.keycode] = Taker::InputMethod;
+  const auto taker = held ? taken->second : InputMethod;
+  if (taker == InputMethod && ime().filter(key, true)) {
+    takenKeys_[key.keycode] = InputMethod;
     return true;
   }
   if (focused_ == nullptr) return held;
-  const bool used = focused_->keyDown(key, held && taker == Taker::Field);
-  if (used) takenKeys_[key.keycode] = Taker::Field;
+  const bool used = focused_->keyDown(key, held && taker == Field);
+  if (used) takenKeys_[key.keycode] = Field;
   return used || held;
 }
 

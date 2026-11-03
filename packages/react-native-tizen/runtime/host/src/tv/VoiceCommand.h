@@ -2,6 +2,7 @@
 
 #include <folly/dynamic.h>
 
+#include <functional>
 #include <map>
 #include <optional>
 #include <string>
@@ -17,7 +18,7 @@ struct VoiceCommand {
   bool enabled{false};
   int index{0};
   std::string title;
-  std::map<std::string, std::string> search;
+  std::map<std::string, std::string, std::less<>> search;
 
   bool isTransport() const;
 

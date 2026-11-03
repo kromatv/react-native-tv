@@ -28,7 +28,7 @@ FontMetrics fontMetrics(const std::string &family, const std::string &weight, bo
   evas_object_text_font_set(text, font.c_str(), pixelSize);
   evas_object_text_text_set(text, "x");
   const FontMetrics metrics{.ascent = evas_object_text_ascent_get(text), .descent = evas_object_text_descent_get(text)};
-  return cache.emplace(std::move(key), metrics).first->second;
+  return cache.try_emplace(std::move(key), metrics).first->second;
 }
 
 } // namespace rntizen

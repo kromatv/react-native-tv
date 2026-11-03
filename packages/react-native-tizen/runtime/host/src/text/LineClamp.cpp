@@ -1,24 +1,22 @@
 #include "LineClamp.h"
 
-#include <cstdlib>
+#include "../Malloced.h"
+
 #include <string>
 
 namespace rntizen {
 
 namespace {
 
-constexpr const char *kEllipsis = "\xE2\x80\xA6";
+constexpr const char *kEllipsis = "…";
 
 bool hasLine(Evas_Object *textblock, int line) {
   return evas_object_textblock_line_number_geometry_get(textblock, line, nullptr, nullptr, nullptr, nullptr) == EINA_TRUE;
 }
 
 std::string contentAt(const Evas_Textblock_Cursor *cursor) {
-  char *content = evas_textblock_cursor_content_get(cursor);
-  if (content == nullptr) return {};
-  std::string text(content);
-  std::free(content);
-  return text;
+  const Malloced<char> content(evas_textblock_cursor_content_get(cursor));
+  return content == nullptr ? std::string() : std::string(content.get());
 }
 
 void appendEllipsis(Evas_Textblock_Cursor *end) {

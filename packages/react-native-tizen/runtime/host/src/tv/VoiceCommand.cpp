@@ -4,26 +4,41 @@
 
 #include <folly/json.h>
 
-#include <array>
 #include <algorithm>
+#include <array>
+#include <cmath>
+#include <limits>
+#include <span>
+#include <stdexcept>
+#include <string_view>
 
 namespace rntizen {
 
 namespace {
 
-constexpr std::array kTransport{
-    "play", "pause", "stop", "restart", "next", "previous", "fastForward", "rewind", "skip", "seek", "subtitles"};
-constexpr std::array kOthers{"search", "selectTitle", "selectIndex"};
+constexpr auto kTransport = std::to_array<std::string_view>(
+    {"play", "pause", "stop", "restart", "next", "previous", "fastForward", "rewind", "skip", "seek", "subtitles"});
+constexpr auto kOthers = std::to_array<std::string_view>({"search", "selectTitle", "selectIndex"});
 constexpr std::array kSearchFields{"utterance", "title", "genre", "cast", "contentType", "releasedFrom", "releasedTo"};
 
-bool oneOf(const auto &names, const std::string &type) {
-  return std::find(names.begin(), names.end(), type) != names.end();
+bool oneOf(std::span<const std::string_view> names, std::string_view type) {
+  return std::ranges::find(names, type) != names.end();
 }
 
 double number(const folly::dynamic &object, const char *name) {
   const auto *field = object.get_ptr(name);
   if (field == nullptr || !field->isNumber()) throw std::invalid_argument(std::string("`") + name + "` must be a number");
   return field->asDouble();
+}
+
+int integer(const folly::dynamic &object, const char *name) {
+  const auto value = number(object, name);
+  if (const bool fits =
+          std::isfinite(value) && value >= std::numeric_limits<int>::min() && value <= std::numeric_limits<int>::max();
+      !fits) {
+    throw std::invalid_argument(std::string("`") + name + "` must be a finite number within int's range");
+  }
+  return static_cast<int>(value);
 }
 
 std::string text(const folly::dynamic &object, const char *name) {
@@ -40,7 +55,7 @@ VoiceCommand read(const folly::dynamic &json) {
   }
   if (command.type == "skip") command.seconds = number(json, "seconds");
   if (command.type == "seek") command.position = number(json, "position");
-  if (command.type == "selectIndex") command.index = static_cast<int>(number(json, "index"));
+  if (command.type == "selectIndex") command.index = integer(json, "index");
   if (command.type == "selectTitle") command.title = text(json, "title");
   if (command.type == "subtitles") {
     const auto *enabled = json.get_ptr("enabled");
@@ -55,6 +70,11 @@ VoiceCommand read(const folly::dynamic &json) {
     if (!command.search.contains("utterance")) command.search["utterance"] = command.search["title"];
   }
   return command;
+}
+
+std::optional<VoiceCommand> dropped(const char *reason) {
+  log(LogLevel::Warning, std::string("Voice: dropped a command the shell sent: ") + reason);
+  return std::nullopt;
 }
 
 } // namespace
@@ -79,9 +99,12 @@ folly::dynamic VoiceCommand::payload() const {
 std::optional<VoiceCommand> parseVoiceCommand(const std::string &json) {
   try {
     return read(folly::parseJson(json));
-  } catch (const std::exception &error) {
-    log(LogLevel::Warning, std::string("Voice: dropped a command the shell sent: ") + error.what());
-    return std::nullopt;
+  } catch (const std::invalid_argument &error) {
+    return dropped(error.what());
+  } catch (const folly::json::parse_error &error) {
+    return dropped(error.what());
+  } catch (const std::range_error &error) {
+    return dropped(error.what());
   }
 }
 

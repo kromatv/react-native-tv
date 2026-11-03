@@ -15,7 +15,7 @@ std::optional<facebook::react::Size> UnwrappedSizes::find(const Key &key, int wi
   return found->second.size;
 }
 
-void UnwrappedSizes::remember(const Key &key, int widthPixels, facebook::react::Size size) {
+void UnwrappedSizes::remember(const Key &key, int widthPixels, facebook::react::Size size) const {
   std::lock_guard lock(mutex_);
   if (entries_.size() >= kMaxEntries) entries_.clear();
   entries_.insert_or_assign(key, Entry{.widthPixels = widthPixels, .size = size});

@@ -3,6 +3,7 @@
 #include "../logging/Log.h"
 
 #include <algorithm>
+#include <format>
 #include <mutex>
 #include <vector>
 
@@ -54,11 +55,10 @@ void markMediaSessionActive(const MediaSession *session) {
 std::shared_ptr<MediaSession> currentMediaSession() {
   const auto sessions = snapshot();
   const auto &live = sessions.live;
-  const auto playing = std::find_if(live.begin(), live.end(), [](const auto &session) { return session->isPlaying(); });
-  if (playing != live.end()) return *playing;
-  const auto active =
-      std::find_if(live.begin(), live.end(), [&](const auto &session) { return session.get() == sessions.active; });
-  if (active != live.end()) return *active;
+  const auto isPlaying = [](const auto &session) { return session->isPlaying(); };
+  if (const auto playing = std::ranges::find_if(live, isPlaying); playing != live.end()) return *playing;
+  const auto isActive = [&sessions](const auto &session) { return session.get() == sessions.active; };
+  if (const auto active = std::ranges::find_if(live, isActive); active != live.end()) return *active;
   return live.empty() ? nullptr : live.back();
 }
 
@@ -74,13 +74,17 @@ void pauseMediaSessionsForBackground(bool mediaCategoryDeclared) {
       ++paused;
     }
   }
-  if (paused > 0) log(LogLevel::Info, "Background: paused " + std::to_string(paused) + " player(s)");
+  if (paused > 0) log(LogLevel::Info, std::format("Background: paused {} player(s)", paused));
   if (kept == 0) return;
-  log(mediaCategoryDeclared ? LogLevel::Info : LogLevel::Warning,
-      "Background: " + std::to_string(kept) + " player(s) stay active" +
-          (mediaCategoryDeclared ? ""
-                                 : ", but the manifest has no media background category, so the TV suspends the app; "
-                                   "set supportsBackgroundPlayback in expo-video's config plugin"));
+  if (mediaCategoryDeclared) {
+    log(LogLevel::Info, std::format("Background: {} player(s) stay active", kept));
+    return;
+  }
+  log(LogLevel::Warning,
+      std::format(
+          "Background: {} player(s) stay active, but the manifest has no media background category, so the TV "
+          "suspends the app; set supportsBackgroundPlayback in expo-video's config plugin",
+          kept));
 }
 
 } // namespace rntizen

@@ -1,37 +1,38 @@
 #include "SearchUrl.h"
 
-#include <cstdio>
+#include <cstddef>
+#include <format>
 
 namespace rntizen {
 
 namespace {
 
-bool isUnreserved(unsigned char character) {
+using Fields = std::map<std::string, std::string, std::less<>>;
+
+bool isUnreserved(char character) {
   return (character >= 'A' && character <= 'Z') || (character >= 'a' && character <= 'z') ||
       (character >= '0' && character <= '9') || character == '-' || character == '.' || character == '_' ||
       character == '~';
 }
 
-std::string percentEncode(const std::string &text) {
+std::string percentEncode(std::string_view text) {
   std::string encoded;
-  for (const unsigned char character : text) {
+  for (const char character : text) {
     if (isUnreserved(character)) {
-      encoded += static_cast<char>(character);
-      continue;
+      encoded += character;
+    } else {
+      encoded += std::format("%{:02X}", std::to_integer<unsigned int>(static_cast<std::byte>(character)));
     }
-    char escape[4];
-    std::snprintf(escape, sizeof escape, "%%%02X", character);
-    encoded += escape;
   }
   return encoded;
 }
 
-std::string field(const std::map<std::string, std::string> &fields, const std::string &name) {
+std::string_view field(const Fields &fields, std::string_view name) {
   const auto found = fields.find(name);
-  return found == fields.end() ? std::string() : found->second;
+  return found == fields.end() ? std::string_view() : std::string_view(found->second);
 }
 
-std::string placeholderValue(const std::map<std::string, std::string> &fields, const std::string &name) {
+std::string_view placeholderValue(const Fields &fields, std::string_view name) {
   if (name != "query") return field(fields, name);
   const auto title = field(fields, "title");
   return title.empty() ? field(fields, "utterance") : title;
@@ -39,13 +40,13 @@ std::string placeholderValue(const std::map<std::string, std::string> &fields, c
 
 } // namespace
 
-std::string fillSearchUrl(const std::string &templateUrl, const std::map<std::string, std::string> &fields) {
+std::string fillSearchUrl(std::string_view templateUrl, const Fields &fields) {
   std::string url;
   std::size_t position = 0;
   while (position < templateUrl.size()) {
     const auto open = templateUrl.find('{', position);
-    const auto close = open == std::string::npos ? std::string::npos : templateUrl.find('}', open);
-    if (close == std::string::npos) {
+    const auto close = open == std::string_view::npos ? std::string_view::npos : templateUrl.find('}', open);
+    if (close == std::string_view::npos) {
       url += templateUrl.substr(position);
       break;
     }

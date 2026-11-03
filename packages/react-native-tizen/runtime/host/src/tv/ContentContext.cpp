@@ -65,7 +65,7 @@ void collect(ComponentView &view, std::vector<LabelledView> &found) {
 std::vector<LabelledView> labelledViews(ComponentView &root) {
   std::vector<LabelledView> found;
   for (auto *child : root.children()) collect(*child, found);
-  std::stable_sort(found.begin(), found.end(), [](const LabelledView &a, const LabelledView &b) {
+  std::ranges::stable_sort(found, [](const LabelledView &a, const LabelledView &b) {
     const auto rowA = static_cast<int>(a.frame.origin.y / 10);
     const auto rowB = static_cast<int>(b.frame.origin.y / 10);
     return rowA != rowB ? rowA < rowB : a.frame.origin.x < b.frame.origin.x;
@@ -88,17 +88,19 @@ folly::dynamic contentContext(const std::vector<LabelledView> &views) {
 const LabelledView *findByTitle(const std::vector<LabelledView> &views, const std::string &title) {
   const auto wanted = normalized(title);
   if (wanted.empty()) return nullptr;
-  const auto match = [&views](auto &&predicate) -> const LabelledView * {
-    const auto found = std::find_if(views.begin(), views.end(), predicate);
+  const auto match = [&views](const auto &predicate) -> const LabelledView * {
+    const auto found = std::ranges::find_if(views, predicate);
     return found == views.end() ? nullptr : &*found;
   };
-  if (const auto *exact = match([&](const LabelledView &view) { return normalized(view.label) == wanted; })) {
-    return exact;
-  }
-  if (const auto *prefix = match([&](const LabelledView &view) { return normalized(view.label).starts_with(wanted); })) {
-    return prefix;
-  }
-  return match([&](const LabelledView &view) { return normalized(view.label).find(wanted) != std::string::npos; });
+  const auto equals = [&wanted](const LabelledView &view) { return normalized(view.label) == wanted; };
+  const auto startsWith = [&wanted](const LabelledView &view) { return normalized(view.label).starts_with(wanted); };
+  const auto contains = [&wanted](const LabelledView &view) {
+    const auto label = normalized(view.label);
+    return !std::ranges::search(label, wanted).empty();
+  };
+  if (const auto *exact = match(equals)) return exact;
+  if (const auto *prefix = match(startsWith)) return prefix;
+  return match(contains);
 }
 
 bool tapView(const LabelledView &item) {

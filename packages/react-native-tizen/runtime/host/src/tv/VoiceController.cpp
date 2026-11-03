@@ -7,13 +7,14 @@
 
 #include <folly/json.h>
 
+#include <functional>
 #include <map>
 
 namespace rntizen {
 
 namespace {
 
-const std::map<std::string, std::string> kAppStates{
+const std::map<std::string, std::string, std::less<>> kAppStates{
     {"home", "Home"},
     {"list", "List"},
     {"details", "Details"},

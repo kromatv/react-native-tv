@@ -5,8 +5,8 @@
 
 #include <algorithm>
 #include <cmath>
-#include <cstdio>
 #include <cstdlib>
+#include <format>
 
 namespace rntizen {
 
@@ -28,16 +28,12 @@ std::string hexColor(const facebook::react::SharedColor &color, Float opacity, c
   if (!color) return fallback;
   const auto components = facebook::react::colorComponentsFromColor(color);
   auto channel = [](float value) { return static_cast<int>(std::lround(std::clamp(value, 0.0f, 1.0f) * 255)); };
-  char hex[10];
-  std::snprintf(
-      hex,
-      sizeof hex,
-      "#%02x%02x%02x%02x",
+  return std::format(
+      "#{:02x}{:02x}{:02x}{:02x}",
       channel(components.red),
       channel(components.green),
       channel(components.blue),
       channel(components.alpha * static_cast<float>(opacity)));
-  return hex;
 }
 
 const char *weightName(std::optional<FontWeight> weight) {
@@ -55,18 +51,19 @@ const char *weightName(std::optional<FontWeight> weight) {
 }
 
 const char *alignmentName(std::optional<TextAlignment> alignment) {
+  using enum TextAlignment;
   if (!alignment) return "auto";
   switch (*alignment) {
-    case TextAlignment::Center:
+    case Center:
       return "center";
-    case TextAlignment::Right:
-    case TextAlignment::End:
+    case Right:
+    case End:
       return "right";
-    case TextAlignment::Left:
-    case TextAlignment::Start:
-    case TextAlignment::Justified:
+    case Left:
+    case Start:
+    case Justified:
       return "left";
-    case TextAlignment::Natural:
+    case Natural:
       return "auto";
   }
   return "auto";
@@ -83,17 +80,18 @@ std::string formatValue(const std::string &value) {
 }
 
 std::string decorationFormat(const TextAttributes &attributes, Float opacity) {
-  const auto line = attributes.textDecorationLineType.value_or(TextDecorationLineType::None);
-  if (line == TextDecorationLineType::None) return {};
+  using enum TextDecorationLineType;
+  const auto line = attributes.textDecorationLineType.value_or(None);
+  if (line == None) return {};
   const auto color = hexColor(
       attributes.textDecorationColor ? attributes.textDecorationColor : attributes.foregroundColor, opacity, "#000000ff");
   std::string format;
-  if (line == TextDecorationLineType::Underline || line == TextDecorationLineType::UnderlineStrikethrough) {
+  if (line == Underline || line == UnderlineStrikethrough) {
     const bool isDouble = attributes.textDecorationStyle == TextDecorationStyle::Double;
     format += isDouble ? " underline=double underline_color=" + color + " underline2_color=" + color
                        : " underline=single underline_color=" + color;
   }
-  if (line == TextDecorationLineType::Strikethrough || line == TextDecorationLineType::UnderlineStrikethrough) {
+  if (line == Strikethrough || line == UnderlineStrikethrough) {
     format += " strikethrough=on strikethrough_color=" + color;
   }
   return format;
@@ -121,8 +119,7 @@ Float fontSizeOf(const TextAttributes &attributes) {
 }
 
 std::string fontName(const TextAttributes &attributes) {
-  const auto spacing = attributes.letterSpacing;
-  if (!std::isnan(spacing) && spacing != 0) {
+  if (const auto spacing = attributes.letterSpacing; !std::isnan(spacing) && spacing != 0) {
     const int weight = attributes.fontWeight ? static_cast<int>(*attributes.fontWeight) : 400;
     if (const auto tracked = trackedAppFont(familyOf(attributes), weight, isItalic(attributes), spacing / fontSizeOf(attributes))) {
       return tracked->string();
@@ -148,7 +145,7 @@ std::optional<TightLine> tightLine(const TextAttributes &attributes, Float scale
   const auto ascent = static_cast<int>(font.ascent * ratio);
   const auto descent = static_cast<int>(font.descent * ratio);
   return TightLine{
-      .format = " linerelsize=" + percent + "% linegap=" + std::to_string(lineHeight - ascent - descent),
+      .format = std::format(" linerelsize={}% linegap={}", percent, lineHeight - ascent - descent),
       .shift = static_cast<int>(std::lround(font.ascent + (lineHeight - natural) / 2.0)) - ascent,
   };
 }
@@ -187,17 +184,18 @@ std::string paragraphFormat(
   const auto lines = paragraph.maximumNumberOfLines;
   if (lines != 1) format += " wrap=mixed";
   if (lines == 1) {
+    using enum EllipsizeMode;
     switch (paragraph.ellipsizeMode) {
-      case EllipsizeMode::Head:
+      case Head:
         format += " ellipsis=0.0";
         break;
-      case EllipsizeMode::Middle:
+      case Middle:
         format += " ellipsis=0.5";
         break;
-      case EllipsizeMode::Tail:
+      case Tail:
         format += " ellipsis=1.0";
         break;
-      case EllipsizeMode::Clip:
+      case Clip:
         break;
     }
   }

@@ -16,24 +16,28 @@ struct HbAxisInfo {
   unsigned reserved;
 };
 
+/// HarfBuzz's opaque `hb_blob_t`, `hb_face_t` and `hb_subset_input_t`.
+struct HbBlob;
+struct HbFace;
+struct HbSubsetInput;
+
 /// The HarfBuzz calls that instance a variable font, resolved from
 /// libharfbuzz.so.0 and libharfbuzz-subset.so.0 at run time: Tizen 9 ships both
-/// (HarfBuzz 8.2.2) but they are not Tizen native API. Pointers are opaque
-/// HarfBuzz objects.
+/// (HarfBuzz 8.2.2) but they are not Tizen native API.
 struct HarfBuzzSubset {
-  void *(*blobCreateFromFile)(const char *path);
-  void (*blobDestroy)(void *blob);
-  const char *(*blobData)(void *blob, unsigned *length);
-  void *(*faceCreate)(void *blob, unsigned index);
-  void (*faceDestroy)(void *face);
-  void *(*faceBlob)(void *face);
-  unsigned (*axisInfos)(void *face, unsigned start, unsigned *count, HbAxisInfo *infos);
-  void *(*inputCreate)();
-  void (*inputDestroy)(void *input);
-  void (*inputKeepEverything)(void *input);
-  int (*pinAxisLocation)(void *input, void *face, std::uint32_t tag, float value);
-  int (*pinAxisToDefault)(void *input, void *face, std::uint32_t tag);
-  void *(*subset)(void *face, const void *input);
+  HbBlob *(*blobCreateFromFile)(const char *path);
+  void (*blobDestroy)(HbBlob *blob);
+  const char *(*blobData)(HbBlob *blob, unsigned *length);
+  HbFace *(*faceCreate)(HbBlob *blob, unsigned index);
+  void (*faceDestroy)(HbFace *face);
+  HbBlob *(*faceBlob)(HbFace *face);
+  unsigned (*axisInfos)(HbFace *face, unsigned start, unsigned *count, HbAxisInfo *infos);
+  HbSubsetInput *(*inputCreate)();
+  void (*inputDestroy)(HbSubsetInput *input);
+  void (*inputKeepEverything)(HbSubsetInput *input);
+  int (*pinAxisLocation)(HbSubsetInput *input, HbFace *face, std::uint32_t tag, float value);
+  int (*pinAxisToDefault)(HbSubsetInput *input, HbFace *face, std::uint32_t tag);
+  HbFace *(*subset)(HbFace *face, const HbSubsetInput *input);
 };
 
 /// The calls, or null when either library or any symbol is missing. Resolved once.

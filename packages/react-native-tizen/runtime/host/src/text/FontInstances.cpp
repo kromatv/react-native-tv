@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <format>
 #include <fstream>
 #include <optional>
 #include <string>
@@ -21,8 +22,8 @@ constexpr std::uint32_t kWeightAxis = hbTag('w', 'g', 'h', 't');
 
 struct Face {
   const HarfBuzzSubset &hb;
-  void *const blob;
-  void *const face;
+  HbBlob *const blob;
+  HbFace *const face;
 
   Face(const HarfBuzzSubset &api, const fs::path &file)
       : hb(api), blob(api.blobCreateFromFile(file.c_str())), face(blob != nullptr ? api.faceCreate(blob, 0) : nullptr) {}
@@ -43,7 +44,7 @@ std::vector<HbAxisInfo> axesOf(const Face &font) {
 }
 
 std::optional<HbAxisInfo> weightAxis(const std::vector<HbAxisInfo> &axes) {
-  auto found = std::find_if(axes.begin(), axes.end(), [](const auto &axis) { return axis.tag == kWeightAxis; });
+  const auto found = std::ranges::find_if(axes, [](const auto &axis) { return axis.tag == kWeightAxis; });
   return found == axes.end() ? std::nullopt : std::optional(*found);
 }
 
@@ -57,7 +58,7 @@ std::vector<int> weightsWithin(const HbAxisInfo &axis) {
 
 bool writeInstance(const Face &font, const std::vector<HbAxisInfo> &axes, int weight, const fs::path &target) {
   const auto &hb = font.hb;
-  void *input = hb.inputCreate();
+  auto *input = hb.inputCreate();
   if (input == nullptr) return false;
   hb.inputKeepEverything(input);
   for (const auto &axis : axes) {
@@ -67,10 +68,10 @@ bool writeInstance(const Face &font, const std::vector<HbAxisInfo> &axes, int we
       hb.pinAxisToDefault(input, font.face, axis.tag);
     }
   }
-  void *instance = hb.subset(font.face, input);
+  auto *instance = hb.subset(font.face, input);
   hb.inputDestroy(input);
   if (instance == nullptr) return false;
-  void *blob = hb.faceBlob(instance);
+  auto *blob = hb.faceBlob(instance);
   unsigned length = 0;
   const char *data = hb.blobData(blob, &length);
   auto partial = target;
@@ -89,12 +90,26 @@ bool writeInstance(const Face &font, const std::vector<HbAxisInfo> &axes, int we
   return written && !error;
 }
 
+bool hasInstance(const fs::path &target) {
+  std::error_code error;
+  return fs::file_size(target, error) > 0 && !error;
+}
+
+void removeFiles(const std::vector<fs::path> &files) {
+  std::error_code error;
+  for (const auto &file : files) fs::remove(file, error);
+}
+
 } // namespace
 
 std::vector<fs::path> writeWeightInstances(const fs::path &font, const fs::path &directory) {
   const auto *hb = harfBuzzSubset();
   if (hb == nullptr) return {};
-  const Face source(*hb, font);
+  return writeWeightInstances(*hb, font, directory);
+}
+
+std::vector<fs::path> writeWeightInstances(const HarfBuzzSubset &hb, const fs::path &font, const fs::path &directory) {
+  const Face source(hb, font);
   if (source.face == nullptr) return {};
   const auto axes = axesOf(source);
   const auto weight = weightAxis(axes);
@@ -103,12 +118,11 @@ std::vector<fs::path> writeWeightInstances(const fs::path &font, const fs::path 
   std::vector<fs::path> files;
   int written = 0;
   for (const int value : weightsWithin(*weight)) {
-    const auto target = directory / (font.stem().string() + "-" + std::to_string(value) + ".ttf");
-    std::error_code error;
-    if (fs::file_size(target, error) == 0 || error) {
+    const auto target = directory / std::format("{}-{}.ttf", font.stem().string(), value);
+    if (!hasInstance(target)) {
       if (!writeInstance(source, axes, value, target)) {
-        log(LogLevel::Warning, "HarfBuzz could not instance " + font.filename().string() + " at weight " + std::to_string(value));
-        for (const auto &file : files) fs::remove(file, error);
+        log(LogLevel::Warning, std::format("HarfBuzz could not instance {} at weight {}", font.filename().string(), value));
+        removeFiles(files);
         return {};
       }
       ++written;
@@ -118,8 +132,7 @@ std::vector<fs::path> writeWeightInstances(const fs::path &font, const fs::path 
   if (written > 0) {
     const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - started);
     log(LogLevel::Info,
-        "Wrote " + std::to_string(written) + " weights of " + font.filename().string() + " in " +
-            std::to_string(elapsed.count()) + " ms");
+        std::format("Wrote {} weights of {} in {} ms", written, font.filename().string(), elapsed.count()));
   }
   return files;
 }

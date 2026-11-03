@@ -1,5 +1,7 @@
 #pragma once
 
+#include "HarfBuzzSubset.h"
+
 #include <filesystem>
 #include <vector>
 
@@ -16,5 +18,9 @@ namespace rntizen {
 /// Any thread.
 std::vector<std::filesystem::path> writeWeightInstances(
     const std::filesystem::path &font, const std::filesystem::path &directory);
+
+/// writeWeightInstances through the HarfBuzz calls `hb`.
+std::vector<std::filesystem::path> writeWeightInstances(
+    const HarfBuzzSubset &hb, const std::filesystem::path &font, const std::filesystem::path &directory);
 
 } // namespace rntizen

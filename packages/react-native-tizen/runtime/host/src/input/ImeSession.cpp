@@ -1,11 +1,13 @@
 #include "ImeSession.h"
 
+#include "../Malloced.h"
 #include "../logging/Log.h"
 
 #include <Ecore_Evas.h>
 
+#include <algorithm>
 #include <array>
-#include <cstdlib>
+#include <bit>
 #include <cstring>
 #include <string>
 #include <string_view>
@@ -20,10 +22,7 @@ bool isNavigationKey(const char *key) {
   if (std::strncmp(key, "XF86", 4) == 0) return true;
   static constexpr std::array<std::string_view, 11> kNavigation{
       "Up", "Down", "Left", "Right", "KP_Up", "KP_Down", "KP_Left", "KP_Right", "Return", "KP_Enter", "Select"};
-  for (auto name : kNavigation) {
-    if (name == key) return true;
-  }
-  return false;
+  return std::ranges::find(kNavigation, std::string_view(key)) != kNavigation.end();
 }
 
 unsigned int imfModifiers(unsigned int modifiers) {
@@ -74,8 +73,8 @@ Ecore_IMF_Context *createContext(Evas *evas) {
     return nullptr;
   }
   log(LogLevel::Debug, std::string("Input method context: ") + (id != nullptr ? id : "?"));
-  auto *window = reinterpret_cast<void *>(ecore_evas_window_get(ecore_evas_ecore_evas_get(evas)));
-  ecore_imf_context_client_window_set(context, window);
+  const auto window = ecore_evas_window_get(ecore_evas_ecore_evas_get(evas));
+  ecore_imf_context_client_window_set(context, std::bit_cast<void *>(window));
   ecore_imf_context_client_canvas_set(context, evas);
   ecore_imf_context_input_panel_language_set(context, ECORE_IMF_INPUT_PANEL_LANG_AUTOMATIC);
   return context;
@@ -181,8 +180,8 @@ void ImeSession::onPreedit(void *self, Ecore_IMF_Context *context, void *) {
   char *text = nullptr;
   int cursor = 0;
   ecore_imf_context_preedit_string_get(context, &text, &cursor);
+  const Malloced<char> owned(text);
   if (text != nullptr && *text != '\0') session.client_->imePreedit(text, cursor);
-  std::free(text);
 }
 
 void ImeSession::onDeleteSurrounding(void *self, Ecore_IMF_Context *, void *info) {

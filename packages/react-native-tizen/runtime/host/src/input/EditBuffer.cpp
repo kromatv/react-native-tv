@@ -6,57 +6,11 @@ namespace rntizen {
 
 namespace {
 
-constexpr char32_t kReplacement = 0xFFFD;
-
 std::size_t utf16Units(char32_t codePoint) {
   return codePoint > 0xFFFF ? 2 : 1;
 }
 
 } // namespace
-
-std::u32string decodeUtf8(std::string_view utf8) {
-  std::u32string decoded;
-  decoded.reserve(utf8.size());
-  for (std::size_t i = 0; i < utf8.size();) {
-    const auto lead = static_cast<unsigned char>(utf8[i]);
-    const std::size_t length = lead < 0x80 ? 1 : (lead >> 5) == 0x6 ? 2 : (lead >> 4) == 0xE ? 3 : (lead >> 3) == 0x1E ? 4 : 0;
-    if (length == 0 || i + length > utf8.size()) {
-      decoded.push_back(kReplacement);
-      ++i;
-      continue;
-    }
-    char32_t codePoint = length == 1 ? lead : lead & (0x7F >> length);
-    for (std::size_t k = 1; k < length; ++k) {
-      codePoint = (codePoint << 6) | (static_cast<unsigned char>(utf8[i + k]) & 0x3F);
-    }
-    decoded.push_back(codePoint);
-    i += length;
-  }
-  return decoded;
-}
-
-std::string encodeUtf8(std::u32string_view text) {
-  std::string encoded;
-  encoded.reserve(text.size());
-  for (const char32_t codePoint : text) {
-    if (codePoint < 0x80) {
-      encoded.push_back(static_cast<char>(codePoint));
-    } else if (codePoint < 0x800) {
-      encoded.push_back(static_cast<char>(0xC0 | (codePoint >> 6)));
-      encoded.push_back(static_cast<char>(0x80 | (codePoint & 0x3F)));
-    } else if (codePoint < 0x10000) {
-      encoded.push_back(static_cast<char>(0xE0 | (codePoint >> 12)));
-      encoded.push_back(static_cast<char>(0x80 | ((codePoint >> 6) & 0x3F)));
-      encoded.push_back(static_cast<char>(0x80 | (codePoint & 0x3F)));
-    } else {
-      encoded.push_back(static_cast<char>(0xF0 | (codePoint >> 18)));
-      encoded.push_back(static_cast<char>(0x80 | ((codePoint >> 12) & 0x3F)));
-      encoded.push_back(static_cast<char>(0x80 | ((codePoint >> 6) & 0x3F)));
-      encoded.push_back(static_cast<char>(0x80 | (codePoint & 0x3F)));
-    }
-  }
-  return encoded;
-}
 
 std::size_t utf16Length(std::u32string_view text) {
   std::size_t length = 0;
@@ -99,7 +53,8 @@ EditBuffer::Range EditBuffer::selectionUtf16() const {
 
 void EditBuffer::setText(std::string_view utf8) {
   text_ = decodeUtf8(utf8);
-  anchor_ = focus_ = text_.size();
+  focus_ = text_.size();
+  anchor_ = focus_;
   composing_.reset();
 }
 
@@ -136,7 +91,8 @@ bool EditBuffer::compose(std::u32string_view text, std::size_t cursor, std::size
   const auto accepted = focus_ - range.start;
   composing_.reset();
   if (accepted > 0) composing_ = Range{.start = range.start, .end = focus_};
-  anchor_ = focus_ = range.start + std::min(cursor, accepted);
+  focus_ = range.start + std::min(cursor, accepted);
+  anchor_ = focus_;
   return changed;
 }
 
@@ -160,7 +116,8 @@ bool EditBuffer::replace(Range range, std::u32string_view insertion, std::size_t
     units += utf16Units(insertion[accepted]);
     ++accepted;
   }
-  anchor_ = focus_ = range.start + accepted;
+  focus_ = range.start + accepted;
+  anchor_ = focus_;
   if (accepted == 0 && range.start == range.end) return false;
   const auto keptInsertion = insertion.substr(0, accepted);
   if (std::u32string_view(text_).substr(range.start, range.end - range.start) == keptInsertion) return false;
@@ -190,7 +147,8 @@ bool EditBuffer::erase(std::size_t start, std::size_t end) {
   composing_.reset();
   if (start >= end) return false;
   text_.erase(start, end - start);
-  anchor_ = focus_ = start;
+  focus_ = start;
+  anchor_ = focus_;
   return true;
 }
 

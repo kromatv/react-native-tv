@@ -1,6 +1,7 @@
 #include "SfntTables.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 
 namespace rntizen {
@@ -12,15 +13,16 @@ struct Table {
   std::size_t length;
 };
 
+std::uint32_t byteAt(const std::string &bytes, std::size_t at) {
+  return std::to_integer<std::uint32_t>(static_cast<std::byte>(bytes[at]));
+}
+
 std::uint32_t readU32(const std::string &bytes, std::size_t at) {
-  return (static_cast<std::uint32_t>(static_cast<unsigned char>(bytes[at])) << 24) |
-      (static_cast<std::uint32_t>(static_cast<unsigned char>(bytes[at + 1])) << 16) |
-      (static_cast<std::uint32_t>(static_cast<unsigned char>(bytes[at + 2])) << 8) |
-      static_cast<std::uint32_t>(static_cast<unsigned char>(bytes[at + 3]));
+  return (byteAt(bytes, at) << 24) | (byteAt(bytes, at + 1) << 16) | (byteAt(bytes, at + 2) << 8) | byteAt(bytes, at + 3);
 }
 
 int readU16(const std::string &bytes, std::size_t at) {
-  return (static_cast<unsigned char>(bytes[at]) << 8) | static_cast<unsigned char>(bytes[at + 1]);
+  return static_cast<int>((byteAt(bytes, at) << 8) | byteAt(bytes, at + 1));
 }
 
 void writeU16(std::string &bytes, std::size_t at, int value) {

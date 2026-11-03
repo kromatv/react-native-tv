@@ -33,7 +33,7 @@ class EvasTextMeasurer final : public facebook::react::TextMeasurer {
   Ecore_Evas *canvas_;
   Evas_Object *textblock_;
   Evas_Textblock_Style *style_;
-  mutable UnwrappedSizes unwrapped_;
+  UnwrappedSizes unwrapped_;
 };
 
 } // namespace rntizen

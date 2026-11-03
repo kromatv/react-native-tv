@@ -22,7 +22,7 @@ class UnwrappedSizes final {
   std::optional<facebook::react::Size> find(const Key &key, int widthPixels) const;
 
   /// Records that `key` laid out unwrapped as `size`, its widest line `widthPixels` wide.
-  void remember(const Key &key, int widthPixels, facebook::react::Size size);
+  void remember(const Key &key, int widthPixels, facebook::react::Size size) const;
 
  private:
   struct Entry {
@@ -31,7 +31,7 @@ class UnwrappedSizes final {
   };
 
   mutable std::mutex mutex_;
-  std::unordered_map<Key, Entry> entries_;
+  mutable std::unordered_map<Key, Entry> entries_;
 };
 
 } // namespace rntizen

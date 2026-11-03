@@ -1,10 +1,10 @@
 #include "PreviewFiles.h"
 
+#include "../Malloced.h"
 #include "../logging/Log.h"
 
 #include <app_common.h>
 
-#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <optional>
@@ -14,14 +14,12 @@ namespace rntizen {
 namespace {
 
 std::optional<std::filesystem::path> dataDirectory() {
-  char *path = app_get_data_path();
+  const Malloced<char> path(app_get_data_path());
   if (path == nullptr) {
     log(LogLevel::Warning, "Smart Hub preview: the app has no data directory, so nothing is saved");
     return std::nullopt;
   }
-  std::filesystem::path directory(path);
-  std::free(path);
-  return directory;
+  return std::filesystem::path(path.get());
 }
 
 void writeFile(const char *name, const std::string &contents) {
