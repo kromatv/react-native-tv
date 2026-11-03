@@ -24,9 +24,11 @@ class ExpoAssetModule final : public Module {
  public:
   ModuleDefinition definition() override {
     return ModuleDefinition("ExpoAsset")
-        .asyncFunction("downloadAsync", [](std::string url, std::optional<std::string> md5Hash, std::optional<std::string> type) {
-          return downloadAsset(url, md5Hash, type.value_or(""));
-        });
+        .asyncFunction(
+            "downloadAsync",
+            [](const std::string &url, const std::optional<std::string> &md5Hash, const std::optional<std::string> &type) {
+              return downloadAsset(url, md5Hash, type.value_or(""));
+            });
   }
 };
 

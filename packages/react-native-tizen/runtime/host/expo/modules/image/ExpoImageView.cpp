@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <string_view>
 
 namespace rntizen::expo {
 
@@ -25,11 +26,26 @@ std::string stringField(const folly::dynamic &object, const char *name) {
   return field != nullptr && field->isString() ? field->getString() : std::string();
 }
 
-double fitScale(const std::string &contentFit, double scaleX, double scaleY, double naturalScale) {
+double fitScale(std::string_view contentFit, double scaleX, double scaleY, double naturalScale) {
   if (contentFit == "cover") return std::max(scaleX, scaleY);
   if (contentFit == "contain") return std::min(scaleX, scaleY);
   if (contentFit == "scale-down") return std::min(naturalScale, std::min(scaleX, scaleY));
   return naturalScale;
+}
+
+struct FetchedImage {
+  std::string path;
+  std::string cacheType;
+  std::string error;
+};
+
+FetchedImage fetchImage(const std::string &uri, const std::string &cacheKey) {
+  try {
+    auto file = imageFileFor(uri, cacheKey);
+    return {.path = std::move(file.path), .cacheType = std::move(file.cacheType), .error = {}};
+  } catch (const std::exception &failure) {
+    return {.path = {}, .cacheType = {}, .error = failure.what()};
+  }
 }
 
 } // namespace
@@ -88,23 +104,13 @@ void ExpoImageView::load() {
   if (uri_.empty()) return;
   dispatchEvent("onLoadStart", folly::dynamic::object());
   runInBackground([alive = std::weak_ptr<ExpoImageView *>(alive_), uri = uri_, cacheKey = cacheKey_, request] {
-    std::string path;
-    std::string cacheType;
-    std::string error;
-    try {
-      auto file = imageFileFor(uri, cacheKey);
-      path = std::move(file.path);
-      cacheType = std::move(file.cacheType);
-    } catch (const std::exception &failure) {
-      error = failure.what();
-    }
-    runOnMainThread([alive, path, cacheType, error, request] {
+    runOnMainThread([alive, image = fetchImage(uri, cacheKey), request] {
       auto view = alive.lock();
       if (!view) return;
-      if (error.empty()) {
-        (*view)->decode(path, cacheType, request);
+      if (image.error.empty()) {
+        (*view)->decode(image.path, image.cacheType, request);
       } else {
-        (*view)->fail(error, request);
+        (*view)->fail(image.error, request);
       }
     });
   });

@@ -21,8 +21,8 @@ std::string encoding(const std::optional<folly::dynamic> &options) {
   return value != nullptr && value->isString() ? value->getString() : "utf8";
 }
 
-const std::map<std::string, std::string> &mimeTypes() {
-  static const std::map<std::string, std::string> types = {
+const std::map<std::string, std::string, std::less<>> &mimeTypes() {
+  static const std::map<std::string, std::string, std::less<>> types = {
       {".css", "text/css"},        {".gif", "image/gif"},         {".html", "text/html"},   {".jpeg", "image/jpeg"},
       {".jpg", "image/jpeg"},      {".js", "text/javascript"},    {".json", "application/json"},
       {".mp3", "audio/mpeg"},      {".mp4", "video/mp4"},         {".otf", "font/otf"},     {".pdf", "application/pdf"},
@@ -105,7 +105,7 @@ std::optional<std::string> FileSystemFile::type() const {
 folly::dynamic FileSystemFile::info(const std::optional<folly::dynamic> &options) const {
   if (!exists()) return folly::dynamic::object("exists", false)("uri", uri());
   folly::dynamic info = folly::dynamic::object("exists", true)("uri", uri())("size", size());
-  if (auto time = modificationTime(path())) info["modificationTime"] = *time;
+  if (auto time = modificationTime(path()); time.has_value()) info["modificationTime"] = *time;
   if (optionFlag(options, "md5")) {
     if (auto digest = md5()) info["md5"] = *digest;
   }
@@ -116,41 +116,45 @@ ClassDefinition<FileSystemFile> fileClass() {
   using File = FileSystemFile;
   using Content = std::variant<std::string, Bytes>;
   using Options = std::optional<folly::dynamic>;
+  using Path = std::shared_ptr<FileSystemPath>;
   return ClassDefinition<File>("FileSystemFile")
-      .constructor([](std::string uri) { return std::make_shared<File>(uri); })
-      .function("validatePath", [](File &file) { file.validatePath(); })
-      .asyncFunction("text", [](File &file) { return file.read(); })
-      .function("textSync", [](File &file) { return file.read(); })
-      .asyncFunction("base64", [](File &file) { return encodeBase64(file.read()); })
-      .function("base64Sync", [](File &file) { return encodeBase64(file.read()); })
-      .asyncFunction("bytes", [](File &file) { return Bytes{file.read()}; })
-      .function("bytesSync", [](File &file) { return Bytes{file.read()}; })
-      .function("info", [](File &file, Options options) { return file.info(options); })
-      .asyncFunction("write", [](File &file, Content content, Options options) { file.write(content, options); })
-      .function("writeSync", [](File &file, Content content, Options options) { file.write(content, options); })
-      .property("size", [](File &file) { return file.size(); })
-      .property("md5", [](File &file) { return file.md5(); })
-      .property("modificationTime", [](File &file) { return modificationTime(file.path()); })
-      .property("lastModified", [](File &file) { return modificationTime(file.path()); })
-      .property("creationTime", [](File &) { return std::optional<double>(); })
-      .property("type", [](File &file) { return file.type(); })
-      .function("delete", [](File &file) { file.remove(); })
-      .property("exists", [](File &file) { return file.exists(); })
-      .function("create", [](File &file, Options options) { file.create(options); })
-      .asyncFunction("copy", [](File &file, std::shared_ptr<FileSystemPath> to, Options options) {
+      .constructor([](const std::string &uri) { return std::make_shared<File>(uri); })
+      .function("validatePath", [](const File &file) { file.validatePath(); })
+      .asyncFunction("text", [](const File &file) { return file.read(); })
+      .function("textSync", [](const File &file) { return file.read(); })
+      .asyncFunction("base64", [](const File &file) { return encodeBase64(file.read()); })
+      .function("base64Sync", [](const File &file) { return encodeBase64(file.read()); })
+      .asyncFunction("bytes", [](const File &file) { return Bytes{file.read()}; })
+      .function("bytesSync", [](const File &file) { return Bytes{file.read()}; })
+      .function("info", [](const File &file, const Options &options) { return file.info(options); })
+      .asyncFunction(
+          "write", [](const File &file, const Content &content, const Options &options) { file.write(content, options); })
+      .function(
+          "writeSync",
+          [](const File &file, const Content &content, const Options &options) { file.write(content, options); })
+      .property("size", [](const File &file) { return file.size(); })
+      .property("md5", [](const File &file) { return file.md5(); })
+      .property("modificationTime", [](const File &file) { return modificationTime(file.path()); })
+      .property("lastModified", [](const File &file) { return modificationTime(file.path()); })
+      .property("creationTime", [](const File &) { return std::optional<double>(); })
+      .property("type", [](const File &file) { return file.type(); })
+      .function("delete", [](const File &file) { file.remove(); })
+      .property("exists", [](const File &file) { return file.exists(); })
+      .function("create", [](const File &file, const Options &options) { file.create(options); })
+      .asyncFunction("copy", [](const File &file, const Path &to, const Options &options) {
         file.copyTo(*to, optionFlag(options, "overwrite"));
       })
-      .function("copySync", [](File &file, std::shared_ptr<FileSystemPath> to, Options options) {
+      .function("copySync", [](const File &file, const Path &to, const Options &options) {
         file.copyTo(*to, optionFlag(options, "overwrite"));
       })
-      .asyncFunction("move", [](File &file, std::shared_ptr<FileSystemPath> to, Options options) {
+      .asyncFunction("move", [](File &file, const Path &to, const Options &options) {
         file.moveTo(*to, optionFlag(options, "overwrite"));
       })
-      .function("moveSync", [](File &file, std::shared_ptr<FileSystemPath> to, Options options) {
+      .function("moveSync", [](File &file, const Path &to, const Options &options) {
         file.moveTo(*to, optionFlag(options, "overwrite"));
       })
-      .function("rename", [](File &file, std::string name) { file.rename(name); })
-      .property("uri", [](File &file) { return file.uri(); });
+      .function("rename", [](File &file, const std::string &name) { file.rename(name); })
+      .property("uri", [](const File &file) { return file.uri(); });
 }
 
 } // namespace rntizen::expo

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <map>
+#include <numbers>
 
 namespace rntizen::expo {
 
@@ -18,8 +19,8 @@ constexpr Overlay kLight{249, 0.78};
 constexpr Overlay kDark{25, 0.69};
 
 // expo-blur's Android overlay, TintStyle.toBlurEffect in android/.../enums/TintStyle.kt.
-const std::map<std::string, Overlay> &overlays() {
-  static const std::map<std::string, Overlay> table = {
+const std::map<std::string, Overlay, std::less<>> &overlays() {
+  static const std::map<std::string, Overlay, std::less<>> table = {
       {"default", kDefault},
       {"prominent", kDefault},
       {"systemMaterial", kDefault},
@@ -47,7 +48,7 @@ const std::map<std::string, Overlay> &overlays() {
 
 // Android's Blur::convertRadiusToSigma (libs/hwui/utils/Blur.cpp), which RenderEffect blurs with.
 double androidSigma(double radius) {
-  return radius > 0 ? 0.57735 * radius + 0.5 : 0;
+  return radius > 0 ? std::numbers::inv_sqrt3 * radius + 0.5 : 0;
 }
 
 } // namespace

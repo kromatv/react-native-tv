@@ -4,6 +4,7 @@
 
 #include <chrono>
 #include <filesystem>
+#include <format>
 
 namespace rntizen::expo {
 
@@ -12,14 +13,11 @@ namespace fs = std::filesystem;
 namespace {
 
 std::string percentEncoded(const std::string &path) {
-  static constexpr char kHex[] = "0123456789ABCDEF";
   std::string encoded;
   for (const char character : path) {
     const auto byte = static_cast<unsigned char>(character);
     if (byte <= 0x20 || byte >= 0x7f || character == '%' || character == '#' || character == '?') {
-      encoded += '%';
-      encoded += kHex[byte >> 4];
-      encoded += kHex[byte & 0x0f];
+      encoded += std::format("%{:02X}", byte);
     } else {
       encoded += character;
     }
@@ -27,15 +25,15 @@ std::string percentEncoded(const std::string &path) {
   return encoded;
 }
 
-std::string normalized(const std::string &path) {
-  auto text = fs::path(path).lexically_normal().string();
+std::string normalized(const fs::path &path) {
+  auto text = path.lexically_normal().string();
   while (text.size() > 1 && text.back() == '/') text.pop_back();
   return text;
 }
 
 } // namespace
 
-FileSystemPath::FileSystemPath(std::string path) : path_(normalized(path)) {}
+FileSystemPath::FileSystemPath(const std::string &path) : path_(normalized(path)) {}
 
 std::string FileSystemPath::path() const {
   std::lock_guard lock(mutex_);
@@ -49,14 +47,14 @@ std::string FileSystemPath::uri() const {
 }
 
 void FileSystemPath::remove() const {
-  const auto current = path();
+  const fs::path current = path();
   if (!fs::exists(current)) throw CodedError("ERR_UNABLE_TO_DELETE", "Unable to delete '" + uri() + "': path does not exist");
   fs::remove_all(current);
 }
 
-std::string FileSystemPath::targetIn(const FileSystemPath &destination) const {
+fs::path FileSystemPath::targetIn(const FileSystemPath &destination) const {
   const auto self = fs::path(path());
-  if (destination.isDirectory()) return (fs::path(destination.path()) / self.filename()).string();
+  if (destination.isDirectory()) return fs::path(destination.path()) / self.filename();
   if (isDirectory()) throw CodedError("ERR_COPY_OR_MOVE", "Cannot copy or move a directory to a file");
   return destination.path();
 }
@@ -76,7 +74,7 @@ void FileSystemPath::moveTo(const FileSystemPath &destination, bool overwrite) {
 }
 
 void FileSystemPath::rename(const std::string &name) {
-  const auto target = (fs::path(path()).parent_path() / name).string();
+  const auto target = fs::path(path()).parent_path() / name;
   fs::rename(path(), target);
   std::lock_guard lock(mutex_);
   path_ = normalized(target);

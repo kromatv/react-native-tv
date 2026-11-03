@@ -15,7 +15,9 @@ class ExpoImageModule final : public Module {
     return ModuleDefinition("ExpoImage")
         .asyncFunction(
             "prefetch",
-            [](std::vector<std::string> urls, std::optional<std::string>, std::optional<folly::dynamic>) {
+            [](const std::vector<std::string> &urls,
+               const std::optional<std::string> &,
+               const std::optional<folly::dynamic> &) {
               bool all = true;
               for (const auto &url : urls) {
                 try {
@@ -29,7 +31,7 @@ class ExpoImageModule final : public Module {
             })
         .asyncFunction("clearMemoryCache", [] { return true; })
         .asyncFunction("clearDiskCache", [] { return clearImageDiskCache(); })
-        .asyncFunction("getCachePathAsync", [](std::string cacheKey) { return cachedImagePath(cacheKey); });
+        .asyncFunction("getCachePathAsync", [](const std::string &cacheKey) { return cachedImagePath(cacheKey); });
   }
 };
 

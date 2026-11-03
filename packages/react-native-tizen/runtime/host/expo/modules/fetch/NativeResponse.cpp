@@ -26,7 +26,7 @@ void NativeResponse::receiveHead(
   if (head) head->resolve();
 }
 
-void NativeResponse::receiveBody(std::string body) {
+void NativeResponse::receiveBody(std::string_view body) {
   std::lock_guard lock(mutex_);
   body_ += body;
 }
@@ -89,18 +89,18 @@ bool NativeResponse::bodyUsed() const {
   return bodyUsed_;
 }
 
-void NativeResponse::startStreaming(Promise promise) {
-  std::unique_lock lock(mutex_);
-  bodyUsed_ = true;
-  if (completed_ && !error_) {
-    auto body = Bytes{body_};
-    lock.unlock();
-    promise.resolve(std::move(body));
-    return;
+void NativeResponse::startStreaming(const Promise &promise) {
+  std::optional<Bytes> body;
+  {
+    std::lock_guard lock(mutex_);
+    bodyUsed_ = true;
+    if (completed_ && !error_) {
+      body = Bytes{body_};
+    } else {
+      streaming_ = true;
+    }
   }
-  streaming_ = true;
-  lock.unlock();
-  promise.resolve(std::optional<Bytes>());
+  promise.resolve(std::move(body));
 }
 
 void NativeResponse::stopStreaming() {
@@ -109,14 +109,16 @@ void NativeResponse::stopStreaming() {
 }
 
 void NativeResponse::readBody(Promise promise, bool asText) {
-  std::unique_lock lock(mutex_);
-  bodyUsed_ = true;
-  if (!completed_) {
-    readers_.push_back({.promise = std::move(promise), .asText = asText});
-    return;
+  Reader reader{.promise = std::move(promise), .asText = asText};
+  {
+    std::lock_guard lock(mutex_);
+    bodyUsed_ = true;
+    if (!completed_) {
+      readers_.push_back(std::move(reader));
+      return;
+    }
   }
-  lock.unlock();
-  settle({.promise = std::move(promise), .asText = asText});
+  settle(reader);
 }
 
 void NativeResponse::settle(const Reader &reader) const {
@@ -144,16 +146,17 @@ ClassDefinition<NativeResponse> nativeResponseClass(std::shared_ptr<Context> con
   using Response = NativeResponse;
   return ClassDefinition<Response>("NativeResponse")
       .constructor([context] { return std::make_shared<Response>(context); })
-      .property("bodyUsed", [](Response &response) { return response.bodyUsed(); })
-      .property("_rawHeaders", [](Response &response) { return response.rawHeaders(); })
-      .property("status", [](Response &response) { return response.status(); })
-      .property("statusText", [](Response &) { return std::string(); })
-      .property("url", [](Response &response) { return response.url(); })
-      .property("redirected", [](Response &response) { return response.redirected(); })
-      .asyncFunction("startStreaming", [](Response &response, Promise promise) { response.startStreaming(promise); })
-      .function("cancelStreaming", [](Response &response, std::string) { response.stopStreaming(); })
-      .asyncFunction("arrayBuffer", [](Response &response, Promise promise) { response.readBody(promise, false); })
-      .asyncFunction("text", [](Response &response, Promise promise) { response.readBody(promise, true); });
+      .property("bodyUsed", [](const Response &response) { return response.bodyUsed(); })
+      .property("_rawHeaders", [](const Response &response) { return response.rawHeaders(); })
+      .property("status", [](const Response &response) { return response.status(); })
+      .property("statusText", [](const Response &) { return std::string(); })
+      .property("url", [](const Response &response) { return response.url(); })
+      .property("redirected", [](const Response &response) { return response.redirected(); })
+      .asyncFunction(
+          "startStreaming", [](Response &response, const Promise &promise) { response.startStreaming(promise); })
+      .function("cancelStreaming", [](Response &response, const std::string &) { response.stopStreaming(); })
+      .asyncFunction("arrayBuffer", [](Response &response, const Promise &promise) { response.readBody(promise, false); })
+      .asyncFunction("text", [](Response &response, const Promise &promise) { response.readBody(promise, true); });
 }
 
 } // namespace rntizen::expo

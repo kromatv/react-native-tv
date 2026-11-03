@@ -54,19 +54,19 @@ class ExpoFontLoaderModule final : public Module {
   ModuleDefinition definition() override {
     return ModuleDefinition("ExpoFontLoader")
         .function("getLoadedFonts", [this] { return loadedFonts(); })
-        .function("isLoaded", [this](std::string family) {
+        .function("isLoaded", [this](const std::string &family) {
           std::lock_guard lock(mutex_);
           return loaded_.contains(family);
         })
         .asyncFunction(
             "loadAsync",
-            [this](std::string family, std::string localUri) {
+            [this](const std::string &family, const std::string &localUri) {
               registerFontFile(family, localUri);
               markLoaded(family);
             })
         .asyncFunction(
             "loadFontFamilyAsync",
-            [this](std::string family, std::vector<folly::dynamic> faces) {
+            [this](const std::string &family, const std::vector<folly::dynamic> &faces) {
               for (const auto &face : faces) {
                 const auto *uri = face.get_ptr("localUri");
                 if (uri == nullptr || !uri->isString()) throw CodedError("ERR_FONT_SOURCE", "A font face has no localUri");
@@ -88,7 +88,7 @@ class ExpoFontLoaderModule final : public Module {
   }
 
   std::mutex mutex_;
-  std::set<std::string> loaded_;
+  std::set<std::string, std::less<>> loaded_;
 };
 
 } // namespace

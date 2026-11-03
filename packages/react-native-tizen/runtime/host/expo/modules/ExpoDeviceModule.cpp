@@ -62,7 +62,7 @@ class ExpoDeviceModule final : public Module {
         .asyncFunction("isRootedExperimentalAsync", [] { return false; })
         .asyncFunction("isSideLoadingEnabledAsync", [] { return false; })
         .asyncFunction("getPlatformFeaturesAsync", [] { return std::vector<std::string>(); })
-        .asyncFunction("hasPlatformFeatureAsync", [](std::string) { return false; });
+        .asyncFunction("hasPlatformFeatureAsync", [](const std::string &) { return false; });
   }
 };
 

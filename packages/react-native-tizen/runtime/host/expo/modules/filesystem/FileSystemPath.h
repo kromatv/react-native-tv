@@ -5,6 +5,7 @@
 
 #include <folly/dynamic.h>
 
+#include <filesystem>
 #include <mutex>
 #include <optional>
 #include <string>
@@ -15,7 +16,7 @@ namespace rntizen::expo {
 /// that `move` and `rename` update. Thread-safe.
 class FileSystemPath : public SharedObject {
  public:
-  explicit FileSystemPath(std::string path);
+  explicit FileSystemPath(const std::string &path);
 
   std::string path() const;
   virtual bool isDirectory() const = 0;
@@ -28,7 +29,7 @@ class FileSystemPath : public SharedObject {
   void rename(const std::string &name);
 
  private:
-  std::string targetIn(const FileSystemPath &destination) const;
+  std::filesystem::path targetIn(const FileSystemPath &destination) const;
 
   mutable std::mutex mutex_;
   std::string path_;

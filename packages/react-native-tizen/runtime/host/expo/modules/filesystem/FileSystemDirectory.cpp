@@ -56,8 +56,8 @@ folly::dynamic FileSystemDirectory::info() const {
     files.push_back(entry->path().filename().string());
   }
   folly::dynamic info = folly::dynamic::object("exists", true)("uri", uri())("files", std::move(files));
-  if (auto bytes = size()) info["size"] = *bytes;
-  if (auto time = modificationTime(path())) info["modificationTime"] = *time;
+  if (auto bytes = size(); bytes.has_value()) info["size"] = *bytes;
+  if (auto time = modificationTime(path()); time.has_value()) info["modificationTime"] = *time;
   return info;
 }
 
@@ -69,7 +69,7 @@ std::vector<folly::dynamic> FileSystemDirectory::listAsRecords() const {
     const bool directory = entry->is_directory(typeError);
     auto uri = childUri(*this, entry->path().filename().string());
     if (directory) uri += '/';
-    records.push_back(folly::dynamic::object("isDirectory", directory)("uri", std::move(uri)));
+    records.emplace_back(folly::dynamic::object("isDirectory", directory)("uri", std::move(uri)));
   }
   if (error) throw CodedError("ERR_UNABLE_TO_LIST", "Unable to list " + uri() + ": " + error.message());
   return records;
@@ -78,39 +78,42 @@ std::vector<folly::dynamic> FileSystemDirectory::listAsRecords() const {
 ClassDefinition<FileSystemDirectory> directoryClass() {
   using Directory = FileSystemDirectory;
   using Options = std::optional<folly::dynamic>;
+  using Path = std::shared_ptr<FileSystemPath>;
   return ClassDefinition<Directory>("FileSystemDirectory")
-      .constructor([](std::string uri) { return std::make_shared<Directory>(uri); })
-      .function("info", [](Directory &directory) { return directory.info(); })
-      .function("validatePath", [](Directory &) {})
-      .function("delete", [](Directory &directory) { directory.remove(); })
-      .property("exists", [](Directory &directory) { return directory.exists(); })
-      .function("create", [](Directory &directory, Options options) { directory.create(options); })
-      .asyncFunction("copy", [](Directory &directory, std::shared_ptr<FileSystemPath> to, Options options) {
+      .constructor([](const std::string &uri) { return std::make_shared<Directory>(uri); })
+      .function("info", [](const Directory &directory) { return directory.info(); })
+      .function("validatePath", [](const Directory &) {})
+      .function("delete", [](const Directory &directory) { directory.remove(); })
+      .property("exists", [](const Directory &directory) { return directory.exists(); })
+      .function("create", [](const Directory &directory, const Options &options) { directory.create(options); })
+      .asyncFunction("copy", [](const Directory &directory, const Path &to, const Options &options) {
         directory.copyTo(*to, optionFlag(options, "overwrite"));
       })
-      .function("copySync", [](Directory &directory, std::shared_ptr<FileSystemPath> to, Options options) {
+      .function("copySync", [](const Directory &directory, const Path &to, const Options &options) {
         directory.copyTo(*to, optionFlag(options, "overwrite"));
       })
-      .asyncFunction("move", [](Directory &directory, std::shared_ptr<FileSystemPath> to, Options options) {
+      .asyncFunction("move", [](Directory &directory, const Path &to, const Options &options) {
         directory.moveTo(*to, optionFlag(options, "overwrite"));
       })
-      .function("moveSync", [](Directory &directory, std::shared_ptr<FileSystemPath> to, Options options) {
+      .function("moveSync", [](Directory &directory, const Path &to, const Options &options) {
         directory.moveTo(*to, optionFlag(options, "overwrite"));
       })
-      .function("rename", [](Directory &directory, std::string name) { directory.rename(name); })
-      .function("listAsRecords", [](Directory &directory) { return directory.listAsRecords(); })
-      .function("createFile", [](Directory &directory, std::string name, std::optional<std::string>) {
-        auto file = std::make_shared<FileSystemFile>(childUri(directory, name));
-        file->create(std::nullopt);
-        return file;
-      })
-      .function("createDirectory", [](Directory &directory, std::string name) {
+      .function("rename", [](Directory &directory, const std::string &name) { directory.rename(name); })
+      .function("listAsRecords", [](const Directory &directory) { return directory.listAsRecords(); })
+      .function(
+          "createFile",
+          [](const Directory &directory, const std::string &name, const std::optional<std::string> &) {
+            auto file = std::make_shared<FileSystemFile>(childUri(directory, name));
+            file->create(std::nullopt);
+            return file;
+          })
+      .function("createDirectory", [](const Directory &directory, const std::string &name) {
         auto child = std::make_shared<Directory>(childUri(directory, name));
         child->create(std::nullopt);
         return child;
       })
-      .property("uri", [](Directory &directory) { return directory.uri(); })
-      .property("size", [](Directory &directory) { return directory.size(); });
+      .property("uri", [](const Directory &directory) { return directory.uri(); })
+      .property("size", [](const Directory &directory) { return directory.size(); });
 }
 
 } // namespace rntizen::expo

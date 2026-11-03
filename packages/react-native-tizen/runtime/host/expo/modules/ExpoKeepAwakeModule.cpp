@@ -29,8 +29,8 @@ class ExpoKeepAwakeModule final : public Module {
  public:
   ModuleDefinition definition() override {
     return ModuleDefinition("ExpoKeepAwake")
-        .asyncFunction("activate", [this](std::string tag) { return update(tag, true); }, Queue::Main)
-        .asyncFunction("deactivate", [this](std::string tag) { return update(tag, false); }, Queue::Main)
+        .asyncFunction("activate", [this](const std::string &tag) { return update(tag, true); }, Queue::Main)
+        .asyncFunction("deactivate", [this](const std::string &tag) { return update(tag, false); }, Queue::Main)
         .asyncFunction("isActivated", [this] { return !tags_.empty(); }, Queue::Main)
         .asyncFunction("isAvailableAsync", [] { return appWindow() != nullptr; }, Queue::Main);
   }
@@ -54,7 +54,7 @@ class ExpoKeepAwakeModule final : public Module {
     return true;
   }
 
-  std::set<std::string> tags_;
+  std::set<std::string, std::less<>> tags_;
 };
 
 } // namespace

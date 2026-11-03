@@ -5,6 +5,8 @@
 #include "modules/blob/BlobStore.h"
 #include "network/HttpEngine.h"
 
+#include <folly/Indestructible.h>
+
 #include <atomic>
 
 namespace rntizen::expo {
@@ -12,7 +14,7 @@ namespace rntizen::expo {
 namespace {
 
 HttpEngine &engine() {
-  static auto *shared = new HttpEngine();
+  static folly::Indestructible<HttpEngine> shared;
   return *shared;
 }
 
@@ -47,7 +49,7 @@ class NativeRequest final : public SharedObject {
   explicit NativeRequest(std::shared_ptr<NativeResponse> response) : response_(std::move(response)) {}
 
   void start(const std::string &url, const folly::dynamic &init, std::optional<Bytes> body, Promise promise) {
-    static std::atomic<int> nextId{1};
+    static std::atomic nextId{1};
     id_ = nextId++;
     response_->awaitHead(std::move(promise));
     auto response = response_;
@@ -61,12 +63,12 @@ class NativeRequest final : public SharedObject {
             .timeout = std::chrono::milliseconds(0),
         },
         HttpResponseHandler{
-            .onResponse = [response, url](long status, folly::dynamic headers, std::string finalUrl) {
+            .onResponse = [response, url](long status, const folly::dynamic &headers, std::string finalUrl) {
               const bool redirected = finalUrl != url;
               response->receiveHead(status, responseHeaders(headers), std::move(finalUrl), redirected);
             },
-            .onBody = [response](std::string data) { response->receiveBody(std::move(data)); },
-            .onComplete = [response](std::string error, bool) { response->complete(error); },
+            .onBody = [response](const std::string &data) { response->receiveBody(data); },
+            .onComplete = [response](const std::string &error, bool) { response->complete(error); },
         });
   }
 
@@ -92,10 +94,12 @@ class ExpoFetchModule final : public Module {
                          })
                          .asyncFunction(
                              "start",
-                             [](NativeRequest &request, std::string url, folly::dynamic init, std::optional<Bytes> body, Promise promise) {
-                               request.start(url, init, std::move(body), std::move(promise));
-                             })
-                         .function("cancel", [](NativeRequest &request) { request.cancel(); }))
+                             [](NativeRequest &request,
+                                const std::string &url,
+                                const folly::dynamic &init,
+                                std::optional<Bytes> body,
+                                Promise promise) { request.start(url, init, std::move(body), std::move(promise)); })
+                         .function("cancel", [](const NativeRequest &request) { request.cancel(); }))
         .asyncFunction(
             "unstable_createBlobData", [](Bytes bytes) { return BlobStore::shared().store(std::move(bytes.data)); });
   }

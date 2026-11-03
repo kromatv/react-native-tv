@@ -9,6 +9,7 @@
 #include <sys/statvfs.h>
 
 #include <filesystem>
+#include <string_view>
 
 namespace rntizen::expo {
 
@@ -23,11 +24,11 @@ double diskSpace(bool available) {
   return static_cast<double>(blocks) * static_cast<double>(stats.f_frsize);
 }
 
-std::string fileNameOf(const std::string &url) {
-  auto path = url.substr(0, url.find_first_of("?#"));
+std::string fileNameOf(std::string_view url) {
+  const auto path = url.substr(0, url.find_first_of("?#"));
   const auto slash = path.find_last_of('/');
-  auto name = slash == std::string::npos ? path : path.substr(slash + 1);
-  return name.empty() ? "download" : name;
+  const auto name = slash == std::string_view::npos ? path : path.substr(slash + 1);
+  return name.empty() ? "download" : std::string(name);
 }
 
 std::string download(const std::string &url, const FileSystemPath &destination, const std::optional<folly::dynamic> &options) {
@@ -50,14 +51,14 @@ class FileSystemModule final : public Module {
         .constant("bundleDirectory", [bundle] { return bundle; })
         .property("totalDiskSpace", [] { return diskSpace(false); })
         .property("availableDiskSpace", [] { return diskSpace(true); })
-        .function("info", [](std::string uri) { return pathInfo(uri); })
+        .function("info", [](const std::string &uri) { return pathInfo(uri); })
         .asyncFunction(
             "downloadFileAsync",
-            [](std::string url,
-               std::shared_ptr<FileSystemPath> destination,
-               std::optional<folly::dynamic> options,
-               std::optional<std::string>) { return download(url, *destination, options); })
-        .function("cancelDownloadAsync", [](std::string) {})
+            [](const std::string &url,
+               const std::shared_ptr<FileSystemPath> &destination,
+               const std::optional<folly::dynamic> &options,
+               const std::optional<std::string> &) { return download(url, *destination, options); })
+        .function("cancelDownloadAsync", [](const std::string &) {})
         .sharedClass(fileClass())
         .sharedClass(directoryClass());
   }
