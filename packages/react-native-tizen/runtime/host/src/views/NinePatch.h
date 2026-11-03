@@ -54,6 +54,9 @@ struct NinePatch {
   int height{0};
   Edges border;
   std::vector<std::uint32_t> pixels;
+  /// The middle is clear, as a ring's: the image leaves it undrawn rather than
+  /// stretch it, since the GL engine would blend the border into it.
+  bool hollow{false};
 };
 
 /// A filled rounded rectangle, from the shared patch cache (`PatchCache.h`).

@@ -80,6 +80,15 @@ TEST_CASE("ringPatch is clear inside the hole and opaque across the band") {
   CHECK(alphaAt(patch, 6, 2) == 0);
 }
 
+TEST_CASE("ringPatch is hollow and the other box patches are not") {
+  const Corners round{.topLeft = {6, 6}, .topRight = {6, 6}, .bottomRight = {6, 6}, .bottomLeft = {6, 6}};
+
+  CHECK(ringPatch(round, {.left = 2, .top = 2, .right = 2, .bottom = 2}).hollow);
+  CHECK(ringPatch(Corners{}, {.left = 9, .top = 1, .right = 1, .bottom = 1}).hollow);
+  CHECK_FALSE(filledPatch(round).hollow);
+  CHECK_FALSE(makeShadowPatch(round, 4).hollow);
+}
+
 TEST_CASE("ringPatch borders reach the widest border width") {
   const auto &patch = ringPatch(Corners{}, {.left = 1, .top = 9, .right = 3, .bottom = 0});
 

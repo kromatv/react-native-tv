@@ -34,6 +34,7 @@ void setNinePatch(Evas_Object *image, const NinePatch &patch) {
   evas_object_image_data_copy_set(image, const_cast<std::uint32_t *>(patch.pixels.data()));
   evas_object_image_data_update_add(image, 0, 0, patch.width, patch.height);
   evas_object_image_border_set(image, patch.border.left, patch.border.right, patch.border.top, patch.border.bottom);
+  evas_object_image_border_center_fill_set(image, patch.hollow ? EVAS_BORDER_FILL_NONE : EVAS_BORDER_FILL_DEFAULT);
 }
 
 } // namespace rntizen

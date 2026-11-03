@@ -52,6 +52,7 @@ NinePatch makeRing(const Corners &corners, const Edges &widths) {
       .corners = corners.inset(widths),
   };
   paint(patch, [&outer, &hole](int x, int y) { return outer.coverage(x, y) - hole.coverage(x, y); });
+  patch.hollow = true;
   return patch;
 }
 
