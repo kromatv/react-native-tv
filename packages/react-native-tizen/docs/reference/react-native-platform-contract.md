@@ -293,6 +293,12 @@ space, percent-encoded in its URI), arrive as their fields with filename, type a
 content; a `{uri}` body arrives with its Content-Type; a `{uri}` body without
 Content-Type and a `uri` part without a type fail with Android's messages.
 
+| Request rule | Source | Host |
+|------|--------|------|
+| A GET or HEAD request carries no body, even when JavaScript gives one; Android sends POST, PUT and PATCH without one with an empty body | doc: XHR `send()` step 3 ("If this's request method is GET or HEAD, then set body to null", https://xhr.spec.whatwg.org/#the-send()-method), `RA/modules/network/NetworkingModule.kt:460-461`, `RA/modules/network/RequestBodyUtil.kt:175-181` | `host/network/CurlMethod.cpp`: libcurl turns a request with `CURLOPT_POSTFIELDS` into a POST unless `CURLOPT_CUSTOMREQUEST` names the method, so a GET with a body went out as a POST before |
+| A header name is a token and a header value holds no NUL, CR or LF; XHR's `setRequestHeader` throws a SyntaxError otherwise. React Native's XHR checks neither (`RN/Libraries/Network/XMLHttpRequest.js:512-520`), and Android strips control characters from names only (`RA/modules/network/HeaderUtil.kt`) | doc: Fetch "header name" and "header value" (https://fetch.spec.whatwg.org/#terminology-headers), XHR `setRequestHeader()` step 4 | `host/network/HeaderField.cpp`: a request or WebSocket handshake with such a header fails before it connects, since libcurl and the handshake writer copy a CR LF into the request as a new header line |
+| `CURL_SSLVERSION_TLSv1_2` means "TLSv1.2 or later"; libcurl's own default floor is TLS 1.2 only since 8.16.0, and the Tizen 9 rootstrap's libcurl is 8.5.0 | doc: https://curl.se/libcurl/c/CURLOPT_SSLVERSION.html, `rs:usr/include/curl/curlver.h:35` | Every libcurl connection the host opens sets it (`HttpEngine`, `HttpGet`, `WebSocketTransport`) |
+
 React Native's `fetch` is `whatwg-fetch` 3.6.20 over XHR. It sets
 `responseType = 'blob'` when `new Blob()` works, else `'arraybuffer'`, which XHR
 sends to native as `base64`. `new Blob()` throws without `BlobModule`; with it,

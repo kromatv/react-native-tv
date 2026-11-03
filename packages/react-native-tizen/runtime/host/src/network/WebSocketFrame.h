@@ -20,7 +20,7 @@ enum class WebSocketOpcode : std::uint8_t {
 
 /// One frame a server sent.
 struct WebSocketFrame {
-  bool final;
+  bool isFinal;
   WebSocketOpcode opcode;
   std::string payload;
 };
@@ -30,8 +30,8 @@ struct WebSocketFrame {
 std::string encodeWebSocketFrame(WebSocketOpcode opcode, std::string_view payload, std::array<std::uint8_t, 4> mask);
 
 /// Removes the first complete frame from the front of `buffer` and returns it,
-/// or nullopt while the frame is still incomplete. Throws std::runtime_error
-/// for a frame RFC 6455 tells a client to fail the connection over (a masked
+/// or nullopt while the frame is still incomplete. Throws NetworkError for a
+/// frame RFC 6455 tells a client to fail the connection over (a masked
 /// frame, reserved bits, an unknown opcode, a fragmented or long control
 /// frame) and for a payload above `maxPayload` bytes.
 std::optional<WebSocketFrame> takeWebSocketFrame(std::string &buffer, std::uint64_t maxPayload);

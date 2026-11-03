@@ -6,6 +6,7 @@
 #include <deque>
 #include <functional>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <thread>
@@ -48,21 +49,28 @@ class WebSocketConnection final {
   void send(WebSocketOpcode opcode, std::string payload);
   /// Starts the closing handshake. `onClosed` follows the server's Close, or
   /// a few seconds without one.
-  void close(int code, std::string reason);
+  void close(int code, std::string_view reason);
 
  private:
   struct Command {
     WebSocketOpcode opcode;
     std::string payload;
   };
+  struct Incoming;
+  struct Closing;
   class Session;
 
   void run();
-  std::string handshake(Session &session, std::string_view key);
-  void exchange(Session &session);
+  std::string handshake(Session &session, std::string &inbox, std::string_view key) const;
+  void exchange(Session &session, Incoming &incoming);
+  void queueCommands(Session &session, std::optional<Closing> &closing);
+  bool readFrames(Session &session, Incoming &incoming, const std::optional<Closing> &closing) const;
+  void onServerClose(Session &session, const WebSocketFrame &frame, const std::optional<Closing> &closing) const;
+  void onMessageFrame(Incoming &incoming, WebSocketFrame &frame) const;
   void wake() const;
   std::deque<Command> takeCommands();
-  void report(const std::function<void()> &callback) const;
+  void reportMessage(std::string data, bool binary) const;
+  void reportClosed(int code, std::string reason) const;
 
   const WebSocketRequest request_;
   const WebSocketListener listener_;
@@ -70,7 +78,7 @@ class WebSocketConnection final {
   std::atomic<bool> stopping_{false};
   std::mutex mutex_;
   std::deque<Command> commands_;
-  std::thread thread_;
+  std::jthread thread_;
 };
 
 } // namespace rntizen

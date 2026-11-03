@@ -2,11 +2,14 @@
 
 #include "Base64.h"
 #include "Digest.h"
+#include "HeaderField.h"
+#include "NetworkError.h"
 
 #include <curl/curl.h>
 
 #include <algorithm>
 #include <cctype>
+#include <format>
 #include <map>
 #include <memory>
 #include <optional>
@@ -22,7 +25,7 @@ constexpr const char *kUserAgent = "react-native-tizen";
 
 std::string lowercase(std::string_view text) {
   std::string result(text);
-  std::transform(result.begin(), result.end(), result.begin(), [](unsigned char c) { return std::tolower(c); });
+  std::ranges::transform(result, result.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
   return result;
 }
 
@@ -33,7 +36,7 @@ std::string trimmed(std::string_view text) {
   return std::string(text.substr(first, last - first + 1));
 }
 
-std::optional<std::string> urlPart(CURLU *url, CURLUPart part) {
+std::optional<std::string> urlPart(const CURLU *url, CURLUPart part) {
   char *value = nullptr;
   if (curl_url_get(url, part, &value, 0) != CURLUE_OK) return std::nullopt;
   std::string result(value);
@@ -51,8 +54,10 @@ bool hasToken(std::string_view list, std::string_view token) {
   return false;
 }
 
-std::map<std::string, std::string> responseHeaders(std::string_view head, std::string &statusLine) {
-  std::map<std::string, std::string> headers;
+using Headers = std::map<std::string, std::string, std::less<>>;
+
+Headers responseHeaders(std::string_view head, std::string &statusLine) {
+  Headers headers;
   std::size_t start = 0;
   bool first = true;
   while (start < head.size()) {
@@ -73,20 +78,21 @@ std::map<std::string, std::string> responseHeaders(std::string_view head, std::s
 }
 
 bool namedIn(const std::vector<std::pair<std::string, std::string>> &headers, std::string_view name) {
-  return std::any_of(
-      headers.begin(), headers.end(), [&](const auto &header) { return lowercase(header.first) == name; });
+  return std::ranges::any_of(headers, [name](const auto &header) { return lowercase(header.first) == name; });
 }
 
 } // namespace
 
 WebSocketEndpoint parseWebSocketUrl(const std::string &url) {
-  std::unique_ptr<CURLU, decltype(&curl_url_cleanup)> parsed(curl_url(), curl_url_cleanup);
+  std::unique_ptr<CURLU, decltype(&curl_url_cleanup)> parsed(curl_url(), &curl_url_cleanup);
   if (curl_url_set(parsed.get(), CURLUPART_URL, url.c_str(), CURLU_NON_SUPPORT_SCHEME) != CURLUE_OK) {
-    throw std::invalid_argument("Invalid WebSocket URL " + url);
+    throw std::invalid_argument(std::format("Invalid WebSocket URL {}", url));
   }
   const auto scheme = lowercase(urlPart(parsed.get(), CURLUPART_SCHEME).value_or(""));
   const bool secure = scheme == "wss" || scheme == "https";
-  if (!secure && scheme != "ws" && scheme != "http") throw std::invalid_argument("Unsupported WebSocket URL " + url);
+  if (!secure && scheme != "ws" && scheme != "http") {
+    throw std::invalid_argument(std::format("Unsupported WebSocket URL {}", url));
+  }
   const auto host = urlPart(parsed.get(), CURLUPART_HOST).value_or("");
   const auto port = urlPart(parsed.get(), CURLUPART_PORT);
   const auto authority = port ? host + ":" + *port : host;
@@ -116,6 +122,9 @@ std::string buildWebSocketHandshake(
     std::string_view key,
     const std::vector<std::string> &protocols,
     const std::vector<std::pair<std::string, std::string>> &headers) {
+  if (const auto header = invalidHeader(headers)) {
+    throw std::invalid_argument(std::format("The header {} holds a character HTTP forbids", *header));
+  }
   std::string request = "GET " + endpoint.target + " HTTP/1.1\r\n";
   request += "Host: " + endpoint.authority + "\r\n";
   request += "Upgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Version: 13\r\n";
@@ -138,25 +147,24 @@ std::string checkWebSocketHandshake(
   std::string statusLine;
   const auto headers = responseHeaders(head, statusLine);
   const auto space = statusLine.find(' ');
-  const auto status = space == std::string::npos ? std::string() : statusLine.substr(space + 1, 3);
-  if (status != "101") {
+  if (const auto status = space == std::string::npos ? std::string() : statusLine.substr(space + 1, 3); status != "101") {
     const auto answer = space == std::string::npos ? statusLine : statusLine.substr(space + 1);
-    throw std::runtime_error("Expected HTTP 101 response but was '" + answer + "'");
+    throw NetworkError(std::format("Expected HTTP 101 response but was '{}'", answer));
   }
-  const auto header = [&](const char *name) {
+  const auto header = [&headers](const char *name) {
     auto found = headers.find(name);
     return found == headers.end() ? std::string() : found->second;
   };
   const auto require = [](bool holds, const char *problem) {
-    if (!holds) throw std::runtime_error(problem);
+    if (!holds) throw NetworkError(problem);
   };
   require(hasToken(header("upgrade"), "websocket"), "The server did not upgrade to websocket");
   require(hasToken(header("connection"), "upgrade"), "The server did not answer Connection: Upgrade");
   require(header("sec-websocket-accept") == webSocketAccept(key), "The server answered a wrong Sec-WebSocket-Accept");
   require(header("sec-websocket-extensions").empty(), "The server enabled an extension nobody asked for");
   auto protocol = header("sec-websocket-protocol");
-  if (!protocol.empty() && std::find(protocols.begin(), protocols.end(), protocol) == protocols.end()) {
-    throw std::runtime_error("The server picked a protocol nobody asked for: " + protocol);
+  if (!protocol.empty() && std::ranges::find(protocols, protocol) == protocols.end()) {
+    throw NetworkError(std::format("The server picked a protocol nobody asked for: {}", protocol));
   }
   return protocol;
 }

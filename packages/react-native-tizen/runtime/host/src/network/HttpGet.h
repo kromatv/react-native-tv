@@ -4,7 +4,8 @@
 
 namespace rntizen {
 
-/// Fetches `url` and returns the body; throws std::runtime_error naming the URL
+/// Fetches `url` over TLS 1.2 or later, or plain HTTP, and returns the body;
+/// throws NetworkError naming the URL
 /// when the server is unreachable or answers anything but 200.
 std::string httpGet(const std::string &url);
 

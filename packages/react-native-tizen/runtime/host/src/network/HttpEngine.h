@@ -35,7 +35,8 @@ struct HttpResponseHandler {
 };
 
 /// Runs HTTP requests concurrently on one thread with libcurl's multi
-/// interface, sharing cookies between them. Thread-safe.
+/// interface, sharing cookies between them, over TLS 1.2 or later. A request
+/// with a header no HTTP line can carry fails without being sent. Thread-safe.
 class HttpEngine final {
  public:
   HttpEngine();
@@ -56,6 +57,7 @@ class HttpEngine final {
   void begin(HttpRequest request, HttpResponseHandler handler);
   void finish(void *easy, int result);
   void drop(int requestId);
+  void dropAll();
 
   std::mutex mutex_;
   std::deque<std::function<void()>> tasks_;
@@ -63,7 +65,7 @@ class HttpEngine final {
   void *multi_;
   void *share_;
   std::map<int, std::unique_ptr<Transfer>> transfers_;
-  std::thread thread_;
+  std::jthread thread_;
 };
 
 } // namespace rntizen

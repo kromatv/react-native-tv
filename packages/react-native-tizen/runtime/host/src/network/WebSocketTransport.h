@@ -13,9 +13,10 @@ namespace rntizen {
 /// only.
 class WebSocketTransport final {
  public:
-  /// Connects to `url` (`http://` or `https://`, verified as libcurl verifies
-  /// any request) and returns once connected. Gives up when `abort` turns
-  /// true, within about a second. Throws std::runtime_error on failure.
+  /// Connects to `url` (`http://`, or `https://` over TLS 1.2 or later,
+  /// verified as libcurl verifies any request) and returns once connected.
+  /// Gives up when `abort` turns true, within about a second. Throws
+  /// NetworkError on failure.
   WebSocketTransport(const std::string &url, const std::atomic<bool> &abort);
   ~WebSocketTransport();
 
@@ -27,11 +28,11 @@ class WebSocketTransport final {
 
   /// Reads what has arrived into `buffer`: the byte count, 0 once the peer
   /// closed the connection, or nullopt when nothing is waiting. Throws
-  /// std::runtime_error on a broken connection.
+  /// NetworkError on a broken connection.
   std::optional<std::size_t> receive(char *buffer, std::size_t capacity);
 
   /// Writes as much of `bytes` as the socket takes now and returns how much.
-  /// Throws std::runtime_error on a broken connection.
+  /// Throws NetworkError on a broken connection.
   std::size_t send(std::string_view bytes);
 
  private:

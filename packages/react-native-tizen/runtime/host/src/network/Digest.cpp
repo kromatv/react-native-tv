@@ -1,6 +1,6 @@
 #include "Digest.h"
 
-#include <cstring>
+#include <string_view>
 #include <vector>
 
 namespace rntizen {
@@ -39,18 +39,18 @@ std::vector<std::uint8_t> padded(std::string_view data, bool bigEndianLength) {
 } // namespace
 
 std::string md5Hex(std::string_view data) {
-  std::uint32_t state[4] = {0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476};
+  std::array<std::uint32_t, 4> state{0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476};
   const auto message = padded(data, false);
   for (std::size_t offset = 0; offset < message.size(); offset += 64) {
-    std::uint32_t words[16];
+    std::array<std::uint32_t, 16> words{};
     for (int index = 0; index < 16; ++index) {
       const auto *bytes = &message[offset + index * 4];
       words[index] = bytes[0] | (bytes[1] << 8) | (bytes[2] << 16) | (static_cast<std::uint32_t>(bytes[3]) << 24);
     }
-    std::uint32_t a = state[0], b = state[1], c = state[2], d = state[3];
+    auto [a, b, c, d] = state;
     for (int round = 0; round < 64; ++round) {
-      std::uint32_t mixed;
-      int word;
+      std::uint32_t mixed = 0;
+      int word = 0;
       if (round < 16) {
         mixed = (b & c) | (~b & d);
         word = round;
@@ -75,7 +75,7 @@ std::string md5Hex(std::string_view data) {
     state[2] += c;
     state[3] += d;
   }
-  static constexpr char kHex[] = "0123456789abcdef";
+  constexpr std::string_view kHex = "0123456789abcdef";
   std::string hex;
   for (auto word : state) {
     for (int index = 0; index < 4; ++index) {
@@ -88,10 +88,10 @@ std::string md5Hex(std::string_view data) {
 }
 
 std::array<std::uint8_t, 20> sha1(std::string_view data) {
-  std::uint32_t state[5] = {0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0};
+  std::array<std::uint32_t, 5> state{0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0};
   const auto message = padded(data, true);
   for (std::size_t offset = 0; offset < message.size(); offset += 64) {
-    std::uint32_t words[80];
+    std::array<std::uint32_t, 80> words{};
     for (int index = 0; index < 16; ++index) {
       const auto *bytes = &message[offset + index * 4];
       words[index] = (static_cast<std::uint32_t>(bytes[0]) << 24) | (bytes[1] << 16) | (bytes[2] << 8) | bytes[3];
@@ -99,9 +99,10 @@ std::array<std::uint8_t, 20> sha1(std::string_view data) {
     for (int index = 16; index < 80; ++index) {
       words[index] = rotateLeft(words[index - 3] ^ words[index - 8] ^ words[index - 14] ^ words[index - 16], 1);
     }
-    std::uint32_t a = state[0], b = state[1], c = state[2], d = state[3], e = state[4];
+    auto [a, b, c, d, e] = state;
     for (int round = 0; round < 80; ++round) {
-      std::uint32_t mixed, constant;
+      std::uint32_t mixed = 0;
+      std::uint32_t constant = 0;
       if (round < 20) {
         mixed = (b & c) | (~b & d);
         constant = 0x5a827999;

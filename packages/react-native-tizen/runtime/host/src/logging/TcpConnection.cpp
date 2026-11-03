@@ -20,7 +20,8 @@ bool setBlocking(int socket) {
   return flags >= 0 && fcntl(socket, F_SETFL, flags & ~O_NONBLOCK) == 0;
 }
 
-bool awaitConnected(int socket, std::chrono::milliseconds timeout, const std::function<bool()> &cancelled) {
+template <typename Cancelled>
+bool awaitConnected(int socket, std::chrono::milliseconds timeout, const Cancelled &cancelled) {
   for (int waited = 0; waited < timeout.count() && !cancelled(); waited += kPollSliceMs) {
     pollfd target{.fd = socket, .events = POLLOUT, .revents = 0};
     const int ready = poll(&target, 1, kPollSliceMs);
@@ -46,9 +47,11 @@ int connectTcp(
   if (inet_pton(AF_INET, host.c_str(), &address.sin_addr) != 1) return -1;
   const int candidate = socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC | SOCK_NONBLOCK, 0);
   if (candidate < 0) return -1;
-  const bool connected = connect(candidate, reinterpret_cast<sockaddr *>(&address), sizeof address) == 0 ||
-                         (errno == EINPROGRESS && awaitConnected(candidate, timeout, cancelled));
-  if (connected && setBlocking(candidate)) return candidate;
+  if (const bool connected = connect(candidate, reinterpret_cast<sockaddr *>(&address), sizeof address) == 0 ||
+                             (errno == EINPROGRESS && awaitConnected(candidate, timeout, cancelled));
+      connected && setBlocking(candidate)) {
+    return candidate;
+  }
   close(candidate);
   return -1;
 }

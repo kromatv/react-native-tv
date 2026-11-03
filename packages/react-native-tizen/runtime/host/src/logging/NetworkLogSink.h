@@ -46,7 +46,7 @@ class NetworkLogSink final : public LogSink {
   bool unreachable_{false};
   bool stopping_{false};
   int socket_{-1};
-  std::thread thread_;
+  std::jthread thread_;
 };
 
 } // namespace rntizen

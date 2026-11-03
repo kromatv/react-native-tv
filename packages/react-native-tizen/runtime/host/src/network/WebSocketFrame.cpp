@@ -1,6 +1,8 @@
 #include "WebSocketFrame.h"
 
-#include <stdexcept>
+#include "NetworkError.h"
+
+#include <format>
 
 namespace rntizen {
 
@@ -30,8 +32,7 @@ std::string encodeWebSocketFrame(WebSocketOpcode opcode, std::string_view payloa
   std::string frame;
   frame.reserve(payload.size() + 14);
   frame.push_back(static_cast<char>(kFinalBit | static_cast<std::uint8_t>(opcode)));
-  const std::uint64_t size = payload.size();
-  if (size < 126) {
+  if (const std::uint64_t size = payload.size(); size < 126) {
     frame.push_back(static_cast<char>(kMaskBit | size));
   } else if (size <= 0xffff) {
     frame.push_back(static_cast<char>(kMaskBit | 126));
@@ -53,9 +54,9 @@ std::optional<WebSocketFrame> takeWebSocketFrame(std::string &buffer, std::uint6
   const auto first = byteAt(buffer, 0);
   const auto second = byteAt(buffer, 1);
   const std::uint8_t opcode = first & 0x0f;
-  if ((first & kReservedBits) != 0) throw std::runtime_error("The server set reserved bits in a frame");
-  if (!isKnown(opcode)) throw std::runtime_error("The server sent an unknown opcode " + std::to_string(opcode));
-  if ((second & kMaskBit) != 0) throw std::runtime_error("The server sent a masked frame");
+  if ((first & kReservedBits) != 0) throw NetworkError("The server set reserved bits in a frame");
+  if (!isKnown(opcode)) throw NetworkError(std::format("The server sent an unknown opcode {}", opcode));
+  if ((second & kMaskBit) != 0) throw NetworkError("The server sent a masked frame");
   std::uint64_t size = second & kLengthBits;
   std::size_t header = 2;
   if (size == 126) {
@@ -68,14 +69,14 @@ std::optional<WebSocketFrame> takeWebSocketFrame(std::string &buffer, std::uint6
     for (std::size_t index = 2; index < 10; ++index) size = (size << 8) | byteAt(buffer, index);
     header = 10;
   }
-  const bool final = (first & kFinalBit) != 0;
-  if (isControl(opcode) && (!final || size > kMaxControlPayload)) {
-    throw std::runtime_error("The server sent a fragmented or oversized control frame");
+  const bool isFinal = (first & kFinalBit) != 0;
+  if (isControl(opcode) && (!isFinal || size > kMaxControlPayload)) {
+    throw NetworkError("The server sent a fragmented or oversized control frame");
   }
-  if (size > maxPayload) throw std::runtime_error("The server sent a frame of " + std::to_string(size) + " bytes");
+  if (size > maxPayload) throw NetworkError(std::format("The server sent a frame of {} bytes", size));
   if (buffer.size() - header < size) return std::nullopt;
   WebSocketFrame frame{
-      .final = final,
+      .isFinal = isFinal,
       .opcode = static_cast<WebSocketOpcode>(opcode),
       .payload = buffer.substr(header, static_cast<std::size_t>(size)),
   };

@@ -1,5 +1,6 @@
 #include "WebSocketConnection.h"
 
+#include "NetworkError.h"
 #include "WebSocketHandshake.h"
 #include "WebSocketTransport.h"
 
@@ -8,12 +9,11 @@
 #include <sys/eventfd.h>
 #include <unistd.h>
 
+#include <algorithm>
 #include <array>
 #include <chrono>
 #include <cstdint>
-#include <optional>
 #include <random>
-#include <stdexcept>
 
 namespace rntizen {
 
@@ -30,25 +30,41 @@ constexpr int kGoingAway = 1001;
 constexpr int kNoStatus = 1005;
 
 int pollTimeout(std::optional<Clock::time_point> deadline) {
-  if (!deadline) return -1;
+  if (!deadline.has_value()) return -1;
   const auto left = std::chrono::duration_cast<std::chrono::milliseconds>(*deadline - Clock::now()).count();
   return static_cast<int>(std::max<std::int64_t>(left, 0));
 }
 
 } // namespace
 
+struct WebSocketConnection::Incoming {
+  std::string inbox;
+  std::optional<WebSocketOpcode> fragmentOpcode;
+  std::string fragments;
+};
+
+struct WebSocketConnection::Closing {
+  int code;
+  std::string reason;
+  Clock::time_point deadline;
+};
+
 class WebSocketConnection::Session {
  public:
-  Session(const std::string &url, const std::atomic<bool> &abort)
-      : transport_(url, abort), random_(std::random_device{}()) {}
+  Session(const std::string &url, const std::atomic<bool> &abort) : transport_(url, abort) {}
 
   void queueRaw(std::string bytes) {
     outbox_.push_back(std::move(bytes));
   }
 
   void queue(WebSocketOpcode opcode, std::string_view payload) {
-    std::array<std::uint8_t, 4> mask{};
-    for (auto &byte : mask) byte = static_cast<std::uint8_t>(random_() & 0xff);
+    const auto bits = entropy_();
+    const std::array mask{
+        static_cast<std::uint8_t>(bits),
+        static_cast<std::uint8_t>(bits >> 8),
+        static_cast<std::uint8_t>(bits >> 16),
+        static_cast<std::uint8_t>(bits >> 24),
+    };
     queueRaw(encodeWebSocketFrame(opcode, payload, mask));
   }
 
@@ -65,11 +81,11 @@ class WebSocketConnection::Session {
     }
   }
 
-  bool read() {
+  bool read(std::string &inbox) {
     std::array<char, kReadChunk> chunk{};
     while (true) {
       const auto received = transport_.receive(chunk.data(), chunk.size());
-      if (!received) return true;
+      if (!received.has_value()) return true;
       if (*received == 0) return false;
       inbox.append(chunk.data(), *received);
     }
@@ -97,17 +113,11 @@ class WebSocketConnection::Session {
     }
   }
 
-  std::string inbox;
-  std::optional<WebSocketOpcode> fragmentOpcode;
-  std::string fragments;
-  std::optional<std::pair<int, std::string>> closeSent;
-  Clock::time_point closeDeadline;
-
  private:
   WebSocketTransport transport_;
   std::deque<std::string> outbox_;
   std::size_t sentOfFront_{0};
-  std::mt19937 random_;
+  std::random_device entropy_;
 };
 
 WebSocketConnection::WebSocketConnection(WebSocketRequest request, WebSocketListener listener)
@@ -126,12 +136,12 @@ WebSocketConnection::~WebSocketConnection() {
 void WebSocketConnection::send(WebSocketOpcode opcode, std::string payload) {
   {
     std::lock_guard lock(mutex_);
-    commands_.push_back({opcode, std::move(payload)});
+    commands_.emplace_back(opcode, std::move(payload));
   }
   wake();
 }
 
-void WebSocketConnection::close(int code, std::string reason) {
+void WebSocketConnection::close(int code, std::string_view reason) {
   send(WebSocketOpcode::Close, encodeWebSocketClose(code, reason));
 }
 
@@ -145,112 +155,134 @@ std::deque<WebSocketConnection::Command> WebSocketConnection::takeCommands() {
   return std::exchange(commands_, {});
 }
 
-void WebSocketConnection::report(const std::function<void()> &callback) const {
-  if (!stopping_) callback();
+void WebSocketConnection::reportMessage(std::string data, bool binary) const {
+  if (!stopping_) listener_.onMessage(std::move(data), binary);
+}
+
+void WebSocketConnection::reportClosed(int code, std::string reason) const {
+  if (!stopping_) listener_.onClosed(code, std::move(reason));
 }
 
 void WebSocketConnection::run() {
   pthread_setname_np(pthread_self(), "rn-websocket");
   try {
     const auto endpoint = parseWebSocketUrl(request_.url);
-    Session session(endpoint.connectUrl, stopping_);
     const auto key = makeWebSocketKey();
-    session.queueRaw(buildWebSocketHandshake(endpoint, key, request_.protocols, request_.headers));
-    const auto protocol = handshake(session, key);
+    auto opening = buildWebSocketHandshake(endpoint, key, request_.protocols, request_.headers);
+    Session session(endpoint.connectUrl, stopping_);
+    session.queueRaw(std::move(opening));
+    Incoming incoming;
+    const auto protocol = handshake(session, incoming.inbox, key);
     if (stopping_) return;
-    report([&] { listener_.onOpen(protocol); });
-    exchange(session);
+    listener_.onOpen(protocol);
+    exchange(session, incoming);
   } catch (const std::exception &error) {
-    const std::string message = error.what();
-    report([&] { listener_.onFailed(message); });
+    if (!stopping_) listener_.onFailed(error.what());
   }
 }
 
-std::string WebSocketConnection::handshake(Session &session, std::string_view key) {
+std::string WebSocketConnection::handshake(Session &session, std::string &inbox, std::string_view key) const {
   const auto deadline = Clock::now() + kHandshakeTimeout;
   while (!stopping_) {
     session.flush();
-    const bool open = session.read();
-    if (const auto end = session.inbox.find("\r\n\r\n"); end != std::string::npos) {
-      auto protocol = checkWebSocketHandshake(std::string_view(session.inbox).substr(0, end), key, request_.protocols);
-      session.inbox.erase(0, end + 4);
+    const bool open = session.read(inbox);
+    if (const auto end = inbox.find("\r\n\r\n"); end != std::string::npos) {
+      auto protocol = checkWebSocketHandshake(std::string_view(inbox).substr(0, end), key, request_.protocols);
+      inbox.erase(0, end + 4);
       return protocol;
     }
-    if (!open) throw std::runtime_error("The server closed the connection during the handshake");
-    if (session.inbox.size() > kMaxHandshakeBytes) throw std::runtime_error("The handshake response is too long");
-    if (Clock::now() >= deadline) throw std::runtime_error("The server did not answer the handshake");
+    if (!open) throw NetworkError("The server closed the connection during the handshake");
+    if (inbox.size() > kMaxHandshakeBytes) throw NetworkError("The handshake response is too long");
+    if (Clock::now() >= deadline) throw NetworkError("The server did not answer the handshake");
     session.wait(wakeFd_, deadline);
   }
   return {};
 }
 
-void WebSocketConnection::exchange(Session &session) {
+void WebSocketConnection::exchange(Session &session, Incoming &incoming) {
+  std::optional<Closing> closing;
   while (true) {
-    for (auto &command : takeCommands()) {
-      if (session.closeSent) continue;
-      if (command.opcode == WebSocketOpcode::Close) {
-        session.closeSent = decodeWebSocketClose(command.payload);
-        session.closeDeadline = Clock::now() + kCloseTimeout;
-      }
-      session.queue(command.opcode, command.payload);
-    }
+    queueCommands(session, closing);
     if (stopping_) {
-      if (!session.closeSent) session.queue(WebSocketOpcode::Close, encodeWebSocketClose(kGoingAway, {}));
+      if (!closing.has_value()) session.queue(WebSocketOpcode::Close, encodeWebSocketClose(kGoingAway, {}));
       session.flush();
       return;
     }
     session.flush();
-    const bool open = session.read();
-    while (auto frame = takeWebSocketFrame(session.inbox, kMaxMessageBytes)) {
-      switch (frame->opcode) {
-        case WebSocketOpcode::Ping:
-          if (!session.closeSent) session.queue(WebSocketOpcode::Pong, frame->payload);
-          break;
-        case WebSocketOpcode::Pong:
-          break;
-        case WebSocketOpcode::Close: {
-          auto [code, reason] = decodeWebSocketClose(frame->payload);
-          if (!session.closeSent) {
-            session.queue(WebSocketOpcode::Close, code == kNoStatus ? std::string() : encodeWebSocketClose(code, {}));
-            session.drain(wakeFd_, Clock::now() + kCloseTimeout);
-          }
-          report([&] { listener_.onClosed(code, reason); });
-          return;
-        }
-        case WebSocketOpcode::Text:
-        case WebSocketOpcode::Binary:
-          if (session.fragmentOpcode) throw std::runtime_error("The server started a message inside another");
-          if (frame->final) {
-            report([&] { listener_.onMessage(std::move(frame->payload), frame->opcode == WebSocketOpcode::Binary); });
-          } else {
-            session.fragmentOpcode = frame->opcode;
-            session.fragments = std::move(frame->payload);
-          }
-          break;
-        case WebSocketOpcode::Continuation:
-          if (!session.fragmentOpcode) throw std::runtime_error("The server continued a message it never started");
-          session.fragments += frame->payload;
-          if (session.fragments.size() > kMaxMessageBytes)
-            throw std::runtime_error("The server sent a message too long");
-          if (frame->final) {
-            const bool binary = *session.fragmentOpcode == WebSocketOpcode::Binary;
-            session.fragmentOpcode.reset();
-            report([&] { listener_.onMessage(std::exchange(session.fragments, {}), binary); });
-          }
-          break;
-      }
-    }
-    if (!open) {
-      if (!session.closeSent) throw std::runtime_error("The server closed the connection");
-      report([&] { listener_.onClosed(session.closeSent->first, session.closeSent->second); });
+    const bool open = session.read(incoming.inbox);
+    if (readFrames(session, incoming, closing)) return;
+    if (!open && !closing.has_value()) throw NetworkError("The server closed the connection");
+    if (!open || (closing.has_value() && Clock::now() >= closing->deadline)) {
+      reportClosed(closing->code, closing->reason);
       return;
     }
-    if (session.closeSent && Clock::now() >= session.closeDeadline) {
-      report([&] { listener_.onClosed(session.closeSent->first, session.closeSent->second); });
-      return;
-    }
-    session.wait(wakeFd_, session.closeSent ? std::optional(session.closeDeadline) : std::nullopt);
+    session.wait(wakeFd_, closing.has_value() ? std::optional(closing->deadline) : std::nullopt);
   }
+}
+
+void WebSocketConnection::queueCommands(Session &session, std::optional<Closing> &closing) {
+  for (const auto &command : takeCommands()) {
+    if (closing.has_value()) continue;
+    if (command.opcode == WebSocketOpcode::Close) {
+      auto [code, reason] = decodeWebSocketClose(command.payload);
+      closing = Closing{.code = code, .reason = std::move(reason), .deadline = Clock::now() + kCloseTimeout};
+    }
+    session.queue(command.opcode, command.payload);
+  }
+}
+
+bool WebSocketConnection::readFrames(Session &session, Incoming &incoming, const std::optional<Closing> &closing) const {
+  using enum WebSocketOpcode;
+  while (auto frame = takeWebSocketFrame(incoming.inbox, kMaxMessageBytes)) {
+    switch (frame->opcode) {
+      case Close:
+        onServerClose(session, *frame, closing);
+        return true;
+      case Ping:
+        if (!closing.has_value()) session.queue(Pong, frame->payload);
+        break;
+      case Pong:
+        break;
+      case Text:
+      case Binary:
+      case Continuation:
+        onMessageFrame(incoming, *frame);
+        break;
+    }
+  }
+  return false;
+}
+
+void WebSocketConnection::onServerClose(
+    Session &session,
+    const WebSocketFrame &frame,
+    const std::optional<Closing> &closing) const {
+  auto [code, reason] = decodeWebSocketClose(frame.payload);
+  if (!closing.has_value()) {
+    session.queue(WebSocketOpcode::Close, code == kNoStatus ? std::string() : encodeWebSocketClose(code, {}));
+    session.drain(wakeFd_, Clock::now() + kCloseTimeout);
+  }
+  reportClosed(code, std::move(reason));
+}
+
+void WebSocketConnection::onMessageFrame(Incoming &incoming, WebSocketFrame &frame) const {
+  if (frame.opcode != WebSocketOpcode::Continuation) {
+    if (incoming.fragmentOpcode.has_value()) throw NetworkError("The server started a message inside another");
+    if (frame.isFinal) {
+      reportMessage(std::move(frame.payload), frame.opcode == WebSocketOpcode::Binary);
+      return;
+    }
+    incoming.fragmentOpcode = frame.opcode;
+    incoming.fragments = std::move(frame.payload);
+    return;
+  }
+  if (!incoming.fragmentOpcode.has_value()) throw NetworkError("The server continued a message it never started");
+  incoming.fragments += frame.payload;
+  if (incoming.fragments.size() > kMaxMessageBytes) throw NetworkError("The server sent a message too long");
+  if (!frame.isFinal) return;
+  const bool binary = *incoming.fragmentOpcode == WebSocketOpcode::Binary;
+  incoming.fragmentOpcode.reset();
+  reportMessage(std::exchange(incoming.fragments, {}), binary);
 }
 
 } // namespace rntizen

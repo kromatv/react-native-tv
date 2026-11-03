@@ -9,6 +9,7 @@
 #include <unistd.h>
 
 #include <chrono>
+#include <format>
 
 namespace rntizen {
 
@@ -67,8 +68,8 @@ void NetworkLogSink::adopt(int socket) {
   unreachable_ = false;
   setCrashReportDescriptor(socket_);
   if (dropped_ == 0) return;
-  pending_.push_front(jsonLine(
-      LogLevel::Info, std::to_string(dropped_) + " earlier log lines were dropped while nothing listened"));
+  pending_.push_front(
+      jsonLine(LogLevel::Info, std::format("{} earlier log lines were dropped while nothing listened", dropped_)));
   dropped_ = 0;
 }
 

@@ -1,7 +1,12 @@
 #include "HttpEngine.h"
 
+#include "CurlMethod.h"
+#include "HeaderField.h"
+
 #include <curl/curl.h>
 #include <pthread.h>
+
+#include <format>
 
 namespace rntizen {
 
@@ -12,11 +17,11 @@ constexpr int kPollTimeoutMs = 1000;
 // without it. A User-Agent header from JavaScript still replaces this one.
 constexpr const char *kDefaultUserAgent = "react-native-tizen";
 
-std::string trimmed(std::string text) {
+std::string trimmed(std::string_view text) {
   const auto first = text.find_first_not_of(" \t\r\n");
-  if (first == std::string::npos) return {};
+  if (first == std::string_view::npos) return {};
   const auto last = text.find_last_not_of(" \t\r\n");
-  return text.substr(first, last - first + 1);
+  return std::string(text.substr(first, last - first + 1));
 }
 
 } // namespace
@@ -24,10 +29,16 @@ std::string trimmed(std::string text) {
 struct HttpEngine::Transfer {
   HttpRequest request;
   HttpResponseHandler handler;
-  CURL *easy{nullptr};
+  CURL *easy{curl_easy_init()};
   curl_slist *headerList{nullptr};
   std::string body;
   folly::dynamic headers = folly::dynamic::object();
+
+  Transfer(HttpRequest sent, HttpResponseHandler handling)
+      : request(std::move(sent)), handler(std::move(handling)) {}
+
+  Transfer(const Transfer &) = delete;
+  Transfer &operator=(const Transfer &) = delete;
 
   ~Transfer() {
     if (headerList != nullptr) curl_slist_free_all(headerList);
@@ -41,27 +52,37 @@ struct HttpEngine::Transfer {
 
   static std::size_t appendHeader(char *data, std::size_t size, std::size_t count, void *self) {
     auto &transfer = *static_cast<Transfer *>(self);
-    const std::string line(data, size * count);
-    if (line.rfind("HTTP/", 0) == 0) {
+    const std::string_view line(data, size * count);
+    if (line.starts_with("HTTP/")) {
       transfer.headers = folly::dynamic::object();
       return size * count;
     }
     const auto colon = line.find(':');
-    if (colon == std::string::npos) return size * count;
+    if (colon == std::string_view::npos) return size * count;
     const auto name = trimmed(line.substr(0, colon));
     const auto value = trimmed(line.substr(colon + 1));
-    if (auto existing = transfer.headers.get_ptr(name)) {
-      *existing = existing->asString() + ", " + value;
+    if (auto *existing = transfer.headers.get_ptr(name)) {
+      *existing = std::format("{}, {}", existing->asString(), value);
     } else {
       transfer.headers[name] = value;
     }
     return size * count;
   }
+
+  void setMethodAndBody() const {
+    const auto method = curlMethodFor(request.method, request.body);
+    if (method.noBody) curl_easy_setopt(easy, CURLOPT_NOBODY, 1L);
+    if (method.customRequest) curl_easy_setopt(easy, CURLOPT_CUSTOMREQUEST, method.customRequest->c_str());
+    if (method.body) {
+      curl_easy_setopt(easy, CURLOPT_POSTFIELDSIZE_LARGE, static_cast<curl_off_t>(method.body->size()));
+      curl_easy_setopt(easy, CURLOPT_POSTFIELDS, method.body->data());
+    }
+  }
 };
 
 HttpEngine::HttpEngine() : multi_(curl_multi_init()), share_(curl_share_init()) {
   curl_share_setopt(static_cast<CURLSH *>(share_), CURLSHOPT_SHARE, CURL_LOCK_DATA_COOKIE);
-  thread_ = std::thread([this] { run(); });
+  thread_ = std::jthread([this] { run(); });
 }
 
 HttpEngine::~HttpEngine() {
@@ -71,7 +92,7 @@ HttpEngine::~HttpEngine() {
   }
   curl_multi_wakeup(static_cast<CURLM *>(multi_));
   thread_.join();
-  transfers_.clear();
+  dropAll();
   curl_multi_cleanup(static_cast<CURLM *>(multi_));
   curl_share_cleanup(static_cast<CURLSH *>(share_));
 }
@@ -96,7 +117,7 @@ void HttpEngine::cancel(int requestId) {
 
 void HttpEngine::clearCookies(std::function<void()> done) {
   post([this, done = std::move(done)] {
-    std::unique_ptr<CURL, decltype(&curl_easy_cleanup)> easy(curl_easy_init(), curl_easy_cleanup);
+    std::unique_ptr<CURL, decltype(&curl_easy_cleanup)> easy(curl_easy_init(), &curl_easy_cleanup);
     curl_easy_setopt(easy.get(), CURLOPT_SHARE, share_);
     curl_easy_setopt(easy.get(), CURLOPT_COOKIELIST, "ALL");
     done();
@@ -104,11 +125,16 @@ void HttpEngine::clearCookies(std::function<void()> done) {
 }
 
 void HttpEngine::begin(HttpRequest request, HttpResponseHandler handler) {
-  auto transfer = std::make_unique<Transfer>();
-  transfer->request = std::move(request);
-  transfer->handler = std::move(handler);
-  auto *easy = transfer->easy = curl_easy_init();
-  const auto &method = transfer->request.method;
+  if (const auto header = invalidHeader(request.headers)) {
+    handler.onComplete(std::format("The header {} holds a character HTTP forbids", *header), false);
+    return;
+  }
+  auto transfer = std::make_unique<Transfer>(std::move(request), std::move(handler));
+  auto *easy = transfer->easy;
+  if (easy == nullptr) {
+    transfer->handler.onComplete("libcurl could not start the request", false);
+    return;
+  }
   curl_easy_setopt(easy, CURLOPT_URL, transfer->request.url.c_str());
   curl_easy_setopt(easy, CURLOPT_PRIVATE, transfer.get());
   curl_easy_setopt(easy, CURLOPT_SHARE, share_);
@@ -117,22 +143,15 @@ void HttpEngine::begin(HttpRequest request, HttpResponseHandler handler) {
   curl_easy_setopt(easy, CURLOPT_USERAGENT, kDefaultUserAgent);
   curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
   curl_easy_setopt(easy, CURLOPT_NOSIGNAL, 1L);
+  curl_easy_setopt(easy, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2);
   curl_easy_setopt(easy, CURLOPT_TIMEOUT_MS, static_cast<long>(transfer->request.timeout.count()));
   curl_easy_setopt(easy, CURLOPT_WRITEFUNCTION, Transfer::appendBody);
   curl_easy_setopt(easy, CURLOPT_WRITEDATA, transfer.get());
   curl_easy_setopt(easy, CURLOPT_HEADERFUNCTION, Transfer::appendHeader);
   curl_easy_setopt(easy, CURLOPT_HEADERDATA, transfer.get());
-  if (method == "HEAD") {
-    curl_easy_setopt(easy, CURLOPT_NOBODY, 1L);
-  } else if (method != "GET") {
-    curl_easy_setopt(easy, CURLOPT_CUSTOMREQUEST, method.c_str());
-  }
-  if (transfer->request.body) {
-    curl_easy_setopt(easy, CURLOPT_POSTFIELDSIZE_LARGE, static_cast<curl_off_t>(transfer->request.body->size()));
-    curl_easy_setopt(easy, CURLOPT_POSTFIELDS, transfer->request.body->c_str());
-  }
+  transfer->setMethodAndBody();
   for (const auto &[name, value] : transfer->request.headers) {
-    transfer->headerList = curl_slist_append(transfer->headerList, (name + ": " + value).c_str());
+    transfer->headerList = curl_slist_append(transfer->headerList, std::format("{}: {}", name, value).c_str());
   }
   curl_easy_setopt(easy, CURLOPT_HTTPHEADER, transfer->headerList);
   curl_multi_add_handle(static_cast<CURLM *>(multi_), easy);
@@ -146,12 +165,20 @@ void HttpEngine::drop(int requestId) {
   transfers_.erase(found);
 }
 
+void HttpEngine::dropAll() {
+  for (const auto &[requestId, transfer] : transfers_) {
+    curl_multi_remove_handle(static_cast<CURLM *>(multi_), transfer->easy);
+  }
+  transfers_.clear();
+}
+
 void HttpEngine::finish(void *easy, int result) {
   Transfer *transfer = nullptr;
   curl_easy_getinfo(static_cast<CURL *>(easy), CURLINFO_PRIVATE, &transfer);
   if (transfer == nullptr) return;
-  const auto code = static_cast<CURLcode>(result);
-  if (code == CURLE_OK) {
+  if (const auto code = static_cast<CURLcode>(result); code != CURLE_OK) {
+    transfer->handler.onComplete(curl_easy_strerror(code), code == CURLE_OPERATION_TIMEDOUT);
+  } else {
     long status = 0;
     char *effectiveUrl = nullptr;
     curl_easy_getinfo(static_cast<CURL *>(easy), CURLINFO_RESPONSE_CODE, &status);
@@ -159,8 +186,6 @@ void HttpEngine::finish(void *easy, int result) {
     transfer->handler.onResponse(status, transfer->headers, effectiveUrl != nullptr ? effectiveUrl : transfer->request.url);
     transfer->handler.onBody(std::move(transfer->body));
     transfer->handler.onComplete({}, false);
-  } else {
-    transfer->handler.onComplete(curl_easy_strerror(code), code == CURLE_OPERATION_TIMEDOUT);
   }
   drop(transfer->request.id);
 }
@@ -175,11 +200,11 @@ void HttpEngine::run() {
       if (stopping_) return;
       tasks.swap(tasks_);
     }
-    for (auto &task : tasks) task();
+    for (const auto &task : tasks) task();
     int running = 0;
     curl_multi_perform(multi, &running);
     int pending = 0;
-    while (CURLMsg *message = curl_multi_info_read(multi, &pending)) {
+    while (const CURLMsg *message = curl_multi_info_read(multi, &pending)) {
       if (message->msg == CURLMSG_DONE) finish(message->easy_handle, message->data.result);
     }
     curl_multi_poll(multi, nullptr, 0, kPollTimeoutMs, nullptr);

@@ -29,7 +29,8 @@ std::string makeWebSocketKey();
 std::string webSocketAccept(std::string_view key);
 
 /// The opening handshake: a GET asking to upgrade, with JavaScript's headers
-/// after the ones the protocol owns.
+/// after the ones the protocol owns. Throws std::invalid_argument for a header
+/// no HTTP line can carry.
 std::string buildWebSocketHandshake(
     const WebSocketEndpoint &endpoint,
     std::string_view key,
@@ -38,8 +39,8 @@ std::string buildWebSocketHandshake(
 
 /// Checks the server's answer, its status line and headers up to the blank
 /// line, as RFC 6455 section 4.1 tells a client to, and returns the protocol
-/// the server picked (empty when none). Throws std::runtime_error naming what
-/// is wrong.
+/// the server picked (empty when none). Throws NetworkError naming what is
+/// wrong.
 std::string checkWebSocketHandshake(
     std::string_view head,
     std::string_view key,

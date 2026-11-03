@@ -1,9 +1,11 @@
 #include "HttpGet.h"
 
+#include "NetworkError.h"
+
 #include <curl/curl.h>
 
+#include <format>
 #include <memory>
-#include <stdexcept>
 
 namespace rntizen {
 
@@ -19,8 +21,8 @@ std::size_t appendBody(char *data, std::size_t size, std::size_t count, void *bo
 } // namespace
 
 std::string httpGet(const std::string &url) {
-  std::unique_ptr<CURL, decltype(&curl_easy_cleanup)> curl(curl_easy_init(), curl_easy_cleanup);
-  if (!curl) throw std::runtime_error("curl_easy_init failed");
+  std::unique_ptr<CURL, decltype(&curl_easy_cleanup)> curl(curl_easy_init(), &curl_easy_cleanup);
+  if (!curl) throw NetworkError("libcurl could not start the request");
   std::string body;
   curl_easy_setopt(curl.get(), CURLOPT_URL, url.c_str());
   curl_easy_setopt(curl.get(), CURLOPT_WRITEFUNCTION, appendBody);
@@ -28,11 +30,13 @@ std::string httpGet(const std::string &url) {
   curl_easy_setopt(curl.get(), CURLOPT_FOLLOWLOCATION, 1L);
   curl_easy_setopt(curl.get(), CURLOPT_TIMEOUT, kTimeoutSeconds);
   curl_easy_setopt(curl.get(), CURLOPT_NOSIGNAL, 1L);
-  const auto result = curl_easy_perform(curl.get());
-  if (result != CURLE_OK) throw std::runtime_error("Cannot reach " + url + ": " + curl_easy_strerror(result));
+  curl_easy_setopt(curl.get(), CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2);
+  if (const auto result = curl_easy_perform(curl.get()); result != CURLE_OK) {
+    throw NetworkError(std::format("Cannot reach {}: {}", url, curl_easy_strerror(result)));
+  }
   long status = 0;
   curl_easy_getinfo(curl.get(), CURLINFO_RESPONSE_CODE, &status);
-  if (status != 200) throw std::runtime_error(url + " answered " + std::to_string(status) + ":\n" + body);
+  if (status != 200) throw NetworkError(std::format("{} answered {}:\n{}", url, status, body));
   return body;
 }
 
