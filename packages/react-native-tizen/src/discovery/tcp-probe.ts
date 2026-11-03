@@ -1,9 +1,16 @@
-import { createConnection } from 'node:net';
+import { createConnection, type Socket } from 'node:net';
+
+type Connect = (options: { host: string; port: number }) => Socket;
 
 /** Whether something accepts a TCP connection at `host:port` within `timeoutMs`. */
-export function tcpOpen(host: string, port: number, timeoutMs: number): Promise<boolean> {
+export function tcpOpen(
+  host: string,
+  port: number,
+  timeoutMs: number,
+  connect: Connect = createConnection,
+): Promise<boolean> {
   return new Promise((resolve) => {
-    const socket = createConnection({ host, port });
+    const socket = connect({ host, port });
     const settle = (open: boolean) => {
       socket.destroy();
       resolve(open);

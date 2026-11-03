@@ -28,11 +28,8 @@ async function listen(handler: (url: string) => string | undefined): Promise<num
   return address.port;
 }
 
-async function closedPort(): Promise<number> {
-  const port = await listen(() => undefined);
-  await new Promise((resolve) => servers.pop()?.close(resolve));
-  return port;
-}
+/** No socket ever listens on port 0: binding to it asks the OS for any free port. */
+const CLOSED_PORT = 0;
 
 const description = (manufacturer: string) =>
   `<root><device><friendlyName>Bedroom</friendlyName><manufacturer>${manufacturer}</manufacturer><modelName>UE43</modelName></device></root>`;
@@ -75,7 +72,7 @@ describe('scanForTvs over SSDP', () => {
       { host: '127.0.0.9', location: `http://127.0.0.9:${port}/dial.xml`, server: 'Roku/9.0' },
     ]);
 
-    const found = await scanForTvs({ ports: { api: await closedPort(), sdb: await closedPort() } });
+    const found = await scanForTvs({ ports: { api: CLOSED_PORT, sdb: CLOSED_PORT } });
 
     expect(found).toMatchObject([
       { host: '127.0.0.1', name: 'Bedroom', model: 'UE43', developerMode: null },
@@ -91,7 +88,7 @@ describe('scanForTvs over SSDP', () => {
 
     const found = await scanForTvs({
       hosts: ['127.0.0.1'],
-      ports: { api: await closedPort(), sdb: await closedPort() },
+      ports: { api: CLOSED_PORT, sdb: CLOSED_PORT },
     });
 
     expect(found).toEqual([]);

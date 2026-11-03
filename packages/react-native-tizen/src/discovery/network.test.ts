@@ -1,4 +1,5 @@
 import { createServer, type Server } from 'node:http';
+import { Socket } from 'node:net';
 import { afterEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import {
@@ -43,11 +44,8 @@ async function http(routes: Record<string, string>): Promise<number> {
   return address.port;
 }
 
-async function closedPort(): Promise<number> {
-  const port = await http({});
-  await new Promise((resolve) => servers.pop()?.close(resolve));
-  return port;
-}
+/** No socket ever listens on port 0: binding to it asks the OS for any free port. */
+const CLOSED_PORT = 0;
 
 afterEach(async () => {
   await Promise.all(
@@ -67,7 +65,7 @@ describe('fetchText and fetchJson', () => {
     expect(await fetchJson(`${base}/json`, z.object({ a: z.number() }))).toEqual({ a: 1 });
     expect(await fetchJson(`${base}/json`, z.object({ b: z.string() }))).toBeNull();
     expect(await fetchJson(`${base}/ok`, z.unknown())).toBeNull();
-    expect(await fetchText(`http://127.0.0.1:${await closedPort()}/`)).toBeNull();
+    expect(await fetchText(`http://127.0.0.1:${CLOSED_PORT}/`)).toBeNull();
   });
 });
 
@@ -85,9 +83,22 @@ describe('the TV answers', () => {
     expect(await fetchDeviceDescription(`http://127.0.0.1:${port}/missing`)).toBeNull();
   });
 
-  it('tells an open port from a closed one', async () => {
+  it('tells an open port from a refused one, a closed one and one that never answers', async () => {
+    const refusing = () => {
+      const socket = new Socket();
+      process.nextTick(() =>
+        socket.emit(
+          'error',
+          Object.assign(new Error('connect ECONNREFUSED'), { code: 'ECONNREFUSED' }),
+        ),
+      );
+      return socket;
+    };
+
     expect(await tcpOpen('127.0.0.1', await http({}), 500)).toBe(true);
-    expect(await tcpOpen('127.0.0.1', await closedPort(), 500)).toBe(false);
+    expect(await tcpOpen('192.0.2.1', 26101, 500, refusing)).toBe(false);
+    expect(await tcpOpen('192.0.2.1', 26101, 20, () => new Socket())).toBe(false);
+    expect(await tcpOpen('127.0.0.1', CLOSED_PORT, 500)).toBe(false);
   });
 
   it('collects no SSDP reply when nothing answers', async () => {
@@ -110,7 +121,7 @@ describe('scanForTvs', () => {
     });
     const bySdb = await scanForTvs({
       hosts: ['127.0.0.1'],
-      ports: { api: await closedPort(), sdb: tv.port },
+      ports: { api: CLOSED_PORT, sdb: tv.port },
       ssdpWindowMs: 50,
     });
 
@@ -131,7 +142,7 @@ describe('scanForTvs', () => {
   it('finds nothing where nothing answers', async () => {
     const found = await scanForTvs({
       hosts: ['127.0.0.1'],
-      ports: { api: await closedPort(), sdb: await closedPort() },
+      ports: { api: CLOSED_PORT, sdb: CLOSED_PORT },
       ssdpWindowMs: 50,
     });
 
@@ -175,6 +186,6 @@ describe('probeTv', () => {
     tvs.push(busy);
 
     expect((await probeTv(found(busy.port))).sdb.state).toBe('refused');
-    expect((await probeTv(found(await closedPort()))).sdb.state).toBe('closed');
+    expect((await probeTv(found(CLOSED_PORT))).sdb.state).toBe('closed');
   });
 });
