@@ -35,6 +35,7 @@ from memory.
 | `runtime/host/src/views/`, `text/`, `mounting/` | `efl-rendering.md` |
 | `src/libraries/`, `runtime/cmake/Libraries.cmake`, `runtime/host/src/svg/` | `../native-modules.md`, `efl-rendering.md` |
 | `runtime/host/src/` (host, Fabric, TurboModules) | `react-native-platform-contract.md` |
+| `runtime/host/devsupport/`, `src/package/dev-server-bundle.ts`, `--dev-server` | `react-native-dev-tooling.md` |
 | `runtime/host/expo/` | `expo-modules-contract.md` |
 | `runtime/host/src/tv/`, `shell/Voice*`, `shell/Preview*`, `shell/TilePayload.cs`, `src/api/`, `src/config/tv-features.ts` | `tizen-tv-app-integration.md`, `tizen-smart-hub-preview.md`, `tizen-tv-platform.md` section 7 |
 | `runtime/cmake/Icu.cmake`, `runtime/intl/`, `runtime/host/src/intl/`, `src/runtime/icu-*`, `react-native-overrides/intl/` | `intl.md` |

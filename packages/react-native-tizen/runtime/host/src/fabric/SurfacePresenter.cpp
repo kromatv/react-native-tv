@@ -13,6 +13,7 @@ namespace rntizen {
 namespace {
 
 constexpr facebook::react::SurfaceId kSurfaceId = 1;
+constexpr facebook::react::SurfaceId kRootTagIncrement = 10;
 
 facebook::react::SchedulerToolbox makeToolbox(const SurfacePresenter::Dependencies &dependencies) {
   using namespace facebook::react;
@@ -34,9 +35,11 @@ SurfacePresenter::SurfacePresenter(Evas *evas, Dependencies dependencies)
     : mountingManager_(evas),
       contextContainer_(dependencies.contextContainer),
       scheduler_(std::make_unique<facebook::react::Scheduler>(makeToolbox(dependencies), nullptr, this)),
+      lastSurfaceId_(kSurfaceId),
       lifetime_(std::make_shared<SurfacePresenter *>(this)) {}
 
 SurfacePresenter::~SurfacePresenter() {
+  while (!overlays_.empty()) stopOverlaySurface(overlays_.begin()->first);
   stopSurface();
   scheduler_->setDelegate(nullptr);
 }
@@ -49,20 +52,57 @@ ComponentView *SurfacePresenter::rootView() const {
   return mountingManager_.findView(kSurfaceId);
 }
 
-void SurfacePresenter::startSurface(const std::string &appKey, facebook::react::Size size) {
+std::unique_ptr<facebook::react::SurfaceHandler> SurfacePresenter::runSurface(
+    const std::string &appKey,
+    facebook::react::SurfaceId surfaceId,
+    facebook::react::Size size) {
   using namespace facebook::react;
-  mountingManager_.startSurface(kSurfaceId);
-  surface_ = std::make_unique<SurfaceHandler>(appKey, kSurfaceId);
-  surface_->setContextContainer(contextContainer_);
-  surface_->setProps(folly::dynamic::object());
-  surface_->constraintLayout(
+  mountingManager_.startSurface(surfaceId);
+  auto surface = std::make_unique<SurfaceHandler>(appKey, surfaceId);
+  surface->setContextContainer(contextContainer_);
+  surface->setProps(folly::dynamic::object());
+  surface->constraintLayout(
       LayoutConstraints{
           .minimumSize = kLogicalScreenSize,
           .maximumSize = kLogicalScreenSize,
           .layoutDirection = LayoutDirection::LeftToRight},
       LayoutContext{.pointScaleFactor = pointScaleFactor(size), .fontSizeMultiplier = 1});
-  scheduler_->registerSurface(*surface_);
-  surface_->start();
+  scheduler_->registerSurface(*surface);
+  surface->start();
+  return surface;
+}
+
+void SurfacePresenter::startSurface(const std::string &appKey, facebook::react::Size size) {
+  surface_ = runSurface(appKey, kSurfaceId, size);
+}
+
+void SurfacePresenter::startOverlaySurface(const std::string &appKey, facebook::react::Size size) {
+  if (overlays_.contains(appKey)) return;
+  lastSurfaceId_ += kRootTagIncrement;
+  overlays_[appKey] = runSurface(appKey, lastSurfaceId_, size);
+}
+
+void SurfacePresenter::stopOverlaySurface(const std::string &appKey) {
+  auto found = overlays_.find(appKey);
+  if (found == overlays_.end()) return;
+  auto surface = std::move(found->second);
+  overlays_.erase(found);
+  // Stopping commits an empty tree and revokes its transaction before
+  // returning: mounted inline, as iOS mounts a commit made on the main thread,
+  // it deletes the surface's views while its root still holds them.
+  mountsInline_ = true;
+  surface->stop();
+  mountsInline_ = false;
+  scheduler_->unregisterSurface(*surface);
+  mountingManager_.stopSurface(surface->getSurfaceId());
+}
+
+const facebook::react::SurfaceHandler *SurfacePresenter::surfaceWithId(facebook::react::SurfaceId surfaceId) const {
+  if (surface_ && surface_->getSurfaceId() == surfaceId) return surface_.get();
+  for (const auto &[appKey, overlay] : overlays_) {
+    if (overlay->getSurfaceId() == surfaceId) return overlay.get();
+  }
+  return nullptr;
 }
 
 void SurfacePresenter::stopSurface() {
@@ -87,6 +127,10 @@ void SurfacePresenter::schedulerDidFinishTransaction(
 
 void SurfacePresenter::schedulerShouldRenderTransactions(
     const std::shared_ptr<const facebook::react::MountingCoordinator> &mountingCoordinator) {
+  if (isMainThread() && mountsInline_) {
+    mountingManager_.performTransaction(*mountingCoordinator);
+    return;
+  }
   mountOnMainThread(mountingCoordinator);
 }
 
@@ -98,13 +142,19 @@ void SurfacePresenter::schedulerDidDispatchCommand(
     const facebook::react::ShadowView &shadowView,
     const std::string &commandName,
     const folly::dynamic &args) {
-  runOnMainThread([lifetime = std::weak_ptr<SurfacePresenter *>(lifetime_), tag = shadowView.tag, commandName, args] {
+  runOnMainThread([lifetime = std::weak_ptr<SurfacePresenter *>(lifetime_),
+                   surfaceId = shadowView.surfaceId,
+                   tag = shadowView.tag,
+                   commandName,
+                   args] {
     auto presenter = lifetime.lock();
     if (!presenter) return;
     auto &self = **presenter;
     // A command sent from an effect reaches here before the commit that made
     // its view is mounted; that commit is already in the coordinator.
-    if (self.surface_) self.mountingManager_.performTransaction(*self.surface_->getMountingCoordinator());
+    if (const auto *surface = self.surfaceWithId(surfaceId)) {
+      self.mountingManager_.performTransaction(*surface->getMountingCoordinator());
+    }
     self.mountingManager_.dispatchCommand(tag, commandName, args);
   });
 }

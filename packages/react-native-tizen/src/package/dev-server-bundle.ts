@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { z } from 'zod';
+import type { AppProject } from '../app/app-project.ts';
 import { BYTECODE_FILE, type AppBundle } from '../bundle/bundle-app.ts';
 import type { Reporter } from '../cli/reporter.ts';
 import { FixableError } from '../errors.ts';
@@ -15,10 +16,12 @@ const originSchema = z.url({ protocol: /^https?$/ });
 
 /**
  * The URL a development build loads its bundle from: Expo's virtual entry on
- * the dev server at `origin`, for the `tizen` platform. A loopback host, which
- * the TV cannot reach, becomes `reachableHost`.
+ * the dev server at `origin`, asked for as Android's DevServerHelper asks, for
+ * the `tizen` platform and Hermes. A loopback host, which the TV cannot reach,
+ * becomes `reachableHost`. The runtime finds the packager socket and the HMR
+ * endpoint from this URL.
  */
-export function devBundleUrl(origin: string, reachableHost: string): string {
+export function devBundleUrl(origin: string, reachableHost: string, packageId: string): string {
   const parsed = originSchema.safeParse(origin);
   if (!parsed.success) {
     throw new FixableError(
@@ -32,7 +35,13 @@ export function devBundleUrl(origin: string, reachableHost: string): string {
   url.search = new URLSearchParams({
     platform: TIZEN_PLATFORM,
     dev: 'true',
+    lazy: 'true',
     minify: 'false',
+    app: packageId,
+    modulesOnly: 'false',
+    runModule: 'true',
+    'transform.engine': 'hermes',
+    unstable_transformProfile: 'hermes-stable',
   }).toString();
   return url.toString();
 }
@@ -69,16 +78,21 @@ export async function devServerBundle(outDir: string, bundleUrl: string): Promis
   return bundle;
 }
 
-/** The bundle step of a build that loads its JavaScript from the dev server at `origin`. */
+/** The bundle step of a build of `app` that loads its JavaScript from the dev server at `origin`. */
 export function devServerBundleStep(
   reporter: Reporter,
+  app: Pick<AppProject, 'config'>,
   outDir: string,
   origin: string,
   reachableHost: (task: Task) => string | Promise<string>,
 ): Promise<DevServerBundle> {
   return reporter.step(
     'JavaScript bundle',
-    async (task) => devServerBundle(outDir, devBundleUrl(origin, await reachableHost(task))),
+    async (task) =>
+      devServerBundle(
+        outDir,
+        devBundleUrl(origin, await reachableHost(task), app.config.packageId),
+      ),
     (bundle) => bundle.bundleUrl,
   );
 }

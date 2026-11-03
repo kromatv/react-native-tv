@@ -84,6 +84,10 @@ fatal `onJsError` (inf: the two paths are split only by `isRuntimeReady`).
 | Loading banner | Optional `DevLoadingView` (`showMessage`, `hide`). | doc: `RN/src/private/specs_DEPRECATED/modules/NativeDevLoadingView.js:16-22` |
 | Inspector | `ws://host:port/inspector/device?...` needs a `HostTarget` handed to `ReactInstance`. | doc: `RA/devsupport/DevServerHelper.kt:123`, `ReactInstance.cpp:112-166` |
 
+Tizen's development runtime does the same, the inspector aside, in
+`runtime/host/devsupport/`; the facts and what was verified are in
+[react-native-dev-tooling.md](react-native-dev-tooling.md).
+
 RNW's bridgeless host does exactly this list: packager connection, inspector,
 then `HMRClient.setup`, and registers `DevSettings` and `LogBox` in C++ (doc:
 `RNW@vnext/Microsoft.ReactNative/ReactHost/ReactInstanceWin.cpp:234-340,441-636`).
@@ -220,7 +224,7 @@ Specs live in `RN/src/private/specs_DEPRECATED/modules/`.
 | `LinkingManager` | get | `url` `{url}` | `Linking` on any `Platform.OS` that is not `android` | yes: `getInitialURL` answers the launching app control's URI; `openURL` rejects, `canOpenURL` answers false |
 | `I18nManager` | get | none | RTL; JS falls back to LTR constants | no |
 | `StatusBarManager` | getEnforcing, at module scope | none | importing `StatusBar` (expo-status-bar does) | yes, height 0, setters do nothing |
-| `DevSettings` | getEnforcing | `didPressMenuItem` | dev bundles | no |
+| `DevSettings` | getEnforcing | `didPressMenuItem` | dev bundles | development runtime: reload and Fast Refresh; no developer menu |
 | `TVNavigationEventEmitter` | get | `onHWKeyEvent` | `TVEventHandler`, `TVEventControl` | events only, as device events |
 | `Timing` | get | none | legacy only; bridgeless timers are C++ | not needed |
 
@@ -480,7 +484,7 @@ only one with an Android twin):
 | `Image/ImageViewNativeComponent.js:60` | the iOS one | `Image.android.js` runs with the iOS config: `src`, `headers`, `shouldNotifyLoadEvents` dropped, a `defaultSource` URI resolved to null | `ImageViewNativeComponent.tizen.ts`, Android's config |
 | `Share/Share.js:98-120` | neither | rejects "Unsupported platform" | unchanged: safer than Android's path |
 | `Components/TextInput/TextInput.js:75,625,953`, `TextInputState.js:105,136` | neither | renders nothing, no focus | `src/metro/tizen-android-branch.ts` reads `Platform.OS` as `android` in both files; `AndroidTextInput` is a host component (`text-input.md`); verified in simulator |
-| `Utilities/DevSettings.js:14` | any | a `__DEV__` bundle throws without the module | open: the dev loop gap below |
+| `Utilities/DevSettings.js:14` | any | a `__DEV__` bundle throws without the module | the development runtime serves `DevSettings` ([react-native-dev-tooling.md](react-native-dev-tooling.md)) |
 | `WebSocket/WebSocket.js:30` | any | the first `WebSocket` throws without the module | `WebSocketModule` answers; verified in simulator |
 | `Lists/FlatList.js:166`, `Components/ScrollView/ScrollView.js:1873,1883` | the iOS one | `removeClippedSubviews` off by default; `snapToAlignment` children flattened | open, low |
 | `EventEmitter/NativeEventEmitter.js:73`, `Network/RCTNetworking.android.js:43` | non-iOS | device events, as on Android | correct |
@@ -511,7 +515,7 @@ What `rn-tizen` relies on to build a library's native code
 |---|-----|----------------|------------------|
 | 1 | View commands and a scrolling ScrollView | KROMA's rails and lists scroll with `scrollTo` ([`packages/ui/src/components/organisms/virtual/virtual-rail/virtual-rail.tsx:145,173`](https://github.com/kromatv/kroma/blob/1d270635adcc9f3a81283e04f06336845d8c5985/packages/ui/src/components/organisms/virtual/virtual-rail/virtual-rail.tsx#L145), [`packages/ui/src/components/organisms/command/use-cursor-scroll.ts:22`](https://github.com/kromatv/kroma/blob/1d270635adcc9f3a81283e04f06336845d8c5985/packages/ui/src/components/organisms/command/use-cursor-scroll.ts#L22)). Fixed: commands reach their view after the commit that mounted it, and `host/views/ScrollView.cpp` applies the offset, writes `ScrollViewState` and emits `onScroll` and `onMomentumScrollEnd`; verified in simulator (`efl-rendering.md`, ScrollView). | Section 2 Commands, State, Events: apply the offset, write `ScrollViewState`, emit `onScroll` with the `ScrollEvent` payload. |
 | 2 | Native animated driver | KROMA asks for `useNativeDriver: true` ([`packages/ui/src/components/organisms/toast/toast-card.tsx:30`](https://github.com/kromatv/kroma/blob/1d270635adcc9f3a81283e04f06336845d8c5985/packages/ui/src/components/organisms/toast/toast-card.tsx#L30), [`packages/ui/src/lib/splash-motion.ts:41`](https://github.com/kromatv/kroma/blob/1d270635adcc9f3a81283e04f06336845d8c5985/packages/ui/src/lib/splash-motion.ts#L41), [`packages/ui/src/lib/native-film.tsx:78`](https://github.com/kromatv/kroma/blob/1d270635adcc9f3a81283e04f06336845d8c5985/packages/ui/src/lib/native-film.tsx#L78)) and got JS animation plus a warning. Fixed: React Native's C++ driver runs on an Ecore animator and moves mounted views without JavaScript (section 5); verified in simulator. | Section 5. |
-| 2 | Dev loop | The host reads `bundleUrl`, but the CLI never writes it (`src/package/runtime-config.ts:15-33`) and bundles are always `--dev false` (`src/bundle/bundle-app.ts:44-45`). A dev bundle also needs DevSettings, `HMRClient.setup('tizen', ...)`, the `/message` socket and LogBox. Fix bug 1 first. | Section 1 Dev server. |
+| 2 | Dev loop | Fixed: `rn-tizen run --dev-server` writes `bundleUrl`, and the development runtime serves DevSettings, LogBox and DevLoadingView, calls `HMRClient.setup('tizen', ...)` and keeps the `/message` socket; verified in simulator and on the TV ([react-native-dev-tooling.md](react-native-dev-tooling.md)). | Section 1 Dev server. |
 | 3 | `reportMount` | No IntersectionObserver, MutationObserver or event timing. | Section 2 Scheduler delegate. |
 | 3 | WebSocketModule; then Blob and FileReader | HMR and app sockets; Blob changes `fetch` (section 3). Fixed: the host serves all three, so the `setUpXHR` override that hid `WebSocket` is gone; verified in simulator (section 3, WebSocket and Blob). | Section 3. |
 | 3 | `onTextLayout` | `TextLayoutManager` has no `measureLines`. | Section 2 Events. |

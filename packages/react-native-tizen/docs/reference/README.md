@@ -12,6 +12,7 @@ and ends with what the facts mean for this package.
 | [tizen-media-playback.md](tizen-media-playback.md) | video: the native player, formats per model year, the video plane, `expo-video` |
 | [efl-rendering.md](efl-rendering.md) | anything under `runtime/host/src/views`, `text`, `mounting`: Evas objects, clipping, text, images, transforms, threads |
 | [react-native-platform-contract.md](react-native-platform-contract.md) | the host: startup, Fabric mounting, events, TurboModules, TV events, the native animated driver |
+| [react-native-dev-tooling.md](react-native-dev-tooling.md) | `runtime/host/devsupport/`, `--dev-server`: the packager socket, HMR and Fast Refresh, logs in the dev server's terminal, DevSettings, LogBox, reload |
 | [expo-modules-contract.md](expo-modules-contract.md) | `globalThis.expo`, Expo native modules and views, `expo` startup |
 | [intl.md](intl.md) | `Intl`, `localeCompare`, case mapping: Hermes' Intl and its gaps, the ICU compiled in and its data, FormatJS, what Tizen ships |
 | [tizen-package-signing.md](tizen-package-signing.md) | `src/signing/`, `src/tizen/signing-identity.ts`, `profiles-file.ts`: which files a signature covers, its XML, the certificates a TV takes, PKCS#12 and `profiles.xml` |

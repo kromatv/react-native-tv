@@ -26,9 +26,10 @@ function inputs() {
   return {
     sdk: SDK,
     target: TARGET,
+    flavour: 'development' as const,
     packages: app.packages,
     hermes: { version: '0.1', importFile: '/hermes/Import.cmake', hermesc: '/hermes/hermesc' },
-    dirs: runtimeBuildDirs(app.packages.reactNative, TARGET),
+    dirs: runtimeBuildDirs(app.packages.reactNative, TARGET, 'development'),
     nativeLibrariesFile: '/libraries.json',
   };
 }
@@ -60,6 +61,22 @@ describe('compileRuntime', () => {
         definitions: expect.objectContaining({ RN_TIZEN_LIBRARIES_FILE: '/libraries.json' }),
       }),
     );
+  });
+
+  it('compiles the dev server tooling into the development runtime only', async () => {
+    const build = inputs();
+    vi.mocked(buildCMakeProject).mockImplementation(async () => {
+      mkdirSync(dirname(build.dirs.library), { recursive: true });
+      writeFileSync(build.dirs.library, '');
+    });
+
+    await compileRuntime(recordingTask(), build);
+    await compileRuntime(recordingTask(), { ...build, flavour: 'release' });
+
+    const flavours = vi
+      .mocked(buildCMakeProject)
+      .mock.calls.map(([, project]) => project.definitions['RN_TIZEN_DEVELOPMENT']);
+    expect(flavours).toEqual(['ON', 'OFF']);
   });
 
   it('says to look at the build output when the library is missing after it', async () => {

@@ -92,11 +92,12 @@ export async function packageSteps(
     (resolved) => `${resolved.name}, distributor until ${until(resolved.distributor.validTo)}`,
   );
   for (const note of featureNotes(app.config.features, request.log === null)) reporter.note(note);
-  const runtimeLibrary = await runtimeSteps(reporter, sdk, app, target);
+  const flavour = request.log === null ? 'release' : 'development';
+  const runtimeLibrary = await runtimeSteps(reporter, sdk, app, target, flavour);
   const bundle =
     request.devServer === undefined
       ? await bundleStep(reporter, app)
-      : await devServerBundleStep(reporter, bundleDir(app), request.devServer, () =>
+      : await devServerBundleStep(reporter, app, bundleDir(app), request.devServer, () =>
           devBuildHost(request.log),
         );
   const icuData = await icuDataStep(reporter, app);

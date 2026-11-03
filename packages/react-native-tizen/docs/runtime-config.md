@@ -16,7 +16,7 @@ starts. `rn-tizen package` and `rn-tizen run` write it; you do not edit it.
 |-------|----------|---------|
 | `appKey` | yes | The component to run: what `AppRegistry.registerComponent` registered. Expo's `registerRootComponent` registers `main`. |
 | `bundleFile` | yes | The bundle in `res/`, Hermes bytecode or plain JavaScript. |
-| `bundleUrl` | no | Load the bundle from this URL (a Metro or Expo dev server) instead of `bundleFile`. `rn-tizen run --dev-server <origin>` and the Run on TV command of `expo start` write Expo's virtual entry on that server. |
+| `bundleUrl` | no | Load the bundle from this URL (a Metro or Expo dev server) instead of `bundleFile`. The development runtime then connects to that server for Fast Refresh, reload, LogBox and logs in its terminal ([reference](reference/react-native-dev-tooling.md)). `rn-tizen run --dev-server <origin>`, `rn-tizen simulator run --dev-server <origin>` and the shift+m commands of `expo start` write Expo's virtual entry on that server. |
 | `development` | no, default `false` | A fatal JavaScript error shows a red error screen with its stack, and Back closes the app. In a release build the app closes after logging the error, as React Native does on Android and iOS. |
 | `log` | no | Stream every log line, JavaScript and native, to this host and port, where `rn-tizen run` or `rn-tizen logs` prints them. Retail TVs keep no readable system log, so a development build needs this. A native crash is streamed here too. |
 | `resolution` | no, default `1080p` | `4k` sizes the window to the window manager's screen when it is 3840x2160 or larger (the config plugin's `resolution` prop). |

@@ -16,7 +16,10 @@ import { resolveSigning, type ResolvedSigning } from '../tizen/signing-identity.
 import { bundleDir, bundleStep, packageSteps } from './package-steps.ts';
 import { runtimeSteps } from './runtime-steps.ts';
 
-vi.mock('../bundle/bundle-app.ts', () => ({ bundleApp: vi.fn() }));
+vi.mock('../bundle/bundle-app.ts', () => ({
+  bundleApp: vi.fn(),
+  BYTECODE_FILE: 'index.tizen.hbc',
+}));
 vi.mock('../runtime/icu-data.ts', () => ({ ensureIcuData: vi.fn() }));
 vi.mock('../package/tizen-project.ts', () => ({ writeTizenProject: vi.fn() }));
 vi.mock('../package/dotnet-build.ts', () => ({ buildDotnetProject: vi.fn() }));
@@ -106,6 +109,28 @@ describe('packageSteps', () => {
       expect.objectContaining({ runtimeLibrary: join(root, 'libreact-native-tizen.so') }),
     );
     expect(signPackage).toHaveBeenCalledWith(tpk, SIGNING.identity);
+    expect(vi.mocked(runtimeSteps).mock.calls[0]?.[4]).toBe('release');
+  });
+
+  it('points a development build at the dev server instead of bundling', async () => {
+    const app = fakeApp(root);
+
+    await packageSteps(reporter(), {
+      sdk: SDK,
+      app,
+      target: { arch: 'armv7l', platformVersion: '9.0' },
+      shell: platformProfile('9.0'),
+      log: { host: '10.0.0.2', port: 8099 },
+      devServer: 'http://localhost:8081',
+      signing: { author: 'author.p12' },
+    });
+
+    expect(bundleApp).not.toHaveBeenCalled();
+    expect(vi.mocked(runtimeSteps).mock.calls[0]?.[4]).toBe('development');
+    const { bundle } = vi.mocked(writeTizenProject).mock.calls[0]?.[0] ?? {};
+    expect(bundle).toMatchObject({
+      bundleUrl: expect.stringMatching(/^http:\/\/10\.0\.0\.2:8081\/\.expo\/.*app=/),
+    });
   });
 
   it("stops before compiling anything when the app's tizen/ is its own", async () => {

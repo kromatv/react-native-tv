@@ -6,7 +6,12 @@ import {
   describeLibraries,
   prepareNativeLibraries,
 } from '../libraries/prepare-native-libraries.ts';
-import { compileRuntime, ensureCodegen, runtimeBuildDirs } from '../runtime/build-runtime.ts';
+import {
+  compileRuntime,
+  ensureCodegen,
+  runtimeBuildDirs,
+  type RuntimeFlavour,
+} from '../runtime/build-runtime.ts';
 import { ensureHermesHostCompilers, hermesHostCompilers } from '../runtime/hermes-host.ts';
 import { setupTarget } from '../sysroot/setup-target.ts';
 import type { TizenSdk } from '../tizen/tizen-sdk.ts';
@@ -14,14 +19,16 @@ import type { TizenTarget } from '../tizen/target.ts';
 
 /**
  * Prepares the target, the Hermes host compilers, React Native's codegen and
- * the app's native libraries, then compiles the native runtime. Every step is
- * skipped or incremental when its inputs did not change. Returns the library's path.
+ * the app's native libraries, then compiles the native runtime of `flavour`.
+ * Every step is skipped or incremental when its inputs did not change.
+ * Returns the library's path.
  */
 export async function runtimeSteps(
   reporter: Reporter,
   sdk: TizenSdk,
   app: AppProject,
   target: TizenTarget,
+  flavour: RuntimeFlavour,
 ): Promise<string> {
   await reporter.step(
     'Toolchain',
@@ -35,7 +42,7 @@ export async function runtimeSteps(
     (task) => ensureHermesHostCompilers(task),
     (built) => (cachedHermes.built ? 'cached' : `hermes ${built.version}`),
   );
-  const dirs = runtimeBuildDirs(app.packages.reactNative, target);
+  const dirs = runtimeBuildDirs(app.packages.reactNative, target, flavour);
   await reporter.step(
     'React Native codegen',
     () => ensureCodegen(app.packages.reactNative, dirs.codegen),
@@ -54,11 +61,12 @@ export async function runtimeSteps(
       compileRuntime(task, {
         sdk,
         target,
+        flavour,
         packages: app.packages,
         hermes,
         dirs,
         nativeLibrariesFile: nativeLibraries.file,
       }),
-    (library) => formatSize(statSync(library).size),
+    (library) => `${flavour}, ${formatSize(statSync(library).size)}`,
   );
 }

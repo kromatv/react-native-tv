@@ -26,6 +26,7 @@ Checked on 2026-11-03.
 | Fact | Tag | Source |
 |---|---|---|
 | Autolinking finds a dev tools plugin in a dependency whose `expo-module.config.json` lists `devtools` among its `platforms`, and reads `devtools.webpageRoot`, `bannerTitle`, `serverEntryPoint` and `cliExtensions`, each kept only when it is inside the package. | S | autolinking `build/ExpoModuleConfig.js:103-118`, `build/platforms/devtools.js:43-75`; `@expo/cli` `src/start/server/devtools/DevToolsPluginManager.js:63-68` |
+| Autolinking walks the app's `dependencies`, `devDependencies` and required `peerDependencies`, not every folder in `node_modules`. This repository's example names no dependency on the package, so shift+m lists no Tizen entry there until the package is named in its `package.json` and linked into its `node_modules`. | S, O | autolinking `build/dependencies/resolution.js:51-66`; example, 2026-11-03 |
 | `cliExtensions` needs `description`, `commands` (at least one) and `entryPoint`; a command needs `name`, `title` and `environments` (`cli`, `mcp`), and may take `parameters` of type `text`, `number` or `confirm`. | S | `src/start/server/devtools/DevToolsPlugin.schema.js:23-98` |
 | shift+m opens "Dev tools (native only)"; a plugin with a page and commands is one entry, which lists `Open <package>` and every command whose `environments` include `cli`. | S, O | `src/start/interface/startInterface.js:161`, `createDevToolsMenuItems.js:68-145` |
 | Each parameter is asked with a prompt of its type, then "Execute command ..." is confirmed. An empty `text` answer is passed on as `""`. | S | `src/start/interface/cliExtensionMenuItemHandler.js:68-104` |
@@ -41,8 +42,10 @@ Checked on 2026-11-03.
 | Fact | Tag | Source |
 |---|---|---|
 | `GET /.expo/.virtual-metro-entry.bundle?platform=tizen&dev=true&minify=false` on `expo start` returned a 4.7 MB development bundle for the example, through `withTizen`'s resolver. `/main.bundle` failed with `UnableToResolveError`, the server root being the workspace root, so the virtual entry, which Expo resolves to the app's `main`, is the URL to use. | O | |
-| The simulator's runtime fetched that bundle from the Mac's dev server (`http://192.168.5.2:<port>`, Lima's `host.lima.internal`), then stopped at `TurboModuleRegistry.getEnforcing(...): 'DevSettings' could not be found`: a development bundle needs React Native's dev support modules, which the runtime does not serve yet. | O | simulator, 2026-11-03 |
+| The simulator's runtime fetched that bundle from the Mac's dev server (`http://192.168.5.2:<port>`, Lima's `host.lima.internal`), then stopped at `TurboModuleRegistry.getEnforcing(...): 'DevSettings' could not be found`: a development bundle needs React Native's dev support modules, which the runtime did not serve then. | O | simulator, 2026-11-03 |
 | From a fresh app's `expo start`, shift+m, Run on TV built, signed and installed the development build on GQ75LS03DAUXZG (Tizen 9.0), whose runtime fetched the bundle from `http://192.168.1.124:8095` over the LAN and stopped at the same `DevSettings`. | O | TV, 2026-11-03 |
+| With the development runtime serving them ([react-native-dev-tooling.md](react-native-dev-tooling.md)), shift+m, Run in simulator in the example's `expo start` loaded the bundle from `http://192.168.1.124:8090`, joined `/message`, printed the app's `console.log` in Expo's terminal, and an edit reached the screen through Fast Refresh with focus and state kept. | O | simulator, 2026-11-03 |
+| `rn-tizen run --dev-server http://localhost:8090` on GQ75LS03DAUXZG (The Frame, 2024, Tizen 9.0) wrote `http://192.168.1.124:8090/...` into `bundleUrl`; the app joined `/message`, and an edit re-ran its effects without running `main` again. | O | TV, 2026-11-03 |
 
 ## 4. What Expo does not do for Tizen
 

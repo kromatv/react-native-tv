@@ -97,7 +97,7 @@ async function simulatorBundle(
 ): Promise<SimulatorBundle> {
   const devServer = flags['dev-server'];
   if (devServer !== undefined)
-    return devServerBundleStep(reporter, bundleDir(app), devServer, hostAddress);
+    return devServerBundleStep(reporter, app, bundleDir(app), devServer, hostAddress);
   if (flags.bundle !== undefined) return givenBytecode(resolve(context.cwd, flags.bundle));
   return bundleStep(reporter, app);
 }

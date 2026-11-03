@@ -15,6 +15,12 @@ import type { HermesHostCompilers } from './hermes-host.ts';
 /** The native library the .NET shell loads. */
 export const RUNTIME_LIBRARY = 'libreact-native-tizen.so';
 
+/**
+ * Which runtime a package gets: a development build's talks to a dev server, a
+ * release build's carries none of that (docs/decisions.md).
+ */
+export type RuntimeFlavour = 'development' | 'release';
+
 interface RuntimeBuildDirs {
   readonly root: string;
   readonly codegen: string;
@@ -24,16 +30,17 @@ interface RuntimeBuildDirs {
 }
 
 /**
- * The build directories of the runtime for an app's react-native and a target,
- * one set per runtime sources and react-native on disk, since a CMake build
- * directory belongs to one source tree.
+ * The build directories of the runtime for an app's react-native, a target and
+ * a flavour, one set per runtime sources and react-native on disk, since a
+ * CMake build directory belongs to one source tree.
  */
 export function runtimeBuildDirs(
   reactNative: ResolvedPackage,
   target: TizenTarget,
+  flavour: RuntimeFlavour,
   runtimeDir: string = RUNTIME_DIR,
 ): RuntimeBuildDirs {
-  const key = `${reactNative.name}-${reactNative.version}-${target.arch}-tizen${target.platformVersion}-${sourcesKey(runtimeDir, reactNative.dir)}`;
+  const key = `${reactNative.name}-${reactNative.version}-${target.arch}-tizen${target.platformVersion}-${flavour}-${sourcesKey(runtimeDir, reactNative.dir)}`;
   const root = join(cacheDir(), 'runtime', key);
   const cmake = join(root, 'build');
   return {
@@ -61,6 +68,7 @@ export async function ensureCodegen(reactNative: ResolvedPackage, dir: string): 
 interface RuntimeInputs {
   readonly sdk: TizenSdk;
   readonly target: TizenTarget;
+  readonly flavour: RuntimeFlavour;
   readonly packages: AppPackages;
   readonly hermes: HermesHostCompilers;
   readonly dirs: RuntimeBuildDirs;
@@ -69,8 +77,8 @@ interface RuntimeInputs {
 
 /**
  * Compiles `libreact-native-tizen.so` against the app's own react-native and
- * expo-modules-core, with the app's native libraries. Incremental: an unchanged
- * build only checks timestamps.
+ * expo-modules-core, with the app's native libraries, in the given flavour.
+ * Incremental: an unchanged build only checks timestamps.
  */
 export async function compileRuntime(task: Task, inputs: RuntimeInputs): Promise<string> {
   const { packages, dirs } = inputs;
@@ -85,6 +93,7 @@ export async function compileRuntime(task: Task, inputs: RuntimeInputs): Promise
       EXPO_MODULES_CORE_DIR: packages.expoModulesCore.dir,
       EXPO_MODULES_JSI_DIR: packages.expoModulesJsi.dir,
       RN_TIZEN_LIBRARIES_FILE: inputs.nativeLibrariesFile,
+      RN_TIZEN_DEVELOPMENT: inputs.flavour === 'development' ? 'ON' : 'OFF',
     },
     targets: ['react-native-tizen'],
   });

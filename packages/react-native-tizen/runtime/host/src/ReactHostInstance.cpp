@@ -135,6 +135,7 @@ void ReactHost::createInstance() {
 
 void ReactHost::loadBundle() {
   if (config_.bundleUrl) {
+    devSupportInstanceStarted();
     jsThread_->runOnQueue([this, url = *config_.bundleUrl] {
       try {
         auto bundle = downloadBundle(url);

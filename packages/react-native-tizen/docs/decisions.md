@@ -121,6 +121,22 @@ and exits, as React Native does on Android and iOS; a TV left on a black screen
 is worse. Both paths a fatal error takes, the runtime's error handler before the
 bundle ran and `ExceptionsManager` after, end there.
 
+## A development runtime and a release runtime
+
+`libreact-native-tizen.so` comes in two flavours, as React Native's Android
+libraries come in debug and release variants. A development build (`rn-tizen
+run`, `package --dev`, the simulator) gets the development runtime: it carries
+`runtime/host/devsupport/`, which talks to a dev server when the runtime config
+has a `bundleUrl` (the packager socket, Fast Refresh, reload, LogBox, the
+loading banner). A release build (`run --release`, `package`) gets a runtime
+compiled without any of it, so a store package carries none of that code and
+pays nothing for it at run time. CMake's `RN_TIZEN_DEVELOPMENT` picks the
+flavour, and each has its own build directory.
+
+Consequence: a machine that makes both kinds of build compiles the runtime
+twice. A development build pointed at `npx expo start` behaves as an Android
+device does under it ([reference](reference/react-native-dev-tooling.md)).
+
 ## Logs travel over the network
 
 Retail TVs keep no readable system log. A development build streams every log

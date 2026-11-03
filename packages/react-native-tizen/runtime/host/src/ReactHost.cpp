@@ -39,15 +39,9 @@ void ReactHost::start() {
   overrideFeatureFlagsOnce();
   tv_ = std::make_shared<TvState>(config_.voice, config_.voiceSearchUrl);
   createWindow();
+  startDevSupport();
   createInstance();
-  if (controlLink_ != nullptr) {
-    perfMonitor_ = std::make_unique<PerfMonitor>(PerfMonitor::Sources{
-        .evas = evas_object_evas_get(window_),
-        .controlLink = controlLink_.get(),
-        .jsThread = jsThread_,
-        .runtimeExecutor = instance_->getBufferedRuntimeExecutor(),
-    });
-  }
+  startPerfMonitor();
   loadBundle();
   routeInput();
   startSurface();
@@ -76,6 +70,7 @@ void ReactHost::stop() {
   closeMainThreadSync();
   if (instanceGate_ != nullptr) instanceGate_->close();
   stopReactNative();
+  devSupport_.reset();
   keyboardFocus_.reset();
   textMeasurer_.reset();
   alertDialog_.reset();
@@ -83,14 +78,43 @@ void ReactHost::stop() {
   if (window_ != nullptr) evas_object_del(std::exchange(window_, nullptr));
 }
 
+void ReactHost::startPerfMonitor() {
+  if (controlLink_ == nullptr) return;
+  perfMonitor_ = std::make_unique<PerfMonitor>(PerfMonitor::Sources{
+      .evas = evas_object_evas_get(window_),
+      .controlLink = controlLink_.get(),
+      .jsThread = jsThread_,
+      .runtimeExecutor = instance_->getBufferedRuntimeExecutor(),
+  });
+}
+
+void ReactHost::reload() {
+  log(LogLevel::Info, "Reloading " + config_.appKey);
+  perfMonitor_.reset();
+  remoteInput_->releaseAll();
+  closeMainThreadSync();
+  instanceGate_->close();
+  stopReactNative();
+  openMainThreadSync();
+  auto *evas = evas_object_evas_get(window_);
+  errorScreen_ = std::make_unique<ErrorScreen>(evas);
+  alertDialog_ = std::make_unique<AlertDialog>(evas);
+  createInstance();
+  startPerfMonitor();
+  loadBundle();
+  startSurface();
+}
+
 void ReactHost::stopReactNative() {
   if (jsThread_ == nullptr) return;
   jsThread_->runWhileParked([this] { presenter_.reset(); });
   jsThread_->runOnQueueSync([this] {
     modules_.reset();
+    // Pending timers hold JavaScript functions: the instance must free them
+    // before its Hermes runtime, as on iOS, where it owns the TimerManager alone.
+    timerManager_.reset();
     instance_.reset();
   });
-  if (timerManager_ != nullptr) timerManager_->quit();
   jsThread_->quitSynchronous();
 }
 

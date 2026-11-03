@@ -63,10 +63,13 @@ describe('runtimeSteps', () => {
   it('prepares the toolchain, codegen and libraries, then compiles the runtime', async () => {
     const reporter = new Reporter({ verbose: false, out, env: { NO_COLOR: '1' } });
 
-    const library = await runtimeSteps(reporter, SDK, fakeApp(dir), {
-      arch: 'armv7l',
-      platformVersion: '9.0',
-    });
+    const library = await runtimeSteps(
+      reporter,
+      SDK,
+      fakeApp(dir),
+      { arch: 'armv7l', platformVersion: '9.0' },
+      'development',
+    );
 
     expect(library).toBe(join(dir, 'libreact-native-tizen.so'));
     expect(compileRuntime).toHaveBeenCalledWith(

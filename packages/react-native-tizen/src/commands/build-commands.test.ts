@@ -157,11 +157,28 @@ describe('rn-tizen build-runtime', () => {
 
     await buildRuntimeCommand.run(['--arch', 'aarch64'], context);
 
-    expect(runtimeSteps).toHaveBeenCalledWith(expect.anything(), SDK, expect.anything(), {
-      arch: 'aarch64',
-      platformVersion: '8.0',
-    });
+    expect(runtimeSteps).toHaveBeenCalledWith(
+      expect.anything(),
+      SDK,
+      expect.anything(),
+      { arch: 'aarch64', platformVersion: '8.0' },
+      'development',
+    );
     expect(output.stdout()).toContain('/cache/runtime/libreact-native-tizen.so');
+  });
+
+  it('builds the release runtime when asked', async () => {
+    vi.mocked(loadAppProject).mockReturnValue(fakeApp(ROOT, { platform: '8.0' }));
+
+    await buildRuntimeCommand.run(['--release'], context);
+
+    expect(runtimeSteps).toHaveBeenCalledWith(
+      expect.anything(),
+      SDK,
+      expect.anything(),
+      expect.anything(),
+      'release',
+    );
   });
 });
 

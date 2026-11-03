@@ -10,6 +10,7 @@
 
 #include <Evas.h>
 
+#include <map>
 #include <memory>
 #include <string>
 
@@ -37,6 +38,12 @@ class SurfacePresenter final : public facebook::react::SchedulerDelegate {
   /// `registerRootComponent` as `main`, registered) across `size`.
   void startSurface(const std::string &appKey, facebook::react::Size size);
   void stopSurface();
+
+  /// Runs `appKey` in a surface of its own over the app's, as LogBox's
+  /// inspector runs; a no-op while one runs it already.
+  void startOverlaySurface(const std::string &appKey, facebook::react::Size size);
+  /// Stops the overlay surface running `appKey`, deleting its views first.
+  void stopOverlaySurface(const std::string &appKey);
 
   MountingManager &mountingManager();
 
@@ -71,11 +78,17 @@ class SurfacePresenter final : public facebook::react::SchedulerDelegate {
 
  private:
   void mountOnMainThread(const std::shared_ptr<const facebook::react::MountingCoordinator> &mountingCoordinator);
+  std::unique_ptr<facebook::react::SurfaceHandler>
+  runSurface(const std::string &appKey, facebook::react::SurfaceId surfaceId, facebook::react::Size size);
+  const facebook::react::SurfaceHandler *surfaceWithId(facebook::react::SurfaceId surfaceId) const;
 
   MountingManager mountingManager_;
   std::shared_ptr<const facebook::react::ContextContainer> contextContainer_;
   std::unique_ptr<facebook::react::Scheduler> scheduler_;
   std::unique_ptr<facebook::react::SurfaceHandler> surface_;
+  std::map<std::string, std::unique_ptr<facebook::react::SurfaceHandler>, std::less<>> overlays_;
+  facebook::react::SurfaceId lastSurfaceId_;
+  bool mountsInline_{false};
   std::shared_ptr<SurfacePresenter *> lifetime_;
 };
 

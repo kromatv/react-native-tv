@@ -4,6 +4,7 @@ import { loadAppProject } from '../app/app-project.ts';
 import { Reporter } from '../cli/reporter.ts';
 import { capturedOutput, type CapturedOutput } from '../fakes.fixtures.ts';
 import { listenForLogs, type LogServer } from '../logs/log-server.ts';
+import { devServerBundleStep } from '../package/dev-server-bundle.ts';
 import { bundleStep } from '../pipeline/package-steps.ts';
 import { simulatorInstance } from '../simulator/instance.ts';
 import { ensureVm, hostAddress, startApp } from '../simulator/simulator.ts';
@@ -16,7 +17,11 @@ const ROOT = '/work/app';
 
 vi.mock('../app/app-project.ts', () => ({ loadAppProject: vi.fn() }));
 vi.mock('../logs/log-server.ts', () => ({ listenForLogs: vi.fn() }));
-vi.mock('../pipeline/package-steps.ts', () => ({ bundleStep: vi.fn() }));
+vi.mock('../pipeline/package-steps.ts', () => ({
+  bundleStep: vi.fn(),
+  bundleDir: vi.fn(() => '/b'),
+}));
+vi.mock('../package/dev-server-bundle.ts', () => ({ devServerBundleStep: vi.fn() }));
 vi.mock('../runtime/icu-data.ts', () => ({
   ensureIcuData: vi.fn(async () => '/cache/icudt77l.dat'),
 }));
@@ -125,6 +130,33 @@ describe('runInSimulator', () => {
       runInSimulator(reporter, { bundle: 'missing.hbc', 'no-logs': true }, context, instance),
     ).rejects.toThrow(`The bytecode ${ROOT}/missing.hbc does not exist`);
     expect(stageApp).not.toHaveBeenCalled();
+  });
+
+  it('loads the bundle from the dev server with --dev-server', async () => {
+    const devBundle = {
+      javascript: '/b/index.tizen.js',
+      bytecode: '/b/index.tizen.hbc',
+      assetsDir: '/b/assets',
+      bundleUrl: 'http://192.168.5.2:8081/.expo/.virtual-metro-entry.bundle?platform=tizen',
+    };
+    vi.mocked(devServerBundleStep).mockResolvedValue(devBundle);
+
+    await runInSimulator(
+      reporter,
+      { 'dev-server': 'http://localhost:8081', 'no-logs': true },
+      context,
+      instance,
+    );
+
+    expect(bundleStep).not.toHaveBeenCalled();
+    expect(devServerBundleStep).toHaveBeenCalledWith(
+      reporter,
+      expect.anything(),
+      '/b',
+      'http://localhost:8081',
+      hostAddress,
+    );
+    expect(vi.mocked(stageApp).mock.calls[0]?.[2]).toBe(devBundle);
   });
 
   it('opens the live screen with --gui', async () => {

@@ -271,7 +271,9 @@ Tizen host and the app's Expo modules core) against the app's own
 later ones only rebuild what changed. It also builds the Hermes compilers for
 this machine, once per Hermes version.
 
-Takes `--arch`, `--platform` and `--project`.
+Takes `--arch`, `--platform` and `--project`. It builds the development
+runtime, the one `run` packages, unless given `--release`: release builds get
+a runtime without the dev server tooling ([decisions](decisions.md)).
 
 ### `rn-tizen bundle`
 
@@ -316,7 +318,7 @@ Manager: a retail TV refuses a self-signed author certificate.
 | `--dev` | Build for development: the app streams its logs to this computer |
 | `--log-host <ip>` | With `--dev`, where the app streams its logs (default: this computer's LAN address, on the TV's subnet when `--device` is given) |
 | `--log-port <port>` | With `--dev`, the port it streams to (default `8099`) |
-| `--dev-server <origin>` | With `--dev`, load the JavaScript from this `expo start` dev server, such as `http://192.168.1.20:8081`, instead of packaging it |
+| `--dev-server <origin>` | With `--dev`, load the JavaScript from this `expo start` dev server, such as `http://localhost:8081`, instead of packaging it |
 | `--entry <file>` | The entry to bundle (default: the app's `main`) |
 
 `package` makes a release build, the one Samsung's store takes: it streams no
@@ -344,13 +346,9 @@ plus:
 | `--release` | Build for the store instead: the app streams no logs, so nothing prints |
 | `--level <level>` | The quietest log level to show: `debug`, `info`, `warn` or `error` (default `info`) |
 | `--no-logs` | Exit once the app is launched |
-| `--dev-server <origin>` | Load the JavaScript from this `expo start` dev server instead of packaging it |
+| `--dev-server <origin>` | Load the JavaScript from this `expo start` dev server instead of packaging it: see [Develop with `expo start`](#develop-with-expo-start) |
 
-With `--dev-server`, the package carries no bundle: its runtime config names
-`bundleUrl`, Expo's entry (`/.expo/.virtual-metro-entry.bundle?platform=tizen`)
-on that server, with `localhost` replaced by an address the TV reaches, and the
-dev server serves the assets. The dev server must be running when the app
-starts. Without `--device`, it uses the only TV reached before that answers. `Install`
+Without `--device`, it uses the only TV reached before that answers. `Install`
 pushes the package to the TV and installs it, replacing any earlier install;
 `Launch` starts it. The log listener starts before the build, so a port already in
 use fails before anything compiles, and nothing the app logs at startup is lost.
@@ -358,7 +356,35 @@ use fails before anything compiles, and nothing the app logs at startup is lost.
 ```sh
 rn-tizen run --device 192.168.1.50
 rn-tizen run --level debug
+rn-tizen run --dev-server http://localhost:8081
 ```
+
+### Develop with `expo start`
+
+```sh
+npx expo start                                   # in the app, as for Android
+rn-tizen run --dev-server http://localhost:8081  # once: install a build that loads from it
+```
+
+Run on TV and Run in simulator, under shift+m in `expo start`, run the same
+commands with the dev server's own address. A build made with `--dev-server`
+carries no bundle: its runtime config names `bundleUrl`, Expo's entry
+(`/.expo/.virtual-metro-entry.bundle?platform=tizen&...`) on that server, with
+`localhost` replaced by an address the TV reaches, and the dev server serves
+the assets. The TV fetches the bundle at each start, so the dev server must be
+running then. Then, as with an Android device:
+
+- an edit reaches the TV through Fast Refresh, keeping state;
+- `r` in `expo start`'s terminal, or `DevSettings.reload()`, reloads the app;
+- `console.log` and errors from the TV print in that terminal;
+- LogBox shows errors and warnings on the TV; Back closes its inspector.
+
+Install the build once: it keeps working across edits, reloads and restarts of
+`expo start`, as long as the server keeps its address and port. `rn-tizen
+simulator run --dev-server <origin>` does the same on the simulator. The TV still
+streams its log lines and native crashes to `rn-tizen`, which prints them
+until Ctrl+C: Metro only sees what JavaScript logs, and nothing from the
+native runtime.
 
 ### `rn-tizen logs`
 
@@ -472,6 +498,7 @@ later runs rebuild only what changed.
 
 ```sh
 rn-tizen simulator run --gui           # build, bundle, start, open the live screen
+rn-tizen simulator run --dev-server http://localhost:8081  # load the bundle from `expo start` instead
 rn-tizen simulator key Down Enter      # press remote keys
 rn-tizen simulator screenshot --out shot.png
 rn-tizen simulator crash               # backtraces of the last native crash
@@ -494,8 +521,9 @@ each instance runs the build it was last staged on. The VM keeps the four most
 recently used; `rn-tizen simulator clean` deletes every build no instance runs.
 
 `run --dev-server <origin>` loads the JavaScript from an `expo start` dev
-server on the Mac, as `rn-tizen run` does, the VM reaching the Mac at
-`host.lima.internal`.
+server on the Mac, as `rn-tizen run` does
+([Develop with `expo start`](#develop-with-expo-start)), the VM reaching the
+Mac at `host.lima.internal`.
 
 Every action, and how the simulator works, is in
 [`simulator/README.md`](../simulator/README.md).

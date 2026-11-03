@@ -64,7 +64,7 @@ const OPTIONS = {
     type: 'string',
     placeholder: '<origin>',
     description:
-      'run: load the bundle from this `expo start` dev server instead of bundling the app',
+      'run: load the bundle from this `expo start` dev server instead of bundling the app: Fast Refresh, r to reload, LogBox and logs in its terminal',
   },
   gui: { type: 'boolean', description: 'run: also open the live screen and remote in the browser' },
   'no-logs': {
@@ -279,6 +279,7 @@ export const simulatorCommand: Command = {
   examples: [
     'rn-tizen simulator run                  build, bundle and start the app, then print its logs',
     'rn-tizen simulator run --gui            the same, and open the live screen and remote',
+    'rn-tizen simulator run --dev-server http://localhost:8081  load the bundle from `expo start`, with Fast Refresh',
     'rn-tizen simulator view                 open the live screen of the running app',
     'rn-tizen simulator screenshot --out shot.png',
     'rn-tizen simulator key Down Down Enter  Up Down Left Right Enter Back Exit Play Pause Stop ...',
