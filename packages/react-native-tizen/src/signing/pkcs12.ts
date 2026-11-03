@@ -167,22 +167,25 @@ function implicitOctets(node: DerNode | undefined): Buffer {
   throw new Error('PKCS#12: expected encrypted content');
 }
 
-function safeContents(contentInfo: DerNode, password: string): DerNode[] {
-  const [type, content] = sequenceOf(contentInfo, 'a content info');
-  const oid = oidOf(type);
-  if (oid === OID.data)
-    return sequenceOf(readDer(octetsOf(explicitOf(content, 0))), 'safe contents');
-  if (oid !== OID.encryptedData) throw new Error(`PKCS#12: unsupported content ${oid}`);
-  const [, encryptedContentInfo] = sequenceOf(explicitOf(content, 0), 'encrypted data');
-  const [, algorithm, encrypted] = sequenceOf(encryptedContentInfo, 'encrypted content');
-  return sequenceOf(
-    readDer(decrypt(algorithm, password, implicitOctets(encrypted))),
-    'safe contents',
-  );
+type Opened = X509Certificate | KeyObject | null;
+
+/**
+ * Parses what `password` decrypted. In a file without a MAC a wrong password
+ * shows only here: its CBC padding checks out about once in 256 tries, and
+ * the bytes that come out do not parse.
+ */
+function parseDecrypted<T>(macChecked: boolean, parse: () => T): T {
+  if (macChecked) return parse();
+  try {
+    return parse();
+  } catch (error) {
+    if (error instanceof Pkcs12PasswordError) throw error;
+    throw new Pkcs12PasswordError();
+  }
 }
 
 /** The certificate or private key a safe bag holds; null for a bag of another kind. */
-function openBag(bag: DerNode, password: string): X509Certificate | KeyObject | null {
+function openBag(bag: DerNode, password: string, macChecked: boolean): Opened {
   const [bagId, bagValue] = sequenceOf(bag, 'a safe bag');
   const value = explicitOf(bagValue, 0);
   const id = oidOf(bagId);
@@ -194,15 +197,31 @@ function openBag(bag: DerNode, password: string): X509Certificate | KeyObject | 
   if (id === OID.shroudedKeyBag) {
     const [algorithm, encrypted] = sequenceOf(value, 'an encrypted private key');
     const pkcs8 = decrypt(algorithm, password, octetsOf(encrypted));
-    return createPrivateKey({ key: pkcs8, format: 'der', type: 'pkcs8' });
+    return parseDecrypted(macChecked, () =>
+      createPrivateKey({ key: pkcs8, format: 'der', type: 'pkcs8' }),
+    );
   }
   if (id !== OID.keyBag) return null;
   return createPrivateKey({ key: encode(value.tag, value.contents), format: 'der', type: 'pkcs8' });
 }
 
+function openContents(contentInfo: DerNode, password: string, macChecked: boolean): Opened[] {
+  const [type, content] = sequenceOf(contentInfo, 'a content info');
+  const oid = oidOf(type);
+  const openBags = (bags: Buffer) =>
+    sequenceOf(readDer(bags), 'safe contents').map((bag) => openBag(bag, password, macChecked));
+  if (oid === OID.data) return openBags(octetsOf(explicitOf(content, 0)));
+  if (oid !== OID.encryptedData) throw new Error(`PKCS#12: unsupported content ${oid}`);
+  const [, encryptedContentInfo] = sequenceOf(explicitOf(content, 0), 'encrypted data');
+  const [, algorithm, encrypted] = sequenceOf(encryptedContentInfo, 'encrypted content');
+  const plain = decrypt(algorithm, password, implicitOctets(encrypted));
+  return parseDecrypted(macChecked, () => openBags(plain));
+}
+
 /**
- * Opens a PKCS#12 file: checks its MAC with `password`, then decrypts its
- * key and certificates. Takes the PBE schemes of RFC 7292 (3DES, RC2) and PBES2 with AES.
+ * Opens a PKCS#12 file: checks its MAC with `password` before it decrypts
+ * anything, then decrypts its key and certificates. Takes the PBE schemes of
+ * RFC 7292 (3DES, RC2) and PBES2 with AES. A wrong password is a `Pkcs12PasswordError`.
  */
 export function readPkcs12(der: Buffer, password: string): Pkcs12Contents {
   const [version, authSafe, macData] = sequenceOf(readDer(der), 'a PKCS#12 file');
@@ -213,11 +232,11 @@ export function readPkcs12(der: Buffer, password: string): Pkcs12Contents {
   }
   const authenticated = octetsOf(explicitOf(authContent, 0));
   if (macData !== undefined) verifyMac(macData, password, authenticated);
+  const macChecked = macData !== undefined;
   let key: KeyObject | null = null;
   const certificates: X509Certificate[] = [];
   for (const contentInfo of sequenceOf(readDer(authenticated), 'content infos')) {
-    for (const bag of safeContents(contentInfo, password)) {
-      const found = openBag(bag, password);
+    for (const found of openContents(contentInfo, password, macChecked)) {
       if (found instanceof X509Certificate) certificates.push(found);
       else if (found !== null) key = found;
     }

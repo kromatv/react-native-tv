@@ -65,6 +65,8 @@ certificates the TV takes, and how Tizen Studio stores them. Checked on
 | Fact | Tag | Source |
 |---|---|---|
 | Samsung's `.p12` files encrypt the key with `pbeWithSHAAnd3-KeyTripleDES-CBC`, the certificates with `pbeWithSHAAnd40BitRC2-CBC`, and carry a SHA-1 MAC. Keys and IVs come from RFC 7292's key derivation. | O, D | [rfc7292] appendix B |
+| `MacData` is optional: a file carries it only in password integrity mode. Its MAC is an HMAC over the contents of the authSafe's Data (without the OCTET STRING's tag and length), keyed by RFC 7292's derivation with ID 3 from the password, `macSalt` and `iterations`, which defaults to 1. | D | [rfc7292] sections 4 and 5.1 step 5B, appendix B.3 |
+| Without a MAC, the only check on a password is the CBC padding of what it decrypts. A wrong key yields valid PKCS #7 padding about once in 256 tries, and the bytes that come out then fail to parse, as `asn1 encoding routines::wrong tag` from OpenSSL. | O, D | [rfc8018] section 6.1.2 step 5 |
 | Node's OpenSSL 3 has no RC2: `createDecipheriv('rc2-40-cbc', ...)` fails with "unsupported". RC2 is RFC 2268. | O, D | [rfc2268] |
 | `tizen security-profiles add` refuses a `.p12` whose key is under PBES2 and AES-256 ("Invalid file or password"), and the JDK 8u322 it ships cannot check an HMAC-SHA256 MAC ("HmacPBESHA256 not available"). A file with 3DES for key and certificates and a SHA-1 MAC is accepted. | O | |
 | `profiles.xml` (version 3.1) names the active profile in `<profiles active=...>`. Each `<profile>` has `profileitem`s: `distributor="0"` the author, `"1"` and `"2"` the distributors, `key` the `.p12` path, `password` the password itself or the path of a `.pwd` file. | O | |
@@ -92,6 +94,9 @@ certificates the TV takes, and how Tizen Studio stores them. Checked on
   (section 2); for every other package the output is Tizen Studio's.
 - Reads PKCS#12 in TypeScript: 3DES and RC2 with RFC 7292's derivation, and
   PBES2 with AES; writes 3DES with a SHA-1 MAC, the form Tizen Studio opens.
+- Checks the MAC before it decrypts anything, so a wrong password is refused
+  for certain. In a file without one, anything that fails to parse after
+  decryption is taken for a wrong password too (section 6).
 - Signs with a profile from `profiles.xml`, its passwords from the profile, the
   `.pwd` file or the macOS keychain, or with `.p12` files given on the command
   line. `rn-tizen certificate create-author` makes a self-signed author
@@ -124,3 +129,4 @@ The Tizen sources were read at cert-svc `af5a3fe` (2026-05-22), app-installers
 [ide-uri]: https://git.tizen.org/cgit/sdk/ide/common-eplugin/tree/org.tizen.common/src/org/tizen/common/util/URIEscapeUtil.java?h=tizen_studio
 [rfc7292]: https://www.rfc-editor.org/rfc/rfc7292
 [rfc2268]: https://www.rfc-editor.org/rfc/rfc2268
+[rfc8018]: https://www.rfc-editor.org/rfc/rfc8018
