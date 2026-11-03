@@ -25,8 +25,8 @@ class BlobModule final : public facebook::react::NativeBlobModuleCxxSpec<BlobMod
   void addWebSocketHandler(facebook::jsi::Runtime &runtime, double id);
   void removeWebSocketHandler(facebook::jsi::Runtime &runtime, double id);
   void sendOverSocket(facebook::jsi::Runtime &runtime, facebook::jsi::Object blob, double socketID);
-  void createFromParts(facebook::jsi::Runtime &runtime, facebook::jsi::Array parts, std::string withId);
-  void release(facebook::jsi::Runtime &runtime, std::string blobId);
+  void createFromParts(facebook::jsi::Runtime &runtime, facebook::jsi::Array parts, const std::string &withId);
+  void release(facebook::jsi::Runtime &runtime, const std::string &blobId);
 
  private:
   void installJSIBindingsWithRuntime(facebook::jsi::Runtime &runtime) override;

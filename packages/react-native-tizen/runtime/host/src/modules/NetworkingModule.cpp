@@ -10,6 +10,8 @@
 
 #include <algorithm>
 #include <cctype>
+#include <charconv>
+#include <system_error>
 
 namespace rntizen {
 
@@ -42,17 +44,19 @@ std::optional<std::string> requestBody(Runtime &runtime, const facebook::jsi::Ob
   return std::nullopt;
 }
 
+std::optional<std::size_t> parsedSize(std::string_view digits) {
+  std::size_t value = 0;
+  if (std::from_chars(digits.data(), digits.data() + digits.size(), value).ec != std::errc()) return std::nullopt;
+  return value;
+}
+
 std::optional<std::size_t> queryNumber(std::string_view query, std::string_view name) {
   std::size_t start = 0;
   while (start < query.size()) {
     const auto end = std::min(query.find('&', start), query.size());
-    const auto pair = query.substr(start, end - start);
-    if (pair.substr(0, name.size()) == name && pair.size() > name.size() && pair[name.size()] == '=') {
-      try {
-        return static_cast<std::size_t>(std::stoull(std::string(pair.substr(name.size() + 1))));
-      } catch (const std::exception &) {
-        return std::nullopt;
-      }
+    if (const auto pair = query.substr(start, end - start);
+        pair.starts_with(name) && pair.size() > name.size() && pair[name.size()] == '=') {
+      return parsedSize(pair.substr(name.size() + 1));
     }
     start = end + 1;
   }
@@ -61,7 +65,7 @@ std::optional<std::size_t> queryNumber(std::string_view query, std::string_view 
 
 std::optional<std::string> blobUrlBytes(std::string_view url) {
   auto rest = url.substr(kBlobScheme.size());
-  if (rest.substr(0, 2) == "//") rest = rest.substr(std::min(rest.find('/', 2), rest.size() - 1) + 1);
+  if (rest.starts_with("//")) rest = rest.substr(std::min(rest.find('/', 2), rest.size() - 1) + 1);
   const auto question = rest.find('?');
   const auto query = question == std::string_view::npos ? std::string_view() : rest.substr(question + 1);
   return BlobStore::shared().resolve(
@@ -71,7 +75,7 @@ std::optional<std::string> blobUrlBytes(std::string_view url) {
 std::string contentType(const folly::dynamic &headers) {
   for (const auto &[name, value] : headers.items()) {
     auto key = name.asString();
-    std::transform(key.begin(), key.end(), key.begin(), [](unsigned char c) { return std::tolower(c); });
+    std::ranges::transform(key, key.begin(), [](unsigned char c) { return std::tolower(c); });
     if (key == "content-type") return value.asString();
   }
   return {};

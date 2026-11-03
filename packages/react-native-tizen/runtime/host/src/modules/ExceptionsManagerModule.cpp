@@ -67,7 +67,7 @@ ExceptionsManagerModule::ExceptionsManagerModule(
     const ModuleContext &context)
     : NativeExceptionsManagerCxxSpec(std::move(jsInvoker)), reportFatalError_(context.reportFatalError) {}
 
-void ExceptionsManagerModule::report(const ErrorReport &report, bool isFatal) {
+void ExceptionsManagerModule::report(const ErrorReport &report, bool isFatal) const {
   log(isFatal ? LogLevel::Error : LogLevel::Warning, describe(report));
   if (isFatal && reportFatalError_) reportFatalError_(report);
 }

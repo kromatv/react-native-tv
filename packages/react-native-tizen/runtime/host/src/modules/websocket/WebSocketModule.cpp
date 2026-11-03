@@ -7,6 +7,9 @@
 #include "../../logging/Log.h"
 #include "../../network/Base64.h"
 
+#include <algorithm>
+#include <stdexcept>
+
 namespace rntizen {
 
 namespace {
@@ -21,7 +24,7 @@ std::vector<std::string> protocolList(Runtime &runtime, const std::optional<face
     if (!value.isString()) continue;
     auto protocol = value.getString(runtime).utf8(runtime);
     const auto first = protocol.find_first_not_of(" \t");
-    if (first == std::string::npos || protocol.find(',') != std::string::npos) continue;
+    if (first == std::string::npos || std::ranges::count(protocol, ',') > 0) continue;
     list.push_back(protocol.substr(first, protocol.find_last_not_of(" \t") - first + 1));
   }
   return list;
@@ -119,13 +122,13 @@ void WebSocketModule::send(Runtime &, std::string message, double forSocketID) {
   connection->send(WebSocketOpcode::Text, std::move(message));
 }
 
-void WebSocketModule::sendBinary(Runtime &, std::string base64String, double forSocketID) {
+void WebSocketModule::sendBinary(Runtime &, const std::string &base64String, double forSocketID) {
   const auto id = static_cast<int>(forSocketID);
   auto connection = WebSocketSockets::shared().find(id);
   if (!connection) return failMissingSocket(id);
   try {
     connection->send(WebSocketOpcode::Binary, decodeBase64(base64String));
-  } catch (const std::exception &error) {
+  } catch (const std::invalid_argument &error) {
     emitDeviceEvent_("websocketFailed", folly::dynamic::object("id", id)("message", error.what()));
   }
 }
@@ -143,7 +146,7 @@ void WebSocketModule::close(Runtime &, double code, std::string reason, double s
   }
 }
 
-void WebSocketModule::addListener(Runtime &, std::string) {}
+void WebSocketModule::addListener(Runtime &, const std::string &) {}
 
 void WebSocketModule::removeListeners(Runtime &, double) {}
 

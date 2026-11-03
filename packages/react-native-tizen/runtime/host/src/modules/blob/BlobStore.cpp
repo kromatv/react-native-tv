@@ -1,35 +1,37 @@
 #include "BlobStore.h"
 
-#include <cstdio>
+#include <cstdint>
+#include <format>
 #include <random>
 
 namespace rntizen {
 
 namespace {
 
+std::uint64_t randomWord(std::random_device &device) {
+  const std::uint64_t high = device();
+  return (high << 32) | device();
+}
+
 std::string randomUuid() {
   static std::mutex mutex;
-  static std::mt19937_64 random(std::random_device{}());
+  static std::random_device device;
   std::uint64_t high = 0;
   std::uint64_t low = 0;
   {
     std::lock_guard lock(mutex);
-    high = random();
-    low = random();
+    high = randomWord(device);
+    low = randomWord(device);
   }
   high = (high & 0xffffffffffff0fffULL) | 0x0000000000004000ULL;
   low = (low & 0x3fffffffffffffffULL) | 0x8000000000000000ULL;
-  char text[37];
-  std::snprintf(
-      text,
-      sizeof(text),
-      "%08x-%04x-%04x-%04x-%012llx",
-      static_cast<unsigned>(high >> 32),
-      static_cast<unsigned>((high >> 16) & 0xffff),
-      static_cast<unsigned>(high & 0xffff),
-      static_cast<unsigned>(low >> 48),
-      static_cast<unsigned long long>(low & 0xffffffffffffULL));
-  return text;
+  return std::format(
+      "{:08x}-{:04x}-{:04x}-{:04x}-{:012x}",
+      high >> 32,
+      (high >> 16) & 0xffff,
+      high & 0xffff,
+      low >> 48,
+      low & 0xffffffffffffULL);
 }
 
 } // namespace

@@ -5,10 +5,11 @@
 #include <ReactCommon/CallInvoker.h>
 #include <ReactCommon/TurboModule.h>
 
+#include <functional>
+#include <map>
 #include <mutex>
 #include <set>
 #include <string>
-#include <unordered_map>
 
 namespace rntizen {
 
@@ -28,8 +29,8 @@ class TurboModuleProvider final {
   const ModuleContext context_;
   const std::shared_ptr<facebook::react::CallInvoker> jsInvoker_;
   std::mutex mutex_;
-  std::unordered_map<std::string, std::shared_ptr<facebook::react::TurboModule>> modules_;
-  std::set<std::string> missing_;
+  std::map<std::string, std::shared_ptr<facebook::react::TurboModule>, std::less<>> modules_;
+  std::set<std::string, std::less<>> missing_;
 };
 
 } // namespace rntizen

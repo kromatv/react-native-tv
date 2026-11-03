@@ -28,7 +28,7 @@ class ExceptionsManagerModule final
   void dismissRedbox(facebook::jsi::Runtime &runtime);
 
  private:
-  void report(const ErrorReport &report, bool isFatal);
+  void report(const ErrorReport &report, bool isFatal) const;
 
   std::function<void(const ErrorReport &report)> reportFatalError_;
 };

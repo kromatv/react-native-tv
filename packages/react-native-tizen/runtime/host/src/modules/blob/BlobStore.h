@@ -1,11 +1,12 @@
 #pragma once
 
 #include <cstddef>
+#include <functional>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <optional>
 #include <string>
-#include <unordered_map>
 
 namespace rntizen {
 
@@ -33,7 +34,7 @@ class BlobStore final {
 
  private:
   mutable std::mutex mutex_;
-  std::unordered_map<std::string, std::shared_ptr<const std::string>> blobs_;
+  std::map<std::string, std::shared_ptr<const std::string>, std::less<>> blobs_;
 };
 
 } // namespace rntizen

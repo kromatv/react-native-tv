@@ -113,7 +113,7 @@ void AlertDialog::layout() {
   evas_object_geometry_set(scrim_, 0, 0, screenWidth_, screenHeight_);
   evas_object_geometry_set(panel_, panelX, panelY, kPanelWidth, panelHeight);
   evas_object_geometry_set(text_, panelX + kPadding, panelY + kPadding, textWidth, textHeight);
-  const int count = static_cast<int>(buttonBackgrounds_.size());
+  const auto count = static_cast<int>(buttonBackgrounds_.size());
   const int rowWidth = count * kButtonWidth + std::max(0, count - 1) * kButtonGap;
   int x = panelX + kPanelWidth - kPadding - rowWidth;
   const int y = panelY + panelHeight - kPadding - kButtonHeight;

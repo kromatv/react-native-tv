@@ -16,7 +16,10 @@ class FileReaderModule final : public facebook::react::NativeFileReaderModuleCxx
   FileReaderModule(std::shared_ptr<facebook::react::CallInvoker> jsInvoker, const ModuleContext &context);
 
   facebook::jsi::Value readAsDataURL(facebook::jsi::Runtime &runtime, facebook::jsi::Object data);
-  facebook::jsi::Value readAsText(facebook::jsi::Runtime &runtime, facebook::jsi::Object data, std::string encoding);
+  facebook::jsi::Value readAsText(
+      facebook::jsi::Runtime &runtime,
+      facebook::jsi::Object data,
+      const std::string &encoding);
 };
 
 } // namespace rntizen

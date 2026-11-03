@@ -14,18 +14,18 @@ TurboModuleProvider::TurboModuleProvider(ModuleContext context, std::shared_ptr<
 std::shared_ptr<facebook::react::TurboModule> TurboModuleProvider::get(const std::string &name) {
   std::lock_guard lock(mutex_);
   if (auto existing = modules_.find(name); existing != modules_.end()) return existing->second;
-  auto module = create(name);
-  if (module) {
-    modules_.emplace(name, module);
+  auto created = create(name);
+  if (created) {
+    modules_.try_emplace(name, created);
   } else if (missing_.insert(name).second) {
     log(LogLevel::Debug, "No native module named " + name);
   }
-  return module;
+  return created;
 }
 
 std::shared_ptr<facebook::react::TurboModule> TurboModuleProvider::create(const std::string &name) const {
   if (auto factory = findPlatformModule(name)) return (*factory)(jsInvoker_, context_);
-  if (auto module = facebook::react::DefaultTurboModules::getTurboModule(name, jsInvoker_)) return module;
+  if (auto fallback = facebook::react::DefaultTurboModules::getTurboModule(name, jsInvoker_)) return fallback;
   auto &registered = facebook::react::globalExportedCxxTurboModuleMap();
   if (auto factory = registered.find(name); factory != registered.end()) return factory->second(jsInvoker_);
   return nullptr;

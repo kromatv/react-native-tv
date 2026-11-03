@@ -16,6 +16,8 @@ constexpr const char *kBlobUriScheme = "blob";
 class BlobCollector final : public facebook::jsi::HostObject {
  public:
   explicit BlobCollector(std::string blobId) : blobId_(std::move(blobId)) {}
+  BlobCollector(const BlobCollector &) = delete;
+  BlobCollector &operator=(const BlobCollector &) = delete;
   ~BlobCollector() override {
     BlobStore::shared().remove(blobId_);
   }
@@ -65,7 +67,7 @@ void BlobModule::sendOverSocket(Runtime &runtime, facebook::jsi::Object blob, do
   }
 }
 
-void BlobModule::createFromParts(Runtime &runtime, facebook::jsi::Array parts, std::string withId) {
+void BlobModule::createFromParts(Runtime &runtime, facebook::jsi::Array parts, const std::string &withId) {
   std::string bytes;
   for (std::size_t index = 0; index < parts.size(runtime); ++index) {
     bytes += partBytes(runtime, parts.getValueAtIndex(runtime, index).asObject(runtime));
@@ -73,7 +75,7 @@ void BlobModule::createFromParts(Runtime &runtime, facebook::jsi::Array parts, s
   BlobStore::shared().store(withId, std::move(bytes));
 }
 
-void BlobModule::release(Runtime &, std::string blobId) {
+void BlobModule::release(Runtime &, const std::string &blobId) {
   BlobStore::shared().remove(blobId);
 }
 

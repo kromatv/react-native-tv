@@ -56,7 +56,7 @@ void DialogManagerModule::showAlert(
           config.getProperty(runtime, "cancelable").getBool(),
       .onClose =
           [onAction](std::optional<int> buttonKey) {
-            if (buttonKey) {
+            if (buttonKey.has_value()) {
               onAction(kButtonClicked, buttonKey);
             } else {
               onAction(kDismissed, std::nullopt);

@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstddef>
 #include <optional>
 
 namespace rntizen {
@@ -16,10 +17,10 @@ namespace {
 
 using facebook::jsi::Runtime;
 
-constexpr std::string_view kReplacementCharacter = "\xEF\xBF\xBD";
+constexpr std::string_view kReplacementCharacter = "\uFFFD";
 
 std::string lowercase(std::string text) {
-  std::transform(text.begin(), text.end(), text.begin(), [](unsigned char c) { return std::tolower(c); });
+  std::ranges::transform(text, text.begin(), [](unsigned char c) { return std::tolower(c); });
   return text;
 }
 
@@ -27,14 +28,14 @@ std::string latin1ToUtf8(std::string_view bytes, bool asciiOnly) {
   std::string text;
   text.reserve(bytes.size());
   for (const char byte : bytes) {
-    const auto code = static_cast<unsigned char>(byte);
-    if (code < 0x80) {
+    const auto code = static_cast<std::byte>(byte);
+    if (std::to_integer<unsigned>(code) < 0x80) {
       text.push_back(byte);
     } else if (asciiOnly) {
       text.append(kReplacementCharacter);
     } else {
-      text.push_back(static_cast<char>(0xC0 | (code >> 6)));
-      text.push_back(static_cast<char>(0x80 | (code & 0x3F)));
+      text.push_back(std::to_integer<char>(std::byte{0xC0} | (code >> 6)));
+      text.push_back(std::to_integer<char>(std::byte{0x80} | (code & std::byte{0x3F})));
     }
   }
   return text;
@@ -62,7 +63,10 @@ facebook::jsi::Value FileReaderModule::readAsDataURL(Runtime &runtime, facebook:
   return resolvedPromise(runtime, facebook::jsi::String::createFromUtf8(runtime, url));
 }
 
-facebook::jsi::Value FileReaderModule::readAsText(Runtime &runtime, facebook::jsi::Object data, std::string encoding) {
+facebook::jsi::Value FileReaderModule::readAsText(
+    Runtime &runtime,
+    facebook::jsi::Object data,
+    const std::string &encoding) {
   auto bytes = resolveBlob(readBlobReference(runtime, data));
   if (!bytes) return rejectedPromise(runtime, "The specified blob is invalid");
   auto text = decoded(std::move(*bytes), encoding);

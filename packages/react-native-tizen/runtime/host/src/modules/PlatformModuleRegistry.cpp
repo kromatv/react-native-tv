@@ -1,7 +1,8 @@
 #include "PlatformModuleRegistry.h"
 
+#include <functional>
+#include <map>
 #include <mutex>
-#include <unordered_map>
 
 namespace rntizen {
 
@@ -9,7 +10,7 @@ namespace {
 
 struct Registry {
   std::mutex mutex;
-  std::unordered_map<std::string, PlatformModuleFactory> factories;
+  std::map<std::string, PlatformModuleFactory, std::less<>> factories;
 };
 
 Registry &registry() {
