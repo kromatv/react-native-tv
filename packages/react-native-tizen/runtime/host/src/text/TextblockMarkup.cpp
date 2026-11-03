@@ -33,8 +33,9 @@ TextblockContent textblockContent(
     if (fragment.isAttachment()) continue;
     const auto &attributes = fragment.textAttributes;
     const auto text = attributes.textTransform ? transformedText(fragment.string, *attributes.textTransform) : fragment.string;
-    content.markup += "<" + fragmentFormat(attributes, scale) + ">" + escaped(text) + "</>";
-    if (!content.tightLineShift) content.tightLineShift = tightLineShift(attributes, scale);
+    const auto run = fragmentFormat(attributes, scale);
+    content.markup += "<" + run.format + ">" + escaped(text) + "</>";
+    if (!content.tightLineShift.has_value()) content.tightLineShift = run.tightLineShift;
   }
   return content;
 }

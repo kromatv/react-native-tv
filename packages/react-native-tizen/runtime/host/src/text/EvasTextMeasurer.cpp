@@ -49,7 +49,6 @@ facebook::react::Size EvasTextMeasurer::measure(
   if (const auto size = unwrapped_.find(key, widthPixels)) return *size;
   facebook::react::Size measured{};
   std::optional<Evas_Coord> unwrappedWidth;
-  // Zero is what a measurement abandoned at shutdown returns; nothing renders it.
   runOnMainThreadSoon([&] {
     const auto content = textblockContent(attributedString, paragraphAttributes, scale);
     evas_textblock_style_set(style_, content.style.c_str());

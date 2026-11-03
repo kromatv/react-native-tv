@@ -18,6 +18,12 @@ using facebook::react::Point;
 
 constexpr double kFrameSeconds = 1.0 / 60;
 
+double throttleSeconds(double milliseconds) {
+  const auto seconds = milliseconds / 1000.0;
+  if (seconds < 0) return std::numeric_limits<double>::infinity();
+  return seconds <= kFrameSeconds ? 0 : seconds;
+}
+
 double nowSeconds() {
   return std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
 }
@@ -36,8 +42,7 @@ ScrollView::ScrollView(Evas *evas, facebook::react::Tag tag) : ComponentView(eva
 
 void ScrollView::updateProps(const facebook::react::Props::Shared &props) {
   const auto &scrollProps = static_cast<const facebook::react::ScrollViewProps &>(*props);
-  const auto throttle = scrollProps.scrollEventThrottle / 1000.0;
-  scrollEventThrottle_ = throttle < 0 ? std::numeric_limits<double>::infinity() : throttle <= kFrameSeconds ? 0 : throttle;
+  scrollEventThrottle_ = throttleSeconds(scrollProps.scrollEventThrottle);
   const bool offsetChanged = scrollProps.contentOffset != propsContentOffset_;
   propsContentOffset_ = scrollProps.contentOffset;
   ComponentView::updateProps(props);

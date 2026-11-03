@@ -13,6 +13,7 @@
 
 #include <Evas.h>
 
+#include <span>
 #include <string>
 #include <vector>
 
@@ -34,7 +35,7 @@ class ComponentView {
 
   facebook::react::Tag tag() const;
   ComponentView *parent() const;
-  const std::vector<ComponentView *> &children() const;
+  std::span<ComponentView *const> children() const;
   const facebook::react::LayoutMetrics &layoutMetrics() const;
   const facebook::react::Props::Shared &props() const;
   const facebook::react::EventEmitter::Shared &eventEmitter() const;

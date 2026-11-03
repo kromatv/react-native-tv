@@ -3,6 +3,7 @@
 #include "SvgPaint.h"
 #include "SvgPath.h"
 
+#include <functional>
 #include <map>
 #include <string>
 #include <variant>
@@ -35,7 +36,7 @@ struct GradientDefinition {
 };
 
 /// The gradients an `<Svg>` defines, by `id`.
-using GradientDefinitions = std::map<std::string, GradientDefinition>;
+using GradientDefinitions = std::map<std::string, GradientDefinition, std::less<>>;
 
 /// A gradient ready for Evas VG, in the `<Svg>` view's pixels, its stops sorted
 /// and clamped to 0..1.

@@ -1,6 +1,7 @@
-#include "ViewBox.h"
+#include "SvgViewBox.h"
 
 #include <algorithm>
+#include <string_view>
 
 namespace rntizen::svg {
 
@@ -10,17 +11,17 @@ constexpr int kMeet = 0;
 constexpr int kSlice = 1;
 constexpr int kNone = 2;
 
-bool contains(const std::string &text, const char *part) {
-  return text.find(part) != std::string::npos;
+bool contains(std::string_view text, std::string_view part) {
+  return text.find(part) != std::string_view::npos;
 }
 
 } // namespace
 
-bool ViewBox::present() const {
+bool SvgViewBox::present() const {
   return !align.empty() && width > 0 && height > 0;
 }
 
-Affine viewBoxTransform(const ViewBox &viewBox, double width, double height) {
+Affine viewBoxTransform(const SvgViewBox &viewBox, double width, double height) {
   if (!viewBox.present()) return {};
   double scaleX = width / viewBox.width;
   double scaleY = height / viewBox.height;
@@ -39,8 +40,14 @@ Affine viewBoxTransform(const ViewBox &viewBox, double width, double height) {
     return Affine::translation(translateX, translateY) * Affine::scaling(scale, scale);
   }
 
-  if (viewBox.align != "none" && viewBox.meetOrSlice == kMeet) scaleX = scaleY = std::min(scaleX, scaleY);
-  if (viewBox.align != "none" && viewBox.meetOrSlice == kSlice) scaleX = scaleY = std::max(scaleX, scaleY);
+  if (viewBox.align != "none" && viewBox.meetOrSlice == kMeet) {
+    scaleY = std::min(scaleX, scaleY);
+    scaleX = scaleY;
+  }
+  if (viewBox.align != "none" && viewBox.meetOrSlice == kSlice) {
+    scaleY = std::max(scaleX, scaleY);
+    scaleX = scaleY;
+  }
   double translateX = -viewBox.minX * scaleX;
   double translateY = -viewBox.minY * scaleY;
   if (contains(viewBox.align, "xMid")) translateX += (width - viewBox.width * scaleX) / 2;

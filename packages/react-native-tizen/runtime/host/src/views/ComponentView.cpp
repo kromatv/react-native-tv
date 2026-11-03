@@ -47,7 +47,7 @@ ComponentView *ComponentView::parent() const {
   return parent_;
 }
 
-const std::vector<ComponentView *> &ComponentView::children() const {
+std::span<ComponentView *const> ComponentView::children() const {
   return children_;
 }
 
@@ -97,7 +97,9 @@ void ComponentView::updateProps(const facebook::react::Props::Shared &props) {
   if (placed_) place();
 }
 
-void ComponentView::updateState(const facebook::react::State::Shared &) {}
+void ComponentView::updateState(const facebook::react::State::Shared &) {
+  // A plain view has no native state.
+}
 
 void ComponentView::updateLayout(const facebook::react::LayoutMetrics &layoutMetrics) {
   const bool reshaped = layoutMetrics.frame.size != layoutMetrics_.frame.size ||
@@ -117,7 +119,9 @@ void ComponentView::updateEventEmitter(const facebook::react::EventEmitter::Shar
   eventEmitter_ = eventEmitter;
 }
 
-void ComponentView::handleCommand(const std::string &, const folly::dynamic &) {}
+void ComponentView::handleCommand(const std::string &, const folly::dynamic &) {
+  // A plain view implements no command, so it drops them all.
+}
 
 void ComponentView::mountChild(ComponentView &child, std::size_t index) {
   index = std::min(index, children_.size());
@@ -136,7 +140,7 @@ void ComponentView::mountChild(ComponentView &child, std::size_t index) {
 
 void ComponentView::unmountChild(ComponentView &child) {
   child.willUnmount();
-  children_.erase(std::remove(children_.begin(), children_.end(), &child), children_.end());
+  std::erase(children_, &child);
   detach(child);
   child.parent_ = nullptr;
   child.setRooted(false);
@@ -182,7 +186,9 @@ void ComponentView::addMember(Evas_Object *member, bool belowChildren) {
   restack();
 }
 
-void ComponentView::layoutMembers() {}
+void ComponentView::layoutMembers() {
+  // A plain view draws only its box, which `place` lays out.
+}
 
 facebook::react::Point ComponentView::childrenOffset() const {
   return {};
@@ -192,15 +198,21 @@ bool ComponentView::isOverlay() const {
   return false;
 }
 
-void ComponentView::didMount() {}
+void ComponentView::didMount() {
+  // A plain view has nothing to start once mounted.
+}
 
-void ComponentView::willUnmount() {}
+void ComponentView::willUnmount() {
+  // A plain view has nothing to stop before it leaves.
+}
 
 Evas_Object *ComponentView::clipperFor(const ComponentView &) const {
   return nullptr;
 }
 
-void ComponentView::didChangeChildren() {}
+void ComponentView::didChangeChildren() {
+  // A plain view treats every child alike.
+}
 
 void ComponentView::setAlwaysClips(bool alwaysClips) {
   if (alwaysClips_ == alwaysClips) return;
@@ -239,7 +251,8 @@ void ComponentView::hangChild(const ComponentView &child) const {
 }
 
 void ComponentView::stackChild(std::size_t index) {
-  Evas_Object *below = contents_.empty() ? box_.topBelowContent() : contents_.back();
+  const auto underneath = contents_.empty() ? box_.objectsBelowContent() : contents_;
+  Evas_Object *below = underneath.empty() ? nullptr : underneath.back();
   for (auto i = index; i > 0; --i) {
     if (!children_[i - 1]->isOverlay()) {
       below = children_[i - 1]->root_;

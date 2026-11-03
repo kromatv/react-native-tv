@@ -1,10 +1,14 @@
 #include "PatternedRing.h"
 
+#include "PatchCache.h"
+#include "Premultiplied.h"
+#include "RoundedRect.h"
+
 #include <algorithm>
 #include <array>
 #include <cmath>
-#include <map>
 #include <numbers>
+#include <optional>
 
 namespace rntizen {
 
@@ -12,10 +16,7 @@ namespace {
 
 constexpr int kMaxSide = 2048;
 constexpr int kSamples = 4;
-constexpr std::size_t kCacheBytes = 8 << 20;
 constexpr float kPi = std::numbers::pi_v<float>;
-
-using Key = std::array<int, 15>;
 
 struct Arc {
   float cx;
@@ -41,28 +42,39 @@ float bestGap(float length, float dash, float gap) {
   return moreGap <= 0 || std::abs(fewerGap - gap) < std::abs(moreGap - gap) ? fewerGap : moreGap;
 }
 
+std::array<Arc, 4> cornerArcs(const Corners &c, const Edges &w, float width, float height) {
+  const auto wl = static_cast<float>(w.left) / 2;
+  const auto wt = static_cast<float>(w.top) / 2;
+  const auto wr = static_cast<float>(w.right) / 2;
+  const auto wb = static_cast<float>(w.bottom) / 2;
+  auto at = [](int radius, float half) { return std::max(static_cast<float>(radius), half); };
+  const auto tlX = at(c.topLeft.x, wl);
+  const auto tlY = at(c.topLeft.y, wt);
+  const auto trX = width - at(c.topRight.x, wr);
+  const auto trY = at(c.topRight.y, wt);
+  const auto brX = width - at(c.bottomRight.x, wr);
+  const auto brY = height - at(c.bottomRight.y, wb);
+  const auto blX = at(c.bottomLeft.x, wl);
+  const auto blY = height - at(c.bottomLeft.y, wb);
+  return {arc(tlX, tlY, tlX - wl, tlY - wt), arc(trX, trY, width - wr - trX, trY - wt),
+          arc(brX, brY, width - wr - brX, height - wb - brY), arc(blX, blY, blX - wl, height - wb - blY)};
+}
+
+float perimeter(const std::array<Arc, 4> &arcs, const std::array<float, 4> &sides) {
+  float total = 0;
+  for (std::size_t i = 0; i < 4; ++i) total += sides[i] + arcs[i].length;
+  return total;
+}
+
 class Outline {
  public:
-  Outline(const Corners &c, const Edges &w, float width, float height) : width_(width), height_(height), widths_(w) {
-    const auto wl = static_cast<float>(w.left) / 2;
-    const auto wt = static_cast<float>(w.top) / 2;
-    const auto wr = static_cast<float>(w.right) / 2;
-    const auto wb = static_cast<float>(w.bottom) / 2;
-    auto at = [](int radius, float half) { return std::max(static_cast<float>(radius), half); };
-    const auto tlX = at(c.topLeft.x, wl);
-    const auto tlY = at(c.topLeft.y, wt);
-    const auto trX = width - at(c.topRight.x, wr);
-    const auto trY = at(c.topRight.y, wt);
-    const auto brX = width - at(c.bottomRight.x, wr);
-    const auto brY = height - at(c.bottomRight.y, wb);
-    const auto blX = at(c.bottomLeft.x, wl);
-    const auto blY = height - at(c.bottomLeft.y, wb);
-    arcs_ = {arc(tlX, tlY, tlX - wl, tlY - wt), arc(trX, trY, width - wr - trX, trY - wt),
-             arc(brX, brY, width - wr - brX, height - wb - brY), arc(blX, blY, blX - wl, height - wb - blY)};
-    sides_ = {trX - tlX, brY - trY, brX - blX, blY - tlY};
-    total_ = 0;
-    for (std::size_t i = 0; i < 4; ++i) total_ += sides_[i] + arcs_[i].length;
-  }
+  Outline(const Corners &c, const Edges &w, float width, float height)
+      : width_(width),
+        height_(height),
+        widths_(w),
+        arcs_(cornerArcs(c, w, width, height)),
+        sides_{arcs_[1].cx - arcs_[0].cx, arcs_[2].cy - arcs_[1].cy, arcs_[2].cx - arcs_[3].cx, arcs_[3].cy - arcs_[0].cy},
+        total_(perimeter(arcs_, sides_)) {}
 
   float length() const {
     return total_;
@@ -75,7 +87,7 @@ class Outline {
     if (x > br.cx && y > br.cy) return onArc(br, x, y, 0, start(1) + sides_[1]);
     if (x < bl.cx && y > bl.cy) return onArc(bl, x, y, kPi / 2, start(2) + sides_[2]);
     const std::array<float, 4> distances{y, width_ - x, height_ - y, x};
-    const auto side = static_cast<std::size_t>(std::min_element(distances.begin(), distances.end()) - distances.begin());
+    const auto side = static_cast<std::size_t>(std::ranges::min_element(distances) - distances.begin());
     const std::array<float, 4> along{x - tl.cx, y - tr.cy, br.cx - x, bl.cy - y};
     const std::array<float, 4> half{
         static_cast<float>(widths_.top) / 2, static_cast<float>(widths_.right) / 2, static_cast<float>(widths_.bottom) / 2,
@@ -107,45 +119,82 @@ class Outline {
   float width_;
   float height_;
   Edges widths_;
-  std::array<Arc, 4> arcs_{};
-  std::array<float, 4> sides_{};
-  float total_{0};
+  std::array<Arc, 4> arcs_;
+  std::array<float, 4> sides_;
+  float total_;
 };
 
-CornerRadius inner(const CornerRadius &r, int dx, int dy) {
-  return {std::max(0, r.x - dx), std::max(0, r.y - dy)};
+struct Dashes {
+  float dash;
+  float gap;
+};
+
+Dashes dashesFor(float thickness, bool dotted) {
+  if (dotted) return {.dash = thickness, .gap = thickness};
+  if (thickness >= 3) return {.dash = thickness * 2, .gap = thickness};
+  return {.dash = thickness * 3, .gap = thickness * 2};
 }
 
-NinePatch paint(const Corners &c, const Edges &w, int width, int height, StrokePattern pattern) {
-  const Outline outline(c, w, static_cast<float>(width), static_cast<float>(height));
-  const auto thickness = static_cast<float>(std::max({w.left, w.top, w.right, w.bottom}));
-  const auto total = outline.length();
-  const bool dotted = pattern == StrokePattern::Dotted;
-  auto dash = dotted ? thickness : thickness * (thickness >= 3 ? 2 : 3);
-  auto gap = dotted ? thickness : thickness * (thickness >= 3 ? 1 : 2);
-  if (total <= 2 * dash) return {};
-  if (total <= 2 * (dash + gap)) {
-    const auto shrink = total / (2 * (dash + gap));
-    dash *= shrink;
-    gap *= shrink;
-  } else {
-    gap = bestGap(total, dash, gap);
+std::optional<Dashes> fitted(const Dashes &dashes, float total) {
+  if (total <= 2 * dashes.dash) return std::nullopt;
+  if (total <= 2 * (dashes.dash + dashes.gap)) {
+    const auto shrink = total / (2 * (dashes.dash + dashes.gap));
+    return Dashes{.dash = dashes.dash * shrink, .gap = dashes.gap * shrink};
   }
-  const auto period = dash + gap;
-  const Corners hole{inner(c.topLeft, w.left, w.top), inner(c.topRight, w.right, w.top),
-                     inner(c.bottomRight, w.right, w.bottom), inner(c.bottomLeft, w.left, w.bottom)};
-  const auto fw = static_cast<float>(width);
-  const auto fh = static_cast<float>(height);
-  auto shown = [&](float x, float y) {
-    if (!insideRounded(c, 0, 0, fw, fh, x, y)) return false;
-    if (insideRounded(hole, static_cast<float>(w.left), static_cast<float>(w.top),
-                      fw - static_cast<float>(w.left + w.right), fh - static_cast<float>(w.top + w.bottom), x, y)) {
-      return false;
-    }
+  return Dashes{.dash = dashes.dash, .gap = bestGap(total, dashes.dash, dashes.gap)};
+}
+
+struct DashedRing {
+  const Outline &outline;
+  RoundedRect outer;
+  RoundedRect hole;
+  bool dotted;
+  float dash;
+  float period;
+
+  bool shows(float x, float y) const {
+    if (!outer.contains(x, y) || hole.contains(x, y)) return false;
     const auto [s, off] = outline.locate(x, y);
     if (!dotted) return std::fmod(s + dash / 2, period) < dash;
     const auto along = std::min(std::fmod(s, period), period - std::fmod(s, period));
     return along * along + off * off <= dash * dash / 4;
+  }
+
+  float coverage(int x, int y) const {
+    int hits = 0;
+    for (int i = 0; i < kSamples; ++i) {
+      for (int j = 0; j < kSamples; ++j) {
+        const auto sampleX = static_cast<float>(x) + (static_cast<float>(i) + 0.5f) / kSamples;
+        const auto sampleY = static_cast<float>(y) + (static_cast<float>(j) + 0.5f) / kSamples;
+        hits += shows(sampleX, sampleY) ? 1 : 0;
+      }
+    }
+    return static_cast<float>(hits) / (kSamples * kSamples);
+  }
+};
+
+NinePatch paint(const Corners &c, const Edges &w, int width, int height, StrokePattern pattern) {
+  const auto fw = static_cast<float>(width);
+  const auto fh = static_cast<float>(height);
+  const Outline outline(c, w, fw, fh);
+  const bool dotted = pattern == StrokePattern::Dotted;
+  const auto thickness = static_cast<float>(std::max({w.left, w.top, w.right, w.bottom}));
+  const auto dashes = fitted(dashesFor(thickness, dotted), outline.length());
+  if (!dashes.has_value()) return {};
+  const DashedRing ring{
+      .outline = outline,
+      .outer = {.width = fw, .height = fh, .corners = c},
+      .hole =
+          {
+              .x = static_cast<float>(w.left),
+              .y = static_cast<float>(w.top),
+              .width = fw - static_cast<float>(w.left + w.right),
+              .height = fh - static_cast<float>(w.top + w.bottom),
+              .corners = c.inset(w),
+          },
+      .dotted = dotted,
+      .dash = dashes->dash,
+      .period = dashes->dash + dashes->gap,
   };
   const auto top = std::max({w.top, c.topLeft.y, c.topRight.y});
   const auto bottom = height - std::max({w.bottom, c.bottomLeft.y, c.bottomRight.y});
@@ -156,17 +205,7 @@ NinePatch paint(const Corners &c, const Edges &w, int width, int height, StrokeP
   for (int y = 0; y < height; ++y) {
     for (int x = 0; x < width; ++x) {
       if (y >= top && y < bottom && x >= left && x < right) continue;
-      int hits = 0;
-      for (int i = 0; i < kSamples; ++i) {
-        for (int j = 0; j < kSamples; ++j) {
-          hits += shown(static_cast<float>(x) + (static_cast<float>(i) + 0.5f) / kSamples,
-                        static_cast<float>(y) + (static_cast<float>(j) + 0.5f) / kSamples)
-              ? 1
-              : 0;
-        }
-      }
-      const auto a = static_cast<std::uint32_t>(std::lround(255.0f * static_cast<float>(hits) / (kSamples * kSamples)));
-      patch.pixels[static_cast<std::size_t>(y * width + x)] = a << 24 | a << 16 | a << 8 | a;
+      patch.pixels[static_cast<std::size_t>(y * width + x)] = alphaPixel(ring.coverage(x, y));
     }
   }
   return patch;
@@ -181,22 +220,11 @@ const NinePatch *patternedRingPatch(
     int height,
     StrokePattern pattern) {
   if (pattern == StrokePattern::Solid || width <= 0 || height <= 0 || width > kMaxSide || height > kMaxSide) return nullptr;
-  static std::map<Key, NinePatch> cache;
-  static std::size_t bytes = 0;
-  const auto &c = corners;
-  const Key key{static_cast<int>(pattern), width, height, c.topLeft.x, c.topLeft.y, c.topRight.x, c.topRight.y,
-                c.bottomRight.x, c.bottomRight.y, c.bottomLeft.x, c.bottomLeft.y, widths.left, widths.top,
-                widths.right, widths.bottom};
-  if (auto found = cache.find(key); found != cache.end()) return found->second.pixels.empty() ? nullptr : &found->second;
-  auto patch = paint(corners, widths, width, height, pattern);
-  const auto size = patch.pixels.size() * sizeof(std::uint32_t);
-  if (bytes + size > kCacheBytes) {
-    cache.clear();
-    bytes = 0;
-  }
-  bytes += size;
-  const auto &stored = cache.emplace(key, std::move(patch)).first->second;
-  return stored.pixels.empty() ? nullptr : &stored;
+  auto key = patchKey(PatchKind::PatternedRing, corners);
+  appendEdges(key, widths);
+  key.insert(key.end(), {static_cast<float>(pattern), static_cast<float>(width), static_cast<float>(height)});
+  const auto &patch = cachedPatch(key, [&corners, &widths, width, height, pattern] { return paint(corners, widths, width, height, pattern); });
+  return patch.pixels.empty() ? nullptr : &patch;
 }
 
 } // namespace rntizen

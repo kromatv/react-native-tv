@@ -4,6 +4,7 @@
 
 #include <dlfcn.h>
 
+#include <format>
 #include <string>
 
 namespace rntizen {
@@ -54,7 +55,7 @@ void setEvasFilterProgram(Evas_Object *object, const char *code) {
 void setEvasFilterNumber(Evas_Object *object, std::string_view name, int value) {
   if (!evasFiltersAvailable()) return;
   const std::string key(name);
-  const auto expression = "tonumber(" + std::to_string(value) + ")";
+  const auto expression = std::format("tonumber({})", value);
   api().dataSet(object, key.c_str(), expression.c_str(), EINA_TRUE);
 }
 

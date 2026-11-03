@@ -7,17 +7,18 @@ namespace rntizen::svg {
 namespace {
 
 ResolvedPaint resolveBrush(const Brush &brush, double opacity, const Path &path, const DrawContext &context) {
+  using enum Brush::Kind;
   Rgba color;
   switch (brush.kind) {
-    case Brush::Kind::None:
+    case None:
       return {};
-    case Brush::Kind::Color:
+    case Color:
       color = brush.color;
       break;
-    case Brush::Kind::CurrentColor:
+    case CurrentColor:
       color = context.currentColor;
       break;
-    case Brush::Kind::Reference: {
+    case Reference: {
       if (context.gradients == nullptr) return {};
       const auto found = context.gradients->find(brush.reference);
       if (found == context.gradients->end()) return {};

@@ -3,8 +3,9 @@
 #include "SvgGradient.h"
 #include "SvgNodeView.h"
 
+#include <span>
 #include <string>
-#include <vector>
+#include <string_view>
 
 namespace rntizen::svg {
 
@@ -20,13 +21,15 @@ class SvgGradientView : public SvgNodeView {
 
  protected:
   void drawContent(Drawing &drawing, const DrawContext &context) const final;
+  void setGradient(std::string_view name, const GradientDefinition &definition);
 
+ private:
   std::string name_;
   GradientDefinition definition_;
 };
 
 /// Adds every gradient in `views` and their subtrees to `gradients`; the first
 /// one with an `id` wins, as `getElementById` picks.
-void collectGradients(const std::vector<ComponentView *> &views, GradientDefinitions &gradients);
+void collectGradients(std::span<ComponentView *const> views, GradientDefinitions &gradients);
 
 } // namespace rntizen::svg

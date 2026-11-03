@@ -16,9 +16,8 @@ namespace rntizen {
 
 namespace {
 
-/// A Modal's descriptor: React Native's, sized to the logical screen from the
-/// first layout, where the portable one starts at 0x0 and waits for a native
-/// state update.
+// React Native's Modal descriptor starts at 0x0 and waits for a native state
+// update; this one sizes the Modal to the logical screen from the first layout.
 class ModalHostViewComponentDescriptor final
     : public facebook::react::ConcreteComponentDescriptor<facebook::react::ModalHostViewShadowNode> {
  public:
@@ -41,8 +40,8 @@ class ModalHostViewComponentDescriptor final
 
 inline constexpr char kMaskedViewComponentName[] = "RNCMaskedView";
 
-/// @react-native-masked-view/masked-view's view, which has no codegen spec: a
-/// plain view's props and layout under its own name (`views/MaskedView.cpp`).
+// @react-native-masked-view/masked-view has no codegen spec: its view takes a
+// plain view's props and layout under its own name.
 using MaskedViewComponentDescriptor = facebook::react::ConcreteComponentDescriptor<
     facebook::react::ConcreteViewShadowNode<kMaskedViewComponentName, facebook::react::ViewProps>>;
 

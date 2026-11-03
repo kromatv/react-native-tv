@@ -5,6 +5,8 @@
 #include "../threading/MainThread.h"
 
 #include <atomic>
+#include <format>
+#include <functional>
 #include <list>
 #include <stdexcept>
 #include <unordered_map>
@@ -27,6 +29,14 @@ namespace {
 
 constexpr std::size_t kCacheBytes = 48u << 20;
 constexpr std::chrono::milliseconds kTimeout{30000};
+
+struct StringHash {
+  using is_transparent = void;
+
+  std::size_t operator()(std::string_view text) const {
+    return std::hash<std::string_view>{}(text);
+  }
+};
 
 class ByteCache {
  public:
@@ -56,7 +66,7 @@ class ByteCache {
     std::list<std::string>::iterator position;
   };
 
-  std::unordered_map<std::string, Entry> entries_;
+  std::unordered_map<std::string, Entry, StringHash, std::equal_to<>> entries_;
   std::list<std::string> order_;
   std::size_t size_{0};
 };
@@ -72,7 +82,7 @@ HttpEngine &imageEngine() {
 }
 
 int nextRequestId() {
-  static std::atomic<int> next{1};
+  static std::atomic next{1};
   return next++;
 }
 
@@ -103,16 +113,16 @@ void download(const facebook::react::ImageSource &source, const std::weak_ptr<Im
     std::string body;
   };
   auto result = std::make_shared<Result>();
-  const auto uri = source.uri;
+  const auto &uri = source.uri;
   imageEngine().start(
       HttpRequest{.id = nextRequestId(), .method = "GET", .url = uri, .headers = source.headers, .body = {}, .timeout = kTimeout},
       HttpResponseHandler{
-          .onResponse = [result](long status, folly::dynamic, std::string) { result->status = status; },
+          .onResponse = [result](long status, const folly::dynamic &, const std::string &) { result->status = status; },
           .onBody = [result](std::string body) { result->body = std::move(body); },
           .onComplete =
               [result, fetch, uri](std::string error, bool) {
                 const auto status = static_cast<int>(result->status);
-                if (error.empty() && (status < 200 || status >= 300)) error = "HTTP " + std::to_string(status);
+                if (error.empty() && (status < 200 || status >= 300)) error = std::format("HTTP {}", status);
                 if (!error.empty()) {
                   deliverOnMainThread(fetch, {.bytes = nullptr, .error = error, .status = status});
                   return;
@@ -128,8 +138,11 @@ void download(const facebook::react::ImageSource &source, const std::weak_ptr<Im
 
 } // namespace
 
-bool isFetchedUri(const std::string &uri) {
-  return uri.starts_with("http://") || uri.starts_with("https://") || uri.starts_with("data:");
+bool isFetchedUri(std::string_view uri) {
+  const auto colon = uri.find(':');
+  if (colon == std::string_view::npos) return false;
+  const auto scheme = uri.substr(0, colon);
+  return scheme == "http" || scheme == "https" || scheme == "data";
 }
 
 std::shared_ptr<ImageFetch> fetchImage(const facebook::react::ImageSource &source, std::function<void(FetchedImage)> done) {

@@ -58,7 +58,7 @@ void ModalHostView::willUnmount() {
 
 void ModalHostView::leaveStack() {
   auto &modals = mountedModals();
-  modals.erase(std::remove(modals.begin(), modals.end(), this), modals.end());
+  std::erase(modals, this);
 }
 
 RN_TIZEN_COMPONENT_VIEW("ModalHostView", ModalHostView);

@@ -5,6 +5,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <string_view>
 
 namespace rntizen {
 
@@ -25,6 +26,6 @@ class ImageFetch;
 std::shared_ptr<ImageFetch> fetchImage(const facebook::react::ImageSource &source, std::function<void(FetchedImage)> done);
 
 /// Whether `uri` names something `fetchImage` fetches rather than a file.
-bool isFetchedUri(const std::string &uri);
+bool isFetchedUri(std::string_view uri);
 
 } // namespace rntizen

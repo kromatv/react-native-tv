@@ -2,10 +2,12 @@
 
 #include "GradientGeometry.h"
 #include "GradientRamp.h"
+#include "GradientTable.h"
+#include "PatchCache.h"
+#include "RoundedRect.h"
 
 #include <algorithm>
 #include <cmath>
-#include <map>
 #include <vector>
 
 namespace rntizen {
@@ -16,19 +18,9 @@ using facebook::react::LinearGradient;
 using facebook::react::RadialGradient;
 
 constexpr int kMaxSide = 2048;
-constexpr float kTableStepsPerPixel = 16;
-constexpr std::size_t kMaxTable = 1 << 16;
 constexpr float kMaxPixels = 512 * 512;
-constexpr std::size_t kCacheBytes = 16 << 20;
 
-using Key = std::vector<float>;
-
-struct Cache {
-  std::map<Key, NinePatch> patches;
-  std::size_t bytes{0};
-};
-
-void appendUnit(Key &key, const std::optional<facebook::react::ValueUnit> &value) {
+void appendUnit(PatchKey &key, const std::optional<facebook::react::ValueUnit> &value) {
   if (!value) {
     key.push_back(-1);
     return;
@@ -37,7 +29,7 @@ void appendUnit(Key &key, const std::optional<facebook::react::ValueUnit> &value
   key.push_back(static_cast<float>(value->unit));
 }
 
-void appendStops(Key &key, const std::vector<facebook::react::ColorStop> &stops) {
+void appendStops(PatchKey &key, const std::vector<facebook::react::ColorStop> &stops) {
   for (const auto &stop : stops) {
     if (stop.color) {
       const auto c = facebook::react::colorComponentsFromColor(stop.color);
@@ -49,7 +41,7 @@ void appendStops(Key &key, const std::vector<facebook::react::ColorStop> &stops)
   }
 }
 
-void appendImage(Key &key, const LinearGradient &linear) {
+void appendImage(PatchKey &key, const LinearGradient &linear) {
   key.push_back(0);
   key.push_back(static_cast<float>(linear.direction.index()));
   if (const auto *angle = std::get_if<facebook::react::Float>(&linear.direction)) {
@@ -60,7 +52,7 @@ void appendImage(Key &key, const LinearGradient &linear) {
   appendStops(key, linear.colorStops);
 }
 
-void appendImage(Key &key, const RadialGradient &radial) {
+void appendImage(PatchKey &key, const RadialGradient &radial) {
   key.push_back(1);
   key.push_back(static_cast<float>(radial.shape));
   if (const auto *size = std::get_if<facebook::react::RadialGradientSize::Dimensions>(&radial.size.value)) {
@@ -75,12 +67,9 @@ void appendImage(Key &key, const RadialGradient &radial) {
   appendStops(key, radial.colorStops);
 }
 
-Key keyFor(const facebook::react::BackgroundImage &image, const GradientBox &box) {
-  const auto &c = box.corners;
-  Key key{static_cast<float>(box.width), static_cast<float>(box.height), box.pointScale,
-          static_cast<float>(c.topLeft.x), static_cast<float>(c.topLeft.y), static_cast<float>(c.topRight.x),
-          static_cast<float>(c.topRight.y), static_cast<float>(c.bottomRight.x), static_cast<float>(c.bottomRight.y),
-          static_cast<float>(c.bottomLeft.x), static_cast<float>(c.bottomLeft.y)};
+PatchKey keyFor(const facebook::react::BackgroundImage &image, const GradientBox &box) {
+  auto key = patchKey(PatchKind::Gradient, box.corners);
+  key.insert(key.end(), {static_cast<float>(box.width), static_cast<float>(box.height), box.pointScale});
   std::visit([&key](const auto &gradient) { appendImage(key, gradient); }, image);
   return key;
 }
@@ -132,46 +121,6 @@ NinePatch strip(const GradientGeometry &geometry, const GradientRamp &ramp, cons
   return patch;
 }
 
-struct LineTable {
-  float start{0};
-  float stepsPerUnit{0};
-  std::vector<std::uint32_t> pixels;
-
-  std::uint32_t at(float t) const {
-    const auto index = static_cast<long>((t - start) * stepsPerUnit + 0.5f);
-    return pixels[static_cast<std::size_t>(std::clamp(index, 0L, static_cast<long>(pixels.size()) - 1))];
-  }
-};
-
-LineTable lineTable(const GradientGeometry &geometry, const GradientRamp &ramp, const NinePatch &patch, float sx, float sy) {
-  const auto pixelSlope = geometry.slope() / std::min(sx, sy);
-  if (pixelSlope <= 0) return {};
-  const auto lastX = (static_cast<float>(patch.width) - 0.5f) / sx;
-  const auto lastY = (static_cast<float>(patch.height) - 0.5f) / sy;
-  const auto firstX = 0.5f / sx;
-  const auto firstY = 0.5f / sy;
-  float low = 0;
-  float high = 0;
-  bool seeded = false;
-  for (const auto &[x, y] : {std::pair{firstX, firstY}, {lastX, firstY}, {firstX, lastY}, {lastX, lastY}}) {
-    const auto t = geometry.at(x, y);
-    low = seeded ? std::min(low, t) : t;
-    high = seeded ? std::max(high, t) : t;
-    seeded = true;
-  }
-  low = std::min(low, 0.0f);
-  const auto stepsPerUnit = kTableStepsPerPixel / pixelSlope;
-  const auto count = static_cast<std::size_t>((high - low) * stepsPerUnit) + 2;
-  if (count > kMaxTable) return {};
-  LineTable table{.start = low, .stepsPerUnit = stepsPerUnit};
-  table.pixels.resize(count);
-  std::size_t segment = 0;
-  for (std::size_t i = 0; i < count; ++i) {
-    table.pixels[i] = pixelOf(ramp.at(low + static_cast<float>(i) / stepsPerUnit, segment));
-  }
-  return table;
-}
-
 NinePatch whole(const GradientGeometry &geometry, const GradientRamp &ramp, const GradientBox &box) {
   const auto width = static_cast<float>(box.width);
   const auto height = static_cast<float>(box.height);
@@ -184,7 +133,7 @@ NinePatch whole(const GradientGeometry &geometry, const GradientRamp &ramp, cons
   const auto sy = static_cast<float>(patch.height) / height;
   const auto corners = scaled(box.corners, sx, sy);
   const bool square = corners.isSquare();
-  const auto table = lineTable(geometry, ramp, patch, sx, sy);
+  const GradientTable table(geometry, ramp, patch.width, patch.height, sx, sy);
   std::size_t segment = 0;
   std::vector<float> fractions(static_cast<std::size_t>(patch.width));
   for (int y = 0; y < patch.height; ++y) {
@@ -193,7 +142,7 @@ NinePatch whole(const GradientGeometry &geometry, const GradientRamp &ramp, cons
     for (int x = 0; x < patch.width; ++x) {
       const auto t = fractions[static_cast<std::size_t>(x)];
       const auto coverage = square ? 1 : roundedCoverage(corners, patch.width, patch.height, x, y);
-      if (coverage == 1 && !table.pixels.empty()) {
+      if (coverage == 1 && !table.empty()) {
         row[x] = table.at(t);
         continue;
       }
@@ -209,12 +158,13 @@ NinePatch paint(const facebook::react::BackgroundImage &image, const GradientBox
   const GradientGeometry geometry(image, static_cast<float>(box.width), static_cast<float>(box.height), box.pointScale);
   const GradientRamp ramp(stopsOf(image), geometry.lineLength(), box.pointScale);
   if (ramp.empty()) return {};
+  using enum GradientGeometry::Axis;
   switch (geometry.axis()) {
-    case GradientGeometry::Axis::Vertical:
+    case Vertical:
       return strip(geometry, ramp, box, true);
-    case GradientGeometry::Axis::Horizontal:
+    case Horizontal:
       return strip(geometry, ramp, box, false);
-    case GradientGeometry::Axis::None:
+    case None:
       return whole(geometry, ramp, box);
   }
   return {};
@@ -223,17 +173,7 @@ NinePatch paint(const facebook::react::BackgroundImage &image, const GradientBox
 } // namespace
 
 const NinePatch &gradientPatch(const facebook::react::BackgroundImage &image, const GradientBox &box) {
-  static Cache cache;
-  auto key = keyFor(image, box);
-  if (auto found = cache.patches.find(key); found != cache.patches.end()) return found->second;
-  auto patch = paint(image, box);
-  const auto bytes = patch.pixels.size() * sizeof(std::uint32_t);
-  if (cache.bytes + bytes > kCacheBytes) {
-    cache.patches.clear();
-    cache.bytes = 0;
-  }
-  cache.bytes += bytes;
-  return cache.patches.emplace(std::move(key), std::move(patch)).first->second;
+  return cachedPatch(keyFor(image, box), [&image, &box] { return paint(image, box); });
 }
 
 } // namespace rntizen

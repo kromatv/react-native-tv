@@ -1,28 +1,11 @@
 #include "BoxGradients.h"
 
 #include "GradientImage.h"
-#include "NinePatchImage.h"
+#include "SmartMembers.h"
 
 #include <algorithm>
 
 namespace rntizen {
-
-namespace {
-
-CornerRadius inner(const CornerRadius &radius, int dx, int dy) {
-  return {.x = std::max(0, radius.x - dx), .y = std::max(0, radius.y - dy)};
-}
-
-Corners innerCorners(const Corners &corners, const Edges &widths) {
-  return {
-      .topLeft = inner(corners.topLeft, widths.left, widths.top),
-      .topRight = inner(corners.topRight, widths.right, widths.top),
-      .bottomRight = inner(corners.bottomRight, widths.right, widths.bottom),
-      .bottomLeft = inner(corners.bottomLeft, widths.left, widths.bottom),
-  };
-}
-
-} // namespace
 
 BoxGradients::BoxGradients(Evas *evas, Evas_Object *smart) : evas_(evas), smart_(smart) {}
 
@@ -31,13 +14,7 @@ BoxGradients::~BoxGradients() {
 }
 
 bool BoxGradients::update(const BoxStyle &style) {
-  const auto count = style.backgroundImages.size();
-  const bool countChanged = count != images_.size();
-  while (images_.size() > count) {
-    evas_object_del(images_.back());
-    images_.pop_back();
-  }
-  while (images_.size() < count) images_.push_back(addPatchImage(evas_, smart_));
+  const bool countChanged = resizePatchImages(images_, style.backgroundImages.size(), evas_, smart_);
   stale_ = stale_ || countChanged || style.backgroundImages != style_.backgroundImages || style.corners != style_.corners ||
       style.borderWidths != style_.borderWidths || style.pointScale != style_.pointScale;
   style_.backgroundImages = style.backgroundImages;
@@ -66,7 +43,7 @@ void BoxGradients::paint(const PixelRect &area) {
       .width = area.width,
       .height = area.height,
       .pointScale = style_.pointScale,
-      .corners = innerCorners(style_.corners, style_.borderWidths),
+      .corners = style_.corners.inset(style_.borderWidths),
   };
   const auto &layers = style_.backgroundImages;
   for (std::size_t i = 0; i < images_.size(); ++i) {

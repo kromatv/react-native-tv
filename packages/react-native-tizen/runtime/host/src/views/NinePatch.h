@@ -13,6 +13,17 @@ struct CornerRadius {
   bool operator==(const CornerRadius &) const = default;
 };
 
+/// A width per side, in pixels.
+struct Edges {
+  int left{0};
+  int top{0};
+  int right{0};
+  int bottom{0};
+
+  bool operator==(const Edges &) const = default;
+  bool isZero() const;
+};
+
 /// The corners of a rounded rectangle, in pixels.
 struct Corners {
   CornerRadius topLeft;
@@ -25,17 +36,12 @@ struct Corners {
   /// Every radius grown by `amount`, the way CSS grows a shadow's or an
   /// outline's corners; a square corner stays square.
   Corners grown(int amount) const;
-};
-
-/// A width per side, in pixels.
-struct Edges {
-  int left{0};
-  int top{0};
-  int right{0};
-  int bottom{0};
-
-  bool operator==(const Edges &) const = default;
-  bool isZero() const;
+  /// Each radius less the widths of the sides it joins, never below zero: the
+  /// corners of the box inside a border of `widths`.
+  Corners inset(const Edges &widths) const;
+  /// How far the corners reach in from each side: the larger radius of that
+  /// side's two corners.
+  Edges extents() const;
 };
 
 /// An image whose `border` keeps its corners unscaled while the middle row and
@@ -50,11 +56,12 @@ struct NinePatch {
   std::vector<std::uint32_t> pixels;
 };
 
-/// A filled rounded rectangle. Patches are cached; a returned reference stays
-/// valid until the next call. Main thread only.
+/// A filled rounded rectangle, from the shared patch cache (`PatchCache.h`).
+/// Main thread only.
 const NinePatch &filledPatch(const Corners &corners);
 
-/// The rounded rectangle minus the one inset by `widths`.
+/// The rounded rectangle minus the one inset by `widths`, from the shared
+/// patch cache. Main thread only.
 const NinePatch &ringPatch(const Corners &corners, const Edges &widths);
 
 /// The rounded rectangle blurred as CSS blurs a box-shadow (a Gaussian whose
@@ -63,13 +70,5 @@ const NinePatch &ringPatch(const Corners &corners, const Edges &widths);
 NinePatch makeShadowPatch(const Corners &corners, int blur);
 
 int shadowPadding(int blur);
-
-/// How much of the pixel at (`x`, `y`) a `width` x `height` rectangle with
-/// `corners` covers, from 0 to 1.
-float roundedCoverage(const Corners &corners, int width, int height, int x, int y);
-
-/// Whether the point (`x`, `y`) lies in the `width` x `height` rectangle at
-/// (`left`, `top`) with `corners`.
-bool insideRounded(const Corners &corners, float left, float top, float width, float height, float x, float y);
 
 } // namespace rntizen

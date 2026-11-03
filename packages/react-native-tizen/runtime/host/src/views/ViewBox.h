@@ -3,6 +3,7 @@
 #include "BoxBorder.h"
 #include "BoxGradients.h"
 #include "BoxShadows.h"
+#include "BoxShape.h"
 #include "BoxStyle.h"
 #include "PixelGeometry.h"
 
@@ -19,7 +20,6 @@ namespace rntizen {
 class ViewBox final {
  public:
   ViewBox(Evas *evas, Evas_Object *smart);
-  ~ViewBox();
 
   ViewBox(const ViewBox &) = delete;
   ViewBox &operator=(const ViewBox &) = delete;
@@ -34,8 +34,6 @@ class ViewBox final {
   /// Shadows, the background color, then the gradients, lowest first. A box
   /// that neither paints a color nor clips has no background object.
   std::vector<Evas_Object *> objectsBelowContent() const;
-  /// The highest of `objectsBelowContent()`, or null when there is none.
-  Evas_Object *topBelowContent() const;
   /// The border and the outline, drawn above the children.
   std::vector<Evas_Object *> objectsAboveChildren() const;
   /// How far shadows and the outline draw past the box on each side.
@@ -43,17 +41,13 @@ class ViewBox final {
 
  private:
   bool updateBackground(const BoxStyle &style);
-  bool updateClipper(const BoxStyle &style);
 
-  Evas *const evas_;
   Evas_Object *const smart_;
   BoxShadows shadows_;
   BoxBorder border_;
   BoxGradients gradients_;
-  Evas_Object *background_{nullptr};
-  bool backgroundIsImage_{false};
-  Evas_Object *clipper_{nullptr};
-  bool clipperIsImage_{false};
+  BoxShape background_;
+  BoxShape clipper_;
   bool updated_{false};
   BoxStyle style_;
 };

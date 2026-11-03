@@ -1,15 +1,12 @@
 #pragma once
 
+#include "Premultiplied.h"
+
 #include <react/renderer/graphics/ColorStop.h>
 
-#include <array>
-#include <cstdint>
 #include <vector>
 
 namespace rntizen {
-
-/// A premultiplied RGBA color, each channel from 0 to 1.
-using Premultiplied = std::array<float, 4>;
 
 /// The colors along a CSS gradient line: React Native's color stops fixed up as
 /// CSS Images 4 orders them, transition hints included, and interpolated in
@@ -38,12 +35,5 @@ class GradientRamp {
 
   std::vector<Stop> stops_;
 };
-
-/// `color` as one premultiplied ARGB32 pixel, as Evas images store them.
-std::uint32_t pixelOf(const Premultiplied &color);
-
-/// `unit` from 0 to 1 as a byte, rounded half away from zero as `std::lround`
-/// rounds, without its call.
-std::uint32_t byteOf(float unit);
 
 } // namespace rntizen

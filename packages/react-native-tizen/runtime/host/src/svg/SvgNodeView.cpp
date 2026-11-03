@@ -9,9 +9,9 @@ namespace rntizen::svg {
 
 namespace {
 
-std::shared_ptr<const RedrawRequest> ownerRedraw(const ComponentView &node) {
+std::shared_ptr<SvgView *const> ownerOf(const ComponentView &node) {
   for (auto *ancestor = node.parent(); ancestor != nullptr; ancestor = ancestor->parent()) {
-    if (const auto *svg = dynamic_cast<const SvgView *>(ancestor)) return svg->redrawRequest();
+    if (const auto *svg = dynamic_cast<const SvgView *>(ancestor)) return svg->handle();
   }
   return nullptr;
 }
@@ -62,12 +62,12 @@ void SvgNodeView::willUnmount() {
   requestRedraw();
 }
 
-void SvgNodeView::requestRedraw() {
-  if (auto owner = ownerRedraw(*this)) redraw_ = owner;
-  if (const auto redraw = redraw_.lock()) (*redraw)();
+void SvgNodeView::requestRedraw() noexcept {
+  if (auto found = ownerOf(*this)) owner_ = found;
+  if (const auto owner = owner_.lock()) (*owner)->scheduleRedraw();
 }
 
-void drawChildren(const std::vector<ComponentView *> &children, Drawing &drawing, const DrawContext &context) {
+void drawChildren(std::span<ComponentView *const> children, Drawing &drawing, const DrawContext &context) {
   for (const auto *child : children) {
     if (const auto *node = dynamic_cast<const SvgNodeView *>(child)) node->draw(drawing, context);
   }

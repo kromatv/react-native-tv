@@ -14,12 +14,13 @@ using facebook::react::UnitType;
 constexpr float kNoHint = std::numeric_limits<float>::quiet_NaN();
 
 std::optional<float> fraction(const facebook::react::ValueUnit &position, float lineLength, float pointScale) {
+  using enum UnitType;
   switch (position.unit) {
-    case UnitType::Percent:
+    case Percent:
       return position.value / 100;
-    case UnitType::Point:
+    case Point:
       return lineLength > 0 ? position.value * pointScale / lineLength : 0;
-    case UnitType::Undefined:
+    case Undefined:
       return std::nullopt;
   }
   return std::nullopt;
@@ -29,17 +30,17 @@ std::vector<float> fixedPositions(const std::vector<facebook::react::ColorStop> 
   std::vector<std::optional<float>> positions;
   positions.reserve(stops.size());
   for (const auto &stop : stops) positions.push_back(fraction(stop.position, lineLength, pointScale));
-  if (!positions.front()) positions.front() = 0;
-  if (!positions.back()) positions.back() = 1;
+  if (!positions.front().has_value()) positions.front() = 0;
+  if (!positions.back().has_value()) positions.back() = 1;
   float largest = *positions.front();
   for (auto &position : positions) {
-    if (!position) continue;
+    if (!position.has_value()) continue;
     position = std::max(*position, largest);
     largest = *position;
   }
   std::size_t last = 0;
   for (std::size_t i = 1; i < positions.size(); ++i) {
-    if (!positions[i]) continue;
+    if (!positions[i].has_value()) continue;
     const auto from = *positions[last];
     const auto step = (*positions[i] - from) / static_cast<float>(i - last);
     for (auto j = last + 1; j < i; ++j) positions[j] = from + step * static_cast<float>(j - last);
@@ -77,7 +78,7 @@ GradientRamp::GradientRamp(const std::vector<facebook::react::ColorStop> &stops,
       continue;
     }
     Stop next{.position = positions[i], .color = premultiplied(stop.color), .hint = kNoHint};
-    if (pendingHint) {
+    if (pendingHint.has_value()) {
       const auto from = stops_.back().position;
       const auto span = next.position - from;
       next.hint = span > 0 ? (*pendingHint - from) / span : kNoHint;
@@ -92,22 +93,17 @@ bool GradientRamp::empty() const {
 }
 
 Premultiplied GradientRamp::at(float t) const {
-  if (t <= stops_.front().position) return stops_.front().color;
-  if (t >= stops_.back().position) return stops_.back().color;
-  const auto upper = std::upper_bound(stops_.begin(), stops_.end(), t, [](float value, const Stop &stop) {
-    return value < stop.position;
-  });
-  return between(*(upper - 1), *upper, t);
+  std::size_t segment = 0;
+  return at(t, segment);
 }
 
 Premultiplied GradientRamp::at(float t, std::size_t &segment) const {
   if (t <= stops_.front().position) return stops_.front().color;
   if (t >= stops_.back().position) return stops_.back().color;
-  const bool inSegment =
-      segment > 0 && segment < stops_.size() && stops_[segment - 1].position <= t && t < stops_[segment].position;
-  if (!inSegment) {
-    const auto upper = std::upper_bound(
-        stops_.begin(), stops_.end(), t, [](float value, const Stop &stop) { return value < stop.position; });
+  if (const bool inSegment =
+          segment > 0 && segment < stops_.size() && stops_[segment - 1].position <= t && t < stops_[segment].position;
+      !inSegment) {
+    const auto upper = std::ranges::upper_bound(stops_, t, std::ranges::less{}, &Stop::position);
     segment = static_cast<std::size_t>(upper - stops_.begin());
   }
   return between(stops_[segment - 1], stops_[segment], t);
@@ -118,14 +114,6 @@ Premultiplied GradientRamp::between(const Stop &from, const Stop &to, float t) c
   Premultiplied color{};
   for (std::size_t c = 0; c < color.size(); ++c) color[c] = from.color[c] + (to.color[c] - from.color[c]) * weight;
   return color;
-}
-
-std::uint32_t byteOf(float unit) {
-  return static_cast<std::uint32_t>(static_cast<double>(std::clamp(unit, 0.0f, 1.0f) * 255) + 0.5);
-}
-
-std::uint32_t pixelOf(const Premultiplied &color) {
-  return byteOf(color[3]) << 24 | byteOf(color[0]) << 16 | byteOf(color[1]) << 8 | byteOf(color[2]);
 }
 
 } // namespace rntizen

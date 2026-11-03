@@ -25,7 +25,7 @@ class SvgRootView final : public SvgView {
 SvgView::SvgView(Evas *evas, facebook::react::Tag tag)
     : ComponentView(evas, tag),
       canvas_(evas),
-      redrawRequest_(std::make_shared<const RedrawRequest>([this] { scheduleRedraw(); })) {
+      handle_(std::make_shared<SvgView *const>(this)) {
   addMember(canvas_.object(), true);
   setAlwaysClips(true);
 }
@@ -40,8 +40,8 @@ void SvgView::updateProps(const facebook::react::Props::Shared &props) {
   scheduleRedraw();
 }
 
-std::shared_ptr<const RedrawRequest> SvgView::redrawRequest() const {
-  return redrawRequest_;
+std::shared_ptr<SvgView *const> SvgView::handle() const {
+  return handle_;
 }
 
 void SvgView::layoutMembers() {
@@ -57,7 +57,7 @@ void SvgView::onRedrawJob(void *data) {
   view->redraw();
 }
 
-void SvgView::scheduleRedraw() {
+void SvgView::scheduleRedraw() noexcept {
   if (job_ == nullptr) job_ = ecore_job_add(&SvgView::onRedrawJob, this);
 }
 

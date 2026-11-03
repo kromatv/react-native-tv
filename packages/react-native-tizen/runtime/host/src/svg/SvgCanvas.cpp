@@ -52,15 +52,16 @@ Evas_Vg_Join joinOf(int linejoin) {
 }
 
 void appendPath(Evas_Vg_Shape *shape, const Path &path) {
+  using enum PathCommand::Kind;
   for (const auto &command : path.commands()) {
     switch (command.kind) {
-      case PathCommand::Kind::Move:
+      case Move:
         evas_vg_shape_append_move_to(shape, command.to.x, command.to.y);
         break;
-      case PathCommand::Kind::Line:
+      case Line:
         evas_vg_shape_append_line_to(shape, command.to.x, command.to.y);
         break;
-      case PathCommand::Kind::Cubic:
+      case Cubic:
         evas_vg_shape_append_cubic_to(
             shape,
             command.to.x,
@@ -70,7 +71,7 @@ void appendPath(Evas_Vg_Shape *shape, const Path &path) {
             command.control2.x,
             command.control2.y);
         break;
-      case PathCommand::Kind::Close:
+      case Close:
         evas_vg_shape_append_close(shape);
         break;
     }

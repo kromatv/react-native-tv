@@ -25,14 +25,15 @@ float degrees(float radians) {
 float angleOf(const facebook::react::GradientDirection &direction, float width, float height) {
   if (const auto *angle = std::get_if<facebook::react::Float>(&direction)) return *angle;
   const auto corner = degrees(std::atan2(height, width));
+  using enum GradientKeyword;
   switch (std::get<GradientKeyword>(direction)) {
-    case GradientKeyword::ToTopRight:
+    case ToTopRight:
       return corner;
-    case GradientKeyword::ToBottomRight:
+    case ToBottomRight:
       return 180 - corner;
-    case GradientKeyword::ToBottomLeft:
+    case ToBottomLeft:
       return 180 + corner;
-    case GradientKeyword::ToTopLeft:
+    case ToTopLeft:
       return 360 - corner;
   }
   return 180;
@@ -54,6 +55,58 @@ float centerOn(
   if (start) return resolve(*start, length, pointScale);
   if (end) return length - resolve(*end, length, pointScale);
   return length / 2;
+}
+
+struct Radii {
+  float x;
+  float y;
+};
+
+struct CornerExtent {
+  float distance;
+  std::array<float, 2> offset;
+};
+
+Radii explicitRadii(
+    const facebook::react::RadialGradientSize::Dimensions &size,
+    bool circle,
+    float width,
+    float height,
+    float pointScale) {
+  const auto x = resolve(size.x, width, pointScale);
+  const auto y = size.y ? resolve(size.y, height, pointScale) : x;
+  if (!circle) return {.x = x, .y = y};
+  const auto radius = std::max(x, y);
+  return {.x = radius, .y = radius};
+}
+
+CornerExtent cornerExtent(float centerX, float centerY, float width, float height, bool closest) {
+  const std::array<std::array<float, 2>, 4> corners{{{0, 0}, {width, 0}, {width, height}, {0, height}}};
+  CornerExtent extent{.distance = closest ? std::numeric_limits<float>::infinity() : -1.0f, .offset = {}};
+  for (const auto &[x, y] : corners) {
+    const auto d = std::hypot(x - centerX, y - centerY);
+    if (closest ? d < extent.distance : d > extent.distance) extent = {.distance = d, .offset = {x - centerX, y - centerY}};
+  }
+  return extent;
+}
+
+Radii keywordRadii(SizeKeyword keyword, bool circle, float centerX, float centerY, float width, float height) {
+  using enum SizeKeyword;
+  const bool closest = keyword == ClosestSide || keyword == ClosestCorner;
+  const auto pick = [closest](float a, float b) { return closest ? std::min(a, b) : std::max(a, b); };
+  const auto sideX = pick(std::abs(centerX), std::abs(width - centerX));
+  const auto sideY = pick(std::abs(centerY), std::abs(height - centerY));
+  if (keyword == ClosestSide || keyword == FarthestSide) {
+    if (!circle) return {.x = sideX, .y = sideY};
+    const auto radius = pick(sideX, sideY);
+    return {.x = radius, .y = radius};
+  }
+  const auto extent = cornerExtent(centerX, centerY, width, height, closest);
+  if (circle || sideX <= 0 || sideY <= 0) return {.x = extent.distance, .y = extent.distance};
+  const auto ratio = sideX / sideY;
+  const auto &[dx, dy] = extent.offset;
+  const auto radiusX = std::sqrt(dx * dx + dy * dy * ratio * ratio);
+  return {.x = radiusX, .y = radiusX / ratio};
 }
 
 } // namespace
@@ -97,41 +150,12 @@ void GradientGeometry::layOutRadial(const facebook::react::RadialGradient &gradi
   centerX_ = centerOn(position.left, position.right, width_, pointScale_);
   centerY_ = centerOn(position.top, position.bottom, height_, pointScale_);
   const bool circle = gradient.shape == RadialGradientShape::Circle;
-  if (const auto *size = std::get_if<facebook::react::RadialGradientSize::Dimensions>(&gradient.size.value)) {
-    radiusX_ = resolve(size->x, width_, pointScale_);
-    radiusY_ = size->y ? resolve(size->y, height_, pointScale_) : radiusX_;
-    if (circle) radiusX_ = radiusY_ = std::max(radiusX_, radiusY_);
-  } else {
-    const auto keyword = std::get<SizeKeyword>(gradient.size.value);
-    const bool closest = keyword == SizeKeyword::ClosestSide || keyword == SizeKeyword::ClosestCorner;
-    const auto pick = [closest](float a, float b) { return closest ? std::min(a, b) : std::max(a, b); };
-    const auto sideX = pick(std::abs(centerX_), std::abs(width_ - centerX_));
-    const auto sideY = pick(std::abs(centerY_), std::abs(height_ - centerY_));
-    if (keyword == SizeKeyword::ClosestSide || keyword == SizeKeyword::FarthestSide) {
-      radiusX_ = circle ? pick(sideX, sideY) : sideX;
-      radiusY_ = circle ? radiusX_ : sideY;
-    } else {
-      const std::array<std::array<float, 2>, 4> corners{{{0, 0}, {width_, 0}, {width_, height_}, {0, height_}}};
-      std::array<float, 2> offset{};
-      auto distance = closest ? std::numeric_limits<float>::infinity() : -1.0f;
-      for (const auto &[x, y] : corners) {
-        const auto d = std::hypot(x - centerX_, y - centerY_);
-        if (closest ? d < distance : d > distance) {
-          distance = d;
-          offset = {x - centerX_, y - centerY_};
-        }
-      }
-      if (circle || sideX <= 0 || sideY <= 0) {
-        radiusX_ = radiusY_ = distance;
-      } else {
-        const auto ratio = sideX / sideY;
-        radiusX_ = std::sqrt(offset[0] * offset[0] + offset[1] * offset[1] * ratio * ratio);
-        radiusY_ = radiusX_ / ratio;
-      }
-    }
-  }
-  radiusX_ = std::max(radiusX_, kSmallestRadius);
-  radiusY_ = std::max(radiusY_, kSmallestRadius);
+  const auto *size = std::get_if<facebook::react::RadialGradientSize::Dimensions>(&gradient.size.value);
+  const auto radii = size != nullptr
+      ? explicitRadii(*size, circle, width_, height_, pointScale_)
+      : keywordRadii(std::get<SizeKeyword>(gradient.size.value), circle, centerX_, centerY_, width_, height_);
+  radiusX_ = std::max(radii.x, kSmallestRadius);
+  radiusY_ = std::max(radii.y, kSmallestRadius);
   length_ = radiusX_;
 }
 

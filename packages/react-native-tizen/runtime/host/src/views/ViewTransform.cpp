@@ -1,39 +1,21 @@
 #include "ViewTransform.h"
 
 #include "RenderSync.h"
+#include "TransformMath.h"
 
 #include <array>
-#include <cmath>
 
 namespace rntizen {
-
-namespace {
 
 using facebook::react::Float;
 using facebook::react::Transform;
 
-constexpr std::array<int, 12> kLinearPart{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
-
-bool isTranslationOnly(const Transform &transform) {
-  const auto identity = Transform::Identity();
-  for (auto index : kLinearPart) {
-    if (std::abs(transform.matrix[index] - identity.matrix[index]) > 1e-6f) return false;
-  }
-  return std::abs(transform.matrix[15] - 1) < 1e-6f;
-}
-
-Transform aroundCenterUnlessSet(const facebook::react::ViewProps &props, const facebook::react::LayoutMetrics &metrics) {
-  auto matrix = props.resolveTransform(metrics);
-  if (props.transformOrigin.isSet()) return matrix;
-  const auto &size = metrics.frame.size;
-  return Transform::Translate(size.width / 2, size.height / 2, 0) * matrix *
-      Transform::Translate(-size.width / 2, -size.height / 2, 0);
-}
-
-} // namespace
-
 bool ViewTransform::update(const facebook::react::ViewProps &props, const facebook::react::LayoutMetrics &metrics) {
-  auto matrix = props.transform.operations.empty() ? Transform::Identity() : aroundCenterUnlessSet(props, metrics);
+  auto matrix = Transform::Identity();
+  if (!props.transform.operations.empty()) {
+    matrix = props.resolveTransform(metrics);
+    if (!props.transformOrigin.isSet()) matrix = aroundCenter(matrix, metrics.frame.size);
+  }
   if (matrix == matrix_) return false;
   matrix_ = matrix;
   isTranslation_ = isTranslationOnly(matrix_);
@@ -75,14 +57,7 @@ void ViewTransform::apply(Evas_Object *root, const PixelRect &box, const PixelRe
 
 PixelPoint ViewTransform::mapPoint(PixelPoint point, const PixelRect &box, Float scale) const {
   if (isTranslation_ || scale <= 0) return point;
-  const auto localX = static_cast<Float>(point.x - box.x) / scale;
-  const auto localY = static_cast<Float>(point.y - box.y) / scale;
-  const auto mapped = matrix_ * facebook::react::Vector{.x = localX, .y = localY, .z = 0, .w = 1};
-  const auto w = std::abs(mapped.w) > 1e-6f ? mapped.w : 1;
-  return {
-      .x = box.x + static_cast<Evas_Coord>(std::lround(mapped.x / w * scale)),
-      .y = box.y + static_cast<Evas_Coord>(std::lround(mapped.y / w * scale)),
-  };
+  return transformedPoint(matrix_, point, box, scale);
 }
 
 } // namespace rntizen

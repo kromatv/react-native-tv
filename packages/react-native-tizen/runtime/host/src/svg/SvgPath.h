@@ -31,8 +31,17 @@ struct Affine {
   static Affine scaling(double x, double y);
 
   Point apply(Point point) const;
-  /// `other` applied first, then this.
-  Affine operator*(const Affine &other) const;
+  /// `inner` applied first, then `outer`.
+  friend Affine operator*(const Affine &outer, const Affine &inner) {
+    return {
+        .a = outer.a * inner.a + outer.c * inner.b,
+        .b = outer.b * inner.a + outer.d * inner.b,
+        .c = outer.a * inner.c + outer.c * inner.d,
+        .d = outer.b * inner.c + outer.d * inner.d,
+        .e = outer.a * inner.e + outer.c * inner.f + outer.e,
+        .f = outer.b * inner.e + outer.d * inner.f + outer.f,
+    };
+  }
   /// How much the transform scales lengths on average, for stroke widths.
   double lengthScale() const;
 };

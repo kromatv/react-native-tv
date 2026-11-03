@@ -34,17 +34,6 @@ Point Affine::apply(Point point) const {
   return {.x = a * point.x + c * point.y + e, .y = b * point.x + d * point.y + f};
 }
 
-Affine Affine::operator*(const Affine &other) const {
-  return {
-      .a = a * other.a + c * other.b,
-      .b = b * other.a + d * other.b,
-      .c = a * other.c + c * other.d,
-      .d = b * other.c + d * other.d,
-      .e = a * other.e + c * other.f + e,
-      .f = b * other.e + d * other.f + f,
-  };
-}
-
 double Affine::lengthScale() const {
   return std::sqrt(std::abs(a * d - b * c));
 }
@@ -90,8 +79,7 @@ void Path::arcTo(double rx, double ry, double xAxisRotation, bool largeArc, bool
   const double x1 = cosPhi * halfDx + sinPhi * halfDy;
   const double y1 = -sinPhi * halfDx + cosPhi * halfDy;
 
-  const double radiiScale = (x1 * x1) / (rx * rx) + (y1 * y1) / (ry * ry);
-  if (radiiScale > 1) {
+  if (const double radiiScale = (x1 * x1) / (rx * rx) + (y1 * y1) / (ry * ry); radiiScale > 1) {
     rx *= std::sqrt(radiiScale);
     ry *= std::sqrt(radiiScale);
   }

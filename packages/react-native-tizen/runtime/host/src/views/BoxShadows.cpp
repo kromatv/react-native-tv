@@ -1,7 +1,7 @@
 #include "BoxShadows.h"
 
 #include "EvasColor.h"
-#include "NinePatchImage.h"
+#include "SmartMembers.h"
 #include "ShadowPatches.h"
 
 #include <algorithm>
@@ -26,12 +26,7 @@ BoxShadows::~BoxShadows() {
 }
 
 bool BoxShadows::update(const std::vector<ShadowStyle> &shadows, const Corners &corners) {
-  const bool countChanged = shadows.size() != images_.size();
-  while (images_.size() > shadows.size()) {
-    evas_object_del(images_.back());
-    images_.pop_back();
-  }
-  while (images_.size() < shadows.size()) images_.push_back(addPatchImage(evas_, smart_));
+  const bool countChanged = resizePatchImages(images_, shadows.size(), evas_, smart_);
   for (std::size_t i = 0; i < shadows.size(); ++i) {
     const auto &shadow = shadows[i];
     setColor(images_[i], shadow.color, shadow.opacity);

@@ -96,7 +96,7 @@ void ImageView::startLoad() {
   evas_object_hide(image_);
   if (const auto *emitter = loadEvents()) emitter->onLoadStart();
   if (isFetchedUri(source_.uri)) {
-    fetch_ = fetchImage(source_, [this](FetchedImage fetched) { decode(fetched); });
+    fetch_ = fetchImage(source_, [this](const FetchedImage &fetched) { decode(fetched); });
     return;
   }
   decode({});
@@ -123,9 +123,12 @@ void ImageView::decode(const FetchedImage &fetched) {
     return;
   }
   evas_object_image_size_get(image_, &imageWidth_, &imageHeight_);
-  const auto &box = canvasRect();
-  if (box.width > 0 && box.height > 0 && imageWidth_ >= 2 * box.width && imageHeight_ >= 2 * box.height) {
-    evas_object_image_load_size_set(image_, box.width, box.height);
+  const auto scale = pointScale();
+  const auto &size = layoutMetrics().frame.size;
+  const auto boxWidth = toPixels(size.width, scale);
+  const auto boxHeight = toPixels(size.height, scale);
+  if (boxWidth > 0 && boxHeight > 0 && imageWidth_ >= 2 * boxWidth && imageHeight_ >= 2 * boxHeight) {
+    evas_object_image_load_size_set(image_, boxWidth, boxHeight);
     setSource(fetched);
   }
   decoding_ = true;

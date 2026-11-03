@@ -10,15 +10,6 @@ namespace {
 
 constexpr double kTiny = 1e-9;
 
-Rgba rgbaFromArgb(std::uint32_t argb) {
-  return {
-      .red = static_cast<double>((argb >> 16) & 0xff) / 255,
-      .green = static_cast<double>((argb >> 8) & 0xff) / 255,
-      .blue = static_cast<double>(argb & 0xff) / 255,
-      .alpha = static_cast<double>((argb >> 24) & 0xff) / 255,
-  };
-}
-
 std::vector<GradientStop> withOpacity(const std::vector<GradientStop> &stops, double opacity) {
   std::vector<GradientStop> faded = stops;
   for (auto &stop : faded) stop.color.alpha *= opacity;

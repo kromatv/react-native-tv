@@ -11,7 +11,7 @@ namespace rntizen {
 /// An Evas textblock's style and markup for one paragraph. The measurer and
 /// the paragraph view both build theirs here, so layout and pixels agree.
 /// `tightLineShift` is set when a run's `lineHeight` is below its font's own
-/// line (see `tightLineShift` in TextblockFormat.h): the paragraph then spans
+/// line (see `FragmentFormat` in TextblockFormat.h): the paragraph then spans
 /// its first line's top to its last line's bottom, and its text sits that many
 /// pixels lower.
 struct TextblockContent {

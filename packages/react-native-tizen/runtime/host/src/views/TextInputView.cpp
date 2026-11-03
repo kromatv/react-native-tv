@@ -11,8 +11,8 @@ using namespace facebook::react;
 namespace {
 
 constexpr Float kCaretWidth = 2;
-constexpr char32_t kPasswordDot = U'•';
-constexpr const char *kEmptyLine = "​";
+constexpr char32_t kPasswordDot = U'\u2022';
+constexpr const char *kEmptyLine = "\u200b";
 constexpr int kUnset = -1;
 
 } // namespace
@@ -146,7 +146,8 @@ void TextInputView::edited(std::optional<std::string> key) {
 
 void TextInputView::submit() {
   const auto &returnKeyType = inputProps().returnKeyType;
-  const auto *action = returnKeyType == "next" ? "next" : returnKeyType == "previous" ? "previous" : "submit";
+  const auto *action = "submit";
+  if (returnKeyType == "next" || returnKeyType == "previous") action = returnKeyType.c_str();
   emit("submitEditing", folly::dynamic::object("target", tag())("text", buffer_.utf8())("action", action));
   if (submitBehavior() == SubmitBehavior::BlurAndSubmit) blur();
 }

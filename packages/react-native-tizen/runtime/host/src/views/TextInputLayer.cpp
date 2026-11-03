@@ -71,7 +71,7 @@ void TextInputLayer::setCaret(bool shown, const facebook::react::SharedColor &co
 }
 
 void TextInputLayer::layout(const PixelRect &box, Evas_Coord caretWidth) {
-  using facebook::react::TextAlignmentVertical;
+  using enum facebook::react::TextAlignmentVertical;
   box_ = box;
   caretWidth_ = std::max<Evas_Coord>(1, caretWidth);
   setGeometry(clip_, inflated(box, 0, 0, caretWidth_, 0));
@@ -104,10 +104,10 @@ void TextInputLayer::layout(const PixelRect &box, Evas_Coord caretWidth) {
 
   Evas_Coord offsetY = 0;
   if (textHeight_ < box.height) {
-    const auto alignment = verticalAlignment_.value_or(TextAlignmentVertical::Auto);
-    if (alignment == TextAlignmentVertical::Bottom) {
+    const auto alignment = verticalAlignment_.value_or(Auto);
+    if (alignment == Bottom) {
       offsetY = box.height - textHeight_;
-    } else if (alignment != TextAlignmentVertical::Top) {
+    } else if (alignment != Top) {
       offsetY = (box.height - textHeight_) / 2;
     }
   }
@@ -118,7 +118,7 @@ void TextInputLayer::layout(const PixelRect &box, Evas_Coord caretWidth) {
     scrollY_ = 0;
     scrollX_ = scrolledToShow(scrollX_, x, caretWidth_, box.width, textWidth_ + caretWidth_);
   }
-  evas_object_move(text_, box.x - scrollX_, box.y + offsetY - scrollY_);
+  setGeometry(text_, {.x = box.x - scrollX_, .y = box.y + offsetY - scrollY_, .width = textWidth_, .height = textHeight_});
   placeCaret();
 }
 

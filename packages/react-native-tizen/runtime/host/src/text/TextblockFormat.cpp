@@ -82,10 +82,6 @@ std::string formatValue(const std::string &value) {
   return escapedValue;
 }
 
-std::string pixels(Float points, Float scale) {
-  return std::to_string(std::max(1, static_cast<int>(std::lround(points * scale))));
-}
-
 std::string decorationFormat(const TextAttributes &attributes, Float opacity) {
   const auto line = attributes.textDecorationLineType.value_or(TextDecorationLineType::None);
   if (line == TextDecorationLineType::None) return {};
@@ -105,6 +101,10 @@ std::string decorationFormat(const TextAttributes &attributes, Float opacity) {
 
 int pixelCount(Float points, Float scale) {
   return std::max(1, static_cast<int>(std::lround(points * scale)));
+}
+
+std::string pixels(Float points, Float scale) {
+  return std::to_string(pixelCount(points, scale));
 }
 
 bool isItalic(const TextAttributes &attributes) {
@@ -133,15 +133,13 @@ std::string fontName(const TextAttributes &attributes) {
 
 struct TightLine {
   std::string format;
-  int ascent;
-  FontMetrics font;
-  int lineHeight;
+  int shift;
 };
 
 std::optional<TightLine> tightLine(const TextAttributes &attributes, Float scale) {
   if (std::isnan(attributes.lineHeight) || attributes.lineHeight <= 0) return std::nullopt;
-  const auto fontSize = std::isnan(attributes.fontSize) ? kDefaultFontSize : attributes.fontSize;
-  const auto font = fontMetrics(familyOf(attributes), weightName(attributes.fontWeight), isItalic(attributes), pixelCount(fontSize, scale));
+  const auto font = fontMetrics(
+      familyOf(attributes), weightName(attributes.fontWeight), isItalic(attributes), pixelCount(fontSizeOf(attributes), scale));
   const auto natural = font.ascent + font.descent;
   const auto lineHeight = pixelCount(attributes.lineHeight, scale);
   if (natural <= 0 || lineHeight >= natural) return std::nullopt;
@@ -151,22 +149,13 @@ std::optional<TightLine> tightLine(const TextAttributes &attributes, Float scale
   const auto descent = static_cast<int>(font.descent * ratio);
   return TightLine{
       .format = " linerelsize=" + percent + "% linegap=" + std::to_string(lineHeight - ascent - descent),
-      .ascent = ascent,
-      .font = font,
-      .lineHeight = lineHeight,
+      .shift = static_cast<int>(std::lround(font.ascent + (lineHeight - natural) / 2.0)) - ascent,
   };
 }
 
 } // namespace
 
-std::optional<int> tightLineShift(const TextAttributes &attributes, Float scale) {
-  const auto tight = tightLine(attributes, scale);
-  if (!tight) return std::nullopt;
-  const auto &font = tight->font;
-  return static_cast<int>(std::lround(font.ascent + (tight->lineHeight - font.ascent - font.descent) / 2.0)) - tight->ascent;
-}
-
-std::string fragmentFormat(const TextAttributes &attributes, Float scale) {
+FragmentFormat fragmentFormat(const TextAttributes &attributes, Float scale) {
   const auto opacity = std::isnan(attributes.opacity) ? Float{1} : attributes.opacity;
   const auto fontSize = fontSizeOf(attributes);
   std::string format = "font=";
@@ -176,7 +165,8 @@ std::string fragmentFormat(const TextAttributes &attributes, Float scale) {
   if (isItalic(attributes)) format += " font_style=italic";
   format += " color=" + hexColor(attributes.foregroundColor, opacity, "#000000ff");
   if (attributes.alignment) format += std::string(" align=") + alignmentName(attributes.alignment);
-  if (const auto tight = tightLine(attributes, scale)) {
+  const auto tight = tightLine(attributes, scale);
+  if (tight.has_value()) {
     format += tight->format;
   } else if (!std::isnan(attributes.lineHeight) && attributes.lineHeight > 0) {
     format += " linesize=" + pixels(attributes.lineHeight, scale);
@@ -185,7 +175,7 @@ std::string fragmentFormat(const TextAttributes &attributes, Float scale) {
   if (attributes.backgroundColor) {
     format += " backing=on backing_color=" + hexColor(attributes.backgroundColor, opacity, "#00000000");
   }
-  return format;
+  return {.format = std::move(format), .tightLineShift = tight.has_value() ? std::optional(tight->shift) : std::nullopt};
 }
 
 std::string paragraphFormat(

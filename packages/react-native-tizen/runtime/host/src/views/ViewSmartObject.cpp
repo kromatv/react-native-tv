@@ -4,7 +4,10 @@ namespace rntizen {
 
 namespace {
 
-void moveAlone(Evas_Object *, Evas_Coord, Evas_Coord) {}
+void moveAlone(Evas_Object *, Evas_Coord, Evas_Coord) {
+  // ComponentView places every member in canvas pixels itself; the clipped
+  // smart's own move would shift them a second time.
+}
 
 Evas_Smart *viewSmart() {
   static Evas_Smart *smart = [] {

@@ -1,6 +1,14 @@
-#include "NinePatchImage.h"
+#include "SmartMembers.h"
 
 namespace rntizen {
+
+Evas_Object *addRectangleMember(Evas *evas, Evas_Object *smart) {
+  auto *rectangle = evas_object_rectangle_add(evas);
+  evas_object_pass_events_set(rectangle, EINA_TRUE);
+  evas_object_smart_member_add(rectangle, smart);
+  evas_object_show(rectangle);
+  return rectangle;
+}
 
 Evas_Object *addPatchImage(Evas *evas, Evas_Object *smart) {
   auto *image = evas_object_image_filled_add(evas);
@@ -9,6 +17,16 @@ Evas_Object *addPatchImage(Evas *evas, Evas_Object *smart) {
   evas_object_smart_member_add(image, smart);
   evas_object_show(image);
   return image;
+}
+
+bool resizePatchImages(std::vector<Evas_Object *> &images, std::size_t count, Evas *evas, Evas_Object *smart) {
+  if (images.size() == count) return false;
+  while (images.size() > count) {
+    evas_object_del(images.back());
+    images.pop_back();
+  }
+  while (images.size() < count) images.push_back(addPatchImage(evas, smart));
+  return true;
 }
 
 void setNinePatch(Evas_Object *image, const NinePatch &patch) {

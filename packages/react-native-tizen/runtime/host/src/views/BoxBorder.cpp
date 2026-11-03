@@ -1,7 +1,7 @@
 #include "BoxBorder.h"
 
 #include "EvasColor.h"
-#include "NinePatchImage.h"
+#include "SmartMembers.h"
 
 #include <algorithm>
 
@@ -28,14 +28,6 @@ const SharedColor &ringColor(const BoxStyle &style) {
     if (isVisible(*color)) return *color;
   }
   return c.top;
-}
-
-Evas_Object *addRectangle(Evas *evas, Evas_Object *smart) {
-  auto *rectangle = evas_object_rectangle_add(evas);
-  evas_object_pass_events_set(rectangle, EINA_TRUE);
-  evas_object_smart_member_add(rectangle, smart);
-  evas_object_show(rectangle);
-  return rectangle;
 }
 
 void remove(Evas_Object *&object) {
@@ -89,7 +81,7 @@ bool BoxBorder::updateSides(const BoxStyle &style, bool wanted) {
   }
   const bool created = sides_[0] == nullptr;
   if (created) {
-    for (auto *&side : sides_) side = addRectangle(evas_, smart_);
+    for (auto *&side : sides_) side = addRectangleMember(evas_, smart_);
   }
   const auto &c = style.borderColors;
   setColor(sides_[0], c.top);

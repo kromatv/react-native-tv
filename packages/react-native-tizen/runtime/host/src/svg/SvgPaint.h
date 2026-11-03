@@ -4,6 +4,7 @@
 #include <react/renderer/graphics/Color.h>
 
 #include <bitset>
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <vector>
@@ -78,5 +79,8 @@ Brush brushFromProp(const folly::dynamic &value);
 std::optional<Length> lengthFromProp(const folly::dynamic &value);
 
 std::optional<Rgba> rgbaFromColor(const facebook::react::SharedColor &color);
+
+/// A packed `0xAARRGGBB` color, as React Native processes one.
+Rgba rgbaFromArgb(std::uint32_t argb);
 
 } // namespace rntizen::svg

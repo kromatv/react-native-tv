@@ -7,10 +7,8 @@ namespace rntizen {
 
 namespace {
 
-/// `RNCMaskedView` from @react-native-masked-view/masked-view: the first child
-/// is the mask, drawn only into a proxy image whose alpha clips every other
-/// child, as iOS's `maskView` does. Evas renders an image clipper as a mask
-/// (efl-rendering.md section 3).
+// Evas renders an image clipper as a mask (efl-rendering.md section 3): the
+// first child draws only into a proxy image whose alpha clips the others.
 class MaskedView final : public ComponentView {
  public:
   MaskedView(Evas *evas, facebook::react::Tag tag) : ComponentView(evas, tag), mask_(evas_object_image_filled_add(evas)) {
@@ -26,7 +24,7 @@ class MaskedView final : public ComponentView {
     evas_object_del(mask_);
   }
 
- protected:
+ private:
   Evas_Object *clipperFor(const ComponentView &child) const override {
     return source_ != nullptr && rootOf(child) != source_ ? mask_ : nullptr;
   }
@@ -37,15 +35,11 @@ class MaskedView final : public ComponentView {
     applyVisibility();
   }
 
- private:
   static void onSourceGeometry(void *data, Evas *, Evas_Object *source, void *) {
     auto *self = static_cast<MaskedView *>(data);
-    Evas_Coord x = 0;
-    Evas_Coord y = 0;
-    Evas_Coord width = 0;
-    Evas_Coord height = 0;
-    evas_object_geometry_get(source, &x, &y, &width, &height);
-    evas_object_geometry_set(self->mask_, x, y, width, height);
+    PixelRect rect;
+    evas_object_geometry_get(source, &rect.x, &rect.y, &rect.width, &rect.height);
+    setGeometry(self->mask_, rect);
   }
 
   static void onSourceDeleted(void *data, Evas *, Evas_Object *, void *) {

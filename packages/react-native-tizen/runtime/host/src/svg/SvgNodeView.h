@@ -3,14 +3,12 @@
 #include "../views/ComponentView.h"
 #include "SvgNode.h"
 
-#include <functional>
 #include <memory>
-#include <vector>
+#include <span>
 
 namespace rntizen::svg {
 
-/// Asks an `<Svg>` to paint again; lives exactly as long as that view.
-using RedrawRequest = std::function<void()>;
+class SvgView;
 
 /// A react-native-svg element mounted inside an `<Svg>`. It paints nothing
 /// itself: the `<Svg>` walks its nodes into one Evas VG object, and a node asks
@@ -39,15 +37,15 @@ class SvgNodeView : public ComponentView {
   }
 
  private:
-  void requestRedraw();
+  void requestRedraw() noexcept;
 
   NodeAttributes node_;
   Paint paint_;
-  std::weak_ptr<const RedrawRequest> redraw_;
+  std::weak_ptr<SvgView *const> owner_;
 };
 
 /// Paints the nodes among `children` in order. A child that is no node (`<Defs>`,
 /// a gradient, anything not drawn in place) is skipped with its subtree.
-void drawChildren(const std::vector<ComponentView *> &children, Drawing &drawing, const DrawContext &context);
+void drawChildren(std::span<ComponentView *const> children, Drawing &drawing, const DrawContext &context);
 
 } // namespace rntizen::svg

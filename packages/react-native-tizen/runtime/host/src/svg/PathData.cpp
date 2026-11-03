@@ -94,7 +94,7 @@ class PathBuilder {
   Path build() {
     while (!scanner_.atEnd()) {
       const auto command = scanner_.command();
-      if (!command || !apply(*command)) break;
+      if (!command.has_value() || !apply(*command)) break;
     }
     return std::move(path_);
   }
@@ -102,7 +102,7 @@ class PathBuilder {
  private:
   bool apply(char command) {
     const bool relative = std::islower(static_cast<unsigned char>(command)) != 0;
-    const char upper = static_cast<char>(std::toupper(static_cast<unsigned char>(command)));
+    const auto upper = static_cast<char>(std::toupper(static_cast<unsigned char>(command)));
     if (upper == 'Z') {
       path_.close();
       lastControl_.reset();
@@ -119,8 +119,8 @@ class PathBuilder {
 
   std::optional<Point> point(bool relative) {
     const auto x = scanner_.number();
-    const auto y = x ? scanner_.number() : std::nullopt;
-    if (!y) return std::nullopt;
+    const auto y = x.has_value() ? scanner_.number() : std::nullopt;
+    if (!y.has_value()) return std::nullopt;
     const auto origin = relative ? path_.current() : Point{};
     return Point{.x = origin.x + *x, .y = origin.y + *y};
   }
@@ -132,69 +132,86 @@ class PathBuilder {
   }
 
   bool segment(char kind, bool relative) {
-    const auto current = path_.current();
     switch (kind) {
-      case 'M': {
-        const auto to = point(relative && !path_.empty());
-        if (!to) return false;
-        path_.moveTo(*to);
-        lastControl_.reset();
-        return true;
-      }
-      case 'L': {
-        const auto to = point(relative);
-        if (!to) return false;
-        path_.lineTo(*to);
-        lastControl_.reset();
-        return true;
-      }
+      case 'M':
+        return moveSegment(relative);
+      case 'L':
+        return lineSegment(relative);
       case 'H':
-      case 'V': {
-        const auto value = scanner_.number();
-        if (!value) return false;
-        Point to = current;
-        if (kind == 'H') to.x = relative ? current.x + *value : *value;
-        if (kind == 'V') to.y = relative ? current.y + *value : *value;
-        path_.lineTo(to);
-        lastControl_.reset();
-        return true;
-      }
+      case 'V':
+        return axisSegment(kind == 'H', relative);
       case 'C':
-      case 'S': {
-        const auto control1 = kind == 'C' ? point(relative) : std::optional(reflectedControl('C'));
-        const auto control2 = control1 ? point(relative) : std::nullopt;
-        const auto to = control2 ? point(relative) : std::nullopt;
-        if (!to) return false;
-        path_.cubicTo(*control1, *control2, *to);
-        lastControl_ = control2;
-        lastKind_ = 'C';
-        return true;
-      }
+      case 'S':
+        return cubicSegment(kind == 'S', relative);
       case 'Q':
-      case 'T': {
-        const auto control = kind == 'Q' ? point(relative) : std::optional(reflectedControl('Q'));
-        const auto to = control ? point(relative) : std::nullopt;
-        if (!to) return false;
-        path_.quadTo(*control, *to);
-        lastControl_ = control;
-        lastKind_ = 'Q';
-        return true;
-      }
-      case 'A': {
-        const auto rx = scanner_.number();
-        const auto ry = rx ? scanner_.number() : std::nullopt;
-        const auto rotation = ry ? scanner_.number() : std::nullopt;
-        const auto largeArc = rotation ? scanner_.flag() : std::nullopt;
-        const auto sweep = largeArc ? scanner_.flag() : std::nullopt;
-        const auto to = sweep ? point(relative) : std::nullopt;
-        if (!to) return false;
-        path_.arcTo(*rx, *ry, *rotation, *largeArc, *sweep, *to);
-        lastControl_.reset();
-        return true;
-      }
+      case 'T':
+        return quadSegment(kind == 'T', relative);
+      case 'A':
+        return arcSegment(relative);
       default:
         return false;
     }
+  }
+
+  bool moveSegment(bool relative) {
+    const auto to = point(relative && !path_.empty());
+    if (!to.has_value()) return false;
+    path_.moveTo(*to);
+    lastControl_.reset();
+    return true;
+  }
+
+  bool lineSegment(bool relative) {
+    const auto to = point(relative);
+    if (!to.has_value()) return false;
+    path_.lineTo(*to);
+    lastControl_.reset();
+    return true;
+  }
+
+  bool axisSegment(bool horizontal, bool relative) {
+    const auto value = scanner_.number();
+    if (!value.has_value()) return false;
+    auto to = path_.current();
+    auto &coordinate = horizontal ? to.x : to.y;
+    coordinate = relative ? coordinate + *value : *value;
+    path_.lineTo(to);
+    lastControl_.reset();
+    return true;
+  }
+
+  bool cubicSegment(bool smooth, bool relative) {
+    const auto control1 = smooth ? std::optional(reflectedControl('C')) : point(relative);
+    const auto control2 = control1.has_value() ? point(relative) : std::nullopt;
+    const auto to = control2.has_value() ? point(relative) : std::nullopt;
+    if (!to.has_value()) return false;
+    path_.cubicTo(*control1, *control2, *to);
+    lastControl_ = control2;
+    lastKind_ = 'C';
+    return true;
+  }
+
+  bool quadSegment(bool smooth, bool relative) {
+    const auto control = smooth ? std::optional(reflectedControl('Q')) : point(relative);
+    const auto to = control.has_value() ? point(relative) : std::nullopt;
+    if (!to.has_value()) return false;
+    path_.quadTo(*control, *to);
+    lastControl_ = control;
+    lastKind_ = 'Q';
+    return true;
+  }
+
+  bool arcSegment(bool relative) {
+    const auto rx = scanner_.number();
+    const auto ry = rx.has_value() ? scanner_.number() : std::nullopt;
+    const auto rotation = ry.has_value() ? scanner_.number() : std::nullopt;
+    const auto largeArc = rotation.has_value() ? scanner_.flag() : std::nullopt;
+    const auto sweep = largeArc.has_value() ? scanner_.flag() : std::nullopt;
+    const auto to = sweep.has_value() ? point(relative) : std::nullopt;
+    if (!to.has_value()) return false;
+    path_.arcTo(*rx, *ry, *rotation, *largeArc, *sweep, *to);
+    lastControl_.reset();
+    return true;
   }
 
   Scanner scanner_;
