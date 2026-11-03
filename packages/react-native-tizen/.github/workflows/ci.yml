@@ -57,7 +57,6 @@ jobs:
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 120
     env:
-      CCACHE_DIR: ${{ github.workspace }}/../ccache
       CCACHE_MAXSIZE: 2G
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -78,16 +77,18 @@ jobs:
             libefl-all-dev libevas1-engines-x libcurl4-openssl-dev
           clang --version
           cmake --version
+          echo "CCACHE_DIR=$HOME/.cache/ccache" >> "$GITHUB_ENV"
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
-            ${{ github.workspace }}/../ccache
+            ~/.cache/ccache
             ~/.cache/react-native-tizen/downloads
             ~/rn-tizen-simulator/build/hermes-host
           key: native-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('runtime/dependencies.json', 'bun.lock') }}-${{ github.sha }}
           restore-keys: |
             native-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('runtime/dependencies.json', 'bun.lock') }}-
             native-${{ runner.os }}-${{ runner.arch }}-
+      - run: ccache --zero-stats
       - name: Compile the runtime and the launcher
         run: bun scripts/compile-simulator-runtime.ts example
       - run: ccache --show-stats
@@ -111,7 +112,7 @@ jobs:
           no-cache: true
       - run: bun install --frozen-lockfile
       - run: bun run test --coverage
-      - uses: SonarSource/sonarqube-scan-action@2f77a1ec69fb1d595b06f35ab27e97605bdef703 # v5.3.2
+      - uses: SonarSource/sonarqube-scan-action@e805d875275f728fac1885b413934be6d7c63f65 # v8.4.1
         with:
           args: >-
             ${{ github.event_name != 'pull_request' &&

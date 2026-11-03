@@ -1,0 +1,43 @@
+name: Re-run jobs GitHub gave no runner
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+permissions: {}
+
+jobs:
+  rerun:
+    name: Re-run an unassigned job
+    if: >-
+      github.event.workflow_run.conclusion != 'success'
+      && github.event.workflow_run.run_attempt < 3
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+      checks: read
+    steps:
+      - name: Re-run the first job no runner acquired
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+          EVENT: ${{ github.event.workflow_run.event }}
+        run: |
+          latest="$(gh run list -R "$REPO" --workflow ci.yml --branch "$BRANCH" --event "$EVENT" -L 1 --json databaseId --jq '.[0].databaseId')"
+          if [ "$latest" != "$RUN_ID" ]; then
+            echo "A newer CI run exists for $BRANCH; re-running this one would cancel it."
+            exit 0
+          fi
+          gh api "repos/$REPO/actions/runs/$RUN_ID/jobs" \
+            --jq '.jobs[] | select(.conclusion == "cancelled" and .runner_name == "") | [.id, .name] | @tsv' |
+            while IFS=$'\t' read -r id name; do
+              if gh api "repos/$REPO/check-runs/$id/annotations" --jq '.[].message' | grep -q 'not acquired by Runner'; then
+                echo "GitHub gave $name no runner; re-running it."
+                gh run rerun "$RUN_ID" -R "$REPO" --job "$id"
+                break
+              fi
+            done
