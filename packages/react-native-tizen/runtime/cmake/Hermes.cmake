@@ -9,7 +9,6 @@ if(NOT EXISTS "${RN_TIZEN_HERMES_HOST_COMPILERS}")
     "RN_TIZEN_HERMES_HOST_COMPILERS must point at a host Hermes build's ImportHostCompilers.cmake. "
     "`rn-tizen build-runtime` builds one and passes it.")
 endif()
-option(RN_TIZEN_HERMES_DEBUGGER "Build Hermes with its debugger, for Chrome DevTools" OFF)
 
 set(IMPORT_HOST_COMPILERS "${RN_TIZEN_HERMES_HOST_COMPILERS}" CACHE FILEPATH "" FORCE)
 set(JSI_DIR "${REACT_NATIVE_DIR}/ReactCommon/jsi" CACHE PATH "" FORCE)
@@ -22,7 +21,9 @@ set(HERMES_IS_MOBILE_BUILD ON CACHE BOOL "" FORCE)
 set(HERMES_ALLOW_BOOST_CONTEXT 0 CACHE STRING "" FORCE)
 set(HERMES_ENABLE_TEST_SUITE OFF CACHE BOOL "" FORCE)
 set(HERMES_ENABLE_TOOLS OFF CACHE BOOL "" FORCE)
-set(HERMES_ENABLE_DEBUGGER ${RN_TIZEN_HERMES_DEBUGGER} CACHE BOOL "" FORCE)
+# React Native DevTools debugs through Hermes' debugger, which costs every
+# call a check: the development runtime alone has it (docs/decisions.md).
+set(HERMES_ENABLE_DEBUGGER ${RN_TIZEN_DEVELOPMENT} CACHE BOOL "" FORCE)
 set(HERMES_ENABLE_INTL ON CACHE BOOL "" FORCE)
 
 add_subdirectory("${hermes_SOURCE_DIR}" "${CMAKE_BINARY_DIR}/hermes" EXCLUDE_FROM_ALL)

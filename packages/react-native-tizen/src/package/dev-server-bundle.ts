@@ -16,10 +16,10 @@ const originSchema = z.url({ protocol: /^https?$/ });
 
 /**
  * The URL a development build loads its bundle from: Expo's virtual entry on
- * the dev server at `origin`, asked for as Android's DevServerHelper asks, for
- * the `tizen` platform and Hermes. A loopback host, which the TV cannot reach,
- * becomes `reachableHost`. The runtime finds the packager socket and the HMR
- * endpoint from this URL.
+ * the dev server at `origin`, asked for as Android's DevServerHelper asks with
+ * React Native DevTools on, for the `tizen` platform and Hermes. A loopback
+ * host, which the TV cannot reach, becomes `reachableHost`. The runtime finds
+ * the packager socket, the HMR endpoint and the inspector proxy from this URL.
  */
 export function devBundleUrl(origin: string, reachableHost: string, packageId: string): string {
   const parsed = originSchema.safeParse(origin);
@@ -40,6 +40,8 @@ export function devBundleUrl(origin: string, reachableHost: string, packageId: s
     app: packageId,
     modulesOnly: 'false',
     runModule: 'true',
+    excludeSource: 'true',
+    sourcePaths: 'url-server',
     'transform.engine': 'hermes',
     unstable_transformProfile: 'hermes-stable',
   }).toString();

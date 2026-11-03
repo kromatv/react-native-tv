@@ -34,6 +34,13 @@ void ReactHost::devSupportInstanceStarted() {
 #endif
 }
 
+facebook::react::jsinspector_modern::HostTarget *ReactHost::inspectorTarget() {
+#if RN_TIZEN_DEV_SUPPORT
+  if (devSupport_ != nullptr) return devSupport_->inspectorTarget();
+#endif
+  return nullptr;
+}
+
 void ReactHost::showLogBox(bool shown) {
   if (presenter_ == nullptr) return;
   if (!shown) {

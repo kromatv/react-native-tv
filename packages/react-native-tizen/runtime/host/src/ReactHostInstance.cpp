@@ -73,7 +73,11 @@ void ReactHost::createInstance() {
     if (error.isFatal) reportFatalError(weakHost, reportFor(error));
   };
   instance_ = std::make_unique<ReactInstance>(
-      HermesInstance::createJSRuntime(nullptr, jsThread_, false), jsThread_, timerManager_, std::move(onJsError));
+      HermesInstance::createJSRuntime(nullptr, jsThread_, false),
+      jsThread_,
+      timerManager_,
+      std::move(onJsError),
+      inspectorTarget());
   timerManager_->setRuntimeExecutor(instance_->getBufferedRuntimeExecutor());
   instanceGate_ = std::make_shared<InstanceGate>(*instance_);
 

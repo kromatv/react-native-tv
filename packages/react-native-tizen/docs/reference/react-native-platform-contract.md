@@ -84,7 +84,7 @@ fatal `onJsError` (inf: the two paths are split only by `isRuntimeReady`).
 | Loading banner | Optional `DevLoadingView` (`showMessage`, `hide`). | doc: `RN/src/private/specs_DEPRECATED/modules/NativeDevLoadingView.js:16-22` |
 | Inspector | `ws://host:port/inspector/device?...` needs a `HostTarget` handed to `ReactInstance`. | doc: `RA/devsupport/DevServerHelper.kt:123`, `ReactInstance.cpp:112-166` |
 
-Tizen's development runtime does the same, the inspector aside, in
+Tizen's development runtime does the same, inspector included, in
 `runtime/host/devsupport/`; the facts and what was verified are in
 [react-native-dev-tooling.md](react-native-dev-tooling.md).
 

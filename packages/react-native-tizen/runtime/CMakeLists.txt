@@ -15,9 +15,9 @@ endif()
 option(RN_TIZEN_SIMULATOR "Build for the Linux simulator in ../simulator instead of a TV" OFF)
 option(RN_TIZEN_TESTS "Build the host's tests, rn-tizen-host-tests (simulator builds only)" OFF)
 option(RN_TIZEN_COVERAGE "Instrument the host and its tests for llvm-cov" OFF)
-# A development runtime talks to a dev server (host/devsupport); a release one
-# carries none of it. The simulator only runs development builds.
-option(RN_TIZEN_DEVELOPMENT "Build the development runtime, with the dev server tooling" ${RN_TIZEN_SIMULATOR})
+# A development runtime talks to a dev server (host/devsupport) and has Hermes'
+# debugger; a release one carries neither. The simulator only runs development builds.
+option(RN_TIZEN_DEVELOPMENT "Build the development runtime: dev server tooling and the debugger" ${RN_TIZEN_SIMULATOR})
 
 set(REACT_NATIVE_DIR "" CACHE PATH "The react-native package the app depends on")
 if(NOT EXISTS "${REACT_NATIVE_DIR}/ReactCommon")

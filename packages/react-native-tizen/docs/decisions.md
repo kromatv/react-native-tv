@@ -128,10 +128,14 @@ libraries come in debug and release variants. A development build (`rn-tizen
 run`, `package --dev`, the simulator) gets the development runtime: it carries
 `runtime/host/devsupport/`, which talks to a dev server when the runtime config
 has a `bundleUrl` (the packager socket, Fast Refresh, reload, LogBox, the
-loading banner). A release build (`run --release`, `package`) gets a runtime
+loading banner), and Hermes built with its debugger, which React Native
+DevTools needs. A release build (`run --release`, `package`) gets a runtime
 compiled without any of it, so a store package carries none of that code and
-pays nothing for it at run time. CMake's `RN_TIZEN_DEVELOPMENT` picks the
-flavour, and each has its own build directory.
+pays nothing for it at run time: Hermes' debugger alone makes every JavaScript
+call check for a debugger request. CMake's `RN_TIZEN_DEVELOPMENT` picks the
+flavour, turning on Hermes' debugger and React Native's
+`REACT_NATIVE_DEBUG_OPTIMIZED` as Android's `debugOptimized` variant does, and
+each flavour has its own build directory.
 
 Consequence: a machine that makes both kinds of build compiles the runtime
 twice. A development build pointed at `npx expo start` behaves as an Android

@@ -107,6 +107,7 @@ void ReactHost::reload() {
 
 void ReactHost::stopReactNative() {
   if (jsThread_ == nullptr) return;
+  if (instance_ != nullptr) instance_->unregisterFromInspector();
   jsThread_->runWhileParked([this] { presenter_.reset(); });
   jsThread_->runOnQueueSync([this] {
     modules_.reset();

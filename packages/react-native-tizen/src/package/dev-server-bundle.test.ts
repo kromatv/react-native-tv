@@ -9,7 +9,7 @@ import { devBuildHost, devBundleUrl, devServerBundleStep } from './dev-server-bu
 describe('devBundleUrl', () => {
   it("asks Expo's dev server for its virtual entry, for the tizen platform", () => {
     expect(devBundleUrl('http://192.168.1.20:8081', '192.168.1.20', 'org.example.app')).toBe(
-      'http://192.168.1.20:8081/.expo/.virtual-metro-entry.bundle?platform=tizen&dev=true&lazy=true&minify=false&app=org.example.app&modulesOnly=false&runModule=true&transform.engine=hermes&unstable_transformProfile=hermes-stable',
+      'http://192.168.1.20:8081/.expo/.virtual-metro-entry.bundle?platform=tizen&dev=true&lazy=true&minify=false&app=org.example.app&modulesOnly=false&runModule=true&excludeSource=true&sourcePaths=url-server&transform.engine=hermes&unstable_transformProfile=hermes-stable',
     );
   });
 

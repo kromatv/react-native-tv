@@ -31,6 +31,10 @@ set(RN_TIZEN_REACT_COMMON_DIRS
   react/nativemodule/devtoolsruntimesettings devtoolsruntimesettings
   jserrorhandler react/runtime react/runtime/hermes react/runtime/nativeviewconfig)
 
+# React Native's switch for a debuggable optimized build, as Android's
+# debugOptimized variant sets it: jsinspector-modern and Hermes' CDP agent.
+set(REACT_NATIVE_DEBUG_OPTIMIZED ${RN_TIZEN_DEVELOPMENT})
+
 # React Native's sources lean on libc++ including <cstdint> transitively, which
 # libstdc++ does not.
 set(_saved_cxx_flags "${CMAKE_CXX_FLAGS}")
@@ -71,3 +75,10 @@ endfunction()
 foreach(_dir IN LISTS RN_TIZEN_REACT_COMMON_DIRS)
   rn_tizen_relax_warnings("${REACT_COMMON_DIR}/${_dir}")
 endforeach()
+
+# Android defines these for its merged library in a debuggable build; the
+# default TurboModules then serve React DevTools' runtime settings module.
+if(RN_TIZEN_DEVELOPMENT)
+  target_compile_definitions(react_nativemodule_defaults PRIVATE
+    REACT_NATIVE_DEBUGGER_ENABLED=1 REACT_NATIVE_DEBUGGER_ENABLED_DEVONLY=1)
+endif()

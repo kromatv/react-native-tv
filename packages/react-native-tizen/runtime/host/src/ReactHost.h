@@ -73,6 +73,7 @@ class ReactHost final {
   void startPerfMonitor();
   void startDevSupport();
   void devSupportInstanceStarted();
+  facebook::react::jsinspector_modern::HostTarget *inspectorTarget();
   void showLogBox(bool shown);
   void loadBundle();
   void routeInput();

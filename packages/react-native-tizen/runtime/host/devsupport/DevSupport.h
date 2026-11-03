@@ -2,6 +2,7 @@
 
 #include "DevServer.h"
 #include "DevSettingsState.h"
+#include "Inspector.h"
 #include "LoadingBanner.h"
 #include "PackagerConnection.h"
 
@@ -24,8 +25,9 @@ namespace rntizen {
 /// What a development runtime adds to an app whose bundle comes from a dev
 /// server, as Android's DevSupportManager does: the packager socket, the HMR
 /// client's setup (Fast Refresh, and logs in the dev server's terminal),
-/// reload, LogBox's surface and the loading banner. The host keeps it across
-/// reloads. Create, use and destroy it on the main thread.
+/// reload, LogBox's surface, the loading banner and the inspector React Native
+/// DevTools attaches to. The host keeps it across reloads. Create, use and
+/// destroy it on the main thread.
 class DevSupport final {
  public:
   struct Host {
@@ -55,6 +57,10 @@ class DevSupport final {
   /// a task once the bundle has run, as the instance's buffered executor does.
   void instanceStarted(std::shared_ptr<InstanceGate> gate, const facebook::react::RuntimeExecutor &afterBundle);
 
+  /// What every instance registers with, so DevTools can debug it; null when
+  /// the runtime has no debugger.
+  facebook::react::jsinspector_modern::HostTarget *inspectorTarget();
+
   void reload(const std::string &reason);
   void setHotLoadingEnabled(bool enabled);
   void toggleElementInspector();
@@ -72,6 +78,7 @@ class DevSupport final {
   const Host host_;
   LoadingBanner banner_;
   std::unique_ptr<PackagerConnection> packager_;
+  std::unique_ptr<Inspector> inspector_;
   std::shared_ptr<InstanceGate> gate_;
   DevSettingsState settings_;
 };

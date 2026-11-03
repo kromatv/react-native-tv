@@ -3,6 +3,8 @@
 #include "logging/Log.h"
 #include "threading/MainThread.h"
 
+#include <jsinspector-modern/InspectorFlags.h>
+
 #include <mutex>
 
 namespace rntizen {
@@ -65,6 +67,25 @@ DevSupport::DevSupport(DevServer server, const DeviceProfile &device, Host host)
                     "server's terminal");
               },
       });
+  if (!facebook::react::jsinspector_modern::InspectorFlags::getInstance().getFuseboxEnabled()) return;
+  inspector_ = std::make_unique<Inspector>(
+      server_,
+      device,
+      Inspector::Host{
+          .reload = [this] { reload("Reload from React Native DevTools"); },
+          .showPausedMessage =
+              [this](const std::optional<std::string> &message) {
+                if (message) {
+                  showMessage(*message, std::nullopt, std::nullopt);
+                } else {
+                  hideMessage();
+                }
+              },
+      });
+}
+
+facebook::react::jsinspector_modern::HostTarget *DevSupport::inspectorTarget() {
+  return inspector_ ? &inspector_->target() : nullptr;
 }
 
 void DevSupport::instanceStarted(
@@ -81,6 +102,7 @@ void DevSupport::instanceStarted(
 
 void DevSupport::reload(const std::string &reason) {
   log(LogLevel::Info, "Reloading: " + reason);
+  if (inspector_) inspector_->resume();
   host_.reload();
 }
 

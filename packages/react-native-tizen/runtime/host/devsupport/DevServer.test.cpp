@@ -76,6 +76,14 @@ TEST_CASE("The packager socket names the TV, the app and the client, as Android 
       "ws://192.168.1.20:8081/message?device=QE55Q80%20-%20Tizen%209.0&app=org.example.app&clientid=DevSupport");
 }
 
+TEST_CASE("The inspector's device socket names the TV, the app and its device id, as Android does") {
+  const auto server = devServerOf(kBundleUrl);
+
+  CHECK(
+      server->inspectorUrl("QE55Q80", "ab12") ==
+      "ws://192.168.1.20:8081/inspector/device?name=QE55Q80&app=org.example.app&device=ab12&profiling=false");
+}
+
 TEST_CASE("HMRClient.setup gets the platform, the bundle path, the server and the Fast Refresh setting") {
   const auto setup = devServerOf(kBundleUrl)->hmrClientSetup(false);
 

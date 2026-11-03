@@ -77,6 +77,14 @@ std::string DevServer::packagerUrl(const std::string &deviceName) const {
       "/message?device={}&app={}&clientid={}", encodeQueryValue(deviceName), encodeQueryValue(app), kClientId));
 }
 
+std::string DevServer::inspectorUrl(const std::string &deviceName, const std::string &deviceId) const {
+  return socketUrl(std::format(
+      "/inspector/device?name={}&app={}&device={}&profiling=false",
+      encodeQueryValue(deviceName),
+      encodeQueryValue(app),
+      encodeQueryValue(deviceId)));
+}
+
 folly::dynamic DevServer::hmrClientSetup(bool hotLoadingEnabled) const {
   return folly::dynamic::array(kPlatform, bundlePath, host, port, hotLoadingEnabled, scheme);
 }

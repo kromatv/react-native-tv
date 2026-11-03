@@ -377,7 +377,9 @@ running then. Then, as with an Android device:
 - an edit reaches the TV through Fast Refresh, keeping state;
 - `r` in `expo start`'s terminal, or `DevSettings.reload()`, reloads the app;
 - `console.log` and errors from the TV print in that terminal;
-- LogBox shows errors and warnings on the TV; Back closes its inspector.
+- LogBox shows errors and warnings on the TV; Back closes its inspector;
+- `j` opens React Native DevTools on the TV's Hermes: breakpoints, the
+  console, and the Components tab.
 
 Install the build once: it keeps working across edits, reloads and restarts of
 `expo start`, as long as the server keeps its address and port. `rn-tizen

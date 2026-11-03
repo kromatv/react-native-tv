@@ -1,6 +1,7 @@
 #include "LoadingBanner.h"
 
-#include <cstdlib>
+#include "Malloced.h"
+
 #include <format>
 
 namespace rntizen {
@@ -20,11 +21,8 @@ std::string hexColor(std::uint32_t argb) {
 }
 
 std::string escaped(const std::string &text) {
-  char *markup = evas_textblock_text_utf8_to_markup(nullptr, text.c_str());
-  if (markup == nullptr) return {};
-  std::string result(markup);
-  std::free(markup);
-  return result;
+  const Malloced<char> markup(evas_textblock_text_utf8_to_markup(nullptr, text.c_str()));
+  return markup == nullptr ? std::string() : std::string(markup.get());
 }
 
 } // namespace

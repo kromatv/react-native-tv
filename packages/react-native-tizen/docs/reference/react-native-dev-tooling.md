@@ -2,7 +2,8 @@
 
 What an app in development needs from its host so that `npx expo start` drives
 it as it drives an Android device: Fast Refresh, `r` to reload, logs in the
-terminal, LogBox. Read from React Native's Android host, Metro and Expo's CLI.
+terminal, LogBox, and `j` for React Native DevTools. Read from React Native's
+Android host, Metro and Expo's CLI.
 The host side lives in `runtime/host/devsupport/` and is compiled into the
 development runtime only ([decisions.md](../decisions.md)).
 
@@ -35,7 +36,7 @@ Line numbers are pinned to these builds, read on 2026-11-03:
 | `npx expo start` serves a `platform=tizen` bundle through `withTizen` | sim, 2026-11-03: `tizen Bundled 1876ms example/main.ts (736 modules)` |
 
 So a Tizen build needs one URL: rn-tizen writes
-`http://<host>:<port>/.expo/.virtual-metro-entry.bundle?platform=tizen&dev=true&lazy=true&minify=false&app=<package id>&modulesOnly=false&runModule=true&transform.engine=hermes&unstable_transformProfile=hermes-stable`
+`http://<host>:<port>/.expo/.virtual-metro-entry.bundle?platform=tizen&dev=true&lazy=true&minify=false&app=<package id>&modulesOnly=false&runModule=true&excludeSource=true&sourcePaths=url-server&transform.engine=hermes&unstable_transformProfile=hermes-stable` (the `excludeSource` pair for DevTools, section 9)
 into `bundleUrl` (`src/package/dev-server-bundle.ts`), `<host>:<port>` being the
 `--dev-server` origin with a loopback host replaced by one the TV reaches, and
 the host derives every other endpoint from it (`devsupport/DevServer.cpp`).
@@ -151,7 +152,42 @@ old one died after its runtime and freed functions of a dead heap (sim,
 reload). It now drops that reference on the JavaScript thread before the
 instance.
 
-## 9. babel-preset-expo's deep import warning
+## 9. React Native DevTools (`j`)
+
+| Fact | Source |
+|------|--------|
+| `j` in `expo start` lists `/json/list`, keeps the pages whose capabilities include `nativePageReloads`, and posts `/open-debugger?target=<page>` for the one picked; a page without `reactNative.logicalDeviceId` is refused | doc: `CLI/start/interface/interactiveActions.js:198-216`, `CLI/start/server/middleware/inspector/JsInspector.js:46-71`, `CLI/start/server/metro/debugging/pageIsSupported.js:11-14` |
+| The proxy takes a device on `/inspector/device?name=<name>&app=<app>&device=<id>&profiling=<bool>`, identifies it by `device`, and lists each page with that id as `logicalDeviceId` | doc: `node_modules/.bun/@react-native+dev-middleware@0.88.1+759ce506b1ed1a42/node_modules/@react-native/dev-middleware/dist/inspector-proxy/InspectorProxy.js:188-205,236-275` |
+| Android's device id is a hash of the package, the device's ID and `fusebox`, stable across launches | doc: `RA/devsupport/DevServerHelper.kt:94-131` |
+| The device side of that protocol is jsinspector-modern's `InspectorPackagerConnection`; the platform gives it WebSockets and delayed callbacks, all on the inspector queue, and it reconnects with a growing delay | doc: `RN/ReactCommon/jsinspector-modern/InspectorPackagerConnection.h:30-82`, `RN/ReactCommon/jsinspector-modern/WebSocketInterfaces.h:35-70`, `InspectorPackagerConnection.cpp:24-26,370-385` |
+| The host creates a `HostTarget` and lists it as the page "React Native Bridgeless" with `nativePageReloads`; it removes the page before destroying the target. `Page.reload` and the "Paused in debugger" overlay come back through the `HostTargetDelegate` | doc: `RN/ReactAndroid/src/main/jni/react/runtime/jni/JReactHostInspectorTarget.cpp:35-63,86-124`, `RN/ReactCommon/jsinspector-modern/HostTarget.h:164-241` |
+| iOS's `HostTarget` executor runs a callback inline on the main queue | doc: `RN/ReactCommon/react/runtime/platform/ios/ReactCommon/RCTHost.mm:392-396`, `RN/React/Base/RCTUtils.mm:289-298` |
+| Each `ReactInstance` given the target registers itself and its runtime through that executor, holding JavaScript work until it has; it must unregister on the main thread before it is destroyed | doc: `RC/runtime/ReactInstance.cpp:112-166,202-212`, `RA/runtime/ReactHostImpl.kt:1637-1648` |
+| Android's paused overlay resumes the runtime with `HostCommand::DebuggerResume`, a `Debugger.resume` sent over a private session | doc: `RA/runtime/ReactHostImpl.kt:420-435`, `RN/ReactCommon/jsinspector-modern/HostTarget.cpp:128-157,282-289` |
+| jsinspector-modern turns Fusebox on when compiled with `REACT_NATIVE_DEBUGGER_ENABLED`; React Native's CMake defines it, and `HERMES_ENABLE_DEBUGGER` for the Hermes glue, in a Debug build or with `REACT_NATIVE_DEBUG_OPTIMIZED`, which Android's `debugOptimized` variant passes | doc: `RN/ReactCommon/jsinspector-modern/InspectorFlags.cpp:68-73`, `RN/ReactCommon/jsinspector-modern/CMakeLists.txt`, `RN/ReactCommon/react/runtime/hermes/CMakeLists.txt`, `RN/ReactAndroid/build.gradle.kts:697-703` |
+| Android defines `REACT_NATIVE_DEBUGGER_ENABLED_DEVONLY` for its merged library too, which makes the default TurboModules serve `ReactDevToolsRuntimeSettingsModule` | doc: `RN/ReactAndroid/src/main/jni/CMakeLists.txt:377-381`, `RN/ReactCommon/react/nativemodule/defaults/DefaultTurboModules.cpp:21-23,87-91` |
+| Hermes compiles its CDP agent only with `HERMES_ENABLE_DEBUGGER`, which also turns on memory instrumentation and makes every call check for a pending debugger request | doc: `~/.cache/react-native-tizen/src/hermes-hermes-v260318099.0.4/CMakeLists.txt:233-237,714-716`, `.../API/hermes/CMakeLists.txt:8-50`, `.../lib/VM/Interpreter.cpp:1236-1244` |
+| With DevTools on, Android asks Metro for `excludeSource=true&sourcePaths=url-server`: source maps that name files on the server instead of carrying their text | doc: `RA/devsupport/DevServerHelper.kt:298`, `METRO/lib/parseBundleOptionsFromBundleRequestUrl.js:131-143` |
+| The Components tab reaches React through `__FUSEBOX_REACT_DEVTOOLS_DISPATCHER__` and a runtime binding the frontend adds over CDP | doc: `RN/Libraries/Core/setUpReactDevTools.js:31-140` |
+
+Host: `devsupport/Inspector.cpp`, `devsupport/InspectorTransport.cpp`, the
+target handed to each `ReactInstance` in `ReactHostInstance.cpp`, and
+`unregisterFromInspector()` in `ReactHost::stopReactNative`. Its device id
+hashes the app, the TV's model and its firmware build (inf: two identical TVs
+on the same firmware running the same app replace each other in the proxy).
+
+Verified in the simulator and on a Samsung GQ75LS03DAUXZG (The Frame 2024,
+armv7, Tizen 9.0), 2026-11-03: the app is listed in `/json/list` with
+`nativePageReloads`; `j` printed "Launching DevTools..." and opened React
+Native DevTools on it; a breakpoint in the example's uptime interval paused
+the runtime and DevTools put "Paused in debugger" on the TV; evaluation on the
+paused frame, `Runtime.consoleAPICalled` and the React DevTools backend's
+`operations` (the Components tab's tree) answered through the proxy; `r` while
+paused reloaded, and the debugger attached to the new instance. The proxy only
+takes a debugger socket whose `Origin` is the server or localhost, which
+DevTools' own page has (doc: `InspectorProxy.js:369-387`).
+
+## 10. babel-preset-expo's deep import warning
 
 A development bundle warns once per `import` of `react-native/<path>` from a
 file outside `node_modules` (doc:

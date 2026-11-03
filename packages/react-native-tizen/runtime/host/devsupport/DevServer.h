@@ -31,6 +31,8 @@ struct DevServer {
   std::string socketUrl(const std::string &path) const;
   /// The packager socket, `/message`, named as Android's JSPackagerClient names it.
   std::string packagerUrl(const std::string &deviceName) const;
+  /// The inspector proxy's device socket, `/inspector/device`, as Android's DevServerHelper names it.
+  std::string inspectorUrl(const std::string &deviceName, const std::string &deviceId) const;
   /// The arguments of `HMRClient.setup`, as Android's DevSupportManager passes them.
   folly::dynamic hmrClientSetup(bool hotLoadingEnabled) const;
 };
