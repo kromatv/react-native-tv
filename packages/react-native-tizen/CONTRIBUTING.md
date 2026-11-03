@@ -65,6 +65,15 @@ ahead of time.
    find simulator -name '*.sh' -print0 | xargs -0 shellcheck -x
    ```
 
+   A change in `runtime/` also runs the host's C++ tests: doctest cases in
+   `*.test.cpp` beside the code they test, built and run in the simulator's VM
+   (CI runs them on aarch64 Linux, and reports their coverage to SonarCloud).
+   The VM needs a runtime built once, by `simulator build` or `simulator run`.
+
+   ```sh
+   bun run test:runtime
+   ```
+
 3. Try it in the simulator, a virtual TV in a Lima VM that builds the same runtime
    for aarch64 Linux. The first run creates the VM and compiles React Native, which
    takes about 20 minutes; later runs rebuild only what changed.

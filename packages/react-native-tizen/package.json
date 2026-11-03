@@ -67,6 +67,7 @@
     "prepack": "bun run build",
     "typecheck": "tsc -p tsconfig.json && tsc -p src/api && tsc -p example/tsconfig.json",
     "test": "vitest run",
+    "test:runtime": "bun scripts/test-runtime.ts",
     "lint": "oxlint --ignore-path .gitignore --deny-warnings .",
     "format": "oxfmt .",
     "check": "bun run lint && oxfmt --check .",

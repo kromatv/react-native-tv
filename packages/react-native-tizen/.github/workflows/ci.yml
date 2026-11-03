@@ -120,7 +120,7 @@ jobs:
         run: |
           sudo apt-get update -q
           sudo apt-get install -y -q --no-install-recommends \
-            clang lld cmake ninja-build pkg-config ccache python3 \
+            clang lld llvm libclang-rt-dev cmake ninja-build pkg-config ccache python3 \
             libefl-all-dev libevas1-engines-x libcurl4-openssl-dev
           clang --version
           cmake --version
@@ -139,6 +139,14 @@ jobs:
       - run: ccache --zero-stats
       - name: Compile the runtime and the launcher
         run: bun scripts/compile-simulator-runtime.ts example
+      - name: Test the runtime
+        run: bun scripts/test-runtime.ts example --coverage coverage/runtime.xml
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: runtime-coverage
+          path: coverage/runtime.xml
+          if-no-files-found: error
+          retention-days: 7
       - run: ccache --show-stats
       - if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -151,8 +159,11 @@ jobs:
 
   sonar:
     name: SonarCloud
+    needs: native
     if: >-
-      github.actor != 'dependabot[bot]'
+      !cancelled()
+      && needs.native.result != 'failure'
+      && github.actor != 'dependabot[bot]'
       && (github.event_name != 'pull_request'
       || github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
@@ -168,11 +179,18 @@ jobs:
           no-cache: true
       - run: bun install --frozen-lockfile
       - run: bun run test --coverage
+      - if: needs.native.result == 'success'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: runtime-coverage
+          path: coverage
       - uses: SonarSource/sonarqube-scan-action@e805d875275f728fac1885b413934be6d7c63f65 # v8.4.1
         with:
           args: >-
             ${{ github.event_name != 'pull_request' &&
             format('-Dsonar.branch.name={0}', github.ref_name) || '' }}
+            ${{ needs.native.result == 'success' &&
+            '-Dsonar.coverageReportPaths=coverage/runtime.xml' || '' }}
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: https://sonarcloud.io

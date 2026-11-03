@@ -13,7 +13,7 @@ set(_rn_tizen_host_src "${CMAKE_CURRENT_SOURCE_DIR}/host/src")
 # compiles only for an app that depends on its package, through its own
 # CMakeLists.txt, never through the host's glob.
 file(GLOB _bundled_manifests CONFIGURE_DEPENDS "${_rn_tizen_host_src}/*/library.json")
-get_target_property(_host_sources react-native-tizen SOURCES)
+get_target_property(_host_sources rn_tizen_host SOURCES)
 set(_kept_sources "")
 foreach(_source IN LISTS _host_sources)
   set(_bundled FALSE)
@@ -29,7 +29,7 @@ foreach(_source IN LISTS _host_sources)
   endif()
 endforeach()
 if(NOT _kept_sources STREQUAL _host_sources)
-  set_property(TARGET react-native-tizen PROPERTY SOURCES ${_kept_sources})
+  set_property(TARGET rn_tizen_host PROPERTY SOURCES ${_kept_sources})
 endif()
 
 function(rn_tizen_add_native_library package package_dir codegen_name codegen_dir implementation)

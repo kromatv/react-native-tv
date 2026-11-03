@@ -11,13 +11,15 @@ bun run typecheck
 bun run test
 bun run check        # oxlint and oxfmt; bun run check:fix rewrites
 bun run build        # dist/, the compiled JavaScript npm ships
+bun run test:runtime # the host's C++ tests (runtime/host/src/**/*.test.cpp), in the simulator's VM
 find simulator -name '*.sh' -print0 | xargs -0 shellcheck -x
 ```
 
-CI runs all five on Linux and macOS, and compiles the runtime and the
-simulator's launcher for aarch64 Linux (`bun scripts/compile-simulator-runtime.ts`).
-That only proves the C++ compiles: a change in `runtime/` or `shell/` is still
-checked in the simulator or on a TV, and the pull request says which.
+CI runs the other five on Linux and macOS. On aarch64 Linux it compiles the
+runtime and the simulator's launcher (`bun scripts/compile-simulator-runtime.ts`)
+and runs `test:runtime`. That proves the C++ compiles and its tests pass: a
+change in `runtime/` or `shell/` is still checked in the simulator or on a TV,
+and the pull request says which.
 
 ## Writing
 
