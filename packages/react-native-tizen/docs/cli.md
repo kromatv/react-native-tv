@@ -77,6 +77,8 @@ config plugin option `supportsBackgroundPlayback` is read too
 | Source archives | `~/.cache/react-native-tizen/downloads/`, shared with CMake |
 | Remote pairing tokens | `~/.local/state/react-native-tizen/remote/<tv>.token`, readable by you only, out of the cache so a cache wipe does not unpair; one an older `rn-tizen` left in the cache moves there on first use |
 | TVs reached before | `~/.local/state/react-native-tizen/devices.json`, most recent first |
+| Author certificates `certificate create-author` makes | `~/.local/state/react-native-tizen/certificates/<name>/author.p12` |
+| Certificates `certificate import` copies | `~/SamsungCertificate/<name>/`, where Tizen Studio's Certificate Manager puts Samsung's |
 
 `RN_TIZEN_CACHE_DIR` moves the cache; `XDG_CACHE_HOME` is honoured too, and
 `XDG_STATE_HOME` moves the tokens and the TV list.
@@ -118,16 +120,83 @@ fails; a warning (no TV answers, no ccache) does not fail it.
 
 ### `rn-tizen devices`
 
-Probes every TV `rn-tizen` reached before and lists each one's model, CPU and
-Tizen version, or why it did not answer. A TV is remembered once `devices
---connect`, `run` or `package` reaches it with `--device`.
+Finds the Samsung TVs on this machine's networks and probes each one, along
+with every TV `rn-tizen` reached before. The scan sends an SSDP search and asks
+each host of the local `/24`s, the ones this machine talked to lately first,
+on Samsung's REST API port (8001) and the sdb port (26101); a Samsung soundbar,
+which answers the same API, is left out. It takes about five seconds.
+
+For each TV it prints:
+
+- **Developer mode**: on or off, and whether the host PC it names is this
+  computer, as the TV's REST API reports it.
+- **sdb**: ready (with the TV's CPU and Tizen version), busy (another computer
+  or Tizen Studio holds the TV's only sdb connection), or closed.
+- **DUID**: the id a Samsung distributor certificate must list for the TV.
+
+A TV whose sdb answers is remembered, so `run` and `install` find it without
+`--device`.
 
 | Option | |
 |---|---|
 | `--connect <ip>` | Connect to the TV at this address first, and remember it (port 26101 unless given) |
+| `--no-scan` | Only probe the TVs reached before |
 
 ```sh
+rn-tizen devices
 rn-tizen devices --connect 192.168.1.50
+```
+
+### `rn-tizen certificate`
+
+Manages the signing profiles in Tizen Studio's `profiles.xml`, which `package`,
+`run` and `install` sign with. Tizen Studio is needed once, to obtain Samsung's
+certificates for a TV (Certificate Manager, Samsung Certificate Extension, the
+TV's DUID); everything after that is here.
+
+| Action | |
+|---|---|
+| `list` (the default) | Every profile, the active one marked, with each certificate's subject, issuer, expiry and, for a distributor, the DUIDs it lists |
+| `use <name>` | Make a profile the active one |
+| `import <name> --author <p12> --distributor <p12>` | Copy Samsung's two `.p12` files to `~/SamsungCertificate/<name>/`, store their passwords where Tizen Studio keeps them (the macOS login keychain, else a `.pwd` file only you can read), add the profile and make it active. The passwords come from `RN_TIZEN_AUTHOR_PASSWORD` and `RN_TIZEN_DISTRIBUTOR_PASSWORD`, and are checked first |
+| `create-author <name>` | Make a self-signed author certificate in `~/.local/state/react-native-tizen/certificates/<name>/`. A retail Samsung TV refuses it, since Samsung issues the author certificate with the distributor one: use it for packages that are signed again before they are installed, such as a CI build |
+
+`profiles.xml` is copied to `profiles.xml.bak` before each change.
+
+```sh
+rn-tizen certificate list
+RN_TIZEN_AUTHOR_PASSWORD=... RN_TIZEN_DISTRIBUTOR_PASSWORD=... \
+  rn-tizen certificate import MyTV --author author.p12 --distributor distributor.p12
+rn-tizen certificate use MyTV
+```
+
+### `rn-tizen install`
+
+Signs any `.tpk` or `.wgt` for a TV, installs it and, with `--launch`, starts
+it: a package from another build, a web app, a release a CI made. The package
+is signed again with the profile, whatever it was signed with, and the install
+stops before sending anything when the distributor certificate does not list
+the TV's DUID.
+
+| Option | |
+|---|---|
+| `--device, -d <ip>` | The TV (default: the only one reached before that answers) |
+| `--profile <name>`, `--author <p12>`, `--distributor <p12>` | The certificates, as for `package` |
+| `--keep-signature` | Install the package as it is signed |
+| `--launch` | Launch the app once it is installed |
+
+```sh
+rn-tizen install app.wgt --device 192.168.1.50 --launch
+```
+
+### `rn-tizen uninstall`
+
+Removes a package and its data from a TV. An update must keep the author
+certificate of the installed package, so a package signed by another author
+installs only once the old one is gone.
+
+```sh
+rn-tizen uninstall com.example.myapp --device 192.168.1.50
 ```
 
 ### `rn-tizen setup`

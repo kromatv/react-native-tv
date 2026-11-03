@@ -5,6 +5,7 @@ import { captureProcessOutput } from '../fakes.fixtures.ts';
 import { listenForLogs, type LogServer } from '../logs/log-server.ts';
 import { bundleStep, packageSteps } from '../pipeline/package-steps.ts';
 import { runtimeSteps } from '../pipeline/runtime-steps.ts';
+import { testSigner } from '../signing/signing.fixtures.ts';
 import { setupTarget } from '../sysroot/setup-target.ts';
 import { resolveDevice } from '../tizen/devices.ts';
 import { installApp, launchApp } from '../tizen/install-app.ts';
@@ -15,7 +16,8 @@ import { runCommand } from './run.ts';
 import { setupCommand } from './setup.ts';
 
 const ROOT = '/work/app';
-const SDK = { root: '/tizen-studio', sdb: '/sdb', tizenCli: '/tizen', packageManager: '/pm' };
+const SDK = { root: '/tizen-studio', packageManager: '/pm' };
+const [DISTRIBUTOR] = testSigner('Distributor').chain;
 const TV = {
   address: { host: '192.168.1.50', port: 26101 },
   serial: '192.168.1.50:26101',
@@ -44,7 +46,11 @@ beforeEach(async () => {
   output = captureProcessOutput();
   vi.mocked(loadAppProject).mockReturnValue(fakeApp(ROOT));
   vi.mocked(resolveDevice).mockResolvedValue(TV);
-  vi.mocked(packageSteps).mockResolvedValue(import.meta.filename);
+  if (DISTRIBUTOR === undefined) throw new Error('the test signer has no certificate');
+  vi.mocked(packageSteps).mockResolvedValue({
+    tpk: import.meta.filename,
+    distributor: DISTRIBUTOR,
+  });
   vi.mocked(bundleStep).mockResolvedValue({
     javascript: `${ROOT}/tizen/build/bundle/index.tizen.js`,
     bytecode: import.meta.filename,
@@ -118,12 +124,11 @@ describe('rn-tizen run', () => {
     await runCommand.run(['--log-host', '10.0.0.2'], context);
 
     expect(listenForLogs).toHaveBeenCalledWith(8099, expect.anything(), { peer: '192.168.1.50' });
-    expect(installApp).toHaveBeenCalledWith(
-      expect.anything(),
-      TV,
-      import.meta.filename,
-      'org.example.demo',
-    );
+    expect(installApp).toHaveBeenCalledWith(expect.anything(), TV, {
+      file: import.meta.filename,
+      installId: 'org.example.demo',
+      duids: [],
+    });
     expect(launchApp).toHaveBeenCalledWith(TV, 'org.example.demo');
     expect(server.close).toHaveBeenCalled();
   });

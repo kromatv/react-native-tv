@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { z } from 'zod';
+import { attributes } from './xml-attributes.ts';
 
 /** One certificate of a profile: its PKCS#12 file and the password field Tizen Studio wrote for it. */
 export interface ProfileKey {
@@ -22,13 +23,6 @@ export interface ProfilesFile {
 }
 
 const MAX_FILE_BYTES = 1024 * 1024;
-const ENTITIES: Record<string, string> = {
-  '&amp;': '&',
-  '&lt;': '<',
-  '&gt;': '>',
-  '&quot;': '"',
-  '&apos;': "'",
-};
 
 const itemSchema = z.object({
   distributor: z.enum(['0', '1', '2']),
@@ -37,23 +31,6 @@ const itemSchema = z.object({
 });
 const profileSchema = z.object({ name: z.string().min(1).max(256) });
 const rootSchema = z.object({ active: z.string().max(256).optional() });
-
-function attributes(text: string): Record<string, string> {
-  const values: Record<string, string> = {};
-  let rest = text;
-  for (let at = rest.indexOf('="'); at !== -1; at = rest.indexOf('="')) {
-    const end = rest.indexOf('"', at + 2);
-    if (end === -1) break;
-    const name = rest.slice(0, at).trim().split(/\s+/).at(-1) ?? '';
-    const value = rest.slice(at + 2, end);
-    values[name] = value.replace(
-      /&(?:amp|lt|gt|quot|apos);/g,
-      (entity) => ENTITIES[entity] ?? entity,
-    );
-    rest = rest.slice(end + 1);
-  }
-  return values;
-}
 
 interface Tag {
   readonly closing: boolean;

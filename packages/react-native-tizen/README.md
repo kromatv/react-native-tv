@@ -86,7 +86,10 @@ package carries a native library.
 ## Documentation
 
 - [The CLI](docs/cli.md): every command, its options, the `expo.tizen` config,
-  and where builds land.
+  and where builds land. `rn-tizen devices` finds the TVs on your network,
+  `rn-tizen certificate` manages signing profiles, and `rn-tizen install`
+  signs and installs any `.tpk` or `.wgt`.
+- [The `tizen` API](docs/tizen-api.md): the same, from Node, for other tools.
 
 ## Licence
 

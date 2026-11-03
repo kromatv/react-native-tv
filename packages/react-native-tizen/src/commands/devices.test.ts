@@ -50,20 +50,22 @@ async function tv(): Promise<FakeTv> {
 
 describe('rn-tizen devices', () => {
   it('says how to connect a TV when none is known', async () => {
-    await devicesCommand.run([], { cwd: state });
+    await devicesCommand.run(['--no-scan'], { cwd: state });
 
-    expect(printed.join('')).toContain('rn-tizen devices --connect <tv ip>');
+    expect(printed.join('')).toContain('No Samsung TV found');
   });
 
   it('connects a TV, remembers it and lists it with its CPU and platform', async () => {
     const started = await tv();
 
-    await devicesCommand.run(['--connect', `127.0.0.1:${started.port}`], { cwd: state });
+    await devicesCommand.run(['--no-scan', '--connect', `127.0.0.1:${started.port}`], {
+      cwd: state,
+    });
     printed = [];
-    await devicesCommand.run([], { cwd: state });
+    await devicesCommand.run(['--no-scan'], { cwd: state });
 
     expect(printed.join('')).toContain('GQ75LS03DAUXZG');
-    expect(printed.join('')).toContain('armv7, Tizen 9.0');
+    expect(printed.join('')).toContain('ready: armv7, Tizen 9.0');
   });
 });
 
@@ -72,7 +74,9 @@ describe('checkDevices', () => {
     expect((await checkDevices()).status).toBe('warn');
 
     const started = await tv();
-    await devicesCommand.run(['--connect', `127.0.0.1:${started.port}`], { cwd: state });
+    await devicesCommand.run(['--no-scan', '--connect', `127.0.0.1:${started.port}`], {
+      cwd: state,
+    });
 
     expect(await checkDevices()).toMatchObject({
       status: 'ok',

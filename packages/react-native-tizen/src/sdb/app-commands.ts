@@ -6,6 +6,7 @@ const PACKAGE_ID = /^[A-Za-z0-9_.]+$/;
 const UNSAFE_NAME = /[^A-Za-z0-9._-]/g;
 const PROGRESS = /\binstalling\[(\d{1,3})\]/;
 const INSTALLED = /\binstall completed\b/;
+const UNINSTALLED = /\buninstall completed\b/;
 const LAUNCHED = /\bsuccessfully launched\b/;
 
 function checkedId(id: string): string {
@@ -24,6 +25,10 @@ export function installCommand(packageId: string, remotePath: string): string {
   return `0 vd_appinstall ${checkedId(packageId)} ${remotePath}`;
 }
 
+export function uninstallCommand(packageId: string): string {
+  return `0 appuninstall ${checkedId(packageId)}`;
+}
+
 export function launchCommand(appId: string): string {
   return `0 execute ${checkedId(appId)}`;
 }
@@ -36,6 +41,10 @@ export function installProgress(line: string): number | null {
 
 export function installSucceeded(output: string): boolean {
   return INSTALLED.test(output);
+}
+
+export function uninstallSucceeded(output: string): boolean {
+  return UNINSTALLED.test(output);
 }
 
 export function launchSucceeded(output: string): boolean {

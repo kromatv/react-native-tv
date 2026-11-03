@@ -37,15 +37,25 @@ export async function readKnownDevices(path = knownDevicesPath()): Promise<SdbAd
   return parsed.success ? parsed.data.devices : [];
 }
 
-/** Puts a TV first in the list of those reached. */
-export async function rememberDevice(
-  address: SdbAddress,
+const sameAddress = (left: SdbAddress, right: SdbAddress) =>
+  left.host === right.host && left.port === right.port;
+
+/** Puts TVs first in the list of those reached, in the order given. */
+export async function rememberDevices(
+  addresses: readonly SdbAddress[],
   path = knownDevicesPath(),
 ): Promise<void> {
+  if (addresses.length === 0) return;
   const others = (await readKnownDevices(path)).filter(
-    (known) => known.host !== address.host || known.port !== address.port,
+    (known) => !addresses.some((address) => sameAddress(address, known)),
   );
-  const devices = [{ host: address.host, port: address.port }, ...others].slice(0, MAX_DEVICES);
+  const fresh = addresses.map(({ host, port }) => ({ host, port }));
+  const devices = [...fresh, ...others].slice(0, MAX_DEVICES);
   await mkdir(dirname(path), { recursive: true });
   await writeFile(path, `${JSON.stringify({ devices }, null, 2)}\n`);
+}
+
+/** Puts a TV first in the list of those reached. */
+export function rememberDevice(address: SdbAddress, path = knownDevicesPath()): Promise<void> {
+  return rememberDevices([address], path);
 }

@@ -44,7 +44,7 @@ export const packageCommand: Command = {
     const release = { ...flags, release: flags.dev !== true };
     const build = settleBuild('package', release, base, device, context.cwd);
     const { reporter } = build;
-    const tpk = await packageSteps(reporter, {
+    const { tpk } = await packageSteps(reporter, {
       ...build,
       signing: { profile: flags.profile, author: flags.author, distributor: flags.distributor },
     });

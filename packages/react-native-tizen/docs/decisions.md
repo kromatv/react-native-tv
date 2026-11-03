@@ -222,6 +222,18 @@ section 5). Where Tizen Studio and Tizen's validator disagree, a file named like
 a signature below the package root, the package follows the validator: the TV
 refused Tizen Studio's package and installed this one.
 
+## Everything Tizen has a Node API
+
+What `rn-tizen` does to a TV is exported from `@kromatv/react-native-tizen/tizen`
+(`src/tizen/index.ts`): the sdb client, discovery, signing, PKCS#12 and the
+profiles, with their types. Another tool, such as a deployer for a web app's
+`.wgt`, imports it instead of carrying its own copy, and the CLI commands are
+thin layers over the same functions.
+
+Consequence: that entry point is public API under semver, documented in
+[tizen-api.md](tizen-api.md); a breaking change to an export is a breaking
+release.
+
 ## The package ships JavaScript, and the CLI runs on Node
 
 Node refuses to strip types from a file under `node_modules`, and everything a

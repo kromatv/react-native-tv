@@ -41,6 +41,10 @@
       "types": "./dist/api/preview.d.ts",
       "default": "./dist/api/preview.js"
     },
+    "./tizen": {
+      "types": "./dist/tizen/index.d.ts",
+      "default": "./dist/tizen/index.js"
+    },
     "./preview-json": {
       "types": "./dist/api/preview-json.d.ts",
       "default": "./dist/api/preview-json.js"

@@ -70,3 +70,13 @@ describe('reading the output', () => {
     expect(bannerModel('host::')).toBeNull();
   });
 });
+
+describe('uninstall', () => {
+  it('uninstalls with appuninstall and reads its end', async () => {
+    const { uninstallCommand, uninstallSucceeded } = await import('./app-commands.ts');
+
+    expect(uninstallCommand('RnTzProbe1')).toBe('0 appuninstall RnTzProbe1');
+    expect(uninstallSucceeded('app_id[RnTzProbe1.Probe] uninstall completed\n')).toBe(true);
+    expect(uninstallSucceeded('app_id[RnTzProbe1.Probe] install completed\n')).toBe(false);
+  });
+});

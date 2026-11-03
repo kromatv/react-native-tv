@@ -68,7 +68,7 @@ certificates the TV takes, and how Tizen Studio stores them. Checked on
 | Node's OpenSSL 3 has no RC2: `createDecipheriv('rc2-40-cbc', ...)` fails with "unsupported". RC2 is RFC 2268. | O, D | [rfc2268] |
 | `tizen security-profiles add` refuses a `.p12` whose key is under PBES2 and AES-256 ("Invalid file or password"), and the JDK 8u322 it ships cannot check an HMAC-SHA256 MAC ("HmacPBESHA256 not available"). A file with 3DES for key and certificates and a SHA-1 MAC is accepted. | O | |
 | `profiles.xml` (version 3.1) names the active profile in `<profiles active=...>`. Each `<profile>` has `profileitem`s: `distributor="0"` the author, `"1"` and `"2"` the distributors, `key` the `.p12` path, `password` the password itself or the path of a `.pwd` file. | O | |
-| On macOS no `.pwd` file is written: the password is a generic password in the login keychain, service `certificate-manager`, account the `.pwd` path. | O | |
+| On macOS no `.pwd` file is written: the password is a generic password in the login keychain, service `certificate-manager`, account the `.pwd` path. `security -i` reads an `add-generic-password` command from stdin, its quoted arguments escaped with `\`, so a password stored that way never reaches a process's arguments. | O | |
 | The data directory is the `TIZEN_SDK_DATA_PATH` line of `<tizen-studio>/sdk.info`, `~/tizen-studio-data` by default. | O | |
 
 ## 7. Checked byte for byte
@@ -77,6 +77,9 @@ certificates the TV takes, and how Tizen Studio stores them. Checked on
   and by `tizen package -t tpk -s <profile>`: `author-signature.xml` and
   `signature1.xml` are identical, and so are the zip's entries and their
   order (O, 2026-11-03).
+- A `.wgt` (`config.xml`, `index.html`, an icon, `js/a b/x+y.js`) re-signed
+  by `tizen package -t wgt -s <profile>` and by this package: identical. The
+  references, escaping and XML are the ones of a `.tpk` (O).
 - A fixture whose names hold spaces, `+`, `&`, `%`, `;`, `=`, `@`, non-ASCII,
   a dotfile, nested directories and both cases: identical (O). It is kept in
   `src/signing/fixtures/`, and its test hands back Tizen Studio's own
@@ -91,8 +94,9 @@ certificates the TV takes, and how Tizen Studio stores them. Checked on
   PBES2 with AES; writes 3DES with a SHA-1 MAC, the form Tizen Studio opens.
 - Signs with a profile from `profiles.xml`, its passwords from the profile, the
   `.pwd` file or the macOS keychain, or with `.p12` files given on the command
-  line. It does not make an author certificate for a TV: section 5 leaves
-  only Samsung's.
+  line. `rn-tizen certificate create-author` makes a self-signed author
+  certificate for packages signed again before they are installed; section 5
+  leaves a TV only Samsung's.
 
 ## Unknowns
 

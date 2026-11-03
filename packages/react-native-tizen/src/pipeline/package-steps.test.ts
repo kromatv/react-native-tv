@@ -87,7 +87,7 @@ describe('packageSteps', () => {
   it('builds, bundles, generates, compiles and signs with the certificates it settled', async () => {
     const app = fakeApp(root);
 
-    const tpk = await packageSteps(reporter(), {
+    const { tpk, distributor } = await packageSteps(reporter(), {
       sdk: SDK,
       app,
       target: { arch: 'armv7l', platformVersion: '9.0' },
@@ -97,6 +97,7 @@ describe('packageSteps', () => {
     });
 
     expect(tpk).toBe(join(root, 'app.tpk'));
+    expect(distributor).toBe(SIGNING.distributor);
     expect(resolveSigning).toHaveBeenCalledWith({
       author: 'author.p12',
       profile: app.config.profile,

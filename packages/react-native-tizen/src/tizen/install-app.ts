@@ -21,7 +21,7 @@ export function installFailureReason(output: string): string {
 async function signingHint(tv: SdbDevice): Promise<string> {
   const duid = await tv.duid().catch(() => null);
   const named = duid === null ? "this TV's DUID" : `this TV's DUID, ${duid}`;
-  return `The distributor certificate must list ${named}, and an update must keep the author certificate of the installed app: uninstall that one from the TV first if another author signed it.`;
+  return `The distributor certificate must list ${named}, and an update must keep the author certificate of the installed app: uninstall that one from the TV first (rn-tizen uninstall <package id>) if another author signed it.`;
 }
 
 async function onDevice<T>(device: Device, work: (tv: SdbDevice) => Promise<T>): Promise<T> {
@@ -30,16 +30,34 @@ async function onDevice<T>(device: Device, work: (tv: SdbDevice) => Promise<T>):
   });
 }
 
+/** Refuses a package whose distributor certificate does not list this TV, before it is sent. */
+async function checkDuid(tv: SdbDevice, device: Device, listed: readonly string[]): Promise<void> {
+  if (listed.length === 0) return;
+  const duid = await tv.duid().catch(() => null);
+  if (duid === null || listed.includes(duid)) return;
+  throw new FixableError(
+    `The distributor certificate does not list ${device.serial}, DUID ${duid}`,
+    `It lists ${listed.join(', ')}. Add this TV to the Samsung certificate in Tizen Studio's Certificate Manager, or sign with the profile made for it.`,
+  );
+}
+
+/** What an install sends: the package file, the id the TV installs it under, the DUIDs its certificate lists. */
+export interface InstallRequest {
+  readonly file: string;
+  readonly installId: string;
+  readonly duids?: readonly string[];
+}
+
 /** Pushes a package to the TV and installs it, replacing any earlier install. */
 export function installApp(
-  task: Task,
+  task: Pick<Task, 'progress'>,
   device: Device,
-  tpk: string,
-  packageId: string,
+  request: InstallRequest,
 ): Promise<void> {
   return onDevice(device, async (tv) => {
+    await checkDuid(tv, device, request.duids ?? []);
     try {
-      await tv.install(tpk, packageId, ({ phase, percent }) => {
+      await tv.install(request.file, request.installId, ({ phase, percent }) => {
         task.progress(phase === 'push' ? `sending ${percent}%` : `installing ${percent}%`);
       });
     } catch (error) {
@@ -49,6 +67,21 @@ export function installApp(
         ? await signingHint(tv)
         : 'Check the TV is in Developer mode and has room for the package.';
       throw new FixableError(`${device.serial} refused the package: ${reason}`, hint);
+    }
+  });
+}
+
+/** Removes an installed package and its data from the TV. */
+export function uninstallApp(device: Device, packageId: string): Promise<void> {
+  return onDevice(device, async (tv) => {
+    try {
+      await tv.uninstall(packageId);
+    } catch (error) {
+      if (!(error instanceof SdbCommandError)) throw error;
+      throw new FixableError(
+        `${device.serial} did not uninstall ${packageId}`,
+        `The TV said: ${error.output || 'nothing'}`,
+      );
     }
   });
 }

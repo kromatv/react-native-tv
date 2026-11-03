@@ -9,6 +9,8 @@ import {
   launchCommand,
   launchSucceeded,
   remotePackagePath,
+  uninstallCommand,
+  uninstallSucceeded,
 } from './app-commands.ts';
 import { readCapabilities, type DeviceCapabilities } from './capabilities.ts';
 import { SdbConnection, type SdbAddress } from './sdb-connection.ts';
@@ -46,6 +48,7 @@ export interface SdbDevice {
     onProgress?: (progress: InstallProgress) => void,
   ): Promise<void>;
   launch(appId: string): Promise<void>;
+  uninstall(packageId: string): Promise<void>;
   duid(): Promise<string | null>;
   close(): void;
 }
@@ -95,6 +98,14 @@ export async function openSdbDevice(address: SdbAddress, timeoutMs?: number): Pr
       });
       if (!launchSucceeded(output)) {
         throw new SdbCommandError(`The TV did not launch ${appId}`, output);
+      }
+    },
+    async uninstall(packageId) {
+      const output = await runShell(connection, uninstallCommand(packageId), {
+        timeoutMs: INSTALL_TIMEOUT_MS,
+      });
+      if (!uninstallSucceeded(output)) {
+        throw new SdbCommandError(`The TV did not uninstall ${packageId}`, output);
       }
     },
     async duid() {

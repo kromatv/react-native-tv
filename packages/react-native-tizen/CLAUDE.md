@@ -26,6 +26,7 @@ from memory.
 |------|-----------|
 | `shell/`, `src/package/`, `src/tizen/`, manifests, signing | `tizen-tv-platform.md` |
 | `src/sdb/`, `src/tizen/devices.ts`, `src/tizen/install-app.ts` | `sdb-protocol.md` |
+| `src/discovery/` | `tv-discovery.md` |
 | `src/signing/`, `src/tizen/signing-identity.ts`, `src/tizen/profiles-file.ts`, `src/tizen/profile-password.ts` | `tizen-package-signing.md` |
 | `runtime/host/src/input/` | `tizen-input.md` |
 | `<TextInput>`: `views/TextInput*`, `fabric/TextInput*`, `input/KeyboardFocus`, `input/Ime*` | `text-input.md` |

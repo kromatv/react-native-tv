@@ -3,8 +3,10 @@ import { join } from 'node:path';
 import { z } from 'zod';
 import { buildRuntimeCommand } from '../commands/build-runtime.ts';
 import { bundleCommand } from '../commands/bundle.ts';
+import { certificateCommand } from '../commands/certificate.ts';
 import { devicesCommand } from '../commands/devices.ts';
 import { doctorCommand } from '../commands/doctor.ts';
+import { installCommand } from '../commands/install.ts';
 import { keyCommand } from '../commands/key.ts';
 import { logsCommand } from '../commands/logs.ts';
 import { packageCommand } from '../commands/package.ts';
@@ -13,6 +15,7 @@ import { runCommand } from '../commands/run.ts';
 import { screenshotCommand } from '../commands/screenshot.ts';
 import { setupCommand } from '../commands/setup.ts';
 import { simulatorCommand } from '../commands/simulator.ts';
+import { uninstallCommand } from '../commands/uninstall.ts';
 import { PACKAGE_ROOT } from '../package-paths.ts';
 import { colorsEnabled, painter, type TextOutput } from '../paint.ts';
 import { UsageError, type Command } from './command.ts';
@@ -23,11 +26,14 @@ import { closestMatch } from './suggest.ts';
 const COMMANDS: readonly Command[] = [
   doctorCommand,
   devicesCommand,
+  certificateCommand,
   setupCommand,
   buildRuntimeCommand,
   bundleCommand,
   packageCommand,
   runCommand,
+  installCommand,
+  uninstallCommand,
   logsCommand,
   keyCommand,
   screenshotCommand,

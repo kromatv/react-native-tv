@@ -46,11 +46,12 @@ a launch send. Checked on 2026-11-03.
 | Service | Answer | Tag |
 |---|---|---|
 | `capability:` | a uint16 little-endian byte count (0x02da), then that many bytes of `key:value\n` lines. Among them `cpu_arch:armv7`, `platform_version:9.0`, `profile_name:tv`, `sdk_toolpath:/home/owner/share/tmp/sdk_tools`, `vendor_name:Samsung`, `secure_protocol:enabled`, `appcmd_support:disabled`, `sdbd_version:2.2.31` | H |
-| `shell:0 getduid` | the TV's DUID, then `\r\n` | H |
+| `shell:0 getduid` | the TV's DUID, then `\r\n`: the id its Samsung distributor certificate lists as `URI:URN:tizen:deviceid=<duid>` | H |
 | `shell:0 getvmname` | `0\r\n` | H |
 | `shell:0 execute <appid>` | `... successfully launched pid = <pid> with debug 0\r\n`. For an app that is not installed: `The app with ID: <appid> is not available for the user 5001` | H |
 | `shell:0 vd_appinstall <pkgid> <path>` | lines as the install runs: `install <pkgid>`, `package_path <path>`, `app_id[<pkgid>] install start`, `app_id[<pkgid>] installing[<n>]` from 9 to 100, `app_id[<pkgid>] install completed`, `spend time for wascmd is [<ms>]ms` | H |
 | the same, for a package whose file no longer matches its signature | `app_id[<pkgid>] install failed[118, -12], reason: Check certificate error : :Invalid signature. Signed with wrong key, changed signature file or changed package file.:<-4>` | H |
+| `shell:0 appuninstall <pkgid>` | `uninstall <appid>`, `app_id[<appid>] uninstall start`, `app_id[<appid>] uninstalling[<n>]`, `app_id[<appid>] uninstall completed`, `spend time for wascmd is [<ms>]ms` | H |
 | `sync:` | adb's sync service, section 5 | D, H |
 | `sysinfo:` | 320 bytes of NUL-padded fields, among them `2.2.0` and the model | H |
 
@@ -79,7 +80,15 @@ TV ([tizen-tv-platform.md](tizen-tv-platform.md) section 5).
 4. `sync:`, pushing the file to `<sdk_toolpath>/tmp/<file>`.
 5. `capability:` again, then `shell:0 vd_appinstall <pkgid> <sdk_toolpath>/tmp/<file>`.
 
-Nothing removed the pushed file afterwards (H).
+Nothing removed the pushed file afterwards (H). The same sequence installs a
+`.wgt`, but its first argument is the application id from `config.xml`
+(`0 vd_appinstall RnTzProbe1.Probe <path>`), where for the `.tpk` it was the
+package id, which in that package is also the app id (H).
+
+`sdb uninstall <pkgid>`, which Tizen's sdb page documents ([td-sdb]), sent
+`shell:0 appuninstall <pkgid>`, and the TV removed the package (H).
+`tizen uninstall -p <pkgid>` first runs `pkginfo`, which the TV refuses, then
+prints `The package is not exist.` and sends nothing else (H).
 
 `tizen run -s <serial> -p <appid>` sent `capability:`, `shell:0 getvmname`, three
 `shell:/usr/bin/pkginfo` queries the TV refused, `sysinfo:`, and
@@ -90,7 +99,10 @@ Nothing removed the pushed file afterwards (H).
 - One connection per command, closed when the command ends, so the TV's only
   connection is free between commands (section 1).
 - The handshake, `capability:`, the push to `<sdk_toolpath>/tmp/<file>` and
-  `0 vd_appinstall`, and `0 execute` as Tizen Studio sends them. It skips
+  `0 vd_appinstall`, and `0 execute` as Tizen Studio sends them, and
+  `0 appuninstall` as `sdb uninstall` does.
+- Before pushing, it reads `0 getduid` and stops when the distributor
+  certificate does not list it, instead of letting the install fail. It skips
   `getvmname`, `list_showcontrol`, `pkginfo` and `sysinfo:`: installs and
   launches on the TV work without them (H, 2026-11-03).
 - Package and app ids must match `[A-Za-z0-9_.]+` and file names are cut to

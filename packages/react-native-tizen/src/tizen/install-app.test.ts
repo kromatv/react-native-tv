@@ -11,7 +11,7 @@ import {
   type ServiceHandler,
 } from '../sdb/fake-tv.fixtures.ts';
 import { probeDevice } from './devices.ts';
-import { installApp, installFailureReason, launchApp } from './install-app.ts';
+import { installApp, installFailureReason, launchApp, uninstallApp } from './install-app.ts';
 
 const tvs: FakeTv[] = [];
 const dirs: string[] = [];
@@ -74,13 +74,17 @@ describe('installApp', () => {
       'shell:0 vd_appinstall': answer('app_id[org.example] install completed\n'),
     });
 
-    await expect(installApp(task, tv, tpk(), 'org.example')).resolves.toBeUndefined();
+    await expect(
+      installApp(task, tv, { file: tpk(), installId: 'org.example' }),
+    ).resolves.toBeUndefined();
   });
 
   it('names the DUID when the TV refuses the signature', async () => {
     const tv = await device({ 'shell:0 vd_appinstall': answer(CERTIFICATE_FAILURE) });
 
-    await expect(installApp(task, tv, tpk(), 'org.example')).rejects.toMatchObject({
+    await expect(
+      installApp(task, tv, { file: tpk(), installId: 'org.example' }),
+    ).rejects.toMatchObject({
       message: expect.stringContaining('Invalid signature'),
       hint: expect.stringContaining('ABCDEFGH12345'),
     });
@@ -91,9 +95,50 @@ describe('installApp', () => {
       'shell:0 vd_appinstall': answer('install failed[1, -1], reason: No space'),
     });
 
-    await expect(installApp(task, tv, tpk(), 'org.example')).rejects.toMatchObject({
+    await expect(
+      installApp(task, tv, { file: tpk(), installId: 'org.example' }),
+    ).rejects.toMatchObject({
       hint: expect.stringContaining('Developer mode'),
     });
+  });
+});
+
+describe('installApp and the DUID', () => {
+  it('stops before sending a package whose certificate does not list the TV', async () => {
+    const tv = await device({ 'shell:0 vd_appinstall': answer('install completed') });
+
+    const installing = installApp(task, tv, {
+      file: tpk(),
+      installId: 'org.example',
+      duids: ['OTHER0000000A'],
+    });
+
+    await expect(installing).rejects.toThrow('does not list');
+    await expect(installing).rejects.toMatchObject({
+      hint: expect.stringContaining('OTHER0000000A'),
+    });
+  });
+
+  it('installs when the certificate lists the TV', async () => {
+    const tv = await device({ 'shell:0 vd_appinstall': answer('install completed') });
+
+    await expect(
+      installApp(task, tv, { file: tpk(), installId: 'org.example', duids: ['ABCDEFGH12345'] }),
+    ).resolves.toBeUndefined();
+  });
+});
+
+describe('uninstallApp', () => {
+  it('uninstalls with appuninstall, and reports what the TV said when it does not', async () => {
+    const removed = await device({
+      'shell:0 appuninstall': answer('app_id[org.example] uninstall completed\n'),
+    });
+    const refused = await device({ 'shell:0 appuninstall': answer('uninstall failed') });
+
+    await expect(uninstallApp(removed, 'org.example')).resolves.toBeUndefined();
+    await expect(uninstallApp(refused, 'org.example')).rejects.toThrow(
+      'did not uninstall org.example',
+    );
   });
 });
 

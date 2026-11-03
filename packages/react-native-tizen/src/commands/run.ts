@@ -14,6 +14,7 @@ import { LogPrinter } from '../logs/log-printer.ts';
 import { listenForLogs, type LogServer } from '../logs/log-server.ts';
 import { packageSteps } from '../pipeline/package-steps.ts';
 import { RUNTIME_LIBRARY } from '../runtime/build-runtime.ts';
+import { distributorDuids } from '../signing/distributor-duids.ts';
 import { installApp, launchApp } from '../tizen/install-app.ts';
 import { BUILD_OPTIONS, findDevice, openBuild, settleBuild } from './build-options.ts';
 
@@ -60,13 +61,18 @@ export const runCommand: Command = {
       ? await listenForLogs(log.port, printer, { peer })
       : null;
     try {
-      const tpk = await packageSteps(reporter, {
+      const { tpk, distributor } = await packageSteps(reporter, {
         ...build,
         signing: { profile: flags.profile, author: flags.author, distributor: flags.distributor },
       });
       await reporter.step(
         'Install',
-        (task) => installApp(task, device, tpk, app.config.packageId),
+        (task) =>
+          installApp(task, device, {
+            file: tpk,
+            installId: app.config.packageId,
+            duids: distributorDuids(distributor),
+          }),
         () => device.serial,
       );
       await reporter.step('Launch', () => launchApp(device, app.config.packageId));
