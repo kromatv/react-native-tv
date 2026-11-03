@@ -64,7 +64,8 @@ struct Convert<bool> {
 };
 
 template <typename T>
-struct Convert<T, std::enable_if_t<std::is_arithmetic_v<T> && !std::is_same_v<T, bool>>> {
+  requires(std::is_arithmetic_v<T> && !std::is_same_v<T, bool>)
+struct Convert<T> {
   static T fromJs(facebook::jsi::Runtime &runtime, const facebook::jsi::Value &value) {
     if (!value.isNumber()) throw detail::typeError(runtime, "a number");
     return static_cast<T>(value.getNumber());
@@ -172,15 +173,16 @@ struct Convert<std::variant<First, Second>> {
   }
   static facebook::jsi::Value toJs(facebook::jsi::Runtime &runtime, const std::variant<First, Second> &value) {
     return std::visit(
-        [&runtime](const auto &alternative) {
-          return Convert<std::remove_cvref_t<decltype(alternative)>>::toJs(runtime, alternative);
+        [&runtime]<typename Alternative>(const Alternative &alternative) {
+          return Convert<Alternative>::toJs(runtime, alternative);
         },
         value);
   }
 };
 
 template <typename T>
-struct Convert<std::shared_ptr<T>, std::enable_if_t<std::is_base_of_v<SharedObject, T>>> {
+  requires std::is_base_of_v<SharedObject, T>
+struct Convert<std::shared_ptr<T>> {
   static std::shared_ptr<T> fromJs(facebook::jsi::Runtime &runtime, const facebook::jsi::Value &value) {
     auto object = std::dynamic_pointer_cast<T>(detail::sharedObjectFromJs(runtime, value));
     if (!object) throw detail::typeError(runtime, "a live shared object of the right class");

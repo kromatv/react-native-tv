@@ -6,7 +6,7 @@
 namespace rntizen::expo {
 
 facebook::jsi::Value ExpoModulesHostObject::get(facebook::jsi::Runtime &runtime, const facebook::jsi::PropNameID &name) {
-  return RuntimeState::get(runtime).module(runtime, name.utf8(runtime));
+  return RuntimeState::get(runtime).moduleValue(runtime, name.utf8(runtime));
 }
 
 void ExpoModulesHostObject::set(

@@ -7,6 +7,7 @@
 
 #include <functional>
 #include <memory>
+#include <span>
 #include <string>
 #include <typeindex>
 #include <vector>
@@ -63,7 +64,7 @@ void defineAccessor(
 
 void defineFunction(
     facebook::jsi::Runtime &runtime,
-    facebook::jsi::Object &target,
+    const facebook::jsi::Object &target,
     const std::string &name,
     facebook::jsi::HostFunctionType body);
 
@@ -90,8 +91,8 @@ class ClassDefinition {
                        facebook::jsi::Runtime &runtime,
                        const facebook::jsi::Value &thisValue,
                        const facebook::jsi::Value *arguments,
-                       size_t count) mutable -> facebook::jsi::Value {
-      auto converted = detail::convertedArguments<void, F>(runtime, arguments, count);
+                       size_t count) mutable {
+      auto converted = detail::convertedArguments<void, F>(runtime, std::span(arguments, count));
       std::shared_ptr<T> native = std::apply(body, std::move(converted));
       RuntimeState::get(runtime).pair(runtime, thisValue.getObject(runtime), std::move(native));
       return facebook::jsi::Value(runtime, thisValue);
@@ -138,12 +139,12 @@ class ClassDefinition {
 
   MemberInstaller installer() && {
     return [name = std::move(name_), constructor = std::move(constructor_), members = std::move(members_)](
-               facebook::jsi::Runtime &runtime, const std::shared_ptr<Context> &context, facebook::jsi::Object &module) {
+               facebook::jsi::Runtime &runtime, const std::shared_ptr<Context> &context, facebook::jsi::Object &target) {
       auto klass = ::expo::SharedObject::createClass(runtime, name.c_str(), constructor);
       auto prototype = klass.getPropertyAsObject(runtime, "prototype");
       for (const auto &member : members) member(runtime, context, prototype);
       RuntimeState::get(runtime).registerClass(runtime, std::type_index(typeid(T)), klass);
-      module.setProperty(runtime, name.c_str(), klass);
+      target.setProperty(runtime, name.c_str(), klass);
     };
   }
 
@@ -213,7 +214,7 @@ class ModuleDefinition {
     return *this;
   }
 
-  void install(facebook::jsi::Runtime &runtime, const std::shared_ptr<Context> &context, facebook::jsi::Object &module)
+  void install(facebook::jsi::Runtime &runtime, const std::shared_ptr<Context> &context, facebook::jsi::Object &target)
       const;
 
  private:

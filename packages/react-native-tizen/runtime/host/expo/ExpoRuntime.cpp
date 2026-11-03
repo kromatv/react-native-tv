@@ -15,7 +15,10 @@
 #include <SharedRef.h>
 #include <jsi/JSIDynamic.h>
 
+#include <array>
 #include <cstdlib>
+#include <format>
+#include <span>
 
 namespace rntizen::expo {
 
@@ -33,16 +36,16 @@ Function hostFunction(Runtime &runtime, const char *name, unsigned int argumentC
   return Function::createFromHostFunction(runtime, PropNameID::forAscii(runtime, name), argumentCount, std::move(body));
 }
 
-std::string stringArgument(Runtime &runtime, const Value *arguments, size_t count, size_t index, const char *function) {
-  if (index >= count || !arguments[index].isString()) {
-    throw JSError(runtime, std::string(function) + " expects a string as argument " + std::to_string(index + 1));
+std::string stringArgument(Runtime &runtime, std::span<const Value> arguments, size_t index, const char *function) {
+  if (index >= arguments.size() || !arguments[index].isString()) {
+    throw JSError(runtime, std::format("{} expects a string as argument {}", function, index + 1));
   }
   return arguments[index].getString(runtime).utf8(runtime);
 }
 
 Object versionObject(Runtime &runtime) {
   const std::string version = EXPO_MODULES_CORE_VERSION;
-  int parts[3] = {0, 0, 0};
+  std::array<int, 3> parts{};
   std::size_t start = 0;
   for (int &part : parts) {
     if (start > version.size()) break;
@@ -58,10 +61,10 @@ Object versionObject(Runtime &runtime) {
   return object;
 }
 
-Value viewConfig(Runtime &runtime, const Value *arguments, size_t count) {
-  const auto module = stringArgument(runtime, arguments, count, 0, "getViewConfig");
-  const auto view = count > 1 && arguments[1].isString() ? arguments[1].getString(runtime).utf8(runtime) : std::string();
-  auto config = expoViewConfig(module, view);
+Value viewConfig(Runtime &runtime, std::span<const Value> arguments) {
+  const auto moduleName = stringArgument(runtime, arguments, 0, "getViewConfig");
+  const auto view = arguments.size() > 1 && arguments[1].isString() ? arguments[1].getString(runtime).utf8(runtime) : std::string();
+  auto config = expoViewConfig(moduleName, view);
   return config ? facebook::jsi::valueFromDynamic(runtime, *config) : Value::null();
 }
 
@@ -75,15 +78,15 @@ void installHelpers(Runtime &runtime, Object &expo) {
   }));
   expo.setProperty(
       runtime, "uuidv5", hostFunction(runtime, "uuidv5", 2, [](Runtime &rt, const Value &, const Value *arguments, size_t count) {
-        const auto name = stringArgument(rt, arguments, count, 0, "uuidv5");
-        const auto space = stringArgument(rt, arguments, count, 1, "uuidv5");
+        const auto name = stringArgument(rt, std::span(arguments, count), 0, "uuidv5");
+        const auto space = stringArgument(rt, std::span(arguments, count), 1, "uuidv5");
         auto uuid = uuidV5(name, space);
         if (!uuid) throw JSError(rt, "uuidv5 expects a UUID as its namespace, got '" + space + "'");
         return Value(String::createFromAscii(rt, *uuid));
       }));
   expo.setProperty(
       runtime, "getViewConfig", hostFunction(runtime, "getViewConfig", 2, [](Runtime &rt, const Value &, const Value *arguments, size_t count) {
-        return viewConfig(rt, arguments, count);
+        return viewConfig(rt, std::span(arguments, count));
       }));
   expo.setProperty(
       runtime, "reloadAppAsync", hostFunction(runtime, "reloadAppAsync", 1, [](Runtime &rt, const Value &, const Value *, size_t) {
@@ -122,8 +125,8 @@ void installExpoRuntime(Runtime &runtime) {
     log(LogLevel::Error, "No ExpoModulesCore TurboModule: Expo modules are not installed");
     return;
   }
-  auto module = core.getObject(runtime);
-  module.getPropertyAsFunction(runtime, "installModules").callWithThis(runtime, module);
+  auto coreModule = core.getObject(runtime);
+  coreModule.getPropertyAsFunction(runtime, "installModules").callWithThis(runtime, coreModule);
 }
 
 } // namespace rntizen::expo

@@ -17,8 +17,7 @@ namespace rntizen::expo {
 /// settle wins.
 class Promise {
  public:
-  Promise(std::shared_ptr<Context> context, std::uint64_t id)
-      : context_(std::move(context)), id_(id), settled_(std::make_shared<std::atomic<bool>>(false)) {}
+  Promise(std::shared_ptr<Context> context, std::uint64_t id) : context_(std::move(context)), id_(id) {}
 
   template <typename T>
   void resolve(T value) const {
@@ -42,7 +41,7 @@ class Promise {
 
   std::shared_ptr<Context> context_;
   std::uint64_t id_;
-  std::shared_ptr<std::atomic<bool>> settled_;
+  std::shared_ptr<std::atomic<bool>> settled_ = std::make_shared<std::atomic<bool>>(false);
 };
 
 } // namespace rntizen::expo

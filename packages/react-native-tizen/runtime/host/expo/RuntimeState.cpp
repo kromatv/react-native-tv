@@ -49,12 +49,12 @@ const std::shared_ptr<Context> &RuntimeState::context() const {
   return context_;
 }
 
-Value RuntimeState::module(Runtime &runtime, const std::string &name) {
+Value RuntimeState::moduleValue(Runtime &runtime, const std::string &name) {
   if (auto loaded = loadedModule(runtime, name)) return Value(runtime, *loaded);
   auto object = context_->createModuleObject(runtime, name);
   if (!object) return Value::undefined();
   auto value = Value(runtime, *object);
-  modules_.emplace(name, std::move(*object));
+  modules_.try_emplace(name, std::move(*object));
   return value;
 }
 
@@ -119,14 +119,14 @@ RuntimeState::CreatedPromise RuntimeState::createPromise(Runtime &runtime) {
         return Value::undefined();
       });
   auto promise = runtime.global().getPropertyAsFunction(runtime, "Promise").callAsConstructor(runtime, executor);
-  if (*pending) promises_.emplace(id, std::move(**pending));
+  if (pending->has_value()) promises_.try_emplace(id, std::move(**pending));
   return {.promise = std::move(promise), .id = id};
 }
 
 void RuntimeState::settle(Runtime &runtime, std::uint64_t id, const PromiseOutcome &outcome) {
   auto node = promises_.extract(id);
   if (node.empty()) return;
-  auto &promise = node.mapped();
+  const auto &promise = node.mapped();
   if (outcome.error) {
     promise.reject.call(runtime, makeError(runtime, *outcome.error, outcome.code));
     return;

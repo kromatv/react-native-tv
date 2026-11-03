@@ -32,7 +32,7 @@ class ExpoModuleRegistry final {
 
  private:
   mutable std::mutex mutex_;
-  std::map<std::string, ModuleFactory> factories_;
+  std::map<std::string, ModuleFactory, std::less<>> factories_;
 };
 
 template <typename Type>

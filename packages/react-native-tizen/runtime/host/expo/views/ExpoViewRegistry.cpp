@@ -7,6 +7,8 @@
 
 #include <ExpoViewComponentDescriptor.h>
 
+#include <folly/Indestructible.h>
+
 #include <cctype>
 #include <mutex>
 
@@ -16,11 +18,11 @@ namespace {
 
 struct Registry {
   std::mutex mutex;
-  std::map<std::string, std::shared_ptr<const ExpoViewType>> types;
+  std::map<std::string, std::shared_ptr<const ExpoViewType>, std::less<>> types;
 };
 
 Registry &registry() {
-  static auto *shared = new Registry();
+  static folly::Indestructible<Registry> shared;
   return *shared;
 }
 
@@ -63,7 +65,7 @@ bool registerExpoView(ExpoViewType type) {
   return true;
 }
 
-std::vector<std::shared_ptr<const ExpoViewType>> expoViewTypes(const std::string &moduleName) {
+std::vector<std::shared_ptr<const ExpoViewType>> expoViewTypes(std::string_view moduleName) {
   std::vector<std::shared_ptr<const ExpoViewType>> types;
   auto &views = registry();
   std::lock_guard lock(views.mutex);

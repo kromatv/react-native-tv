@@ -4,7 +4,6 @@
 
 #include <fstream>
 #include <iterator>
-#include <stdexcept>
 #include <system_error>
 
 namespace rntizen::expo {
@@ -18,20 +17,26 @@ int hexValue(char digit) {
   return -1;
 }
 
+std::optional<char> escapedByte(std::string_view text, std::size_t index) {
+  if (text[index] != '%' || index + 2 >= text.size()) return std::nullopt;
+  const int high = hexValue(text[index + 1]);
+  const int low = hexValue(text[index + 2]);
+  if (high < 0 || low < 0) return std::nullopt;
+  return static_cast<char>(high * 16 + low);
+}
+
 std::string percentDecoded(std::string_view text) {
   std::string decoded;
   decoded.reserve(text.size());
-  for (std::size_t index = 0; index < text.size(); ++index) {
-    if (text[index] == '%' && index + 2 < text.size()) {
-      const int high = hexValue(text[index + 1]);
-      const int low = hexValue(text[index + 2]);
-      if (high >= 0 && low >= 0) {
-        decoded += static_cast<char>(high * 16 + low);
-        index += 2;
-        continue;
-      }
+  std::size_t index = 0;
+  while (index < text.size()) {
+    if (const auto byte = escapedByte(text, index); byte.has_value()) {
+      decoded += *byte;
+      index += 3;
+    } else {
+      decoded += text[index];
+      ++index;
     }
-    decoded += text[index];
   }
   return decoded;
 }
@@ -55,20 +60,19 @@ void writeFileAtomically(const std::filesystem::path &path, std::string_view dat
     if (!file) {
       std::error_code ignored;
       std::filesystem::remove(temporary, ignored);
-      throw std::runtime_error("Cannot write " + path.string());
+      throw FileWriteError("Cannot write " + path.string());
     }
   }
   std::error_code error;
   std::filesystem::rename(temporary, path, error);
   if (error) {
     std::filesystem::remove(temporary, error);
-    throw std::runtime_error("Cannot write " + path.string());
+    throw FileWriteError("Cannot write " + path.string());
   }
 }
 
 std::optional<std::string> localPathOf(const std::string &uri) {
-  constexpr std::string_view scheme = "file://";
-  if (uri.rfind(scheme, 0) == 0) {
+  if (constexpr std::string_view scheme = "file://"; uri.starts_with(scheme)) {
     auto rest = std::string_view(uri).substr(scheme.size());
     const auto end = rest.find_first_of("?#");
     return percentDecoded(rest.substr(0, end));

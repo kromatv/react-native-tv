@@ -22,15 +22,29 @@ std::string takePath(char *path) {
   return withTrailingSlash(std::move(result));
 }
 
+std::string privateTemporaryDirectory() {
+  std::error_code error;
+  const auto temporary = std::filesystem::temp_directory_path(error);
+  if (error) return {};
+  auto pattern = (temporary / "rn-tizen-XXXXXX").string();
+  if (mkdtemp(pattern.data()) == nullptr) return {};
+  return withTrailingSlash(std::move(pattern));
+}
+
+const std::string &fallbackDirectory() {
+  static const std::string directory = privateTemporaryDirectory();
+  return directory;
+}
+
 std::string writablePath(char *path, const char *fallback) {
-  auto result = takePath(path);
-  return result.empty() ? withTrailingSlash((std::filesystem::temp_directory_path() / fallback).string()) : result;
+  if (auto result = takePath(path); !result.empty() || fallbackDirectory().empty()) return result;
+  return withTrailingSlash(fallbackDirectory() + fallback);
 }
 
 AppDirectories readDirectories() {
   AppDirectories directories{
-      .data = writablePath(app_get_data_path(), "rn-tizen-data"),
-      .cache = writablePath(app_get_cache_path(), "rn-tizen-cache"),
+      .data = writablePath(app_get_data_path(), "data"),
+      .cache = writablePath(app_get_cache_path(), "cache"),
       .resource = takePath(app_get_resource_path()),
   };
   std::error_code ignored;

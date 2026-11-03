@@ -60,9 +60,9 @@ std::shared_ptr<SharedObject> sharedObjectFromJs(Runtime &runtime, const Value &
   return registry.find(object.getNativeState<::expo::SharedObject::NativeState>(runtime)->objectId);
 }
 
-const Value &argumentAt(const Value *arguments, size_t count, size_t index) {
+const Value &argumentAt(std::span<const Value> arguments, size_t index) {
   static const Value undefined;
-  return index < count ? arguments[index] : undefined;
+  return index < arguments.size() ? arguments[index] : undefined;
 }
 
 Value errorFor(Runtime &runtime, const std::exception &error) {

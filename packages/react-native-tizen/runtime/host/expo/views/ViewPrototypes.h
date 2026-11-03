@@ -17,7 +17,7 @@ class Context;
 void installViewPrototypes(
     facebook::jsi::Runtime &runtime,
     const std::shared_ptr<Context> &context,
-    facebook::jsi::Object &module,
+    const facebook::jsi::Object &moduleObject,
     const std::string &moduleName);
 
 } // namespace rntizen::expo

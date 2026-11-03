@@ -4,50 +4,63 @@
 
 #include <algorithm>
 #include <array>
-#include <cctype>
-#include <cstdio>
+#include <charconv>
+#include <cstddef>
+#include <format>
+#include <iterator>
 #include <random>
+#include <span>
 
 namespace rntizen::expo {
 
 namespace {
 
-using UuidBytes = std::array<unsigned char, 16>;
+using UuidBytes = std::array<std::byte, 16>;
 
-std::string format(const UuidBytes &bytes) {
-  char text[37];
-  std::snprintf(
-      text,
-      sizeof text,
-      "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
-      bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
-      bytes[8], bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]);
+constexpr bool isDashAt(std::size_t index) {
+  return index == 8 || index == 13 || index == 18 || index == 23;
+}
+
+std::string uuidText(const UuidBytes &bytes) {
+  std::string text;
+  text.reserve(36);
+  for (std::size_t index = 0; index < bytes.size(); ++index) {
+    if (index == 4 || index == 6 || index == 8 || index == 10) text += '-';
+    std::format_to(std::back_inserter(text), "{:02x}", std::to_integer<unsigned>(bytes[index]));
+  }
   return text;
 }
 
-std::optional<UuidBytes> parse(const std::string &text) {
+std::optional<std::byte> hexByte(std::string_view digits) {
+  unsigned value = 0;
+  const auto *end = digits.data() + digits.size();
+  const auto [last, error] = std::from_chars(digits.data(), end, value, 16);
+  if (error != std::errc() || last != end) return std::nullopt;
+  return static_cast<std::byte>(value);
+}
+
+std::optional<UuidBytes> parse(std::string_view text) {
   if (text.size() != 36) return std::nullopt;
   UuidBytes bytes{};
   std::size_t byte = 0;
-  for (std::size_t index = 0; index < text.size();) {
-    if (index == 8 || index == 13 || index == 18 || index == 23) {
+  std::size_t index = 0;
+  while (index < text.size()) {
+    if (isDashAt(index)) {
       if (text[index] != '-') return std::nullopt;
       ++index;
       continue;
     }
-    if (!std::isxdigit(static_cast<unsigned char>(text[index])) ||
-        !std::isxdigit(static_cast<unsigned char>(text[index + 1]))) {
-      return std::nullopt;
-    }
-    bytes[byte++] = static_cast<unsigned char>(std::stoi(text.substr(index, 2), nullptr, 16));
+    const auto value = hexByte(text.substr(index, 2));
+    if (!value.has_value()) return std::nullopt;
+    bytes[byte++] = *value;
     index += 2;
   }
   return bytes;
 }
 
 void stamp(UuidBytes &bytes, int version) {
-  bytes[6] = static_cast<unsigned char>((bytes[6] & 0x0f) | (version << 4));
-  bytes[8] = static_cast<unsigned char>((bytes[8] & 0x3f) | 0x80);
+  bytes[6] = (bytes[6] & std::byte{0x0f}) | static_cast<std::byte>(version << 4);
+  bytes[8] = (bytes[8] & std::byte{0x3f}) | std::byte{0x80};
 }
 
 } // namespace
@@ -55,21 +68,26 @@ void stamp(UuidBytes &bytes, int version) {
 std::string uuidV4() {
   std::random_device entropy;
   UuidBytes bytes{};
-  for (auto &byte : bytes) byte = static_cast<unsigned char>(entropy() & 0xff);
+  for (auto &byte : bytes) byte = static_cast<std::byte>(entropy() & 0xff);
   stamp(bytes, 4);
-  return format(bytes);
+  return uuidText(bytes);
 }
 
-std::optional<std::string> uuidV5(const std::string &name, const std::string &namespaceUuid) {
-  auto space = parse(namespaceUuid);
-  if (!space) return std::nullopt;
-  std::string input(space->begin(), space->end());
+std::optional<std::string> uuidV5(std::string_view name, std::string_view namespaceUuid) {
+  const auto space = parse(namespaceUuid);
+  if (!space.has_value()) return std::nullopt;
+  std::string input;
+  input.reserve(space->size() + name.size());
+  std::ranges::transform(*space, std::back_inserter(input), [](std::byte byte) { return std::to_integer<char>(byte); });
   input += name;
   const auto digest = sha1(input);
   UuidBytes bytes{};
-  std::copy_n(digest.begin(), bytes.size(), bytes.begin());
+  std::ranges::transform(
+      std::span(digest).first<std::tuple_size_v<UuidBytes>>(), bytes.begin(), [](std::uint8_t byte) {
+        return static_cast<std::byte>(byte);
+      });
   stamp(bytes, 5);
-  return format(bytes);
+  return uuidText(bytes);
 }
 
 } // namespace rntizen::expo

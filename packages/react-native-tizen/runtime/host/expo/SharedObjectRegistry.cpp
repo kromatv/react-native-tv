@@ -1,11 +1,13 @@
 #include "SharedObjectRegistry.h"
 
+#include <folly/Indestructible.h>
+
 #include <utility>
 
 namespace rntizen::expo {
 
 SharedObjectRegistry &SharedObjectRegistry::shared() {
-  static auto *registry = new SharedObjectRegistry();
+  static folly::Indestructible<SharedObjectRegistry> registry;
   return *registry;
 }
 
@@ -13,7 +15,7 @@ SharedObjectId SharedObjectRegistry::add(std::shared_ptr<SharedObject> object) {
   std::lock_guard lock(mutex_);
   const auto id = nextId_++;
   object->id_.store(id);
-  objects_.emplace(id, std::move(object));
+  objects_.try_emplace(id, std::move(object));
   return id;
 }
 

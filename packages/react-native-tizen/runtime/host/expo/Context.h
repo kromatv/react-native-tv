@@ -9,11 +9,11 @@
 #include <folly/dynamic.h>
 #include <jsi/jsi.h>
 
+#include <map>
 #include <memory>
 #include <mutex>
 #include <optional>
 #include <string>
-#include <unordered_map>
 
 namespace rntizen::expo {
 
@@ -52,7 +52,7 @@ class Context final : public std::enable_shared_from_this<Context> {
   const ModuleContext host_;
   const std::string resourceDirectory_;
   std::mutex mutex_;
-  std::unordered_map<std::string, std::shared_ptr<Module>> modules_;
+  std::map<std::string, std::shared_ptr<Module>, std::less<>> modules_;
 };
 
 /// `payload` as a JavaScript value, for Context::emit.

@@ -8,6 +8,7 @@
 
 #include "threading/MainThread.h"
 
+#include <format>
 #include <optional>
 
 namespace rntizen::expo {
@@ -27,42 +28,52 @@ std::optional<facebook::react::Tag> nativeTagOf(Runtime &runtime, const Value &c
   return static_cast<facebook::react::Tag>(tag.getNumber());
 }
 
+PromiseOutcome callOnView(facebook::react::Tag tag, const std::string &name, const ExpoViewFunction &body) {
+  auto *view = ExpoView::find(tag);
+  if (view == nullptr) {
+    return {.value = nullptr, .error = std::format("{}: no mounted view has tag {}", name, tag), .code = "ERR_VIEW"};
+  }
+  try {
+    body(*view);
+  } catch (const std::exception &error) {
+    return {.value = nullptr, .error = std::format("{}: {}", name, error.what()), .code = ""};
+  }
+  return {};
+}
+
+Value callViewFunction(
+    Runtime &runtime,
+    const Value &thisValue,
+    const std::shared_ptr<Context> &context,
+    const std::string &name,
+    const ExpoViewFunction &body) {
+  auto &state = RuntimeState::get(runtime);
+  auto created = state.createPromise(runtime);
+  const auto tag = nativeTagOf(runtime, thisValue);
+  if (!tag.has_value()) {
+    state.settle(
+        runtime, created.id, {.value = nullptr, .error = std::format("{}: the view is not mounted", name), .code = "ERR_VIEW"});
+    return std::move(created.promise);
+  }
+  runOnMainThread([context, name, body, tag = *tag, id = created.id] { context->settlePromise(id, callOnView(tag, name, body)); });
+  return std::move(created.promise);
+}
+
 Function viewFunction(
     Runtime &runtime, const std::shared_ptr<Context> &context, const std::string &name, ExpoViewFunction body) {
   return Function::createFromHostFunction(
       runtime,
       PropNameID::forUtf8(runtime, name),
       0,
-      [context, name, body = std::move(body)](Runtime &rt, const Value &thisValue, const Value *, size_t) -> Value {
-        auto &state = RuntimeState::get(rt);
-        auto created = state.createPromise(rt);
-        const auto tag = nativeTagOf(rt, thisValue);
-        if (!tag) {
-          state.settle(rt, created.id, {.value = nullptr, .error = name + ": the view is not mounted", .code = "ERR_VIEW"});
-          return std::move(created.promise);
-        }
-        runOnMainThread([context, name, body, tag = *tag, id = created.id] {
-          PromiseOutcome outcome;
-          if (auto *view = ExpoView::find(tag)) {
-            try {
-              body(*view);
-            } catch (const std::exception &error) {
-              outcome.error = name + ": " + error.what();
-            }
-          } else {
-            outcome.error = name + ": no mounted view has tag " + std::to_string(tag);
-            outcome.code = "ERR_VIEW";
-          }
-          context->settlePromise(id, std::move(outcome));
-        });
-        return std::move(created.promise);
+      [context, name, body = std::move(body)](Runtime &rt, const Value &thisValue, const Value *, size_t) {
+        return callViewFunction(rt, thisValue, context, name, body);
       });
 }
 
 } // namespace
 
 void installViewPrototypes(
-    Runtime &runtime, const std::shared_ptr<Context> &context, Object &module, const std::string &moduleName) {
+    Runtime &runtime, const std::shared_ptr<Context> &context, const Object &moduleObject, const std::string &moduleName) {
   const auto types = expoViewTypes(moduleName);
   if (types.empty()) return;
   Object prototypes(runtime);
@@ -74,7 +85,7 @@ void installViewPrototypes(
     const auto key = type->viewName.empty() ? moduleName : moduleName + "_" + type->viewName;
     prototypes.setProperty(runtime, key.c_str(), prototype);
   }
-  module.setProperty(runtime, "ViewPrototypes", prototypes);
+  moduleObject.setProperty(runtime, "ViewPrototypes", prototypes);
 }
 
 } // namespace rntizen::expo

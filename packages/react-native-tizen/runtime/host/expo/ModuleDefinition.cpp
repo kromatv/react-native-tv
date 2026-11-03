@@ -32,7 +32,7 @@ void defineAccessor(
   ::expo::common::defineProperty(runtime, &target, name.c_str(), std::move(descriptor));
 }
 
-void defineFunction(Runtime &runtime, Object &target, const std::string &name, facebook::jsi::HostFunctionType body) {
+void defineFunction(Runtime &runtime, const Object &target, const std::string &name, facebook::jsi::HostFunctionType body) {
   target.setProperty(
       runtime, name.c_str(), Function::createFromHostFunction(runtime, PropNameID::forUtf8(runtime, name), 0, std::move(body)));
 }
@@ -40,18 +40,18 @@ void defineFunction(Runtime &runtime, Object &target, const std::string &name, f
 } // namespace detail
 
 ModuleDefinition &ModuleDefinition::onStartObserving(std::function<void(const std::string &event)> body) {
-  return function("startObserving", [body = std::move(body)](std::string event) { body(event); });
+  return function("startObserving", [body = std::move(body)](const std::string &event) { body(event); });
 }
 
 ModuleDefinition &ModuleDefinition::onStopObserving(std::function<void(const std::string &event)> body) {
-  return function("stopObserving", [body = std::move(body)](std::string event) { body(event); });
+  return function("stopObserving", [body = std::move(body)](const std::string &event) { body(event); });
 }
 
 void ModuleDefinition::install(
     facebook::jsi::Runtime &runtime,
     const std::shared_ptr<Context> &context,
-    facebook::jsi::Object &module) const {
-  for (const auto &member : members_) member(runtime, context, module);
+    facebook::jsi::Object &target) const {
+  for (const auto &member : members_) member(runtime, context, target);
 }
 
 } // namespace rntizen::expo

@@ -19,10 +19,10 @@ class ExpoModulesCoreModule final : public facebook::react::TurboModule {
  private:
   static facebook::jsi::Value installModules(
       facebook::jsi::Runtime &runtime,
-      TurboModule &module,
+      TurboModule &turboModule,
       const facebook::jsi::Value *,
       size_t) {
-    installExpoGlobals(runtime, static_cast<ExpoModulesCoreModule &>(module).context_);
+    installExpoGlobals(runtime, static_cast<ExpoModulesCoreModule &>(turboModule).context_);
     return facebook::jsi::Value::undefined();
   }
 

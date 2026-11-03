@@ -52,8 +52,8 @@ void Context::settlePromise(std::uint64_t id, PromiseOutcome outcome) const {
 
 void Context::emit(const std::string &moduleName, const std::string &event, JsValueFactory payload) const {
   runOnJs([moduleName, event, payload = std::move(payload)](Runtime &runtime) {
-    if (auto module = RuntimeState::get(runtime).loadedModule(runtime, moduleName)) {
-      emitOn(runtime, *module, event, payload);
+    if (auto moduleObject = RuntimeState::get(runtime).loadedModule(runtime, moduleName); moduleObject.has_value()) {
+      emitOn(runtime, *moduleObject, event, payload);
     }
   });
 }
@@ -67,20 +67,20 @@ void Context::emit(const std::shared_ptr<SharedObject> &object, const std::strin
 }
 
 std::optional<Object> Context::createModuleObject(Runtime &runtime, const std::string &name) {
-  std::shared_ptr<Module> module;
+  std::shared_ptr<Module> instance;
   {
     std::lock_guard lock(mutex_);
     if (auto found = modules_.find(name); found != modules_.end()) {
-      module = found->second;
+      instance = found->second;
     } else {
-      module = ExpoModuleRegistry::shared().create(name);
-      if (!module) return std::nullopt;
-      module->context_ = this;
-      module->name_ = name;
-      modules_.emplace(name, module);
+      instance = ExpoModuleRegistry::shared().create(name);
+      if (!instance) return std::nullopt;
+      instance->context_ = this;
+      instance->name_ = name;
+      modules_.try_emplace(name, instance);
     }
   }
-  const auto definition = module->definition();
+  const auto definition = instance->definition();
   if (definition.name() != name) {
     log(LogLevel::Warning, "The Expo module registered as " + name + " defines itself as " + definition.name());
   }

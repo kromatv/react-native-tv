@@ -6,9 +6,9 @@
 
 #include <folly/dynamic.h>
 
+#include <map>
 #include <memory>
 #include <string>
-#include <unordered_map>
 
 namespace rntizen::expo {
 
@@ -36,7 +36,7 @@ class ExpoView : public ComponentView {
 
  private:
   std::shared_ptr<const ExpoViewType> type_;
-  std::unordered_map<std::string, folly::dynamic> applied_;
+  std::map<std::string, folly::dynamic, std::less<>> applied_;
 };
 
 } // namespace rntizen::expo

@@ -359,7 +359,7 @@ so pin the `@expo/config-plugins` range they were tested on.
 | A no-op SharedObject releaser and no ids | `SharedObjectRegistry`: ids from 1 under a mutex, never reused; `release()` and the GC both delete; the releaser touches no runtime |
 | `getViewConfig` returned `undefined` | The view registry answers it (section 2) |
 | `asyncFunction` ran on the JavaScript thread | Bodies run on a background pool or the main loop and settle through the CallInvoker (`Invoke.h`) |
-| ExpoAsset wrote in place, unchecked; ignored `md5Hash` on a hit; keyed by `std::hash`; fell back to `/tmp` | Temporary file then rename, checked; re-downloads on an MD5 mismatch; MD5 of the URL as on iOS. `/tmp` remains the last resort, now only when `app_get_cache_path` returns null |
+| ExpoAsset wrote in place, unchecked; ignored `md5Hash` on a hit; keyed by `std::hash`; fell back to `/tmp` | Temporary file then rename, checked; re-downloads on an MD5 mismatch; MD5 of the URL as on iOS. When `app_get_data_path` or `app_get_cache_path` returns null, which Tizen documents only for insufficient memory (`appfw/app_common.h:312,324`), the directory is one `mkdtemp` makes, private (0700) and unpredictable, under the temporary directory, instead of a fixed name there |
 | `reloadAppAsync` threw synchronously | Returns a rejected promise (P3 above) |
 | `expoModulesCoreVersion` was a string; no `uuidv5`, `cacheDir`, `documentsDir` | Installed as the contract types them |
 | `Expo.cmake` copied Apple's `NativeState.h` and left out `common/cpp/fabric` | Both fixed: `EventEmitter.h` takes the `jsi::NativeState` branch, as on Android |

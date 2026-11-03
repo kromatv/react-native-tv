@@ -11,8 +11,10 @@ namespace rntizen::expo {
 class ExpoModulesHostObject final : public facebook::jsi::HostObject {
  public:
   facebook::jsi::Value get(facebook::jsi::Runtime &runtime, const facebook::jsi::PropNameID &name) override;
-  void set(facebook::jsi::Runtime &runtime, const facebook::jsi::PropNameID &name, const facebook::jsi::Value &value)
-      override;
+  [[noreturn]] void set(
+      facebook::jsi::Runtime &runtime,
+      const facebook::jsi::PropNameID &name,
+      const facebook::jsi::Value &value) override;
   std::vector<facebook::jsi::PropNameID> getPropertyNames(facebook::jsi::Runtime &runtime) override;
 };
 

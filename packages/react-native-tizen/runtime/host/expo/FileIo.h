@@ -2,6 +2,7 @@
 
 #include <filesystem>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 
@@ -10,9 +11,15 @@ namespace rntizen::expo {
 /// The whole file at `path`, or nullopt when it cannot be read.
 std::optional<std::string> readFile(const std::filesystem::path &path);
 
+/// Thrown when a file cannot be written; the message names the path.
+class FileWriteError : public std::runtime_error {
+ public:
+  using std::runtime_error::runtime_error;
+};
+
 /// Writes `data` to a temporary file beside `path`, then renames it over
-/// `path`, so a reader never sees a partial file. Throws std::runtime_error
-/// naming the path when any step fails.
+/// `path`, so a reader never sees a partial file. Throws FileWriteError when
+/// any step fails.
 void writeFileAtomically(const std::filesystem::path &path, std::string_view data);
 
 /// The local path a `file://` URI names, with percent escapes decoded; nullopt

@@ -9,6 +9,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <map>
 #include <typeindex>
 #include <unordered_map>
 
@@ -45,7 +46,7 @@ class RuntimeState final {
 
   const std::shared_ptr<Context> &context() const;
 
-  facebook::jsi::Value module(facebook::jsi::Runtime &runtime, const std::string &name);
+  facebook::jsi::Value moduleValue(facebook::jsi::Runtime &runtime, const std::string &name);
   std::optional<facebook::jsi::Object> loadedModule(facebook::jsi::Runtime &runtime, const std::string &name);
 
   void registerClass(facebook::jsi::Runtime &runtime, std::type_index type, const facebook::jsi::Function &klass);
@@ -71,7 +72,7 @@ class RuntimeState final {
   void forgetReleased();
 
   const std::shared_ptr<Context> context_;
-  std::unordered_map<std::string, facebook::jsi::Object> modules_;
+  std::map<std::string, facebook::jsi::Object, std::less<>> modules_;
   std::unordered_map<std::type_index, facebook::jsi::Function> classes_;
   std::unordered_map<SharedObjectId, facebook::jsi::WeakObject> objects_;
   std::unordered_map<std::uint64_t, PendingPromise> promises_;

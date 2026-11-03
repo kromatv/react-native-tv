@@ -10,6 +10,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace rntizen::expo {
@@ -31,9 +32,9 @@ using ExpoViewFunction = std::function<void(ExpoView &view)>;
 struct ExpoViewType {
   std::string moduleName;
   std::string viewName;
-  std::map<std::string, ExpoPropSetter> props;
+  std::map<std::string, ExpoPropSetter, std::less<>> props;
   std::vector<std::string> events;
-  std::map<std::string, ExpoViewFunction> functions;
+  std::map<std::string, ExpoViewFunction, std::less<>> functions;
   std::function<std::unique_ptr<ExpoView>(Evas *evas, facebook::react::Tag tag)> create;
 };
 
@@ -46,7 +47,7 @@ std::string expoViewComponentName(const std::string &moduleName, const std::stri
 bool registerExpoView(ExpoViewType type);
 
 /// Every view the module `moduleName` defines.
-std::vector<std::shared_ptr<const ExpoViewType>> expoViewTypes(const std::string &moduleName);
+std::vector<std::shared_ptr<const ExpoViewType>> expoViewTypes(std::string_view moduleName);
 
 /// What `expo.getViewConfig(module, view)` returns: `{ validAttributes,
 /// directEventTypes }`, or nullopt for a view no module defines.

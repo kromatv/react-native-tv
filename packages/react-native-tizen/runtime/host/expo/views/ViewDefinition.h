@@ -5,6 +5,7 @@
 
 #include "registry/Registration.h"
 
+#include <functional>
 #include <initializer_list>
 #include <string>
 
@@ -27,17 +28,19 @@ class ViewDefinition {
     type_.create = [](Evas *evas, facebook::react::Tag tag) { return std::make_unique<View>(evas, tag); };
   }
 
-  ViewDefinition &prop(const char *name, void (View::*setter)(const folly::dynamic &value)) {
+  template <typename Setter>
+  ViewDefinition &prop(const char *name, Setter setter) {
     type_.props.insert_or_assign(name, [setter](ExpoView &view, const folly::dynamic &value) {
-      (static_cast<View &>(view).*setter)(value);
+      std::invoke(setter, static_cast<View &>(view), value);
     });
     return *this;
   }
 
   /// A method JavaScript calls through the view's ref: `method()` runs on the
   /// main thread and the promise JavaScript gets resolves after it.
-  ViewDefinition &asyncFunction(const char *name, void (View::*method)()) {
-    type_.functions.insert_or_assign(name, [method](ExpoView &view) { (static_cast<View &>(view).*method)(); });
+  template <typename Method>
+  ViewDefinition &asyncFunction(const char *name, Method method) {
+    type_.functions.insert_or_assign(name, [method](ExpoView &view) { std::invoke(method, static_cast<View &>(view)); });
     return *this;
   }
 
@@ -46,7 +49,7 @@ class ViewDefinition {
     return *this;
   }
 
-  operator ExpoViewType() const {
+  explicit operator ExpoViewType() const {
     return type_;
   }
 
@@ -57,4 +60,5 @@ class ViewDefinition {
 } // namespace rntizen::expo
 
 /// Registers an Expo view from a ViewDefinition when the library loads.
-#define RN_TIZEN_EXPO_VIEW(definition) RN_TIZEN_REGISTRATION(::rntizen::expo::registerExpoView(definition))
+#define RN_TIZEN_EXPO_VIEW(definition) \
+  RN_TIZEN_REGISTRATION(::rntizen::expo::registerExpoView(static_cast<::rntizen::expo::ExpoViewType>(definition)))
