@@ -16,13 +16,13 @@ starts. `rn-tizen package` and `rn-tizen run` write it; you do not edit it.
 |-------|----------|---------|
 | `appKey` | yes | The component to run: what `AppRegistry.registerComponent` registered. Expo's `registerRootComponent` registers `main`. |
 | `bundleFile` | yes | The bundle in `res/`, Hermes bytecode or plain JavaScript. |
-| `bundleUrl` | no | Load the bundle from this URL (a Metro or Expo dev server) instead of `bundleFile`. |
+| `bundleUrl` | no | Load the bundle from this URL (a Metro or Expo dev server) instead of `bundleFile`. `rn-tizen run --dev-server <origin>` and the Run on TV command of `expo start` write Expo's virtual entry on that server. |
 | `development` | no, default `false` | A fatal JavaScript error shows a red error screen with its stack, and Back closes the app. In a release build the app closes after logging the error, as React Native does on Android and iOS. |
 | `log` | no | Stream every log line, JavaScript and native, to this host and port, where `rn-tizen run` or `rn-tizen logs` prints them. Retail TVs keep no readable system log, so a development build needs this. A native crash is streamed here too. |
-| `resolution` | no, default `1080p` | `4k` sizes the window to the window manager's screen when it is 3840x2160 or larger (`expo.tizen.resolution`). |
+| `resolution` | no, default `1080p` | `4k` sizes the window to the window manager's screen when it is 3840x2160 or larger (the config plugin's `resolution` prop). |
 | `backgroundMedia` | no, default `false` | The manifest declares the `media` background category (expo-video's `supportsBackgroundPlayback`); without it the host warns when a player stays active in the background. |
-| `voice` | no | `expo.tizen.voice`: the shell registers with Samsung's voice service, and `searchUrl`, when present, is opened for a voice search no listener takes. |
-| `preview` | no | `expo.tizen.preview`: `kind` (`public` or `personal`), and for a personal preview `refreshMinutes` and `service`, the app id of the service app the shell starts at `OnPause`. |
+| `voice` | no | The config plugin's `voice` prop: the shell registers with Samsung's voice service, and `searchUrl`, when present, is opened for a voice search no listener takes. |
+| `preview` | no | The config plugin's `preview` prop: `kind` (`public` or `personal`), and for a personal preview `refreshMinutes` and `service`, the app id of the service app the shell starts at `OnPause`. |
 
 The runtime refuses a file that is missing, larger than 64 KiB, or whose fields
 have the wrong type, and logs which field is wrong. The .NET shell reads `voice`

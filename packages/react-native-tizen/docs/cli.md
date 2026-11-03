@@ -27,8 +27,10 @@ reach it: `sdb disconnect <tv ip>` frees it.
 
 ## Configuration
 
-A Tizen build reads `expo.tizen` in `app.json` (or `app.config.js`, through
-Expo's own config loader). Only `package` is required.
+The Tizen settings are the props of this package's config plugin in `app.json`
+(or `app.config.js`, read through Expo's own config loader). `npx expo install
+@kromatv/react-native-tizen` adds the plugin to `expo.plugins` by itself; give it
+props. Only `package` is required.
 
 ```json
 {
@@ -36,14 +38,23 @@ Expo's own config loader). Only `package` is required.
     "name": "My App",
     "version": "1.2.0",
     "icon": "./assets/icon.png",
-    "tizen": {
-      "package": "com.example.myapp",
-      "label": "My App",
-      "privileges": ["internet"]
-    }
+    "plugins": [
+      [
+        "@kromatv/react-native-tizen",
+        { "package": "com.example.myapp", "label": "My App", "privileges": ["internet"] }
+      ]
+    ]
   }
 }
 ```
+
+The plugin checks its props whenever Expo reads the config (`npx expo config`,
+`npx expo start`), so a mistake shows there too. It changes nothing in the
+config: Expo generates no Tizen project.
+
+Earlier releases read the same fields from `expo.tizen`. This release still
+does, and prints a deprecation; the next one will not. Settings in both places
+are an error.
 
 | Field | Default | Meaning |
 |---|---|---|
@@ -92,13 +103,54 @@ when its `sdk.info` does not name it, and
 A build is for one CPU and one Tizen version. Each is chosen in this order:
 
 - **CPU** (`--arch`): the flag, then what the TV reports, then `armv7l`.
-- **Tizen version** (`--platform`): the flag, then `expo.tizen.platform`, then
+- **Tizen version** (`--platform`): the flag, then the plugin's `platform` prop, then
   the newest supported version the TV can run, then `9.0`.
 
 A package runs on its own Tizen version and every later one. Building for a
 version newer than the TV's is refused, since the TV could not install it.
 Only Tizen 9.0 is verified today; any other version is refused with the list of
 supported ones.
+
+## Inside `npx expo start`
+
+The package is also an Expo dev tools plugin (`expo-module.config.json`): in
+`npx expo start`, **shift+m** ("more tools") lists `@kromatv/react-native-tizen`,
+with these commands:
+
+| Command | Runs |
+|---|---|
+| Open `@kromatv/react-native-tizen` | The plugin's page, below |
+| Run on TV | `rn-tizen run --device <ip> --dev-server <this dev server>`, then the app's logs. Leave the address empty for the TV used last |
+| Run in simulator | `rn-tizen simulator run --dev-server <this dev server>`, on the instance `$RN_TIZEN_SIMULATOR_INSTANCE` names, else `default` |
+| Find TVs | `rn-tizen devices` |
+| Create certificate | `rn-tizen certificate create-author <name>` |
+
+Expo stops a command after ten seconds, so each one starts its work in the
+background and prints the address of the plugin's page,
+`http://<dev server>/_expo/plugins/@kromatv/react-native-tizen/`, where every
+job's progress and output stream, and a running job can be stopped. Starting
+Run on TV or Run in simulator again stops the previous run of the same
+command. The jobs are kept in `~/.cache/react-native-tizen/devtools/jobs/`, the
+twenty most recent.
+
+A development build loads its JavaScript from the dev server, and needs React
+Native's development support in the runtime (`DevSettings`, Fast Refresh) to
+start from it.
+
+Expo does not know the Tizen platform beyond that: there is no
+`expo run:tizen` and no single-key shortcut, and neither `expo prebuild` nor
+`expo export --platform tizen` takes it (`expo export` refuses a platform it
+does not bundle, which is why `rn-tizen bundle` goes through `expo
+export:embed`). A `package.json` script stands beside Expo's own:
+
+```json
+{
+  "scripts": {
+    "android": "expo run:android",
+    "tizen": "rn-tizen run"
+  }
+}
+```
 
 ## Commands
 
@@ -246,7 +298,7 @@ certificate fails in seconds rather than after a build.
 
 The certificates come from Tizen Studio's `profiles.xml`
 (`~/tizen-studio-data/profile/profiles.xml`, or the data directory
-`TIZEN_SDK_DATA_DIR` names): the profile `--profile` or `expo.tizen.profile`
+`TIZEN_SDK_DATA_DIR` names): the profile `--profile` or the plugin's `profile` prop
 names, else the active one. Their passwords come from the profile; on macOS,
 Tizen Studio keeps them in the login keychain, which `rn-tizen` reads.
 `--author` and `--distributor` replace either half with a `.p12` file.
@@ -264,6 +316,7 @@ Manager: a retail TV refuses a self-signed author certificate.
 | `--dev` | Build for development: the app streams its logs to this computer |
 | `--log-host <ip>` | With `--dev`, where the app streams its logs (default: this computer's LAN address, on the TV's subnet when `--device` is given) |
 | `--log-port <port>` | With `--dev`, the port it streams to (default `8099`) |
+| `--dev-server <origin>` | With `--dev`, load the JavaScript from this `expo start` dev server, such as `http://192.168.1.20:8081`, instead of packaging it |
 | `--entry <file>` | The entry to bundle (default: the app's `main`) |
 
 `package` makes a release build, the one Samsung's store takes: it streams no
@@ -291,8 +344,13 @@ plus:
 | `--release` | Build for the store instead: the app streams no logs, so nothing prints |
 | `--level <level>` | The quietest log level to show: `debug`, `info`, `warn` or `error` (default `info`) |
 | `--no-logs` | Exit once the app is launched |
+| `--dev-server <origin>` | Load the JavaScript from this `expo start` dev server instead of packaging it |
 
-Without `--device`, it uses the only TV reached before that answers. `Install`
+With `--dev-server`, the package carries no bundle: its runtime config names
+`bundleUrl`, Expo's entry (`/.expo/.virtual-metro-entry.bundle?platform=tizen`)
+on that server, with `localhost` replaced by an address the TV reaches, and the
+dev server serves the assets. The dev server must be running when the app
+starts. Without `--device`, it uses the only TV reached before that answers. `Install`
 pushes the package to the TV and installs it, replacing any earlier install;
 `Launch` starts it. The log listener starts before the build, so a port already in
 use fails before anything compiles, and nothing the app logs at startup is lost.
@@ -434,6 +492,10 @@ The runtime compiles the app's native libraries in, so the VM keeps one
 runtime build per set of them: apps with the same libraries share one, and
 each instance runs the build it was last staged on. The VM keeps the four most
 recently used; `rn-tizen simulator clean` deletes every build no instance runs.
+
+`run --dev-server <origin>` loads the JavaScript from an `expo start` dev
+server on the Mac, as `rn-tizen run` does, the VM reaching the Mac at
+`host.lima.internal`.
 
 Every action, and how the simulator works, is in
 [`simulator/README.md`](../simulator/README.md).

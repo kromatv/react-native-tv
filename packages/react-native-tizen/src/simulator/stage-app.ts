@@ -16,6 +16,8 @@ import { guestScript } from './simulator.ts';
 export interface SimulatorBundle {
   readonly bytecode: string;
   readonly assetsDir?: string;
+  /** A dev server the runtime loads the bundle from instead. */
+  readonly bundleUrl?: string;
 }
 
 /** What an instance runs besides the bundle: its runtime build and the ICU data it reads. */
@@ -37,7 +39,7 @@ async function writeResources(
   if (bundle.assetsDir !== undefined && existsSync(bundle.assetsDir)) {
     await cp(bundle.assetsDir, join(dir, 'assets'), { recursive: true });
   }
-  const config = runtimeConfig(BYTECODE_FILE, log, app.config);
+  const config = runtimeConfig(BYTECODE_FILE, log, app.config, bundle.bundleUrl);
   await writeFile(join(dir, RUNTIME_CONFIG_FILE), `${JSON.stringify(config, null, 2)}\n`);
 }
 

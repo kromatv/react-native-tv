@@ -42,16 +42,16 @@ const searchUrlSchema = z
     { message: `unknown placeholder; known: ${SEARCH_URL_PLACEHOLDERS.join(', ')}` },
   );
 
-/** `expo.tizen.voice`. */
+/** The `voice` setting. */
 export const voiceConfigSchema = z.union([
   z.literal(true),
   z.object({ searchUrl: searchUrlSchema.optional() }).strict(),
 ]);
 
-/** `expo.tizen.resolution`. */
+/** The `resolution` setting. */
 export const resolutionSchema = z.enum(['1080p', '4k']);
 
-/** `expo.tizen.preview`. */
+/** The `preview` setting. */
 export const previewConfigSchema = z.union([
   z.object({ endpoint: z.url({ protocol: /^https?$/ }) }).strict(),
   z
@@ -125,7 +125,7 @@ function previewConfig(
   return { kind: 'personal', refreshMinutes: preview.refreshMinutes };
 }
 
-/** The TV features `expo.tizen` and expo-video's config plugin options turn on. */
+/** The TV features the Tizen settings and expo-video's config plugin options turn on. */
 export function resolveTvFeatures(
   tizen: {
     readonly voice?: z.infer<typeof voiceConfigSchema>;

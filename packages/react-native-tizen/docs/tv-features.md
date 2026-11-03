@@ -2,15 +2,15 @@
 
 Four Samsung TV integrations an app turns on in `app.json`. Each is off until
 asked for, and the same `app.json` and code still build for Android, iOS and
-the web: the keys live under `expo.tizen`, and the JavaScript API answers
+the web: the keys are props of the `@kromatv/react-native-tizen` config plugin, and the JavaScript API answers
 "not available" everywhere but on a Samsung TV.
 
 | Feature | Turn it on | Import |
 |---|---|---|
-| [Voice](#voice) | `expo.tizen.voice` | `@kromatv/react-native-tizen/voice` |
-| [Smart Hub preview](#smart-hub-preview) | `expo.tizen.preview` | `@kromatv/react-native-tizen/preview` |
+| [Voice](#voice) | `voice` prop | `@kromatv/react-native-tizen/voice` |
+| [Smart Hub preview](#smart-hub-preview) | `preview` prop | `@kromatv/react-native-tizen/preview` |
 | [Background audio](#background-audio) | expo-video's config plugin | nothing new |
-| [4K UI](#4k-ui) | `expo.tizen.resolution` | nothing new |
+| [4K UI](#4k-ui) | `resolution` prop | nothing new |
 
 Picture-in-picture over other apps does not exist on Samsung TVs; see
 [the reference](reference/tizen-tv-app-integration.md#1-picture-in-picture).
@@ -28,7 +28,7 @@ while it is in front: transport commands, "select" a title on screen, and
 search.
 
 ```json
-{ "expo": { "tizen": { "voice": { "searchUrl": "myapp://search?q={query}" } } } }
+{ "expo": { "plugins": [["@kromatv/react-native-tizen", { "package": "com.example.myapp", "voice": { "searchUrl": "myapp://search?q={query}" } }]] } }
 ```
 
 `"voice": true` turns it on with no search URL. `rn-tizen package` adds the
@@ -57,7 +57,7 @@ To take over, listen:
 ```ts
 import { Voice } from '@kromatv/react-native-tizen/voice';
 
-Voice.isAvailable; // false off a TV, in the simulator, and without expo.tizen.voice
+Voice.isAvailable; // false off a TV, in the simulator, and without the voice prop
 
 const search = Voice.addListener('search', (query) => {
   // { utterance: 'search blade runner', title: 'blade runner', genre?, cast?, ... }
@@ -100,14 +100,14 @@ Two kinds. A **public** preview is the same for everyone, from a JSON file
 Smart Hub fetches itself:
 
 ```json
-{ "expo": { "tizen": { "preview": { "endpoint": "https://example.com/tv/preview.json" } } } }
+{ "expo": { "plugins": [["@kromatv/react-native-tizen", { "package": "com.example.myapp", "preview": { "endpoint": "https://example.com/tv/preview.json" } }]] } }
 ```
 
 A **personal** preview is published by the app, and refreshed while it is
 closed by a small service app the package then carries:
 
 ```json
-{ "expo": { "tizen": { "preview": { "refreshMinutes": 30 } } } }
+{ "expo": { "plugins": [["@kromatv/react-native-tizen", { "package": "com.example.myapp", "preview": { "refreshMinutes": 30 } }]] } }
 ```
 
 `refreshMinutes` is 10 or more, Samsung's minimum. It adds the privilege
@@ -202,7 +202,7 @@ normally gives the app a 1920x1080 window and scales it up, so text and
 lines are upscaled. An app can ask for the full panel:
 
 ```json
-{ "expo": { "tizen": { "resolution": "4k" } } }
+{ "expo": { "plugins": [["@kromatv/react-native-tizen", { "package": "com.example.myapp", "resolution": "4k" }]] } }
 ```
 
 `rn-tizen package` writes

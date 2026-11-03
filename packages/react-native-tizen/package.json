@@ -49,6 +49,7 @@
       "types": "./dist/api/preview-json.d.ts",
       "default": "./dist/api/preview-json.js"
     },
+    "./app.plugin.js": "./app.plugin.js",
     "./package.json": "./package.json"
   },
   "files": [
@@ -59,6 +60,9 @@
     "react-native-overrides",
     "docs",
     "README.md",
+    "app.plugin.js",
+    "expo-module.config.json",
+    "devtools",
     "THIRD_PARTY_NOTICES.md",
     "!**/*.tsbuildinfo",
     "!**/*.fixtures.*"

@@ -2,7 +2,8 @@ import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, extname, join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { UPSTREAM_TRANSFORMER_ENV } from './tizen-babel-transformer-env.ts';
+import { appIntlLocales } from './app-locales.ts';
+import { INTL_LOCALES_ENV, UPSTREAM_TRANSFORMER_ENV } from './tizen-babel-transformer-env.ts';
 
 /** The platform name a Tizen bundle is requested with. */
 export const TIZEN_PLATFORM = 'tizen';
@@ -103,6 +104,10 @@ function resolveReactNativeDir(projectRoot: string): string {
 export function withTizen<Config extends MetroConfigLike>(config: Config): Config {
   const projectRoot = config.projectRoot ?? process.cwd();
   const reactNativeDir = resolveReactNativeDir(projectRoot);
+  if (process.env[INTL_LOCALES_ENV] === undefined) {
+    const locales = appIntlLocales(projectRoot);
+    if (locales !== null) process.env[INTL_LOCALES_ENV] = locales.join(',');
+  }
   const upstream = config.resolver?.resolveRequest ?? null;
   const platforms = config.resolver?.platforms ?? ['ios', 'android'];
 

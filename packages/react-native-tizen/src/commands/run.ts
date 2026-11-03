@@ -64,6 +64,7 @@ export const runCommand: Command = {
       const { tpk, distributor } = await packageSteps(reporter, {
         ...build,
         signing: { profile: flags.profile, author: flags.author, distributor: flags.distributor },
+        devServer: flags['dev-server'],
       });
       await reporter.step(
         'Install',

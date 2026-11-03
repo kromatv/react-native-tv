@@ -21,6 +21,8 @@ export interface AppBundle {
   readonly javascript: string;
   readonly bytecode: string;
   readonly assetsDir: string;
+  /** A dev server the runtime loads the bundle from, instead of `bytecode`. */
+  readonly bundleUrl?: string;
 }
 
 function requireIntlData(locales: readonly string[]): void {

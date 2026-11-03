@@ -6,18 +6,21 @@
     "orientation": "landscape",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
-    "tizen": {
-      "package": "org.rntizen.example",
-      "label": "RN Tizen Example",
-      "locales": ["en", "fr"],
-      "voice": {
-        "searchUrl": "rntizen-example://search?q={query}"
-      },
-      "preview": {
-        "refreshMinutes": 10
-      }
-    },
     "plugins": [
+      [
+        "../app.plugin.js",
+        {
+          "package": "org.rntizen.example",
+          "label": "RN Tizen Example",
+          "locales": ["en", "fr"],
+          "voice": {
+            "searchUrl": "rntizen-example://search?q={query}"
+          },
+          "preview": {
+            "refreshMinutes": 10
+          }
+        }
+      ],
       [
         "expo-video",
         {

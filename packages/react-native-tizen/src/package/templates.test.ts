@@ -26,6 +26,7 @@ const config: TizenAppConfig = {
     backgroundMedia: false,
     pictureInPicture: false,
   },
+  deprecation: null,
 };
 
 const shellFile = (name: string) => readFileSync(join(SHELL_DIR, name), 'utf8');

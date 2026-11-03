@@ -39,13 +39,13 @@ function iconPath(app: AppProject): string {
   if (!existsSync(icon)) {
     throw new FixableError(
       `The app icon ${app.config.icon} does not exist`,
-      'Fix expo.icon or expo.tizen.icon in app.json.',
+      'Fix expo.icon, or the icon prop of the @kromatv/react-native-tizen plugin, in app.json.',
     );
   }
   if (extname(icon).toLowerCase() !== '.png') {
     throw new FixableError(
       `The app icon ${app.config.icon} is not a PNG`,
-      'Tizen only takes a PNG icon: point expo.tizen.icon at one.',
+      'Tizen only takes a PNG icon: point the icon prop of the plugin at one.',
     );
   }
   return icon;
@@ -87,7 +87,12 @@ async function writeResources(inputs: TizenProjectInputs, dir: string): Promise<
   await copyFile(inputs.icuData, join(res, basename(inputs.icuData)));
   await copyFile(NOTICES_FILE, join(res, basename(NOTICES_FILE)));
   await cp(inputs.bundle.assetsDir, join(res, 'assets'), { recursive: true });
-  const config = runtimeConfig(BYTECODE_FILE, inputs.log, inputs.app.config);
+  const config = runtimeConfig(
+    BYTECODE_FILE,
+    inputs.log,
+    inputs.app.config,
+    inputs.bundle.bundleUrl,
+  );
   await writeFile(join(res, RUNTIME_CONFIG_FILE), `${JSON.stringify(config, null, 2)}\n`);
   await writeAppConfig(inputs.app.root, res);
 }

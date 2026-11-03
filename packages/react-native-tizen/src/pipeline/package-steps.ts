@@ -7,6 +7,7 @@ import { bundleApp, type AppBundle } from '../bundle/bundle-app.ts';
 import { formatSize } from '../cli/format.ts';
 import { ensureIcuData } from '../runtime/icu-data.ts';
 import type { Reporter } from '../cli/reporter.ts';
+import { devBuildHost, devServerBundleStep } from '../package/dev-server-bundle.ts';
 import { buildDotnetProject } from '../package/dotnet-build.ts';
 import { featureNotes } from '../package/feature-notes.ts';
 import type { LogEndpoint } from '../package/runtime-config.ts';
@@ -25,6 +26,8 @@ interface PackageRequest {
   readonly shell: PlatformProfile;
   readonly log: LogEndpoint | null;
   readonly signing: SigningRequest;
+  /** The `expo start` origin a development build loads its bundle from. */
+  readonly devServer?: string;
 }
 
 /** Where the bundle of an app is written before it is packaged. */
@@ -90,7 +93,12 @@ export async function packageSteps(
   );
   for (const note of featureNotes(app.config.features, request.log === null)) reporter.note(note);
   const runtimeLibrary = await runtimeSteps(reporter, sdk, app, target);
-  const bundle = await bundleStep(reporter, app);
+  const bundle =
+    request.devServer === undefined
+      ? await bundleStep(reporter, app)
+      : await devServerBundleStep(reporter, bundleDir(app), request.devServer, () =>
+          devBuildHost(request.log),
+        );
   const icuData = await icuDataStep(reporter, app);
   const projectDir = await reporter.step(
     'Tizen project',

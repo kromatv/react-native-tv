@@ -47,6 +47,7 @@ export const packageCommand: Command = {
     const { tpk } = await packageSteps(reporter, {
       ...build,
       signing: { profile: flags.profile, author: flags.author, distributor: flags.distributor },
+      devServer: flags['dev-server'],
     });
     reporter.line();
     const size = formatSize(statSync(tpk).size);

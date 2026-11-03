@@ -26,7 +26,7 @@ const native = TurboModuleRegistry.get<NativePreview>('RNTizenSmartHubPreview');
 const NO_SMART_HUB: PublishResult = {
   published: false,
   reason:
-    'no personal Smart Hub preview: run on a Samsung TV with expo.tizen.preview.refreshMinutes set',
+    'no personal Smart Hub preview: run on a Samsung TV with the preview.refreshMinutes prop set',
 };
 
 const publishQueue = createPublishQueue(async (json) => {
@@ -40,11 +40,11 @@ const publishQueue = createPublishQueue(async (json) => {
 
 /**
  * The tiles Samsung's home screen shows above the app while it is highlighted.
- * Needs `expo.tizen.preview` with `refreshMinutes`; elsewhere every call
+ * Needs the config plugin's `preview` prop with `refreshMinutes`; elsewhere every call
  * resolves with `published: false`.
  */
 export const SmartHubPreview = {
-  /** Whether the app can publish: on a Samsung TV, with `expo.tizen.preview.refreshMinutes` set. */
+  /** Whether the app can publish: on a Samsung TV, with the `preview.refreshMinutes` prop set. */
   get isAvailable(): boolean {
     return native?.isAvailable() ?? false;
   },

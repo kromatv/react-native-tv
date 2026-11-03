@@ -38,6 +38,12 @@ export const BUILD_OPTIONS = {
       "The distributor certificate, instead of the profile's (password in RN_TIZEN_DISTRIBUTOR_PASSWORD)",
   },
   ...LOG_OPTIONS,
+  'dev-server': {
+    type: 'string',
+    placeholder: '<origin>',
+    description:
+      'Load the bundle from this `expo start` dev server, such as http://192.168.1.20:8081, instead of packaging it',
+  },
 } as const;
 
 interface BuildFlags {
@@ -51,6 +57,7 @@ interface BuildFlags {
   readonly dev?: boolean;
   readonly 'log-host'?: string;
   readonly 'log-port'?: string;
+  readonly 'dev-server'?: string;
   readonly project?: string;
   readonly entry?: string;
   readonly verbose?: boolean;
@@ -73,13 +80,13 @@ function describeDevice(device: Device): string {
   return `${device.name || device.serial}, ${cpuArch}, Tizen ${platformVersion}`;
 }
 
-/** Reads the app and finds Tizen Studio. */
+/** Reads the app and finds Tizen Studio, warning about settings written the deprecated way. */
 export function openBuild(flags: BuildFlags, context: CommandContext): BuildBase {
-  return {
-    reporter: new Reporter({ verbose: flags.verbose ?? false }),
-    app: loadAppProject(resolve(context.cwd, flags.project ?? '.'), entryPath(flags, context)),
-    sdk: locateTizenSdk(),
-  };
+  const reporter = new Reporter({ verbose: flags.verbose ?? false });
+  const app = loadAppProject(resolve(context.cwd, flags.project ?? '.'), entryPath(flags, context));
+  if (app.config.deprecation !== null)
+    reporter.line(reporter.paint('yellow', app.config.deprecation));
+  return { reporter, app, sdk: locateTizenSdk() };
 }
 
 /** Finds the TV at `address`, or the only one connected, as a step. */

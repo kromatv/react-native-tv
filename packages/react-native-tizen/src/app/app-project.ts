@@ -3,6 +3,7 @@ import { createRequire } from 'node:module';
 import { join, resolve } from 'node:path';
 import { z } from 'zod';
 import { resolveTizenConfig, type TizenAppConfig } from '../config/tizen-config.ts';
+import { isTizenPluginEntry } from '../config/plugin-entry.ts';
 import { FixableError } from '../errors.ts';
 import { resolveAppPackages, type AppPackages } from './app-packages.ts';
 import { readExpoConfig } from './expo-config.ts';
@@ -67,7 +68,9 @@ export function loadAppProject(root: string, entry?: string): AppProject {
   const requireFromApp = createRequire(join(projectRoot, 'package.json'));
   return {
     root: projectRoot,
-    config: resolveTizenConfig(readAppConfig(projectRoot)),
+    config: resolveTizenConfig(readAppConfig(projectRoot), (name) =>
+      isTizenPluginEntry(projectRoot, name),
+    ),
     entryFile:
       entry === undefined ? resolveEntryFile(projectRoot, requireFromApp) : checkEntryFile(entry),
     packages,

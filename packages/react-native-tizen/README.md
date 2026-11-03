@@ -34,10 +34,20 @@ Verified on a Samsung TV running Tizen 9.0 (armv7), built from macOS.
 ### 2. Add the package
 
 ```sh
-npm install @kromatv/react-native-tizen
+npx expo install @kromatv/react-native-tizen
 ```
 
-Teach Metro the `tizen` platform in `metro.config.js`:
+Expo adds its config plugin to `app.json`. Give it the app's Tizen package id:
+
+```json
+{
+  "expo": {
+    "plugins": [["@kromatv/react-native-tizen", { "package": "com.example.myapp" }]]
+  }
+}
+```
+
+Then teach Metro the `tizen` platform, in `metro.config.js`:
 
 ```js
 const { getDefaultConfig } = require('expo/metro-config');
@@ -46,31 +56,48 @@ const { withTizen } = require('@kromatv/react-native-tizen/metro');
 module.exports = withTizen(getDefaultConfig(__dirname));
 ```
 
-Give the app a Tizen package id in `app.json`:
-
-```json
-{
-  "expo": {
-    "tizen": { "package": "com.example.myapp" }
-  }
-}
-```
-
 ### 3. Put the TV in Developer mode
 
 On the TV, open Apps, type `12345` on the remote, turn Developer mode on with
 your computer's IP address, then restart the TV.
 
-### 4. Check, then run
+### 4. Run it from `expo start`
 
 ```sh
-npx rn-tizen doctor
-npx rn-tizen run --device 192.168.1.50
+npx expo start
 ```
 
-`doctor` names the exact fix for anything missing. The first `run` builds the
-native runtime, which takes a few minutes; later runs only rebuild what
-changed. It installs the app, launches it and prints its logs until Ctrl+C.
+Press **shift+m** ("more tools") and pick `@kromatv/react-native-tizen`:
+
+- **Run on TV** builds a development build, installs it on the TV and launches
+  it. It loads its JavaScript from the dev server you are running. Leave the
+  address empty to use the TV you used last.
+- **Run in simulator** does the same on the virtual TV of
+  [the simulator](simulator/README.md).
+- **Find TVs** lists the Samsung TVs on your network, with their Developer
+  mode, sdb and DUID.
+- **Create certificate** makes an author certificate.
+
+Each command prints the address of a page inside the dev server, where you can
+follow its progress and logs. The first run builds the native runtime, which
+takes a few minutes; later runs only rebuild what changed. `npx rn-tizen
+doctor` names the exact fix for anything a build needs.
+
+Expo has no `expo run:tizen` and no single-key shortcut for Tizen, and
+`expo prebuild` and `expo export --platform tizen` do not know the platform.
+For a script beside Expo's own, add one to `package.json`:
+
+```json
+{
+  "scripts": {
+    "android": "expo run:android",
+    "tizen": "rn-tizen run"
+  }
+}
+```
+
+`npm run tizen` packages the app with its JavaScript inside, installs it on the
+only TV used before, launches it and prints its logs until Ctrl+C.
 
 Store packages need a release build, which `package` makes; `--dev` makes a
 development one that streams its logs:
@@ -85,8 +112,8 @@ package carries a native library.
 
 ## Documentation
 
-- [The CLI](docs/cli.md): every command, its options, the `expo.tizen` config,
-  and where builds land. `rn-tizen devices` finds the TVs on your network,
+- [The CLI](docs/cli.md): every command, its options, the config plugin's props,
+  `expo start` integration, and where builds land. `rn-tizen devices` finds the TVs on your network,
   `rn-tizen certificate` manages signing profiles, and `rn-tizen install`
   signs and installs any `.tpk` or `.wgt`.
 - [The `tizen` API](docs/tizen-api.md): the same, from Node, for other tools.

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { FixableError } from '../errors.ts';
 import { resolveTizenConfig } from './tizen-config.ts';
+import { EXPO_TIZEN_DEPRECATION, TIZEN_PLUGIN } from './tizen-settings.ts';
 
 const expo = (tizen: unknown, extra: Record<string, unknown> = {}) => ({
   name: 'My App',
@@ -27,6 +28,7 @@ describe('resolveTizenConfig', () => {
         backgroundMedia: false,
         pictureInPicture: false,
       },
+      deprecation: EXPO_TIZEN_DEPRECATION,
     });
   });
 
@@ -61,8 +63,47 @@ describe('resolveTizenConfig', () => {
     ]);
   });
 
-  it('refuses an app without expo.tizen', () => {
-    expect(() => resolveTizenConfig({ name: 'My App' })).toThrow('expo.tizen is missing');
+  it('refuses an app without Tizen settings, naming the plugin to add', () => {
+    expect(() => resolveTizenConfig({ name: 'My App' })).toThrow(`add ["${TIZEN_PLUGIN}"`);
+  });
+
+  it("reads the config plugin's props, with no deprecation", () => {
+    const config = resolveTizenConfig({
+      name: 'My App',
+      plugins: ['expo-video', [TIZEN_PLUGIN, { package: 'org.example.app', label: 'TV' }]],
+    });
+
+    expect(config).toMatchObject({ packageId: 'org.example.app', label: 'TV', deprecation: null });
+  });
+
+  it('names a bad prop after the plugin', () => {
+    const plugins = [[TIZEN_PLUGIN, { package: 'my-app' }]];
+
+    expect(() => resolveTizenConfig({ name: 'My App', plugins })).toThrow(
+      `plugins["${TIZEN_PLUGIN}"].package:`,
+    );
+  });
+
+  it('refuses settings in both the plugin and expo.tizen', () => {
+    const plugins = [[TIZEN_PLUGIN, { package: 'a.b' }]];
+
+    expect(() => resolveTizenConfig(expo({ package: 'a.b' }, { plugins }))).toThrow(
+      'remove expo.tizen',
+    );
+  });
+
+  it('reads expo.tizen when the plugin is listed without props, as expo install adds it', () => {
+    const config = resolveTizenConfig(expo({ package: 'a.b' }, { plugins: [TIZEN_PLUGIN] }));
+
+    expect(config.deprecation).toBe(EXPO_TIZEN_DEPRECATION);
+  });
+
+  it('finds the plugin under another name the app gives it', () => {
+    const plugins = [['../app.plugin.js', { package: 'a.b' }]];
+
+    expect(
+      resolveTizenConfig({ name: 'x', plugins }, (name) => name === '../app.plugin.js').packageId,
+    ).toBe('a.b');
   });
 
   it('names the field of a package id Tizen would refuse', () => {

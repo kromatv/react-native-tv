@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { FixableError } from '../errors.ts';
 import { DEFAULT_INTL_LOCALES } from '../metro/intl-locale-data.ts';
 import { platformVersionSchema } from '../tizen/target.ts';
+import { findTizenSettings, TIZEN_PLUGIN, type PluginMatcher } from './tizen-settings.ts';
 import {
   featurePrivileges,
   previewConfigSchema,
@@ -36,7 +37,8 @@ const privilegeSchema = z
   .min(1)
   .transform((name) => (name.includes('://') ? name : `${PRIVILEGE_PREFIX}${name}`));
 
-const tizenConfigSchema = z
+/** The Tizen settings: the config plugin's props, or `expo.tizen` in earlier releases. */
+export const tizenSettingsSchema = z
   .object({
     package: packageIdSchema,
     label: z.string().min(1).max(100).optional(),
@@ -73,6 +75,8 @@ export interface TizenAppConfig {
   readonly locales: readonly string[];
   /** Voice, the Smart Hub preview, the UI resolution and background audio. */
   readonly features: TvFeatures;
+  /** What to warn the user about the way the settings are written, if anything. */
+  readonly deprecation: string | null;
 }
 
 function formatIssues(error: z.ZodError, root: string): string {
@@ -88,22 +92,33 @@ function configError(message: string): FixableError {
   return new FixableError(message, CONFIG_HINT);
 }
 
+/** Every problem with a set of Tizen settings, one per line, each named from `where`; null when there is none. */
+export function tizenSettingsIssues(settings: unknown, where: string): string | null {
+  const parsed = tizenSettingsSchema.safeParse(settings);
+  return parsed.success ? null : formatIssues(parsed.error, where);
+}
+
 /**
  * Validates an Expo config and resolves its Tizen config against the Expo-wide
- * fields. A {@link FixableError} names every bad field.
+ * fields: the config plugin's props, else `expo.tizen`. A {@link FixableError}
+ * names every bad field.
  */
-export function resolveTizenConfig(expo: unknown): TizenAppConfig {
+export function resolveTizenConfig(
+  expo: unknown,
+  isTizenPlugin: PluginMatcher = (name) => name === TIZEN_PLUGIN,
+): TizenAppConfig {
   const base = expoConfigSchema.safeParse(expo);
   if (!base.success) throw configError(formatIssues(base.error, 'expo'));
-  if (base.data.tizen === undefined) throw configError('expo.tizen is missing');
-  const tizen = tizenConfigSchema.safeParse(base.data.tizen);
-  if (!tizen.success) throw configError(formatIssues(tizen.error, 'expo.tizen'));
+  const found = findTizenSettings(base.data.plugins, base.data.tizen, isTizenPlugin);
+  if ('error' in found) throw configError(found.error);
+  const tizen = tizenSettingsSchema.safeParse(found.settings);
+  if (!tizen.success) throw configError(formatIssues(tizen.error, found.where));
 
   const version = tizen.data.version ?? base.data.version ?? '1.0.0';
   const versionCheck = tizenVersionSchema.safeParse(version);
   if (!versionCheck.success) {
     throw configError(
-      `expo.version: ${version} is not a Tizen version (x.y.z); set expo.tizen.version`,
+      `expo.version: ${version} is not a Tizen version (x.y.z); set ${found.where}.version`,
     );
   }
   const features = resolveTvFeatures(tizen.data, base.data.plugins);
@@ -122,5 +137,6 @@ export function resolveTizenConfig(expo: unknown): TizenAppConfig {
     icon: tizen.data.icon ?? base.data.icon,
     locales: [...new Set(tizen.data.locales ?? DEFAULT_INTL_LOCALES)],
     features,
+    deprecation: found.deprecation,
   };
 }

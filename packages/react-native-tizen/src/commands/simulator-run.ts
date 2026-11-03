@@ -8,7 +8,8 @@ import { FixableError } from '../errors.ts';
 import { Reporter } from '../cli/reporter.ts';
 import { LogPrinter } from '../logs/log-printer.ts';
 import { listenForLogs, type LogServer } from '../logs/log-server.ts';
-import { bundleStep } from '../pipeline/package-steps.ts';
+import { bundleDir, bundleStep } from '../pipeline/package-steps.ts';
+import { devServerBundleStep } from '../package/dev-server-bundle.ts';
 import { simulatorCommandLine, type SimulatorInstance } from '../simulator/instance.ts';
 import { ensureVm, hostAddress, startApp, type VmPreparation } from '../simulator/simulator.ts';
 import { ensureIcuData } from '../runtime/icu-data.ts';
@@ -24,6 +25,7 @@ export interface SimulatorRunFlags {
   readonly gui?: boolean;
   readonly 'no-logs'?: boolean;
   readonly 'log-port'?: string;
+  readonly 'dev-server'?: string;
   readonly level?: string;
 }
 
@@ -87,6 +89,19 @@ function listenForInstanceLogs(
   return listenForLogs(port, printer, { inUseHint: busy });
 }
 
+async function simulatorBundle(
+  reporter: Reporter,
+  flags: SimulatorRunFlags,
+  app: AppProject,
+  context: CommandContext,
+): Promise<SimulatorBundle> {
+  const devServer = flags['dev-server'];
+  if (devServer !== undefined)
+    return devServerBundleStep(reporter, bundleDir(app), devServer, hostAddress);
+  if (flags.bundle !== undefined) return givenBytecode(resolve(context.cwd, flags.bundle));
+  return bundleStep(reporter, app);
+}
+
 /**
  * `rn-tizen simulator run`: builds what changed, bundles the app, starts it on
  * the virtual TV of `instance` and prints its logs until Ctrl+C. The app keeps
@@ -106,10 +121,7 @@ export async function runInSimulator(
   try {
     reporter.field('Instance', describeInstance(instance));
     const { app, runtime } = await prepareSimulator(reporter, flags, context);
-    const bundle: SimulatorBundle =
-      flags.bundle === undefined
-        ? await bundleStep(reporter, app)
-        : givenBytecode(resolve(context.cwd, flags.bundle));
+    const bundle: SimulatorBundle = await simulatorBundle(reporter, flags, app, context);
     await reporter.step(
       'Start',
       async (task) => {

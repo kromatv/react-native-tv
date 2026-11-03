@@ -43,7 +43,7 @@ Hermes' own, defaulting to the locale Hermes resolves for the device
 (`react-native-overrides/intl/`).
 
 ICU's data is not linked. Each package ships `icudt78l.dat` in `res/`, trimmed to
-the languages `expo.tizen.locales` names (default `["en"]`): the main, collation,
+the languages the config plugin's `locales` prop names (default `["en"]`): the main, collation,
 currency and time-zone-name data of each language and its regional variants,
 root, and the shared tables. The host points ICU at it before Hermes starts. A
 device whose language the app does not list formats in the first listed
@@ -179,7 +179,7 @@ and message ports, so the shell (`shell/VoiceChannel.cs`,
 (which player obeys "pause", which view "select Dune" presses, where a search
 goes) is the host's (`runtime/host/src/tv/`), reached through the C API, so the
 simulator's launcher can stand in for the shell (`rn-tizen simulator voice`,
-`tile`). An app turns each one on in `expo.tizen` and imports it from
+`tile`). An app turns each one on in the config plugin's props and imports it from
 `@kromatv/react-native-tizen/voice` or `/preview`: TurboModules and
 `DeviceEventEmitter` from `react-native`, so they need neither Expo nor a
 platform check, and answer "not available" on Android, iOS and the web.
@@ -233,6 +233,22 @@ thin layers over the same functions.
 Consequence: that entry point is public API under semver, documented in
 [tizen-api.md](tizen-api.md); a breaking change to an export is a breaking
 release.
+
+## Expo sees a config plugin and a dev tools plugin
+
+The Tizen settings are the props of this package's config plugin
+(`app.plugin.js`), so `npx expo install` adds it to `app.json` by itself and
+`expo config` checks it. The package is also a dev tools plugin
+(`expo-module.config.json`): `npx expo start` lists Run on TV, Run in simulator,
+Find TVs and Create certificate under shift+m, and serves a page of their
+progress and logs. A development build those commands make loads its bundle
+from that dev server. Facts in [expo-cli-integration.md](reference/expo-cli-integration.md).
+
+Consequence: Expo kills a command after ten seconds, so each one starts a
+detached job and returns at once. Expo has no `run:tizen`, no Tizen key and no
+Tizen in `prebuild` or `export`, so `rn-tizen` keeps its own commands, and an
+app adds a `"tizen": "rn-tizen run"` script beside Expo's. `expo.tizen` is read
+for one more release, with a deprecation.
 
 ## The package ships JavaScript, and the CLI runs on Node
 

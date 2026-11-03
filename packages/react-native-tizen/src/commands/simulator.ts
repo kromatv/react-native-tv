@@ -60,6 +60,12 @@ const OPTIONS = {
     placeholder: '<file.hbc>',
     description: 'run: start this Hermes bytecode instead of bundling the app',
   },
+  'dev-server': {
+    type: 'string',
+    placeholder: '<origin>',
+    description:
+      'run: load the bundle from this `expo start` dev server instead of bundling the app',
+  },
   gui: { type: 'boolean', description: 'run: also open the live screen and remote in the browser' },
   'no-logs': {
     type: 'boolean',

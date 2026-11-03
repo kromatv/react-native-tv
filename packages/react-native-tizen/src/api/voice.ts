@@ -60,11 +60,11 @@ function addListener<E extends keyof VoiceEvents>(
 
 /**
  * Samsung's voice assistant on a TV: what the user says while the app is in
- * front. Without `expo.tizen.voice`, on other platforms and in the simulator
+ * front. Without the config plugin's `voice` prop, on other platforms and in the simulator
  * it is unavailable and every method does nothing.
  */
 export const Voice = {
-  /** Whether Samsung's voice service took the app: false without `expo.tizen.voice`, off a TV, and in the simulator. */
+  /** Whether Samsung's voice service took the app: false without the config plugin's `voice` prop, off a TV, and in the simulator. */
   get isAvailable(): boolean {
     return native?.isAvailable() ?? false;
   },
@@ -76,7 +76,7 @@ export const Voice = {
     native?.setScreen(screen);
   },
   /**
-   * `search` takes "search Blade Runner"; with no listener, `expo.tizen.voice.searchUrl`
+   * `search` takes "search Blade Runner"; with no listener, the `voice.searchUrl` prop
    * is opened through `Linking`. `command` takes transport commands; with no
    * listener, the playing expo-video player obeys them itself.
    */

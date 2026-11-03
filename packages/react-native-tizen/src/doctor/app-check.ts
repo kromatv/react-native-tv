@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadAppProject } from '../app/app-project.ts';
-import { checking, passed, type CheckResult } from './check-result.ts';
+import { checking, failed, passed, type CheckResult } from './check-result.ts';
 
 const CONFIG_FILES = ['app.json', 'app.config.js', 'app.config.ts'];
 
@@ -16,6 +16,14 @@ export function checkApp(dir: string): Promise<CheckResult> {
   }
   return checking('App', () => {
     const app = loadAppProject(dir);
+    if (app.config.deprecation !== null) {
+      return failed(
+        'App',
+        `${app.config.packageId} ${app.config.version}`,
+        app.config.deprecation,
+        'warn',
+      );
+    }
     return passed(
       'App',
       `${app.config.packageId} ${app.config.version}, ${app.packages.reactNative.name} ${app.packages.reactNative.version}`,
