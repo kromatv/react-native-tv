@@ -4,6 +4,7 @@
 file(GLOB _svg_sources CONFIGURE_DEPENDS
   "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
   "${RN_TIZEN_LIBRARY_DIR}/common/cpp/react/renderer/components/rnsvg/*.cpp")
+list(FILTER _svg_sources EXCLUDE REGEX "\\.test\\.cpp$")
 target_sources(${RN_TIZEN_LIBRARY_TARGET} PRIVATE ${_svg_sources})
 target_include_directories(${RN_TIZEN_LIBRARY_TARGET} PUBLIC "${RN_TIZEN_LIBRARY_DIR}/common/cpp")
 target_link_libraries(${RN_TIZEN_LIBRARY_TARGET} PUBLIC rrc_image react_renderer_imagemanager)

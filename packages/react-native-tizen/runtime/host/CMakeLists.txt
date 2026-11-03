@@ -61,4 +61,8 @@ if(RN_TIZEN_TESTS)
     ROOTS ${_react_native_roots}
     TIZEN_LIBRARIES ${_tizen_libraries}
     INSTRUMENT react_renderer_textlayoutmanager hermesPlatformIntl_obj)
+  # react-native-svg's implementation compiles only for an app that uses it
+  # (cmake/Libraries.cmake); its path and viewBox math needs no package.
+  target_sources(rn-tizen-host-tests PRIVATE
+    src/svg/PathData.cpp src/svg/SvgPath.cpp src/svg/SvgViewBox.cpp)
 endif()
