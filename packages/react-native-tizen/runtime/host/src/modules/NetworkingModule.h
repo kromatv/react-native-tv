@@ -9,9 +9,8 @@ namespace rntizen {
 
 /// `Networking`, under React Native's XMLHttpRequest and therefore `fetch`.
 /// Requests run on the HttpEngine and answer with the device events
-/// XMLHttpRequest listens for. Bodies are text, base64 or a blob, and a `blob:`
-/// URL is answered from the BlobStore; form data and file uploads are not
-/// supported yet.
+/// XMLHttpRequest listens for. Bodies are text, base64, a blob, form data or a
+/// `file:` or `data:` URI, and a `blob:` URL is answered from the BlobStore.
 class NetworkingModule final : public facebook::react::NativeNetworkingAndroidCxxSpec<NetworkingModule> {
  public:
   NetworkingModule(std::shared_ptr<facebook::react::CallInvoker> jsInvoker, const ModuleContext &context);

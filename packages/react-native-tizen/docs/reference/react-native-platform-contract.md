@@ -266,6 +266,33 @@ Each event's single argument is an array (doc:
 | `didSendNetworkData` | `[id, progress, total]` | never sent | gap |
 | `didCompleteNetworkResponse` | `[id, error, timedOut]` | `:57` | matches |
 
+The `data` argument is `convertRequestBody(body)` spread with `trackingName` and
+`devToolsRequestId`: `{string}`, `{blob: BlobData}`, `{formData: parts}`,
+`{base64}` for an ArrayBuffer or a view, or the object itself, so `{uri}` passes
+through (doc: `RN/Libraries/Network/convertRequestBody.js:28-44`,
+`RN/Libraries/Network/RCTNetworking.android.js:72-92`).
+
+| Body | Contract | Android | Tizen (`host/modules/networking/RequestBody.cpp`) |
+|------|----------|---------|------|
+| `string`, `base64`, `blob` | Text as UTF-8; base64 decoded; the blob's bytes | sent as is; a string or base64 body without Content-Type fails | sent as is, no Content-Type check |
+| `uri` | A file to upload | Content-Type required, else the request fails with "Payload is set but no content-type header specified"; `http(s)` URIs are downloaded first, `data:` decoded, anything else opened through the content resolver | the same error; `file:` (RFC 8089, percent-decoded) and `data:` (RFC 2397) URIs; any other scheme fails with "Could not retrieve file for uri ..." |
+| `formData` | `FormData.getParts()`: one `{string}` or `{uri, name?, type?}` per part, each with `headers` (`content-disposition: form-data; name="..."` plus `filename`, and `content-type` from `type`), turned into `[name, value]` pairs | Content-Type defaults to `multipart/form-data` and gains a boundary; a `uri` part without Content-Type fails ("Binary FormData part needs a content-type header.") | the same, with a random boundary; each part is its headers, Content-Type last, then its bytes, as RFC 7578 lays them out; a part header holding CR, LF or NUL fails the request |
+
+Sources: `RN/Libraries/Network/FormData.js:82-105`;
+`RN/ReactAndroid/src/main/java/com/facebook/react/modules/network/NetworkingModule.kt:443-606,912-1022`,
+`RequestBodyUtil.kt:55-80`; RFC 7578 sections 4.1-4.8 (no part header besides
+Content-Type, Content-Disposition and, rarely, Content-Transfer-Encoding);
+RFC 2046 section 5.1.1 (boundary syntax). A body that cannot be built fails the
+request through `didCompleteNetworkResponse` with the message above, as
+Android's `onRequestError` does. Tizen reads a `uri` file on the JavaScript
+thread, as it resolves a blob.
+
+Verified in simulator (2026-11-03), XHR to a server that parses multipart: a
+`FormData` of a string and a `data:` part, and of a `file:` part (a name with a
+space, percent-encoded in its URI), arrive as their fields with filename, type and
+content; a `{uri}` body arrives with its Content-Type; a `{uri}` body without
+Content-Type and a `uri` part without a type fail with Android's messages.
+
 React Native's `fetch` is `whatwg-fetch` 3.6.20 over XHR. It sets
 `responseType = 'blob'` when `new Blob()` works, else `'arraybuffer'`, which XHR
 sends to native as `base64`. `new Blob()` throws without `BlobModule`; with it,
@@ -500,7 +527,7 @@ What `rn-tizen` relies on to build a library's native code
 | 10 | `host/views/ComponentView.cpp:103-110` | `displayType`, `borderWidth`, `layoutDirection` and transforms are ignored, and no view ever uses its event emitter (no focus, blur, press or scroll events). `display: none` stays invisible only because Yoga zeroes the subtree (`RN/ReactCommon/yoga/yoga/algorithm/CalculateLayout.cpp:666-674`). Rendering detail belongs in `efl-rendering.md`. | doc: section 2 Layout metrics | medium |
 | 11 | `host/ReactHostWindow.cpp:54-56` | `onHWKeyEvent` carries `eventKeyAction: 0` on key down only and no `tag`; `host/input/RemoteInput.cpp:13` listens to `ECORE_EVENT_KEY_DOWN` alone. Neither Android's two-event shape nor tvOS's single `1`. Fixed in favour of tvOS's shape (`docs/decisions.md`): one event with `1` at release, `long<Type>` `0` then `1`; see `tizen-input.md`, section 12. `tag` is still missing. | doc: section 4 | fixed |
 | 12 | `host/ReactHost.cpp:107-109` | A URL from `app_control` is emitted as a `url` event; before JS subscribes (the buffer flushes right after the bundle, before `runApplication`) it is lost, and there is no `getInitialURL` to recover it. Fixed: the shell passes the first app control's URI to `rn_tizen_host_set_initial_url`, which `LinkingManager.getInitialURL` answers; later ones arrive as `url`. | doc: `ReactInstance.cpp:331-334`, `Linking.js:90-93` | fixed |
-| 13 | `host/modules/NetworkingModule.cpp` | A `formData` or `uri` body is sent as no body instead of failing the request (a `blob` body is sent since `BlobModule` exists). A POST with no body goes out through `CURLOPT_CUSTOMREQUEST` without `POSTFIELDS` (`host/network/HttpEngine.cpp:127-133`), so curl sends no `Content-Length`. | inf: libcurl semantics, not tested | low |
+| 13 | `host/modules/NetworkingModule.cpp` | A `formData` or `uri` body is sent as no body instead of failing the request (a `blob` body is sent since `BlobModule` exists). Fixed: both are built as on Android (section 3, Networking), verified in simulator. A POST with no body goes out through `CURLOPT_CUSTOMREQUEST` without `POSTFIELDS` (`host/network/HttpEngine.cpp:127-133`), so curl sends no `Content-Length`. | inf: libcurl semantics, not tested | low |
 | 14 | `host/network/HttpEngine.cpp:159-161` | The body is delivered once, after the transfer ends: incremental XHR (`onprogress`, streaming responses) sees nothing until completion. | doc: `XMLHttpRequest.js:570-571` | low |
 | 15 | `host/HostFeatureFlags.cpp:13-25` with `host/fabric/SurfacePresenter.cpp:37` | OSS Stable turns on native view configs, but the binding they need is never installed (gap P3), and the `Scheduler` gets no animation delegate, so `LayoutAnimation` is a no-op. | doc: `RI/RCTInstance.mm:457-459`, `RA/runtime/ReactInstance.kt:219-224` | low |
 | 16 | `host/fabric/CoreComponents.cpp:48-58`, `host/views/ComponentView.cpp:94` | Every mounted view's props are `static_cast` to `ViewProps`. Safe for the registered components and the unimplemented fallback, all `ViewProps` subclasses; a future component whose props are not would be undefined behaviour. | doc: the registry at `CoreComponents.cpp:21-37` | low |

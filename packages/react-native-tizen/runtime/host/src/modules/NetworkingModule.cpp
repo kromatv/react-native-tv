@@ -1,8 +1,9 @@
 #include "NetworkingModule.h"
 
 #include "PlatformModuleRegistry.h"
-#include "blob/BlobReference.h"
 #include "blob/BlobStore.h"
+#include "networking/HeaderPairs.h"
+#include "networking/RequestBody.h"
 
 #include "../network/Base64.h"
 
@@ -20,29 +21,7 @@ namespace {
 using facebook::jsi::Array;
 using facebook::jsi::Runtime;
 
-std::vector<std::pair<std::string, std::string>> headerPairs(Runtime &runtime, const Array &headers) {
-  std::vector<std::pair<std::string, std::string>> pairs;
-  for (std::size_t index = 0; index < headers.size(runtime); ++index) {
-    auto pair = headers.getValueAtIndex(runtime, index).asObject(runtime).asArray(runtime);
-    pairs.emplace_back(
-        pair.getValueAtIndex(runtime, 0).toString(runtime).utf8(runtime),
-        pair.getValueAtIndex(runtime, 1).toString(runtime).utf8(runtime));
-  }
-  return pairs;
-}
-
 constexpr std::string_view kBlobScheme = "blob:";
-
-std::optional<std::string> requestBody(Runtime &runtime, const facebook::jsi::Object &data) {
-  if (auto text = data.getProperty(runtime, "string"); text.isString()) return text.getString(runtime).utf8(runtime);
-  if (auto encoded = data.getProperty(runtime, "base64"); encoded.isString()) {
-    return decodeBase64(encoded.getString(runtime).utf8(runtime));
-  }
-  if (auto blob = data.getProperty(runtime, "blob"); blob.isObject()) {
-    return resolveBlob(readBlobReference(runtime, blob.getObject(runtime)));
-  }
-  return std::nullopt;
-}
 
 std::optional<std::size_t> parsedSize(std::string_view digits) {
   std::size_t value = 0;
@@ -153,13 +132,22 @@ void NetworkingModule::sendRequest(
     answerFromBlob(target, handler);
     return;
   }
+  auto requestHeaders = readHeaderPairs(runtime, headers);
+  RequestBody body;
+  try {
+    body = readRequestBody(runtime, data, headerValue(requestHeaders, "content-type"));
+  } catch (const RequestBodyError &error) {
+    handler.onComplete(error.what(), false);
+    return;
+  }
+  if (body.contentType.has_value()) setHeader(requestHeaders, "Content-Type", *body.contentType);
   engine_.start(
       HttpRequest{
           .id = id,
           .method = method.utf8(runtime),
           .url = std::move(target),
-          .headers = headerPairs(runtime, headers),
-          .body = requestBody(runtime, data),
+          .headers = std::move(requestHeaders),
+          .body = std::move(body.bytes),
           .timeout = std::chrono::milliseconds(static_cast<int64_t>(timeout)),
       },
       std::move(handler));
