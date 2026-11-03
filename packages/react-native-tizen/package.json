@@ -1,7 +1,6 @@
 {
   "name": "@kromatv/react-native-tizen",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0-alpha.0",
   "type": "module",
   "description": "React Native and Expo for Samsung Tizen TVs: Hermes and Fabric run natively, with no web runtime in between.",
   "license": "MIT",
@@ -9,6 +8,10 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kromatv/react-native-tizen.git"
+  },
+  "homepage": "https://github.com/kromatv/react-native-tizen#readme",
+  "bugs": {
+    "url": "https://github.com/kromatv/react-native-tizen/issues"
   },
   "keywords": [
     "react-native",
