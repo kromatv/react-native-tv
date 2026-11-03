@@ -32,8 +32,8 @@ export interface SimulatorInstance {
 
 function fnv1a(text: string): number {
   let hash = 0x811c9dc5;
-  for (let index = 0; index < text.length; index += 1) {
-    hash = Math.imul(hash ^ text.charCodeAt(index), 0x01000193) >>> 0;
+  for (const byte of new TextEncoder().encode(text)) {
+    hash = Math.imul(hash ^ byte, 0x01000193) >>> 0;
   }
   return hash;
 }

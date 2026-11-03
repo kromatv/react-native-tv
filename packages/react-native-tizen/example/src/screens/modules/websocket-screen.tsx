@@ -107,7 +107,7 @@ async function webSocketChecks(): Promise<readonly Check[]> {
       session.socket.close();
       const text =
         echoed instanceof ArrayBuffer
-          ? String.fromCharCode(...new Uint8Array(echoed))
+          ? String.fromCodePoint(...new Uint8Array(echoed))
           : String(echoed);
       return check('ws send(Blob)', text === 'blob over a socket', text);
     }),

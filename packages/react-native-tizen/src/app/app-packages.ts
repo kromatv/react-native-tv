@@ -33,7 +33,8 @@ export function findPackage(fromDir: string, name: string): ResolvedPackage | nu
   return { name: parsed.name, version: parsed.version, dir: dirname(manifest) };
 }
 
-function requirePackage(fromDir: string, name: string, owner: string): ResolvedPackage {
+/** {@link findPackage}, or a `FixableError` naming `owner` when `name` is not installed. */
+export function requirePackage(fromDir: string, name: string, owner: string): ResolvedPackage {
   const found = findPackage(fromDir, name);
   if (found !== null) return found;
   throw new FixableError(

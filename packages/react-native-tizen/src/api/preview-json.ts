@@ -118,7 +118,7 @@ export function toSamsungPreview(sections: readonly PreviewSection[]): SamsungPr
     sections: parsed.data.map((section, position) => ({
       ...(section.title === undefined ? {} : { title: section.title }),
       position,
-      tiles: section.tiles.map(samsungTile),
+      tiles: section.tiles.map((tile, position) => samsungTile(tile, position)),
     })),
   };
 }

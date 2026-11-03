@@ -68,5 +68,5 @@ export function localExpoModules(
 
 /** The CMake target name an Expo module's Tizen implementation is built under. */
 export function expoModuleTargetName(name: string): string {
-  return `expo_${name.replace(/^@/, '').replace(/[^A-Za-z0-9_]/g, '_')}`;
+  return `expo_${name.replace(/^@/, '').replace(/\W/g, '_')}`;
 }

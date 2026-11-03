@@ -30,7 +30,7 @@ const NO_SMART_HUB: PublishResult = {
 };
 
 const publishQueue = createPublishQueue(async (json) => {
-  if (native === null || !native.isAvailable()) return NO_SMART_HUB;
+  if (!native?.isAvailable()) return NO_SMART_HUB;
   try {
     return { published: true, channel: await native.publish(json) };
   } catch (error) {

@@ -20,7 +20,7 @@ export async function generateReactNativeSpecs(
   reactNativeDir: string,
   outputDir: string,
 ): Promise<GeneratedSpecs> {
-  const codegen = loadCodegen(reactNativeDir);
+  const codegen = await loadCodegen(reactNativeDir);
   const schema = codegen.schema([join(reactNativeDir, 'src')]);
 
   await rm(outputDir, { recursive: true, force: true });

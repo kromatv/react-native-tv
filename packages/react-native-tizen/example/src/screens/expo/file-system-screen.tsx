@@ -74,7 +74,7 @@ async function fileSystemChecks(): Promise<readonly Check[]> {
       const names = directory
         .list()
         .map((entry) => entry.name)
-        .sort();
+        .sort((left, right) => left.localeCompare(right));
       const result = { names, moved: moved.exists, movedUri: copy.uri === moved.uri };
       directory.delete();
       return check(

@@ -23,7 +23,7 @@ function view(bytes: Uint8Array): DataView {
 }
 
 function ascii(bytes: Uint8Array, start: number, length: number): string {
-  return String.fromCharCode(...bytes.subarray(start, start + length));
+  return String.fromCodePoint(...bytes.subarray(start, start + length));
 }
 
 function cString(bytes: Uint8Array, start: number): string {

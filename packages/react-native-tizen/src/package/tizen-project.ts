@@ -61,9 +61,8 @@ async function renderShellFile(
 }
 
 async function copyShellSources(from: string, dir: string): Promise<void> {
-  for (const name of await readdir(from)) {
-    if (name.endsWith('.cs')) await copyFile(join(from, name), join(dir, name));
-  }
+  const sources = (await readdir(from)).filter((name) => name.endsWith('.cs'));
+  await Promise.all(sources.map((name) => copyFile(join(from, name), join(dir, name))));
 }
 
 async function writePreviewService(inputs: TizenProjectInputs, dir: string): Promise<void> {

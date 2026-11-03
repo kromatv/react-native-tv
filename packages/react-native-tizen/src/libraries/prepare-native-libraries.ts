@@ -32,7 +32,7 @@ async function writeIfChanged(path: string, contents: string): Promise<void> {
 }
 
 async function ensureLibraryCodegen(
-  codegen: () => Codegen,
+  codegen: () => Promise<Codegen>,
   library: NativeLibrary,
   reactNative: ResolvedPackage,
   outputDir: string,
@@ -49,7 +49,7 @@ async function ensureLibraryCodegen(
   });
   if (await stamp.matches(fingerprint)) return;
   const specsDir = join(library.dir, library.codegen.jsSrcsDir);
-  await generateLibrarySpecs(codegen(), library.codegen.name, specsDir, outputDir);
+  await generateLibrarySpecs(await codegen(), library.codegen.name, specsDir, outputDir);
   await stamp.record(fingerprint);
 }
 
@@ -67,21 +67,22 @@ export async function prepareNativeLibraries(
 ): Promise<PreparedLibraries> {
   const scan = findNativeLibraries(appRoot, [reactNative.dir]);
   const bundled = bundledImplementations();
-  let codegen: Codegen | undefined;
+  let codegen: Promise<Codegen> | undefined;
   const loaded = () => (codegen ??= loadCodegen(reactNative.dir));
-  const libraries: LinkedLibrary[] = [];
-  for (const library of scan.libraries) {
-    const codegenDir = join(dir, library.targetName);
-    await ensureLibraryCodegen(loaded, library, reactNative, codegenDir);
-    libraries.push({
-      name: library.name,
-      version: library.version,
-      dir: library.dir,
-      codegenName: library.targetName,
-      codegenDir,
-      implementation: library.declaredTizenCMake ?? bundled.get(library.name) ?? null,
-    });
-  }
+  const libraries = await Promise.all(
+    scan.libraries.map(async (library): Promise<LinkedLibrary> => {
+      const codegenDir = join(dir, library.targetName);
+      await ensureLibraryCodegen(loaded, library, reactNative, codegenDir);
+      return {
+        name: library.name,
+        version: library.version,
+        dir: library.dir,
+        codegenName: library.targetName,
+        codegenDir,
+        implementation: library.declaredTizenCMake ?? bundled.get(library.name) ?? null,
+      };
+    }),
+  );
   await mkdir(dir, { recursive: true });
   const file = join(dir, 'libraries.json');
   await writeIfChanged(file, `${JSON.stringify({ libraries }, null, 2)}\n`);

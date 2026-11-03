@@ -4,7 +4,7 @@ import { androidAlert, type AlertButton, type AlertOptions } from './android-ale
 /**
  * React Native's `Alert` on Tizen. `Alert.js` shows a dialog only when
  * `Platform.OS` is `ios` or `android`; Tizen takes Android's path, a native
- * dialog from `DialogManagerAndroid`. `prompt` is iOS only, as on Android.
+ * dialog from `DialogManagerAndroid`.
  */
 class Alert {
   static alert(
@@ -24,7 +24,9 @@ class Alert {
     NativeDialogManagerAndroid.showAlert(dialog, (error: string) => console.warn(error), onAction);
   }
 
-  static prompt(): void {}
+  static prompt(): void {
+    // React Native's Alert.prompt is iOS only: on Android it does nothing, and so on Tizen.
+  }
 }
 
 export default Alert;

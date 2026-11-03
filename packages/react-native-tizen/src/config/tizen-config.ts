@@ -19,7 +19,7 @@ const packageIdSchema = z
   .string()
   .max(50)
   .regex(
-    /^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)+$/,
+    /^[A-Za-z]\w*(\.[A-Za-z]\w*)+$/,
     'expected a reverse-DNS id such as org.example.myapp, with letters, digits and underscores',
   );
 

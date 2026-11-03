@@ -1,4 +1,5 @@
-import { createRequire } from 'node:module';
+import { existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 /** The module the Tizen Babel transformer fills with a bundle's Intl polyfills and locale data. */
 export const INTL_LOCALE_DATA_MODULE = 'react-native-overrides/intl/locale-data.ts';
@@ -44,12 +45,12 @@ export function intlLocaleDataSource(locales: readonly string[]): string {
 
 /** The locales of `locales` some polyfill has no data for. */
 export function localesWithoutIntlData(locales: readonly string[]): string[] {
-  const require = createRequire(import.meta.url);
   return locales.filter((locale) =>
     INTL_POLYFILLS.some((polyfill) => {
       try {
-        require.resolve(`${polyfill}/locale-data/${locale}.js`);
-        return false;
+        return !existsSync(
+          fileURLToPath(import.meta.resolve(`${polyfill}/locale-data/${locale}.js`)),
+        );
       } catch {
         return true;
       }

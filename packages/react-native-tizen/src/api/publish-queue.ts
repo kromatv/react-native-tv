@@ -11,6 +11,11 @@ interface Clock {
   setTimeout(run: () => void, ms: number): unknown;
 }
 
+const SYSTEM_CLOCK: Clock = {
+  now: () => Date.now(),
+  setTimeout: (run, ms) => setTimeout(run, ms),
+};
+
 interface Waiter {
   resolve(result: PublishResult): void;
 }
@@ -22,7 +27,7 @@ interface Waiter {
  */
 export function createPublishQueue(
   publish: (json: string) => Promise<PublishResult>,
-  clock: Clock = { now: () => Date.now(), setTimeout: (run, ms) => setTimeout(run, ms) },
+  clock: Clock = SYSTEM_CLOCK,
   intervalMs = MIN_PUBLISH_INTERVAL_MS,
 ): (json: string) => Promise<PublishResult> {
   let lastPublishAt: number | null = null;

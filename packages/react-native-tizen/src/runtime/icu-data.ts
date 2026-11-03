@@ -28,7 +28,9 @@ const NOT_LOCALES = new Set(['res_index.res', 'pool.res']);
 /** The language subtags of `locales`, lowercased and sorted: what ICU data is kept by. */
 export function icuLanguages(locales: readonly string[]): string[] {
   const languages = locales.map((locale) => locale.split(/[-_]/)[0]?.toLowerCase() ?? '');
-  return [...new Set(languages.filter((language) => /^[a-z]{2,3}$/.test(language)))].sort();
+  return [...new Set(languages.filter((language) => /^[a-z]{2,3}$/.test(language)))].sort(
+    (left, right) => left.localeCompare(right, 'en'),
+  );
 }
 
 function keepsLocale(locale: string, languages: ReadonlySet<string>): boolean {

@@ -44,4 +44,8 @@ describe('localesWithoutIntlData', () => {
   it('names a locale no polyfill has data for', () => {
     expect(localesWithoutIntlData(['fr', 'xx-Nope'])).toEqual(['xx-Nope']);
   });
+
+  it('names a locale that is not a path inside the polyfill', () => {
+    expect(localesWithoutIntlData(['../../fr'])).toEqual(['../../fr']);
+  });
 });

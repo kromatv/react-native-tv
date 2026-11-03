@@ -67,4 +67,18 @@ describe('createPublishQueue', () => {
 
     await expect(submit('a')).resolves.toEqual({ published: false, reason: 'Error: no Smart Hub' });
   });
+
+  it("waits out Samsung's interval on the system clock by default", async () => {
+    vi.useFakeTimers();
+    const publish = vi.fn(async () => PUBLISHED);
+    const submit = createPublishQueue(publish);
+    await submit('a');
+
+    const second = submit('b');
+    await vi.advanceTimersByTimeAsync(10 * 60 * 1000);
+
+    await expect(second).resolves.toEqual(PUBLISHED);
+    expect(publish).toHaveBeenLastCalledWith('b');
+    vi.useRealTimers();
+  });
 });

@@ -22,7 +22,7 @@ export type LibraryPackage = z.infer<typeof libraryPackageSchema>;
 
 /** React Native's `codegenConfig`, as a library's package.json declares it. */
 export const codegenConfigSchema = z.object({
-  name: z.string().regex(/^[A-Za-z_][A-Za-z0-9_]*$/),
+  name: z.string().regex(/^[A-Za-z_]\w*$/),
   type: z.enum(['components', 'modules', 'all']),
   jsSrcsDir: z.string().min(1),
 });

@@ -1,12 +1,10 @@
 const TIMEOUT_MS = 8000;
 
-interface ReactNativeWebSocketConstructor {
-  new (
-    url: string,
-    protocols: string[] | undefined,
-    options: { readonly headers: Readonly<Record<string, string>> },
-  ): WebSocket;
-}
+type ReactNativeWebSocketConstructor = new (
+  url: string,
+  protocols: string[] | undefined,
+  options: { readonly headers: Readonly<Record<string, string>> },
+) => WebSocket;
 
 const ReactNativeWebSocket: ReactNativeWebSocketConstructor = WebSocket;
 

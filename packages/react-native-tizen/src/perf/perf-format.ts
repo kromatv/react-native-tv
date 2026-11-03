@@ -22,8 +22,8 @@ export function framePeriod(sample: PerfSample): number {
   return 1000 / (sample.hz > 0 ? sample.hz : 60);
 }
 
-function warnWhen(paint: Paint, bad: boolean, text: string): string {
-  return bad ? paint('red', text) : text;
+function redAbove(paint: Paint, value: number, limit: number, text: string): string {
+  return value > limit ? paint('red', text) : text;
 }
 
 /**
@@ -41,16 +41,17 @@ export function formatPerfSample(sample: PerfSample, time: Date, paint: Paint): 
   const parts = [
     clock,
     `fps ${String(sample.frames).padStart(3)}/${Math.round(sample.hz)}`,
-    warnWhen(paint, sample.dropped > 0, `drop ${String(sample.dropped).padStart(3)}`),
-    warnWhen(
+    redAbove(paint, sample.dropped, 0, `drop ${String(sample.dropped).padStart(3)}`),
+    redAbove(
       paint,
-      sample.renderMax > framePeriod(sample),
+      sample.renderMax,
+      framePeriod(sample),
       `render ${fixed(sample.renderAvg, 5)}/${fixed(sample.renderMax, 6)} ms`,
     ),
     `main ${percent(share(sample.mainBusy, sample.window))}`,
-    warnWhen(paint, jsBusy > BUSY_WARNING_PERCENT, `js ${percent(jsBusy)}`),
+    redAbove(paint, jsBusy, BUSY_WARNING_PERCENT, `js ${percent(jsBusy)}`),
     `wait ${percent(share(sample.jsWait, sample.window))}`,
-    warnWhen(paint, sample.jsLag > LAG_WARNING_MS, `lag ${fixed(sample.jsLag, 6)} ms`),
+    redAbove(paint, sample.jsLag, LAG_WARNING_MS, `lag ${fixed(sample.jsLag, 6)} ms`),
     `commit ${String(sample.commits).padStart(3)}x ${fixed(sample.commitAvg, 5)}/${fixed(sample.commitMax, 6)} ms`,
     `mount ${fixed(sample.mountAvg, 5)}/${fixed(sample.mountMax, 6)} ms`,
     memory,

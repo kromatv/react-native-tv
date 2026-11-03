@@ -128,9 +128,9 @@ function previewConfig(
 /** The TV features `expo.tizen` and expo-video's config plugin options turn on. */
 export function resolveTvFeatures(
   tizen: {
-    readonly voice?: z.infer<typeof voiceConfigSchema> | undefined;
-    readonly preview?: z.infer<typeof previewConfigSchema> | undefined;
-    readonly resolution?: Resolution | undefined;
+    readonly voice?: z.infer<typeof voiceConfigSchema>;
+    readonly preview?: z.infer<typeof previewConfigSchema>;
+    readonly resolution?: Resolution;
   },
   plugins: unknown,
 ): TvFeatures {

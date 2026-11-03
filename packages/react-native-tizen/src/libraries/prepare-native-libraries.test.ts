@@ -1,12 +1,32 @@
-import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { findPackage } from '../app/app-packages.ts';
 import {
   describeLibraries,
   type LinkedLibrary,
   prepareNativeLibraries,
 } from './prepare-native-libraries.ts';
+
+const SPEC = `import type { TurboModule } from 'react-native';
+import { TurboModuleRegistry } from 'react-native';
+
+export interface Spec extends TurboModule {
+  add(a: number, b: number): number;
+}
+
+export default TurboModuleRegistry.getEnforcing<Spec>('Adder');
+`;
 
 const LIBRARY: LinkedLibrary = {
   name: 'react-native-svg',
@@ -48,6 +68,42 @@ describe('prepareNativeLibraries', () => {
     const second = await prepareNativeLibraries(app, reactNative, output);
 
     expect(statSync(second.file).mtimeMs).toBe(written);
+  });
+});
+
+describe('prepareNativeLibraries with a codegen library', () => {
+  it("runs the app's codegen over the library's specs and lists it as codegen only", async () => {
+    const reactNative = findPackage(process.cwd(), 'react-native');
+    if (reactNative === null) throw new Error('react-native is not installed');
+    writeFileSync(
+      join(app, 'package.json'),
+      JSON.stringify({ name: 'app', dependencies: { adder: '1' } }),
+    );
+    const library = join(app, 'node_modules', 'adder');
+    mkdirSync(join(library, 'src'), { recursive: true });
+    writeFileSync(
+      join(library, 'package.json'),
+      JSON.stringify({
+        name: 'adder',
+        version: '1.0.0',
+        codegenConfig: { name: 'AdderSpec', type: 'modules', jsSrcsDir: 'src' },
+      }),
+    );
+    writeFileSync(join(library, 'src', 'NativeAdder.ts'), SPEC);
+
+    const prepared = await prepareNativeLibraries(app, reactNative, output);
+
+    expect(prepared.libraries).toEqual([
+      {
+        name: 'adder',
+        version: '1.0.0',
+        dir: realpathSync(library),
+        codegenName: 'AdderSpec',
+        codegenDir: join(output, 'AdderSpec'),
+        implementation: null,
+      },
+    ]);
+    expect(existsSync(join(output, 'AdderSpec', 'AdderSpecJSI.h'))).toBe(true);
   });
 });
 
