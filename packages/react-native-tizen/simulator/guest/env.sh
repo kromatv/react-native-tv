@@ -26,7 +26,8 @@ SCREEN_SIZE="1920x1080"
 mkdir -p "$WORK_DIR"
 
 is_running() {
-  [[ -f "$1" ]] && kill -0 "$(cat "$1")" 2>/dev/null
+  local pid_file="$1"
+  [[ -f "$pid_file" ]] && kill -0 "$(cat "$pid_file")" 2>/dev/null
 }
 
 runtime_dir() {
@@ -35,25 +36,30 @@ runtime_dir() {
 }
 
 runtime_lock() {
-  if [[ "$1" == "$LEGACY_RUNTIME_DIR" ]]; then echo "$LEGACY_BUILD_LOCK"; else echo "$1.lock"; fi
+  local dir="$1"
+  if [[ "$dir" == "$LEGACY_RUNTIME_DIR" ]]; then echo "$LEGACY_BUILD_LOCK"; else echo "$dir.lock"; fi
 }
 
 launcher_in() {
-  echo "$1/simulator/launcher/rn-tizen-simulator"
+  local runtime="$1"
+  echo "$runtime/simulator/launcher/rn-tizen-simulator"
 }
 
 instance_runtime_key() {
-  cat "$1/runtime" 2>/dev/null || true
+  local instance_dir="$1"
+  cat "$instance_dir/runtime" 2>/dev/null || true
 }
 
 instance_runtime_dir() {
-  runtime_dir "$(instance_runtime_key "$1")"
+  local instance_dir="$1"
+  runtime_dir "$(instance_runtime_key "$instance_dir")"
 }
 
 # The command line run.sh starts an instance's app with: systemd-coredump keeps
 # it with each core, and it is what tells one instance's crashes from another's.
 app_command_line() {
-  echo "$(launcher_in "$(instance_runtime_dir "$1")") $1/app $1/control"
+  local instance_dir="$1"
+  echo "$(launcher_in "$(instance_runtime_dir "$instance_dir")") $instance_dir/app $instance_dir/control"
 }
 
 start_daemon() {
@@ -65,17 +71,17 @@ start_daemon() {
 }
 
 stop_daemon() {
-  if ! is_running "$1"; then
-    rm -f "$1"
+  local pid_file="$1" pid
+  if ! is_running "$pid_file"; then
+    rm -f "$pid_file"
     return 0
   fi
-  local pid
-  pid="$(cat "$1")"
+  pid="$(cat "$pid_file")"
   kill "$pid"
   for _ in $(seq 50); do
     kill -0 "$pid" 2>/dev/null || break
     sleep 0.1
   done
   kill -9 "$pid" 2>/dev/null || true
-  rm -f "$1"
+  rm -f "$pid_file"
 }

@@ -22,8 +22,9 @@ RUNTIME_CAP="${RN_TIZEN_SIMULATOR_RUNTIMES:-4}"
 RECENT_MINUTES=30
 
 hermes_pin() {
+  local field="$1"
   python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["hermes"][sys.argv[2]])' \
-    "$RUNTIME_DIR/dependencies.json" "$1"
+    "$RUNTIME_DIR/dependencies.json" "$field"
 }
 
 build_hermes_host() {

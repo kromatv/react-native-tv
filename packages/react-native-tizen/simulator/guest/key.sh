@@ -7,8 +7,9 @@ set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/instance.sh"
 
 keysym() {
-  case "${1,,}" in
-    left | right | up | down) echo "${1^}" ;;
+  local key="$1"
+  case "${key,,}" in
+    left | right | up | down) echo "${key^}" ;;
     enter | ok | select | return) echo Return ;;
     back) echo XF86Back ;;
     exit) echo XF86Exit ;;
@@ -20,8 +21,8 @@ keysym() {
     rewind) echo XF86AudioRewind ;;
     fastforward) echo XF86AudioNext ;;
     previous) echo XF86AudioPrev ;;
-    red | green | yellow | blue) echo "XF86${1^}" ;;
-    *) echo "$1" ;;
+    red | green | yellow | blue) echo "XF86${key^}" ;;
+    *) echo "$key" ;;
   esac
 }
 

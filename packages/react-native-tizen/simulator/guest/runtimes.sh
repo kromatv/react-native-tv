@@ -14,13 +14,14 @@ runtime_dirs() {
 }
 
 runtime_key_of() {
-  [[ "$1" == "$LEGACY_RUNTIME_DIR" ]] || basename "$1"
+  local runtime="$1"
+  [[ "$runtime" == "$LEGACY_RUNTIME_DIR" ]] || basename "$runtime"
 }
 
 runtime_in_use() {
-  local dir
+  local runtime="$1" dir
   for dir in "$INSTANCES_DIR"/*; do
-    [[ -d "$dir" && "$(instance_runtime_dir "$dir")" == "$1" ]] && return 0
+    [[ -d "$dir" && "$(instance_runtime_dir "$dir")" == "$runtime" ]] && return 0
   done
   return 1
 }

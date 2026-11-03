@@ -6,7 +6,8 @@ set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/runtimes.sh"
 
 pid_or_null() {
-  if is_running "$1"; then cat "$1"; else echo null; fi
+  local pid_file="$1"
+  if is_running "$pid_file"; then cat "$pid_file"; else echo null; fi
 }
 
 app_crashed() {
@@ -17,7 +18,8 @@ app_crashed() {
 }
 
 is_built() {
-  if [[ -x "$(launcher_in "$1")" ]]; then echo true; else echo false; fi
+  local runtime="$1"
+  if [[ -x "$(launcher_in "$runtime")" ]]; then echo true; else echo false; fi
 }
 
 instance_json() {
@@ -35,7 +37,8 @@ instance_json() {
 }
 
 runtime_json() {
-  printf '{"key":"%s","built":%s}' "$(runtime_key_of "$1")" "$(is_built "$1")"
+  local runtime="$1"
+  printf '{"key":"%s","built":%s}' "$(runtime_key_of "$runtime")" "$(is_built "$runtime")"
 }
 
 runtimes=()

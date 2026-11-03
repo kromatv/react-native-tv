@@ -28,7 +28,7 @@ typedef enum {
 /// Writes one line to stderr in dlogutil's `I/TAG( pid): message` shape.
 int dlog_print(log_priority prio, const char *tag, const char *fmt, ...) __attribute__((format(printf, 3, 4)));
 
-int dlog_vprint(log_priority prio, const char *tag, const char *fmt, va_list ap);
+int dlog_vprint(log_priority prio, const char *tag, const char *fmt, va_list ap) __attribute__((format(printf, 3, 0)));
 
 #ifdef __cplusplus
 }

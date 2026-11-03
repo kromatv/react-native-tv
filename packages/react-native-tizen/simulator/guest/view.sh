@@ -7,11 +7,12 @@ set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/instance.sh"
 
 wait_for_port() {
+  local port="$1" log_name="$2"
   for _ in $(seq 50); do
-    ss -ltn "sport = :$1" | grep -q LISTEN && return
+    ss -ltn "sport = :$port" | grep -q LISTEN && return
     sleep 0.1
   done
-  echo "Nothing listens on port $1; see $INSTANCE_DIR/$2.log" >&2
+  echo "Nothing listens on port $port; see $INSTANCE_DIR/$log_name.log" >&2
   exit 1
 }
 

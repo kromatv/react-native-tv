@@ -86,10 +86,12 @@ static Eina_Bool onControlReadable(void *data, Ecore_Fd_Handler *handler) {
   launcher->pendingLength += (size_t)count;
   launcher->pending[launcher->pendingLength] = '\0';
   char *line = launcher->pending;
-  for (char *end = strchr(line, '\n'); end != NULL; end = strchr(line, '\n')) {
+  char *end = strchr(line, '\n');
+  while (end != NULL) {
     *end = '\0';
     if (*line != '\0') runControlCommand(launcher, line);
     line = end + 1;
+    end = strchr(line, '\n');
   }
   launcher->pendingLength = strlen(line);
   if (launcher->pendingLength == sizeof launcher->pending - 1) launcher->pendingLength = 0;
