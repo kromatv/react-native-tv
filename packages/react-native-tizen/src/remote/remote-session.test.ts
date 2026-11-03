@@ -7,11 +7,12 @@ interface FakeTv {
   readonly sent: string[];
   readonly urls: string[];
   answer(message: object): void;
+  say(text: string): void;
   drop(reason: string): void;
   closed(): boolean;
 }
 
-function fakeTv(): FakeTv {
+function fakeTv(buffered: number[] = []): FakeTv {
   const sent: string[] = [];
   const urls: string[] = [];
   let events: TvConnectionEvents | null = null;
@@ -27,10 +28,11 @@ function fakeTv(): FakeTv {
         close: () => {
           isClosed = true;
         },
-        bufferedAmount: () => 0,
+        bufferedAmount: () => buffered.shift() ?? 0,
       };
     },
     answer: (message) => events?.onMessage(JSON.stringify(message)),
+    say: (text) => events?.onMessage(text),
     drop: (reason) => events?.onClosed(reason),
     closed: () => isClosed,
   };
@@ -113,5 +115,61 @@ describe('openRemote', () => {
     const opening = openRemote({ ...options, timeoutMs: 10, token: null, open: tv.open });
 
     await expect(opening).rejects.toThrow('Nobody allowed rn-tizen on the TV within 0.01 s');
+  });
+
+  it('reads past a message that is not JSON', async () => {
+    const tv = fakeTv();
+
+    const opening = openRemote({ ...options, token: '1', open: tv.open });
+    tv.say('<html>not json</html>');
+    tv.answer({ event: 'ms.channel.connect' });
+    const session = await opening;
+
+    expect(session.token).toBeNull();
+  });
+
+  it('says the TV did not accept the connection when it times the request out', async () => {
+    const tv = fakeTv();
+
+    const opening = openRemote({ ...options, token: '1', open: tv.open });
+    tv.answer({ event: 'ms.channel.timeOut' });
+
+    await expect(opening).rejects.toThrow('The TV at 192.168.1.50 did not accept the connection');
+  });
+
+  it("passes on the TV's error message, or says it sent one", async () => {
+    const first = fakeTv();
+    const second = fakeTv();
+
+    const named = openRemote({ ...options, token: '1', open: first.open });
+    first.answer({ event: 'ms.error', data: { message: 'unrecognized method value' } });
+    const unnamed = openRemote({ ...options, token: '1', open: second.open });
+    second.answer({ event: 'ms.error', data: 42 });
+
+    await expect(named).rejects.toThrow(
+      'The TV at 192.168.1.50 answered unrecognized method value',
+    );
+    await expect(unnamed).rejects.toThrow('The TV at 192.168.1.50 answered an error');
+  });
+
+  it('asks whether a paired TV is on when it answers nothing', async () => {
+    const tv = fakeTv();
+
+    const opening = openRemote({ ...options, timeoutMs: 10, token: '1', open: tv.open });
+
+    await expect(opening).rejects.toThrow('The TV at 192.168.1.50 did not answer within 0.01 s');
+  });
+
+  it('waits for the keys to leave the socket, then closes it on request', async () => {
+    const tv = fakeTv([64, 64, 0]);
+    const opening = openRemote({ ...options, token: '1', open: tv.open });
+    tv.answer({ event: 'ms.channel.connect' });
+    const session = await opening;
+
+    await session.press(['KEY_ENTER']);
+    session.close();
+
+    expect(tv.sent).toHaveLength(1);
+    expect(tv.closed()).toBe(true);
   });
 });

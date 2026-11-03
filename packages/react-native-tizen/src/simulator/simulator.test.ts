@@ -13,11 +13,14 @@ import {
   ensureVm,
   hostAddress,
   openUrl,
+  pressKeys,
   printLog,
   requireRunningVm,
   saveScreenshot,
   sendControl,
+  sendLifecycle,
   startApp,
+  stopSimulator,
 } from './simulator.ts';
 
 vi.mock('./lima.ts', () => ({
@@ -98,6 +101,29 @@ describe('ensureVm', () => {
     });
     expect(lima.addMount).toHaveBeenCalled();
     expect(lima.startInstance).toHaveBeenCalled();
+  });
+
+  it("mounts the app's native libraries with the rest", async () => {
+    vi.mocked(lima.instanceState).mockResolvedValue(null);
+    const app = projectApp();
+    writeFileSync(join(app.root, 'package.json'), '{"name":"app","dependencies":{"svg":"1"}}');
+    mkdirSync(join(app.root, 'node_modules', 'svg'), { recursive: true });
+    writeFileSync(
+      join(app.root, 'node_modules', 'svg', 'package.json'),
+      JSON.stringify({
+        name: 'svg',
+        version: '1.0.0',
+        codegenConfig: { name: 'svg', type: 'components', jsSrcsDir: 'src' },
+      }),
+    );
+
+    await ensureVm(recordingTask(), app);
+
+    expect(lima.createInstance).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({ ProjectDir: realpathSync(PACKAGE_ROOT) }),
+    );
   });
 
   it('refuses to mount a directory that holds the home directory', async () => {
@@ -189,5 +215,19 @@ describe('the guest scripts of an instance', () => {
 
     expect(await saveScreenshot(instance, path)).toBe(path);
     expect(readFileSync(path, 'utf8')).toBe('png');
+  });
+
+  it('presses keys, sends a lifecycle event and stops through the guest scripts', async () => {
+    const task = recordingTask();
+
+    await pressKeys(task, instance, ['Down', 'Enter']);
+    await sendLifecycle(task, instance, 'pause');
+    await stopSimulator(task, instance);
+
+    expect(vi.mocked(lima.guestRun).mock.calls.map(([, command]) => command.slice(1))).toEqual([
+      [expect.stringMatching(/key\.sh$/), 'Down', 'Enter'],
+      [expect.stringMatching(/control\.sh$/), 'pause'],
+      [expect.stringMatching(/stop\.sh$/)],
+    ]);
   });
 });

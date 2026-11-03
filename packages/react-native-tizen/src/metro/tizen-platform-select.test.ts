@@ -38,6 +38,18 @@ describe('tizenPlatformSelectPlugin', () => {
     expect(run(select([property('ios', 1), property('native', 2)]))).toEqual(['ios', 'native']);
   });
 
+  it("reads a key written as a string, and turns 'android' into tizen", () => {
+    const quoted = { ...property('x', 1), key: { type: 'StringLiteral', value: 'android' } };
+
+    expect(run(select([property('ios', 1), quoted]))).toEqual(['ios', 'tizen']);
+  });
+
+  it('leaves a select with a numeric key', () => {
+    const numeric = { ...property('x', 1), key: { type: 'NumericLiteral', value: 0 } };
+
+    expect(run(select([property('android', 1), numeric]))).toEqual(['android', undefined]);
+  });
+
   it('leaves a select whose keys are not all static', () => {
     const spread = { type: 'SpreadElement', argument: identifier('more') };
 

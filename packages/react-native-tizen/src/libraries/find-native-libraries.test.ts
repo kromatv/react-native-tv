@@ -82,6 +82,16 @@ describe('findNativeLibraries', () => {
     expect(library?.declaredTizenCMake).toBe(join(camera, 'tizen', 'CMakeLists.txt'));
   });
 
+  it('ignores, with a warning, a tizen field without a cmake path', () => {
+    writePackage(app, { name: 'app', dependencies: { camera: '1' } });
+    dependency('camera', { codegenConfig: { name: 'camera', ...SPECS }, tizen: { cmake: 3 } });
+
+    const scan = findNativeLibraries(app, []);
+
+    expect(scan.libraries[0]?.declaredTizenCMake).toBeNull();
+    expect(scan.warnings).toEqual(['camera: its "tizen" field needs a "cmake" path; ignored']);
+  });
+
   it('skips, with a warning, a codegenConfig codegen cannot read', () => {
     writePackage(app, { name: 'app', dependencies: { legacy: '1' } });
     dependency('legacy', { codegenConfig: { libraries: [] } });

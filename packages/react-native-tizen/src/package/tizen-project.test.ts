@@ -74,4 +74,24 @@ describe('writeTizenProject', () => {
     await expect(writeTizenProject(inputs({}))).rejects.toThrow("is the app's own");
     expect(readdirSync(join(root, 'tizen'))).toEqual(['config.xml']);
   });
+
+  it("packages the app's own PNG icon", async () => {
+    writeFileSync(join(root, 'icon.png'), 'png bytes');
+
+    const dir = await writeTizenProject(inputs({ icon: './icon.png' }));
+
+    expect(readFileSync(join(dir, 'shared', 'res', 'icon.png'), 'utf8')).toBe('png bytes');
+  });
+
+  it('refuses an icon that does not exist, or is not a PNG', async () => {
+    writeFileSync(join(root, 'icon.jpg'), 'jpeg bytes');
+
+    await expect(writeTizenProject(inputs({ icon: './missing.png' }))).rejects.toThrow(
+      'The app icon ./missing.png does not exist',
+    );
+    rmSync(join(root, 'assets'), { recursive: true });
+    await expect(writeTizenProject(inputs({ icon: './icon.jpg' }))).rejects.toThrow(
+      'The app icon ./icon.jpg is not a PNG',
+    );
+  });
 });

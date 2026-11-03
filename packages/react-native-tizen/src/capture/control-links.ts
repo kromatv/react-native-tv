@@ -23,17 +23,12 @@ export class ControlLinks {
   find(device: string | null, timeoutMs: number): Promise<ControlLink | null> {
     const found = this.pick(device);
     if (found !== null) return Promise.resolve(found);
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const check = () => {
-        try {
-          const link = this.pick(device);
-          if (link === null) return;
-          finish();
-          resolve(link);
-        } catch (error) {
-          finish();
-          reject(error);
-        }
+        const link = this.pick(device);
+        if (link === null) return;
+        finish();
+        resolve(link);
       };
       const timer = setTimeout(() => {
         finish();

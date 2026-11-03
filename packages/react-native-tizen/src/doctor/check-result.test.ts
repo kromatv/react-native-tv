@@ -36,4 +36,17 @@ describe('checking', () => {
       fix: 'Connect one',
     });
   });
+
+  it('fails with the message of any other error, and says to look closer', async () => {
+    const result = await checking('CMake', () => {
+      throw new Error('spawn EACCES');
+    });
+
+    expect(result).toEqual({
+      title: 'CMake',
+      status: 'fail',
+      detail: 'spawn EACCES',
+      fix: 'Run again with --verbose for details.',
+    });
+  });
 });

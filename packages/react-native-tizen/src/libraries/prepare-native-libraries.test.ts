@@ -107,6 +107,37 @@ describe('prepareNativeLibraries with a codegen library', () => {
   });
 });
 
+describe('prepareNativeLibraries with an Expo module', () => {
+  it('runs no codegen for an Expo module with a Tizen implementation, and lists it', async () => {
+    const reactNative = { name: 'react-native', version: '0.88.0', dir: app };
+    writeFileSync(
+      join(app, 'package.json'),
+      JSON.stringify({ name: 'app', dependencies: { haptics: '1' } }),
+    );
+    const module = join(app, 'node_modules', 'haptics');
+    mkdirSync(module, { recursive: true });
+    writeFileSync(
+      join(module, 'package.json'),
+      JSON.stringify({ name: 'haptics', version: '2.0.0' }),
+    );
+    writeFileSync(
+      join(module, 'expo-module.config.json'),
+      JSON.stringify({ platforms: ['tizen'], tizen: { cmake: 'tizen/CMakeLists.txt' } }),
+    );
+
+    const prepared = await prepareNativeLibraries(app, reactNative, output);
+
+    expect(prepared.libraries).toEqual([
+      expect.objectContaining({
+        name: 'haptics',
+        codegenName: 'expo_haptics',
+        implementation: join(realpathSync(module), 'tizen', 'CMakeLists.txt'),
+      }),
+    ]);
+    expect(existsSync(join(output, 'expo_haptics'))).toBe(true);
+  });
+});
+
 describe('describeLibraries', () => {
   it('says none for no library', () => {
     expect(describeLibraries([])).toBe('none');

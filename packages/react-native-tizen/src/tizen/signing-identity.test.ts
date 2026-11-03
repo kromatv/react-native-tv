@@ -1,7 +1,7 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { FixableError } from '../errors.ts';
 import { writePkcs12 } from '../signing/pkcs12-write.ts';
 import { testSigner } from '../signing/signing.fixtures.ts';
@@ -36,6 +36,7 @@ function profiles(active: string, password = 'secret'): string {
 }
 
 afterEach(() => {
+  vi.useRealTimers();
   for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
 });
 
@@ -116,5 +117,23 @@ describe('resolveSigning with files given on the command line', () => {
     await expect(
       resolveSigning({ author: '/nonexistent/a.p12', distributor: files().distributor }, '/x'),
     ).rejects.toThrow('Could not read the author certificate /nonexistent/a.p12');
+  });
+
+  it('refuses a certificate that has expired', async () => {
+    const path = profiles('TV');
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2200-01-01T00:00:00Z'));
+
+    await expect(resolveSigning({}, path)).rejects.toThrow(
+      /The author certificate in .* expired on/,
+    );
+  });
+
+  it('says the profile has no author certificate when its author entry is empty', async () => {
+    const path = profiles('TV');
+    const xml = readFileSync(path, 'utf8').replace(/key="[^"]*author\.p12"/, 'key=""');
+    writeFileSync(path, xml);
+
+    await expect(resolveSigning({}, path)).rejects.toThrow('The profile has no author certificate');
   });
 });

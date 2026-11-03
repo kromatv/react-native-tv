@@ -67,4 +67,18 @@ describe('PerfListener.firstSample', () => {
 
     await expect(listener.firstSample).resolves.toBeUndefined();
   });
+
+  it("says when the TV's app connects and disconnects, and nothing of another TV's", () => {
+    const { listener, printed } = listenerFor('192.168.1.50');
+
+    listener.onConnect('192.168.1.50');
+    const connected = printed();
+    listener.onDisconnect('192.168.1.50');
+    const disconnected = printed();
+    listener.onDisconnect('10.0.0.9');
+
+    expect(connected).toBe('The app connected from 192.168.1.50\n');
+    expect(disconnected).toBe('The app at 192.168.1.50 disconnected\n');
+    expect(printed()).toBe('');
+  });
 });
