@@ -1,5 +1,9 @@
 #pragma once
 
+/* Declared from the Tizen native API reference, Dlog:
+ * https://samsungtizenos.com/docs/application/native/api/10.0.0/common/group__CAPI__SYSTEM__DLOG
+ * The reference gives no enumerator values; these are the simulator's own. */
+
 #include <stdarg.h>
 
 #ifdef __cplusplus
@@ -8,13 +12,11 @@ extern "C" {
 
 typedef enum {
   DLOG_ERROR_NONE = 0,
-  DLOG_ERROR_INVALID_PARAMETER = -22,
-  DLOG_ERROR_NOT_PERMITTED = -1,
+  DLOG_ERROR_INVALID_PARAMETER,
+  DLOG_ERROR_NOT_PERMITTED,
 } dlog_error_e;
 
 typedef enum {
-  DLOG_UNKNOWN = 0,
-  DLOG_DEFAULT,
   DLOG_VERBOSE,
   DLOG_DEBUG,
   DLOG_INFO,
@@ -22,7 +24,6 @@ typedef enum {
   DLOG_ERROR,
   DLOG_FATAL,
   DLOG_SILENT,
-  DLOG_PRIO_MAX,
 } log_priority;
 
 /// Writes one line to stderr in dlogutil's `I/TAG( pid): message` shape.

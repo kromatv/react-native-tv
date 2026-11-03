@@ -4,8 +4,23 @@
 #include <unistd.h>
 
 static char priorityLetter(log_priority prio) {
-  static const char letters[DLOG_PRIO_MAX] = {'?', 'D', 'V', 'D', 'I', 'W', 'E', 'F', 'S'};
-  return prio >= 0 && prio < DLOG_PRIO_MAX ? letters[prio] : '?';
+  switch (prio) {
+    case DLOG_VERBOSE:
+      return 'V';
+    case DLOG_DEBUG:
+      return 'D';
+    case DLOG_INFO:
+      return 'I';
+    case DLOG_WARN:
+      return 'W';
+    case DLOG_ERROR:
+      return 'E';
+    case DLOG_FATAL:
+      return 'F';
+    case DLOG_SILENT:
+      return 'S';
+  }
+  return '?';
 }
 
 int dlog_vprint(log_priority prio, const char *tag, const char *fmt, va_list ap) {

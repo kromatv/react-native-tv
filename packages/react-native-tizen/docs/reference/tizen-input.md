@@ -91,6 +91,7 @@ application"), `605` to `634`; `elementary-1/elm_win_legacy.h:145` to `166`. **D
 | API | Fact | Tag | Source |
 |-----|------|-----|--------|
 | `eext_win_keygrab_set(win, name)`, `eext_win_keygrab_unset` | Public API; "Key callback is only called when the window located in topmost", so topmost mode | D | `efl-extension/efl_extension.h:83` to `115` |
+| | `Eina_Bool eext_win_keygrab_set(Elm_Win *obj, const char *key)` and `_unset` alike, since 2.4. The Tizen 10.0 reference titles the module "Efl Extension (Deprecated)" | D | [eext-keyevent] |
 | `ecore_wl2_window_keygrab_set(win, name, 0, 0, 0, mode)`, `_unset`, `_list_set` | `@platform`, privilege `http://tizen.org/privilege/keygrab`, topmost allowed without it; fails with `ALREADY_IN_PROGRESS` or `PERMISSION_DENIED` | D | `ecore-wl2-1/Ecore_Wayland2.h:605` to `716` |
 | | flutter-tizen grabs its key list with this call and `TOPMOST` | D | [ft-window] 803 to 808 |
 | `elm_win_keygrab_set` | Commented out of the 9.0 header, so not callable | D | `elementary-1/elm_win_legacy.h:1285` |
@@ -349,6 +350,7 @@ send; whether `XF86BTVoice` also wakes the assistant; the minus key's name.
 | sam-voice | Samsung, VoiceInteraction API: https://developer.samsung.com/smarttv/develop/api-references/samsung-product-api-references/voiceinteraction-api.html |
 | sam-mic | Samsung, Microphone API: https://developer.samsung.com/smarttv/develop/api-references/samsung-product-api-references/microphone-api.html |
 | tz-grab | Tizen, Grabbing Hardware Key Events, removed from docs.tizen.org in July 2025: https://github.com/Samsung/tizen-docs/blob/50fab02c3dfca185e9edc91057b4c0f14a9eedc6/docs/application/native/guides/ui/efl/key-grab.md |
+| eext-keyevent | Tizen native API reference 10.0, Efl Extension Hardware Keyevent, read 2026-11-03: https://samsungtizenos.com/docs/application/native/api/10.0.0/common/group__EFL__EXTENSION__HARDWARE__KEYEVENT__GROUP |
 | efl-tz | Tizen's EFL, `ecore_wl2_input.c`: https://git.tizen.org/cgit/platform/upstream/efl/tree/src/lib/ecore_wl2/ecore_wl2_input.c?h=tizen |
 | efl-tz-pin | the same file at `515314b`, read 2026-11-03: https://git.tizen.org/cgit/platform/upstream/efl/tree/src/lib/ecore_wl2/ecore_wl2_input.c?id=515314b5cf255032969b8a0be447084550fd4302 |
 | efl-tz-win | Tizen's EFL, `src/lib/elementary/efl_ui_win.c` at `197c848`: https://git.tizen.org/cgit/platform/upstream/efl/tree/src/lib/elementary/efl_ui_win.c?id=197c84873c3fd25ae6e81e05e6712e28bb007856 |
