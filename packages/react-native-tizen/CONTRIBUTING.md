@@ -61,6 +61,7 @@ ahead of time.
    bun run typecheck
    bun run test
    bun run check        # oxlint and oxfmt; bun run check:fix rewrites
+   bun run build        # dist/, the compiled JavaScript npm ships
    find simulator -name '*.sh' -print0 | xargs -0 shellcheck -x
    ```
 
@@ -86,8 +87,8 @@ ahead of time.
    Developer mode on with your computer's IP address, and restart the TV. Then:
 
    ```sh
-   bun src/cli/main.ts devices --connect 192.168.1.107
-   bun src/cli/main.ts run --project example --device 192.168.1.107
+   bun src/cli/main.ts devices --connect 192.168.1.50
+   bun src/cli/main.ts run --project example --device 192.168.1.50
    ```
 
    `run` packages the app, installs it, launches it and prints its logs until

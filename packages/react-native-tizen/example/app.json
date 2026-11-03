@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "RN Tizen Example",
+    "slug": "react-native-tizen-example",
+    "version": "1.0.0",
+    "orientation": "landscape",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "tizen": {
+      "package": "org.rntizen.example",
+      "label": "RN Tizen Example",
+      "locales": ["en", "fr"],
+      "voice": {
+        "searchUrl": "rntizen-example://search?q={query}"
+      },
+      "preview": {
+        "refreshMinutes": 10
+      }
+    },
+    "plugins": [
+      [
+        "expo-video",
+        {
+          "supportsBackgroundPlayback": true
+        }
+      ]
+    ]
+  }
+}

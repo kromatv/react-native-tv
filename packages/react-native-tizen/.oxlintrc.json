@@ -197,9 +197,20 @@
       }
     },
     {
-      "files": ["src/config/tizen-config.ts"],
+      "files": [
+        "src/config/tizen-config.ts",
+        "src/config/tv-features.ts",
+        "src/package/feature-manifest.ts",
+        "example/src/screens/modules/echo-endpoint.ts"
+      ],
       "rules": {
         "sonarjs/no-clear-text-protocols": "off"
+      }
+    },
+    {
+      "files": ["src/app/expo-config.ts"],
+      "rules": {
+        "sonarjs/no-os-command-from-path": "off"
       }
     }
   ]

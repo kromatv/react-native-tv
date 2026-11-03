@@ -55,7 +55,7 @@ body:
       label: Steps to reproduce
       description: From a fresh start. A small app or a change to `example/` that shows it is ideal.
       placeholder: |
-        1. rn-tizen run --device 192.168.1.107
+        1. rn-tizen run --device 192.168.1.50
         2. Press Down twice, then Enter
     validations:
       required: true

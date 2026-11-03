@@ -1,0 +1,16 @@
+<Project Sdk="Tizen.NET.Sdk/1.2.1">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>{{targetFramework}}</TargetFramework>
+    <TizenNetPackageVersion>{{tizenNetVersion}}</TizenNetPackageVersion>
+    <LangVersion>10.0</LangVersion>
+    <AssemblyName>PreviewService</AssemblyName>
+    <RootNamespace>ReactNativeTizen</RootNamespace>
+    <DebugType>none</DebugType>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../PreviewPublisher.cs" />
+    <Compile Include="../DevLog.cs" />
+  </ItemGroup>
+</Project>

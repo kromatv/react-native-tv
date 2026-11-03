@@ -1,0 +1,32 @@
+# The Tizen TV simulator's virtual machine: aarch64 Ubuntu LTS under Apple's
+# Virtualization framework. `bun simulator/main.ts setup` creates it with the
+# two params set, then installs its packages with guest/provision.sh.
+
+minimumLimaVersion: 2.0.0
+
+base:
+- template:_images/ubuntu-26.04
+
+vmType: vz
+arch: aarch64
+cpus: 8
+memory: 12GiB
+disk: 60GiB
+mountType: virtiofs
+
+containerd:
+  system: false
+  user: false
+
+param:
+  ProjectDir: ""
+  CacheDir: ""
+
+# Mounted at the same path as on the Mac, so the absolute paths a build records
+# (the react-native package, codegen output, dependency archives) hold in both.
+# ProjectDir is the root whose node_modules holds react-native.
+mounts:
+- location: "{{.Param.ProjectDir}}"
+  writable: false
+- location: "{{.Param.CacheDir}}"
+  writable: true

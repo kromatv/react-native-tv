@@ -1,0 +1,91 @@
+{
+  "name": "@kromatv/react-native-tizen",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "React Native and Expo for Samsung Tizen TVs: Hermes and Fabric run natively, with no web runtime in between.",
+  "license": "MIT",
+  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kromatv/react-native-tizen.git"
+  },
+  "keywords": [
+    "react-native",
+    "expo",
+    "tizen",
+    "samsung",
+    "smart-tv",
+    "hermes"
+  ],
+  "packageManager": "bun@1.4.0",
+  "workspaces": [
+    "example"
+  ],
+  "bin": {
+    "rn-tizen": "./dist/cli/main.js"
+  },
+  "exports": {
+    "./metro": {
+      "types": "./dist/metro/with-tizen.d.ts",
+      "default": "./dist/metro/with-tizen.js"
+    },
+    "./voice": {
+      "types": "./dist/api/voice.d.ts",
+      "default": "./dist/api/voice.js"
+    },
+    "./preview": {
+      "types": "./dist/api/preview.d.ts",
+      "default": "./dist/api/preview.js"
+    },
+    "./preview-json": {
+      "types": "./dist/api/preview-json.d.ts",
+      "default": "./dist/api/preview-json.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "runtime",
+    "shell",
+    "simulator",
+    "react-native-overrides",
+    "docs",
+    "README.md",
+    "THIRD_PARTY_NOTICES.md",
+    "!**/*.tsbuildinfo",
+    "!**/*.fixtures.*"
+  ],
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.build.json && tsc -p src/api/tsconfig.build.json",
+    "prepack": "bun run build",
+    "typecheck": "tsc -p tsconfig.json && tsc -p src/api && tsc -p example/tsconfig.json",
+    "test": "vitest run",
+    "lint": "oxlint --ignore-path .gitignore --deny-warnings .",
+    "format": "oxfmt .",
+    "check": "bun run lint && oxfmt --check .",
+    "check:fix": "oxlint --ignore-path .gitignore --fix . && oxfmt ."
+  },
+  "dependencies": {
+    "@formatjs/intl-numberformat": "10.0.2",
+    "@formatjs/intl-pluralrules": "7.0.2",
+    "@formatjs/intl-relativetimeformat": "13.0.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "eslint-plugin-sonarjs": "4.2.2",
+    "oxfmt": "0.74.0",
+    "oxlint": "1.89.0",
+    "react-native": "npm:react-native-tvos@0.88.0-0",
+    "typescript": "^7.0.2",
+    "vitest": "5.0.5"
+  },
+  "peerDependencies": {
+    "react-native": ">=0.88.0-0"
+  }
+}

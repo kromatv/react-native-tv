@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest package="{{package}}" version="{{version}}" api-version="{{apiVersion}}" xmlns="http://tizen.org/ns/packages">
+  <profile name="tv" />
+  <service-application appid="{{serviceAppId}}" exec="PreviewService.dll" type="dotnet" multiple="false" taskmanage="false">
+    <label>{{label}}</label>
+    <app-control>
+      <operation name="http://react-native-tizen/appcontrol/operation/preview_refresh" />
+    </app-control>
+  </service-application>
+</manifest>
