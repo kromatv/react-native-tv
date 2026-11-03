@@ -18,9 +18,9 @@ class InstanceGate final {
   InstanceGate(const InstanceGate &) = delete;
   InstanceGate &operator=(const InstanceGate &) = delete;
 
-  /// Queues `module.method(...args)` on the JavaScript thread, as
+  /// Queues `moduleName.method(...args)` on the JavaScript thread, as
   /// ReactInstance::callFunctionOnModule does; nothing once closed.
-  void callFunctionOnModule(const std::string &module, const std::string &method, folly::dynamic &&args);
+  void callFunctionOnModule(const std::string &moduleName, const std::string &method, folly::dynamic &&args);
 
   void close();
 

@@ -36,12 +36,13 @@ class ThreadTimerRegistry final : public facebook::react::PlatformTimerRegistry 
  private:
   struct State;
 
+  static bool fireDueOnFrame(State &state);
   void schedule(uint32_t timerID, double delayMS, bool recurring);
   void run();
 
   const std::shared_ptr<State> state_;
   const std::shared_ptr<FrameClock> frames_;
-  std::thread thread_;
+  std::jthread thread_;
 };
 
 } // namespace rntizen

@@ -11,15 +11,13 @@
 #include <app.h>
 
 #include <chrono>
+#include <format>
 #include <utility>
 
 namespace rntizen {
 
 ReactHost::ReactHost(const std::string &resourceDir)
     : config_(loadHostConfig(resourceDir)),
-      device_(readDeviceProfile()),
-      isActive_(std::make_shared<std::atomic<bool>>(true)),
-      launchUrl_(std::make_shared<LaunchUrl>()),
       lifetime_(std::make_shared<ReactHost *>(this)),
       weakHost_(lifetime_) {
   try {
@@ -32,12 +30,12 @@ ReactHost::ReactHost(const std::string &resourceDir)
 
 void ReactHost::start() {
   openMainThreadSync();
-  controlLink_ = openDevelopmentLinks(config_);
+  diagnostics_.controlLink = openDevelopmentLinks(config_);
   installCrashReporter();
   log(LogLevel::Info,
       "Starting " + config_.appKey + " on " + device_.modelName + " (Tizen " + device_.platformVersion + ")");
   overrideFeatureFlagsOnce();
-  tv_ = std::make_shared<TvState>(config_.voice, config_.voiceSearchUrl);
+  tv_.state = std::make_shared<TvState>(config_.voice, config_.voiceSearchUrl);
   createWindow();
   startDevSupport();
   createInstance();
@@ -45,8 +43,8 @@ void ReactHost::start() {
   loadBundle();
   routeInput();
   startSurface();
-  voice_ = std::make_unique<VoiceController>(VoiceController::Dependencies{
-      .state = tv_,
+  tv_.voice = std::make_unique<VoiceController>(VoiceController::Dependencies{
+      .state = tv_.state,
       .rootView = [this] { return presenter_ ? presenter_->rootView() : nullptr; },
       .emitDeviceEvent = [this](const std::string &event, folly::dynamic payload) {
         emitDeviceEvent(event, std::move(payload));
@@ -59,13 +57,13 @@ ReactHost::~ReactHost() {
   const auto started = std::chrono::steady_clock::now();
   stop();
   const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - started);
-  log(LogLevel::Debug, "React Native stopped in " + std::to_string(elapsed.count()) + " ms");
+  log(LogLevel::Debug, std::format("React Native stopped in {} ms", elapsed.count()));
   setLogSink(nullptr);
 }
 
 void ReactHost::stop() {
   lifetime_.reset();
-  perfMonitor_.reset();
+  diagnostics_.perfMonitor.reset();
   remoteInput_.reset();
   closeMainThreadSync();
   if (instanceGate_ != nullptr) instanceGate_->close();
@@ -79,10 +77,10 @@ void ReactHost::stop() {
 }
 
 void ReactHost::startPerfMonitor() {
-  if (controlLink_ == nullptr) return;
-  perfMonitor_ = std::make_unique<PerfMonitor>(PerfMonitor::Sources{
+  if (diagnostics_.controlLink == nullptr) return;
+  diagnostics_.perfMonitor = std::make_unique<PerfMonitor>(PerfMonitor::Sources{
       .evas = evas_object_evas_get(window_),
-      .controlLink = controlLink_.get(),
+      .controlLink = diagnostics_.controlLink.get(),
       .jsThread = jsThread_,
       .runtimeExecutor = instance_->getBufferedRuntimeExecutor(),
   });
@@ -90,7 +88,7 @@ void ReactHost::startPerfMonitor() {
 
 void ReactHost::reload() {
   log(LogLevel::Info, "Reloading " + config_.appKey);
-  perfMonitor_.reset();
+  diagnostics_.perfMonitor.reset();
   remoteInput_->releaseAll();
   closeMainThreadSync();
   instanceGate_->close();
@@ -149,11 +147,11 @@ void ReactHost::openUrl(const std::string &url) {
 }
 
 TvState &ReactHost::tv() {
-  return *tv_;
+  return *tv_.state;
 }
 
 VoiceController &ReactHost::voice() {
-  return *voice_;
+  return *tv_.voice;
 }
 
 } // namespace rntizen

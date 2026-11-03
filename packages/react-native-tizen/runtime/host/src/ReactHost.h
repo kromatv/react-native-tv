@@ -85,10 +85,20 @@ class ReactHost final {
   void setActive(bool isActive);
   void stopReactNative();
 
+  struct Diagnostics {
+    std::unique_ptr<ControlLink> controlLink;
+    std::unique_ptr<PerfMonitor> perfMonitor;
+  };
+
+  struct TvServices {
+    std::shared_ptr<TvState> state;
+    std::unique_ptr<VoiceController> voice;
+  };
+
   const HostConfig config_;
-  DeviceProfile device_;
-  std::shared_ptr<std::atomic<bool>> isActive_;
-  std::shared_ptr<LaunchUrl> launchUrl_;
+  DeviceProfile device_{readDeviceProfile()};
+  std::shared_ptr<std::atomic<bool>> isActive_{std::make_shared<std::atomic<bool>>(true)};
+  std::shared_ptr<LaunchUrl> launchUrl_{std::make_shared<LaunchUrl>()};
   std::shared_ptr<ReactHost *> lifetime_;
   const std::weak_ptr<ReactHost *> weakHost_;
   Evas_Object *window_{nullptr};
@@ -103,10 +113,8 @@ class ReactHost final {
   std::unique_ptr<RemoteInput> remoteInput_;
   std::unique_ptr<ErrorScreen> errorScreen_;
   std::unique_ptr<AlertDialog> alertDialog_;
-  std::unique_ptr<ControlLink> controlLink_;
-  std::unique_ptr<PerfMonitor> perfMonitor_;
-  std::shared_ptr<TvState> tv_;
-  std::unique_ptr<VoiceController> voice_;
+  Diagnostics diagnostics_;
+  TvServices tv_;
   std::shared_ptr<DevSupport> devSupport_;
 };
 

@@ -16,6 +16,7 @@
 #include "../expo/ExpoRuntime.h"
 #endif
 
+#include <format>
 #include <sstream>
 
 namespace rntizen {
@@ -23,15 +24,16 @@ namespace rntizen {
 namespace {
 
 LogLevel javaScriptLogLevel(unsigned int level) {
+  using enum LogLevel;
   switch (level) {
     case 0:
-      return LogLevel::Debug;
+      return Debug;
     case 1:
-      return LogLevel::Info;
+      return Info;
     case 2:
-      return LogLevel::Warning;
+      return Warning;
     default:
-      return LogLevel::Error;
+      return Error;
   }
 }
 
@@ -48,9 +50,8 @@ ErrorReport reportFor(const facebook::react::JsErrorHandler::ProcessedError &err
       .stack = {},
   };
   for (const auto &frame : error.stack) {
-    report.stack.push_back(
-        frame.methodName + " (" + fileName(frame.file) + ":" + std::to_string(frame.lineNumber.value_or(0)) + ":" +
-        std::to_string(frame.column.value_or(0)) + ")");
+    report.stack.push_back(std::format(
+        "{} ({}:{}:{})", frame.methodName, fileName(frame.file), frame.lineNumber.value_or(0), frame.column.value_or(0)));
   }
   return report;
 }
@@ -108,7 +109,7 @@ void ReactHost::createInstance() {
                   }
                 });
               },
-          .tv = tv_,
+          .tv = tv_.state,
       },
       instance_->createJSCallInvoker());
 

@@ -27,6 +27,7 @@ class FrameClock final : public std::enable_shared_from_this<FrameClock> {
 
  private:
   static Eina_Bool tick(void *data);
+  bool runFrame();
   bool shouldStop(bool hadWork);
 
   const std::function<bool()> onFrame_;

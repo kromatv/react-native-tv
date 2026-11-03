@@ -2,6 +2,8 @@
 
 #include <dlog.h>
 
+#include <exception>
+#include <format>
 #include <mutex>
 #include <string>
 
@@ -26,14 +28,15 @@ std::shared_ptr<LogSink> currentSink() {
 }
 
 log_priority dlogPriority(LogLevel level) {
+  using enum LogLevel;
   switch (level) {
-    case LogLevel::Debug:
+    case Debug:
       return DLOG_DEBUG;
-    case LogLevel::Info:
+    case Info:
       return DLOG_INFO;
-    case LogLevel::Warning:
+    case Warning:
       return DLOG_WARN;
-    case LogLevel::Error:
+    case Error:
       return DLOG_ERROR;
   }
   return DLOG_INFO;
@@ -42,14 +45,15 @@ log_priority dlogPriority(LogLevel level) {
 } // namespace
 
 std::string_view logLevelName(LogLevel level) {
+  using enum LogLevel;
   switch (level) {
-    case LogLevel::Debug:
+    case Debug:
       return "debug";
-    case LogLevel::Info:
+    case Info:
       return "info";
-    case LogLevel::Warning:
+    case Warning:
       return "warn";
-    case LogLevel::Error:
+    case Error:
       return "error";
   }
   return "info";
@@ -61,6 +65,14 @@ void log(LogLevel level, std::string_view message) {
   if (auto sink = currentSink()) {
     sink->write(level, message);
   }
+}
+
+void logUncaughtException(std::string_view boundary, const std::exception &error) noexcept {
+  log(LogLevel::Error, std::format("Uncaught exception on {}: {}", boundary, error.what()));
+}
+
+void logUncaughtException(std::string_view boundary) noexcept {
+  log(LogLevel::Error, std::format("Uncaught exception on {}, not a std::exception", boundary));
 }
 
 void setLogSink(std::shared_ptr<LogSink> sink) {

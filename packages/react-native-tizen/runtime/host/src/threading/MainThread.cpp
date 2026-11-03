@@ -1,5 +1,7 @@
 #include "MainThread.h"
 
+#include "../logging/Log.h"
+
 #include <Ecore.h>
 
 #include <algorithm>
@@ -7,6 +9,7 @@
 #include <condition_variable>
 #include <cstdint>
 #include <deque>
+#include <exception>
 #include <memory>
 #include <mutex>
 
@@ -17,18 +20,28 @@ namespace {
 struct SyncJob {
   bool finished{false};
   bool abandoned{false};
+  std::exception_ptr error;
 };
 
-struct PriorityTask {
+struct SyncTask {
   const std::function<void()> *task;
   std::shared_ptr<SyncJob> job;
+};
+
+struct WaitStats {
+  std::atomic<bool> measured{false};
+  std::atomic<std::int64_t> nanos{0};
+  std::atomic<std::int64_t> waiters{0};
+  std::atomic<std::int64_t> waitersSinceNanos{0};
 };
 
 struct SyncGate {
   std::mutex mutex;
   std::condition_variable changed;
   bool closing{false};
-  std::deque<PriorityTask> priority;
+  std::deque<SyncTask> priority;
+  std::atomic<bool> priorityPending{false};
+  WaitStats waits;
 };
 
 SyncGate &gate() {
@@ -36,15 +49,15 @@ SyncGate &gate() {
   return shared;
 }
 
-std::atomic<bool> priorityPending{false};
-std::atomic<bool> waitMeasured{false};
-std::atomic<std::int64_t> waitNanos{0};
-std::atomic<std::int64_t> waiters{0};
-std::atomic<std::int64_t> waitersSinceNanos{0};
-
 void runQueuedTask(void *data) {
-  std::unique_ptr<std::function<void()>> task(static_cast<std::function<void()> *>(data));
-  (*task)();
+  const std::unique_ptr<std::function<void()>> task(static_cast<std::function<void()> *>(data));
+  try {
+    (*task)();
+  } catch (const std::exception &error) {
+    logUncaughtException("the main loop", error);
+  } catch (...) {
+    logUncaughtException("the main loop");
+  }
 }
 
 std::shared_ptr<SyncJob> openJob(SyncGate &shared) {
@@ -53,38 +66,48 @@ std::shared_ptr<SyncJob> openJob(SyncGate &shared) {
   return std::make_shared<SyncJob>();
 }
 
-void runJob(SyncGate &shared, const std::function<void()> &task, SyncJob &job) {
+void runJob(SyncGate &shared, const SyncTask &entry) {
+  auto &job = *entry.job;
   std::unique_lock lock(shared.mutex);
   if (shared.closing || job.abandoned || job.finished) return;
   lock.unlock();
-  task();
+  std::exception_ptr error;
+  try {
+    (*entry.task)();
+  } catch (...) {
+    error = std::current_exception();
+  }
   lock.lock();
+  job.error = error;
   job.finished = true;
   shared.changed.notify_all();
 }
 
 bool awaitJob(SyncGate &shared, SyncJob &job) {
-  const bool measured = waitMeasured.load(std::memory_order_relaxed);
+  auto &waits = shared.waits;
+  const bool measured = waits.measured.load(std::memory_order_relaxed);
   const auto started = measured ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
   if (measured) {
-    waiters.fetch_add(1, std::memory_order_relaxed);
-    waitersSinceNanos.fetch_add(started.time_since_epoch().count(), std::memory_order_relaxed);
+    waits.waiters.fetch_add(1, std::memory_order_relaxed);
+    waits.waitersSinceNanos.fetch_add(started.time_since_epoch().count(), std::memory_order_relaxed);
   }
   std::unique_lock lock(shared.mutex);
-  shared.changed.wait(lock, [&] { return job.finished || shared.closing; });
+  shared.changed.wait(lock, [&job, &shared] { return job.finished || shared.closing; });
   job.abandoned = !job.finished;
   if (measured) {
-    waiters.fetch_sub(1, std::memory_order_relaxed);
-    waitersSinceNanos.fetch_sub(started.time_since_epoch().count(), std::memory_order_relaxed);
-    waitNanos.fetch_add((std::chrono::steady_clock::now() - started).count(), std::memory_order_relaxed);
+    waits.waiters.fetch_sub(1, std::memory_order_relaxed);
+    waits.waitersSinceNanos.fetch_sub(started.time_since_epoch().count(), std::memory_order_relaxed);
+    waits.nanos.fetch_add((std::chrono::steady_clock::now() - started).count(), std::memory_order_relaxed);
   }
+  if (job.error) std::rethrow_exception(job.error);
   return job.finished;
 }
 
 } // namespace
 
 void runOnMainThread(std::function<void()> task) {
-  ecore_main_loop_thread_safe_call_async(runQueuedTask, new std::function<void()>(std::move(task)));
+  auto owned = std::make_unique<std::function<void()>>(std::move(task));
+  ecore_main_loop_thread_safe_call_async(runQueuedTask, owned.release());
 }
 
 bool runOnMainThreadSync(const std::function<void()> &task) {
@@ -95,7 +118,7 @@ bool runOnMainThreadSync(const std::function<void()> &task) {
   auto &shared = gate();
   auto job = openJob(shared);
   if (job == nullptr) return false;
-  runOnMainThread([job, &task, &shared] { runJob(shared, task, *job); });
+  runOnMainThread([entry = SyncTask{.task = &task, .job = job}, &shared] { runJob(shared, entry); });
   return awaitJob(shared, *job);
 }
 
@@ -110,22 +133,22 @@ bool runOnMainThreadSoon(const std::function<void()> &task) {
   {
     std::lock_guard lock(shared.mutex);
     shared.priority.push_back({.task = &task, .job = job});
-    priorityPending.store(true, std::memory_order_release);
+    shared.priorityPending.store(true, std::memory_order_relaxed);
   }
   runOnMainThread(runPriorityTasks);
   return awaitJob(shared, *job);
 }
 
 void runPriorityTasks() {
-  if (!priorityPending.load(std::memory_order_acquire) || !isMainThread()) return;
   auto &shared = gate();
-  std::deque<PriorityTask> tasks;
+  if (!shared.priorityPending.load(std::memory_order_relaxed) || !isMainThread()) return;
+  std::deque<SyncTask> tasks;
   {
     std::lock_guard lock(shared.mutex);
     tasks.swap(shared.priority);
-    priorityPending.store(false, std::memory_order_relaxed);
+    shared.priorityPending.store(false, std::memory_order_relaxed);
   }
-  for (const auto &entry : tasks) runJob(shared, *entry.task, *entry.job);
+  for (const auto &entry : tasks) runJob(shared, entry);
 }
 
 void closeMainThreadSync() {
@@ -133,7 +156,7 @@ void closeMainThreadSync() {
   std::lock_guard lock(shared.mutex);
   shared.closing = true;
   shared.priority.clear();
-  priorityPending.store(false, std::memory_order_relaxed);
+  shared.priorityPending.store(false, std::memory_order_relaxed);
   shared.changed.notify_all();
 }
 
@@ -148,13 +171,15 @@ bool isMainThread() {
 }
 
 void setMainThreadWaitMeasured(bool measured) {
-  waitMeasured.store(measured, std::memory_order_relaxed);
+  gate().waits.measured.store(measured, std::memory_order_relaxed);
 }
 
 std::chrono::nanoseconds mainThreadWaitTime() {
+  const auto &waits = gate().waits;
   const auto now = std::chrono::steady_clock::now().time_since_epoch().count();
-  const auto ongoing = waiters.load(std::memory_order_relaxed) * now - waitersSinceNanos.load(std::memory_order_relaxed);
-  return std::chrono::nanoseconds(waitNanos.load(std::memory_order_relaxed) + std::max<std::int64_t>(0, ongoing));
+  const auto ongoing =
+      waits.waiters.load(std::memory_order_relaxed) * now - waits.waitersSinceNanos.load(std::memory_order_relaxed);
+  return std::chrono::nanoseconds(waits.nanos.load(std::memory_order_relaxed) + std::max<std::int64_t>(0, ongoing));
 }
 
 } // namespace rntizen

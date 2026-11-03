@@ -7,11 +7,13 @@ namespace rntizen {
 
 /// Runs `task` on the EFL main loop, the only thread allowed to touch Evas.
 /// From the main thread itself it still queues, so a caller never re-enters.
+/// What `task` throws is logged: an exception must not unwind through Ecore.
 void runOnMainThread(std::function<void()> task);
 
-/// Runs `task` on the main loop and waits for it; runs inline on the main
-/// thread. Returns false without running it once the main loop is closing, so a
-/// worker can never wait on a loop that is busy tearing that worker down.
+/// Runs `task` on the main loop and waits for it, rethrowing what it throws;
+/// runs inline on the main thread. Returns false without running it once the
+/// main loop is closing, so a worker can never wait on a loop that is busy
+/// tearing that worker down.
 bool runOnMainThreadSync(const std::function<void()> &task);
 
 /// Runs `task` on the main loop and waits for it, as runOnMainThreadSync does,

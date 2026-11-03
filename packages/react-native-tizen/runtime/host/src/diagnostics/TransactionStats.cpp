@@ -34,11 +34,11 @@ double millisBetween(TelemetryTimePoint start, TelemetryTimePoint end) {
 } // namespace
 
 bool transactionStatsEnabled() {
-  return enabled.load(std::memory_order_relaxed);
+  return enabled.load();
 }
 
 void setTransactionStatsEnabled(bool on) {
-  enabled.store(on, std::memory_order_relaxed);
+  enabled.store(on);
 }
 
 void recordTransaction(

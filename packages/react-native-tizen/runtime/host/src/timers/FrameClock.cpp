@@ -1,5 +1,6 @@
 #include "FrameClock.h"
 
+#include "../logging/Log.h"
 #include "../threading/MainThread.h"
 
 #include <utility>
@@ -25,9 +26,11 @@ void FrameClock::request() {
     running_ = true;
   }
   runOnMainThread([self = shared_from_this()] {
-    auto *owner = new Owner(self);
-    if (ecore_animator_add(tick, owner) != nullptr) return;
-    delete owner;
+    auto owner = std::make_unique<Owner>(self);
+    if (ecore_animator_add(tick, owner.get()) != nullptr) {
+      owner.release();
+      return;
+    }
     std::lock_guard lock(self->mutex_);
     self->running_ = false;
   });
@@ -36,6 +39,17 @@ void FrameClock::request() {
 void FrameClock::close() {
   std::lock_guard lock(mutex_);
   closed_ = true;
+}
+
+bool FrameClock::runFrame() {
+  try {
+    return onFrame_();
+  } catch (const std::exception &error) {
+    logUncaughtException("a frame", error);
+  } catch (...) {
+    logUncaughtException("a frame");
+  }
+  return false;
 }
 
 Eina_Bool FrameClock::tick(void *data) {
@@ -48,9 +62,9 @@ Eina_Bool FrameClock::tick(void *data) {
     closed = self.closed_;
     requested = std::exchange(self.requested_, false);
   }
-  const bool hadWork = !closed && (self.onFrame_() || requested);
+  const bool hadWork = !closed && (self.runFrame() || requested);
   if (!self.shouldStop(hadWork)) return ECORE_CALLBACK_RENEW;
-  delete owner;
+  std::unique_ptr<Owner> released(owner);
   return ECORE_CALLBACK_CANCEL;
 }
 
