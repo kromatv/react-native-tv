@@ -72,8 +72,35 @@ jobs:
       - name: npm pack, install into a fresh Expo app, rn-tizen bundle under Node
         run: bun run check:packed
 
+  changes:
+    name: Native inputs
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      native: ${{ steps.inputs.outputs.native }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: .bun-version
+          no-cache: true
+      - id: inputs
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [ -z "$BASE" ]; then
+            echo native=true
+          else
+            git diff --name-only "$BASE" HEAD | bun scripts/native-inputs.ts
+          fi >> "$GITHUB_OUTPUT"
+
   native:
     name: Native runtime (simulator, aarch64 Linux)
+    needs: changes
+    if: needs.changes.outputs.native == 'true'
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 120
     env:
