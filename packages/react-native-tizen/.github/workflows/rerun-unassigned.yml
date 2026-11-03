@@ -11,7 +11,8 @@ jobs:
   rerun:
     name: Re-run an unassigned job
     if: >-
-      github.event.workflow_run.conclusion != 'success'
+      github.event.workflow_run.conclusion == 'cancelled'
+      && github.event.workflow_run.event == 'pull_request'
       && github.event.workflow_run.run_attempt < 3
     runs-on: ubuntu-latest
     timeout-minutes: 5

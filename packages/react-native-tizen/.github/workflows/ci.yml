@@ -11,7 +11,7 @@ permissions:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   check:
@@ -78,7 +78,8 @@ jobs:
           clang --version
           cmake --version
           echo "CCACHE_DIR=$HOME/.cache/ccache" >> "$GITHUB_ENV"
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - id: native-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/.cache/ccache
@@ -92,6 +93,14 @@ jobs:
       - name: Compile the runtime and the launcher
         run: bun scripts/compile-simulator-runtime.ts example
       - run: ccache --show-stats
+      - if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cache/ccache
+            ~/.cache/react-native-tizen/downloads
+            ~/rn-tizen-simulator/build/hermes-host
+          key: ${{ steps.native-cache.outputs.cache-primary-key }}
 
   sonar:
     name: SonarCloud
