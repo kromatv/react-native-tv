@@ -10,11 +10,15 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include <array>
 #include <cerrno>
+#include <stdexcept>
 #include <chrono>
+#include <format>
 #include <future>
 #include <memory>
 #include <optional>
+#include <stdexcept>
 
 namespace rntizen {
 
@@ -31,32 +35,42 @@ bool sendLine(int socket, const folly::dynamic &message) {
   return sendAll(socket, line.data(), line.size());
 }
 
-std::optional<std::int64_t> screenshotRequestId(const std::string &line) {
+folly::dynamic parseRequest(const std::string &line) {
   try {
-    const auto request = folly::parseJson(line);
-    if (!request.isObject()) return std::nullopt;
-    const auto *type = request.get_ptr("type");
-    const auto *id = request.get_ptr("id");
-    if (type == nullptr || !type->isString() || type->getString() != "screenshot") return std::nullopt;
-    if (id == nullptr || !id->isInt() || id->getInt() < 0) return std::nullopt;
-    return id->getInt();
-  } catch (const std::exception &) {
-    return std::nullopt;
+    return folly::parseJson(line);
+  } catch (const folly::json::parse_error &) {
+    return nullptr;
+  } catch (const std::range_error &) {
+    return nullptr;
   }
 }
 
+std::optional<std::int64_t> screenshotRequestId(const std::string &line) {
+  const auto request = parseRequest(line);
+  if (!request.isObject()) return std::nullopt;
+  const auto *type = request.get_ptr("type");
+  const auto *id = request.get_ptr("id");
+  if (type == nullptr || !type->isString() || type->getString() != "screenshot") return std::nullopt;
+  if (id == nullptr || !id->isInt() || id->getInt() < 0) return std::nullopt;
+  return id->getInt();
+}
+
 std::optional<bool> perfRequest(const std::string &line) {
-  try {
-    const auto request = folly::parseJson(line);
-    if (!request.isObject()) return std::nullopt;
-    const auto *type = request.get_ptr("type");
-    const auto *on = request.get_ptr("on");
-    if (type == nullptr || !type->isString() || type->getString() != "perf") return std::nullopt;
-    if (on == nullptr || !on->isBool()) return std::nullopt;
-    return on->getBool();
-  } catch (const std::exception &) {
-    return std::nullopt;
-  }
+  const auto request = parseRequest(line);
+  if (!request.isObject()) return std::nullopt;
+  const auto *type = request.get_ptr("type");
+  const auto *on = request.get_ptr("on");
+  if (type == nullptr || !type->isString() || type->getString() != "perf") return std::nullopt;
+  if (on == nullptr || !on->isBool()) return std::nullopt;
+  return on->getBool();
+}
+
+std::optional<std::string> takeLine(std::string &pending) {
+  const auto newline = pending.find('\n');
+  if (newline == std::string::npos) return std::nullopt;
+  auto line = pending.substr(0, newline);
+  pending.erase(0, newline + 1);
+  return line;
 }
 
 } // namespace
@@ -85,59 +99,62 @@ bool ControlLink::isStopping() {
 
 void ControlLink::run() {
   while (!isStopping()) {
-    const int socket = connectTcp(host_, port_, kConnectTimeout, [this] { return isStopping(); });
-    if (socket >= 0) {
-      bool adopted = false;
-      {
-        std::lock_guard lock(mutex_);
-        adopted = !stopping_;
-        if (adopted) socket_ = socket;
-      }
-      if (adopted && sendLine(socket, folly::dynamic::object("type", "control")("version", 1))) serve(socket);
+    if (const int socket = connectTcp(host_, port_, kConnectTimeout, [this] { return isStopping(); }); socket >= 0) {
+      if (adopt(socket) && sendLine(socket, folly::dynamic::object("type", "control")("version", 1))) serve(socket);
       perfRequested_.store(false, std::memory_order_relaxed);
-      {
-        std::lock_guard lock(mutex_);
-        socket_ = -1;
-      }
+      forget();
       close(socket);
     }
-    std::unique_lock lock(mutex_);
-    wake_.wait_for(lock, kReconnectDelay, [this] { return stopping_; });
+    waitToReconnect();
   }
+}
+
+bool ControlLink::adopt(int socket) {
+  std::lock_guard lock(mutex_);
+  if (stopping_) return false;
+  socket_ = socket;
+  return true;
+}
+
+void ControlLink::forget() {
+  std::lock_guard lock(mutex_);
+  socket_ = -1;
+}
+
+void ControlLink::waitToReconnect() {
+  std::unique_lock lock(mutex_);
+  wake_.wait_for(lock, kReconnectDelay, [this] { return stopping_; });
 }
 
 void ControlLink::serve(int socket) {
   std::string pending;
-  char chunk[512];
+  std::array<char, 512> chunk{};
   while (true) {
-    const ssize_t received = recv(socket, chunk, sizeof chunk, 0);
+    const ssize_t received = recv(socket, chunk.data(), chunk.size(), 0);
     if (received < 0 && errno == EINTR) continue;
     if (received <= 0) return;
-    pending.append(chunk, static_cast<std::size_t>(received));
-    for (auto newline = pending.find('\n'); newline != std::string::npos; newline = pending.find('\n')) {
-      const std::string line = pending.substr(0, newline);
-      pending.erase(0, newline + 1);
-      if (!answer(socket, line)) return;
+    pending.append(chunk.data(), static_cast<std::size_t>(received));
+    while (const auto line = takeLine(pending)) {
+      if (!answer(socket, *line)) return;
     }
     if (pending.size() > kMaxRequestBytes) return;
   }
 }
 
 bool ControlLink::answer(int socket, const std::string &line) {
-  if (const auto perf = perfRequest(line)) {
+  if (const auto perf = perfRequest(line); perf.has_value()) {
     perfRequested_.store(*perf, std::memory_order_relaxed);
     return true;
   }
   const auto id = screenshotRequestId(line);
-  if (!id) return true;
+  if (!id.has_value()) return true;
   auto outcome = capture();
   if (const auto *failure = std::get_if<std::string>(&outcome)) {
     log(LogLevel::Warning, "Screenshot failed: " + *failure);
     return sendLine(socket, folly::dynamic::object("type", "screenshot-error")("id", *id)("message", *failure));
   }
   const auto &captured = std::get<ScreenCapture>(outcome);
-  log(LogLevel::Debug,
-      "Screenshot " + std::to_string(captured.width) + "x" + std::to_string(captured.height) + " sent");
+  log(LogLevel::Debug, std::format("Screenshot {}x{} sent", captured.width, captured.height));
   const folly::dynamic header = folly::dynamic::object("type", "screenshot")("id", *id)("width", captured.width)(
       "height", captured.height)("stride", captured.stride)("bytes", static_cast<std::int64_t>(captured.pixels.size()));
   return sendLine(socket, header) && sendAll(socket, captured.pixels.data(), captured.pixels.size());

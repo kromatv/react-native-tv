@@ -10,7 +10,7 @@ namespace rntizen {
 
 Bundle loadBundleFile(const std::string &path) {
   std::ifstream file(path, std::ios::binary);
-  if (!file) throw std::runtime_error("No bundle at " + path);
+  if (!file) throw BundleError("No bundle at " + path);
   std::ostringstream contents;
   contents << file.rdbuf();
   return Bundle{

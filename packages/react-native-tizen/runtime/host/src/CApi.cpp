@@ -8,9 +8,10 @@
 #include <algorithm>
 #include <array>
 #include <cstdlib>
-#include <cstring>
-#include <functional>
 #include <exception>
+#include <functional>
+#include <memory>
+#include <string>
 
 struct rn_tizen_host {
   std::unique_ptr<rntizen::ReactHost> host;
@@ -19,15 +20,16 @@ struct rn_tizen_host {
 namespace {
 
 char *copyString(const std::string &text) {
-  auto *copy = static_cast<char *>(std::malloc(text.size() + 1));
-  if (copy != nullptr) std::memcpy(copy, text.c_str(), text.size() + 1);
-  return copy;
+  auto copy = std::make_unique_for_overwrite<char[]>(text.size() + 1);
+  std::ranges::copy(text, copy.get());
+  copy[text.size()] = '\0';
+  return copy.release();
 }
 
 template <typename Result>
 Result onMainThread(Result fallback, const std::function<Result()> &body) {
   Result result = fallback;
-  rntizen::runOnMainThreadSync([&] { result = body(); });
+  rntizen::runOnMainThreadSync([&result, &body] { result = body(); });
   return result;
 }
 
@@ -48,7 +50,7 @@ rn_tizen_host *rn_tizen_host_create(const char *resource_dir) {
   }
   rntizen::useIcuData(resource_dir);
   try {
-    return new rn_tizen_host{std::make_unique<rntizen::ReactHost>(resource_dir)};
+    return std::make_unique<rn_tizen_host>(std::make_unique<rntizen::ReactHost>(resource_dir)).release();
   } catch (const std::exception &error) {
     rntizen::log(rntizen::LogLevel::Error, std::string("React Native failed to start: ") + error.what());
     return nullptr;
@@ -104,18 +106,18 @@ void rn_tizen_host_set_preview_publisher(rn_tizen_host *host, rn_tizen_preview_p
 }
 
 void rn_tizen_log(int level, const char *message) {
+  using enum rntizen::LogLevel;
   if (message == nullptr) return;
-  const auto levels = std::array{
-      rntizen::LogLevel::Debug, rntizen::LogLevel::Info, rntizen::LogLevel::Warning, rntizen::LogLevel::Error};
+  const auto levels = std::array{Debug, Info, Warning, Error};
   rntizen::log(levels[std::clamp(level, 0, 3)], message);
 }
 
 void rn_tizen_string_free(char *text) {
-  std::free(text);
+  const std::unique_ptr<char[]> owned(text);
 }
 
 void rn_tizen_host_destroy(rn_tizen_host *host) {
-  delete host;
+  const std::unique_ptr<rn_tizen_host> owned(host);
 }
 
 } // extern "C"

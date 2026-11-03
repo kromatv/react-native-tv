@@ -3,6 +3,7 @@
 #include <cxxreact/JSBigString.h>
 
 #include <memory>
+#include <stdexcept>
 #include <string>
 
 namespace rntizen {
@@ -13,7 +14,13 @@ struct Bundle {
   std::string sourceURL;
 };
 
-/// Reads a packaged bundle from disk; throws std::runtime_error if it is missing.
+/// The packaged bundle is not where the config says.
+class BundleError : public std::runtime_error {
+ public:
+  using std::runtime_error::runtime_error;
+};
+
+/// Reads a packaged bundle from disk; throws BundleError if it is missing.
 Bundle loadBundleFile(const std::string &path);
 
 /// Downloads a bundle from a Metro or Expo dev server; throws std::runtime_error

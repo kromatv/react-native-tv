@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <optional>
+#include <stdexcept>
 #include <string>
 
 namespace rntizen {
@@ -31,7 +32,13 @@ struct HostConfig {
   std::optional<std::string> voiceSearchUrl;
 };
 
-/// Reads and validates the config in `resourceDir`; throws std::runtime_error naming the bad field.
+/// `react-native-tizen.json` is missing, too large, or has a bad field, which the message names.
+class HostConfigError : public std::runtime_error {
+ public:
+  using std::runtime_error::runtime_error;
+};
+
+/// Reads and validates the config in `resourceDir`; throws HostConfigError naming the bad field.
 HostConfig loadHostConfig(const std::string &resourceDir);
 
 } // namespace rntizen
