@@ -107,6 +107,10 @@ bool awaitJob(SyncGate &shared, SyncJob &job) {
 
 void runOnMainThread(std::function<void()> task) {
   auto owned = std::make_unique<std::function<void()>>(std::move(task));
+  if (isMainThread()) {
+    ecore_job_add(runQueuedTask, owned.release());
+    return;
+  }
   ecore_main_loop_thread_safe_call_async(runQueuedTask, owned.release());
 }
 

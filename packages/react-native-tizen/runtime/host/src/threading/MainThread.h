@@ -6,7 +6,8 @@
 namespace rntizen {
 
 /// Runs `task` on the EFL main loop, the only thread allowed to touch Evas.
-/// From the main thread itself it still queues, so a caller never re-enters.
+/// From the main thread itself it queues an Ecore job, so a caller never
+/// re-enters: the task runs once the callback that queued it has returned.
 /// What `task` throws is logged: an exception must not unwind through Ecore.
 void runOnMainThread(std::function<void()> task);
 

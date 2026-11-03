@@ -1,6 +1,7 @@
 #include "MainLoop.test.h"
 #include "MainThread.h"
 
+#include <Ecore.h>
 #include <doctest/doctest.h>
 
 #include <atomic>
@@ -64,6 +65,36 @@ TEST_CASE("a main-loop task that throws is logged and the loop runs the next one
   loop.runUntil(done);
 
   CHECK(done);
+}
+
+TEST_CASE("runOnMainThread from the main loop runs on its next iteration, not inline") {
+  const MainLoopScope loop;
+  std::atomic<bool> ran{false};
+
+  runOnMainThread([&ran] { ran = true; });
+  const bool ranInline = ran;
+  ecore_main_loop_iterate();
+
+  CHECK_FALSE(ranInline);
+  CHECK(ran);
+}
+
+TEST_CASE("a task queued by a main-loop task runs after the task that queued it returns") {
+  const MainLoopScope loop;
+  std::vector<int> order;
+  std::atomic<bool> done{false};
+
+  runOnMainThread([&order, &done] {
+    order.push_back(1);
+    runOnMainThread([&order, &done] {
+      order.push_back(3);
+      done = true;
+    });
+    order.push_back(2);
+  });
+  loop.runUntil(done);
+
+  CHECK(order == std::vector<int>{1, 2, 3});
 }
 
 TEST_CASE("runOnMainThreadSync runs inline on the main thread") {
