@@ -15,6 +15,10 @@
 
 namespace rntizen::expo {
 
+class VideoView;
+
+using SourceHeaders = std::map<std::string, std::string, std::less<>>;
+
 /// What a TizenPlayer reports, always on the main loop.
 class PlayerObserver {
  public:
@@ -65,7 +69,7 @@ class TizenPlayer final : public std::enable_shared_from_this<TizenPlayer> {
   /// Creates the handle on first use, returns it to IDLE and sets `uri`; an
   /// empty one leaves the player idle. Of `headers`, only User-Agent and
   /// Cookie reach the player.
-  void open(const std::string &uri, const std::map<std::string, std::string> &headers);
+  void open(const std::string &uri, const SourceHeaders &headers);
   /// Prepares the source `open` set, once the player thread hands the handle back if it holds it.
   void prepare();
   void play();
@@ -83,9 +87,9 @@ class TizenPlayer final : public std::enable_shared_from_this<TizenPlayer> {
   /// How often progress is reported; 0 still polls, slower, for the position getters.
   void setProgressInterval(double seconds);
 
-  /// `owner` (a view) shows the video at `presentation`; the last caller owns the plane.
-  void present(const void *owner, const Presentation &presentation);
-  void withdraw(const void *owner);
+  /// `owner` shows the video at `presentation`; the last caller owns the plane.
+  void present(const VideoView *owner, const Presentation &presentation);
+  void withdraw(const VideoView *owner);
 
   /// Whether the handle is bound to the window's overlay, so there is a plane to show.
   bool hasDisplay() const;
@@ -96,6 +100,39 @@ class TizenPlayer final : public std::enable_shared_from_this<TizenPlayer> {
  private:
   struct CallbackTarget;
   enum class Phase { Closed, Idle, Preparing, Ready };
+
+  struct Lending {
+    bool lent{false};
+    std::function<void(TizenPlayer &)> resume;
+    std::deque<std::function<void(TizenPlayer &)>> deferred;
+  };
+
+  struct SeekState {
+    bool inFlight{false};
+    bool waitsForStart{false};
+    int targetMs{0};
+    std::optional<std::pair<int, bool>> pending;
+    unsigned generation{0};
+  };
+
+  struct Settings {
+    bool muted{false};
+    double volume{1};
+    bool looping{false};
+    double rate{1};
+    int prebufferMs{0};
+    double progressInterval{0};
+  };
+
+  struct DisplayState {
+    const VideoView *owner{nullptr};
+    const VideoView *firstFrameOwner{nullptr};
+    std::optional<Presentation> presentation;
+    std::optional<PlaneGeometry> plane;
+    bool bound{false};
+    bool visible{false};
+    bool subtitlesShown{false};
+  };
 
   void create(std::function<void(TizenPlayer &)> then);
   void lend(std::function<player_h(player_h)> work, std::function<void(TizenPlayer &)> resume);
@@ -122,7 +159,7 @@ class TizenPlayer final : public std::enable_shared_from_this<TizenPlayer> {
   void notifyFirstFrame();
   void notifyDisplayChange();
   void applySettings();
-  void applyHeaders(const std::map<std::string, std::string> &headers);
+  void applyHeaders(const SourceHeaders &headers);
 
   void onPrepared();
   void onCompleted();
@@ -149,36 +186,19 @@ class TizenPlayer final : public std::enable_shared_from_this<TizenPlayer> {
   player_h handle_{nullptr};
   Phase phase_{Phase::Closed};
   bool released_{false};
-  bool lent_{false};
-  std::function<void(TizenPlayer &)> resume_;
-  std::deque<std::function<void(TizenPlayer &)>> deferred_;
+  Lending lending_;
   std::string uri_;
   bool sourceSet_{false};
   PlayerStatus status_{PlayerStatus::Idle};
   bool playing_{false};
   bool wantsPlaying_{false};
-  bool seeking_{false};
-  bool seekWaitsForStart_{false};
-  int seekTargetMs_{0};
-  std::optional<std::pair<int, bool>> pendingSeek_;
-  unsigned seekGeneration_{0};
+  SeekState seek_;
   std::map<TrackKind, int> pendingTracks_;
-  bool muted_{false};
-  double volume_{1};
-  bool looping_{false};
-  double rate_{1};
-  int prebufferMs_{0};
+  Settings settings_;
   double duration_{0};
-  double progressInterval_{0};
   Ecore_Timer *progress_{nullptr};
   VideoStream video_;
-  const void *owner_{nullptr};
-  const void *firstFrameOwner_{nullptr};
-  std::optional<Presentation> presentation_;
-  std::optional<PlaneGeometry> plane_;
-  bool displayBound_{false};
-  bool visible_{false};
-  bool subtitlesShown_{false};
+  DisplayState display_;
 };
 
 } // namespace rntizen::expo

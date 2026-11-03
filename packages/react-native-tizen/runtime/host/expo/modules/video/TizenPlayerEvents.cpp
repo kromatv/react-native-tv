@@ -6,6 +6,7 @@
 #include "threading/MainThread.h"
 
 #include <cstdlib>
+#include <format>
 
 namespace rntizen::expo {
 
@@ -58,7 +59,7 @@ void TizenPlayer::errorCallback(int code, void *data) {
 
 void TizenPlayer::interruptedCallback(player_interrupted_code_e code, void *data) {
   auto *target = static_cast<CallbackTarget *>(data);
-  playerLog(target->number, "interrupted with code " + std::to_string(code), LogLevel::Warning);
+  playerLog(target->number, std::format("interrupted with code {}", static_cast<int>(code)), LogLevel::Warning);
   target->post(
       "player_interrupted_cb", [code](TizenPlayer &player) { player.onInterrupted(code); });
 }
@@ -79,10 +80,10 @@ void TizenPlayer::subtitleCallback(unsigned long duration, char *text, void *dat
 void TizenPlayer::onSubtitle(const std::string &text, unsigned long milliseconds) {
   playerLog(
       number_,
-      "subtitle for " + std::to_string(milliseconds) + " ms" + (subtitlesShown_ ? ", shown: " : ", not selected: ") + text,
+      std::format("subtitle for {} ms, {}: {}", milliseconds, display_.subtitlesShown ? "shown" : "not selected", text),
       LogLevel::Debug);
-  if (!subtitlesShown_ || !presentation_ || !presentation_->onSubtitle) return;
-  const auto callback = presentation_->onSubtitle;
+  if (!display_.subtitlesShown || !display_.presentation || !display_.presentation->onSubtitle) return;
+  const auto callback = display_.presentation->onSubtitle;
   callback(text, milliseconds);
 }
 
@@ -94,12 +95,17 @@ void TizenPlayer::onPrepared() {
   video_ = media.video;
   playerLog(
       number_,
-      "prepared: " + std::to_string(video_.width) + "x" + std::to_string(video_.height) + " " + video_.codec + ", " +
-          decimal(media.duration) + " s, " + std::to_string(media.audioTracks.size()) + " audio and " +
-          std::to_string(media.textTracks.size()) + " text tracks");
+      std::format(
+          "prepared: {}x{} {}, {} s, {} audio and {} text tracks",
+          video_.width,
+          video_.height,
+          video_.codec,
+          decimal(media.duration),
+          media.audioTracks.size(),
+          media.textTracks.size()));
   if (auto observer = observer_.lock()) observer->playerLoaded(media);
   setStatus(PlayerStatus::ReadyToPlay);
-  if (rate_ != 1) setPlaybackRate(rate_);
+  if (settings_.rate != 1) setPlaybackRate(settings_.rate);
   applyDisplay();
   startProgress();
   retryTracks();
@@ -107,8 +113,8 @@ void TizenPlayer::onPrepared() {
 }
 
 void TizenPlayer::onCompleted() {
-  playerLog(number_, std::string("completed") + (looping_ ? ", looping" : ""));
-  if (!looping_) {
+  playerLog(number_, settings_.looping ? "completed, looping" : "completed");
+  if (!settings_.looping) {
     wantsPlaying_ = false;
     if (state() == PLAYER_STATE_PLAYING) player_pause(handle_);
     refreshPlaying();
@@ -117,22 +123,22 @@ void TizenPlayer::onCompleted() {
 }
 
 void TizenPlayer::onSeekCompleted() {
-  seeking_ = false;
+  seek_.inFlight = false;
   int position = 0;
   player_get_play_position(handle_, &position);
-  playerLog(
-      number_, "seek completed at " + std::to_string(position) + " ms (target " + std::to_string(seekTargetMs_) + ")");
+  playerLog(number_, std::format("seek completed at {} ms (target {})", position, seek_.targetMs));
   reportProgress(false);
   pump();
 }
 
 void TizenPlayer::onBuffering(int percent) {
+  using enum PlayerStatus;
   if (phase_ != Phase::Ready) return;
-  if (percent < 100 && status_ == PlayerStatus::ReadyToPlay) {
-    playerLog(number_, "buffering " + std::to_string(percent) + " %");
-    setStatus(PlayerStatus::Loading);
-  } else if (percent >= 100 && status_ == PlayerStatus::Loading) {
-    setStatus(PlayerStatus::ReadyToPlay);
+  if (percent < 100 && status_ == ReadyToPlay) {
+    playerLog(number_, std::format("buffering {} %", percent));
+    setStatus(Loading);
+  } else if (percent >= 100 && status_ == Loading) {
+    setStatus(ReadyToPlay);
   }
 }
 
@@ -142,7 +148,7 @@ void TizenPlayer::onError(int code) {
 
 void TizenPlayer::onInterrupted(int code) {
   const auto current = state();
-  playerLog(number_, "interrupted (" + std::to_string(code) + "), now " + playerStateName(current), LogLevel::Warning);
+  playerLog(number_, std::format("interrupted ({}), now {}", code, playerStateName(current)), LogLevel::Warning);
   refreshPlaying();
   if (current == PLAYER_STATE_IDLE) {
     phase_ = Phase::Idle;
@@ -158,14 +164,13 @@ void TizenPlayer::onVideoStreamChanged(int width, int height, int fps, int bitra
   if (bitrate > 0) video.bitrate = bitrate;
   if (video == video_) return;
   video_ = video;
-  playerLog(number_, "video stream " + std::to_string(width) + "x" + std::to_string(height) + " at " +
-                         std::to_string(fps) + " fps, " + std::to_string(bitrate) + " b/s");
+  playerLog(number_, std::format("video stream {}x{} at {} fps, {} b/s", width, height, fps, bitrate));
   if (auto observer = observer_.lock()) observer->playerVideoChanged(video_);
   applyDisplay();
 }
 
 void TizenPlayer::setProgressInterval(double seconds) {
-  progressInterval_ = std::max(0.0, seconds);
+  settings_.progressInterval = std::max(0.0, seconds);
   if (progress_ != nullptr) {
     stopProgress();
     startProgress();
@@ -175,7 +180,8 @@ void TizenPlayer::setProgressInterval(double seconds) {
 void TizenPlayer::startProgress() {
   if (progress_ != nullptr || phase_ != Phase::Ready) return;
   constexpr double kPollSeconds = 0.5;
-  progress_ = ecore_timer_add(progressInterval_ > 0 ? progressInterval_ : kPollSeconds, progressTick, this);
+  const double interval = settings_.progressInterval > 0 ? settings_.progressInterval : kPollSeconds;
+  progress_ = ecore_timer_add(interval, progressTick, this);
 }
 
 void TizenPlayer::stopProgress() {
@@ -192,13 +198,14 @@ Eina_Bool TizenPlayer::progressTick(void *data) {
 void TizenPlayer::reportProgress(bool tick) {
   if (handle_ == nullptr || phase_ != Phase::Ready) return;
   int position = 0;
-  if (seeking_ || pendingSeek_) {
-    position = pendingSeek_ ? pendingSeek_->first : seekTargetMs_;
+  if (seek_.inFlight || seek_.pending) {
+    position = seek_.pending ? seek_.pending->first : seek_.targetMs;
   } else {
     player_get_play_position(handle_, &position);
   }
-  int duration = 0;
-  if (player_get_duration(handle_, &duration) == PLAYER_ERROR_NONE && duration > 0) duration_ = duration / 1000.0;
+  if (int duration = 0; player_get_duration(handle_, &duration) == PLAYER_ERROR_NONE && duration > 0) {
+    duration_ = duration / 1000.0;
+  }
   int start = 0;
   int end = 0;
   double buffered = -1;
@@ -206,17 +213,20 @@ void TizenPlayer::reportProgress(bool tick) {
     buffered = duration_ * end / 100.0;
   }
   if (auto observer = observer_.lock()) {
-    observer->playerProgress(position / 1000.0, buffered, duration_, seekGeneration_, tick && progressInterval_ > 0);
+    const bool timed = tick && settings_.progressInterval > 0;
+    observer->playerProgress(position / 1000.0, buffered, duration_, seek_.generation, timed);
   }
 }
 
 LoadedMedia TizenPlayer::readMedia() {
+  using enum TrackKind;
   LoadedMedia media;
-  int duration = 0;
-  if (player_get_duration(handle_, &duration) == PLAYER_ERROR_NONE) media.duration = duration / 1000.0;
-  for (const auto kind : {TrackKind::Audio, TrackKind::Text}) {
-    const auto type = kind == TrackKind::Audio ? PLAYER_STREAM_TYPE_AUDIO : PLAYER_STREAM_TYPE_TEXT;
-    auto &tracks = kind == TrackKind::Audio ? media.audioTracks : media.textTracks;
+  if (int duration = 0; player_get_duration(handle_, &duration) == PLAYER_ERROR_NONE) {
+    media.duration = duration / 1000.0;
+  }
+  for (const auto kind : {Audio, Text}) {
+    const auto type = kind == Audio ? PLAYER_STREAM_TYPE_AUDIO : PLAYER_STREAM_TYPE_TEXT;
+    auto &tracks = kind == Audio ? media.audioTracks : media.textTracks;
     int count = 0;
     if (player_get_track_count(handle_, type, &count) != PLAYER_ERROR_NONE) count = 0;
     for (int index = 0; index < count; ++index) {
@@ -226,7 +236,7 @@ LoadedMedia TizenPlayer::readMedia() {
       std::free(code);
     }
     int current = -1;
-    if (kind == TrackKind::Audio && count > 0 && player_get_current_track(handle_, type, &current) == PLAYER_ERROR_NONE) {
+    if (kind == Audio && count > 0 && player_get_current_track(handle_, type, &current) == PLAYER_ERROR_NONE) {
       media.audioTrack = current;
     }
   }

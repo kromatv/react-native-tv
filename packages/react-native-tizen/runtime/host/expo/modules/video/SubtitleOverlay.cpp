@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
+#include <format>
 
 namespace rntizen::expo {
 
@@ -62,8 +63,9 @@ void SubtitleOverlay::place(const PixelRect &box, double scale) {
   const int fontSize = std::max(1, static_cast<int>(std::lround(kFontPoints * scale)));
   if (fontSize != fontSize_) {
     fontSize_ = fontSize;
-    const auto style = "DEFAULT='font=Sans font_size=" + std::to_string(fontSize) +
-                       " color=#ffffff align=center wrap=word style=outline outline_color=#000000'";
+    const auto style = std::format(
+        "DEFAULT='font=Sans font_size={} color=#ffffff align=center wrap=word style=outline outline_color=#000000'",
+        fontSize);
     evas_textblock_style_set(style_, style.c_str());
   }
   layout();

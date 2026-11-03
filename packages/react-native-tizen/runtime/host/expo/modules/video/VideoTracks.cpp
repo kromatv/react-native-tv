@@ -1,5 +1,6 @@
 #include "VideoTracks.h"
 
+#include <format>
 #include <string>
 
 namespace rntizen::expo {
@@ -7,7 +8,7 @@ namespace rntizen::expo {
 namespace {
 
 std::string trackId(TrackKind kind, int index) {
-  return std::string(kind == TrackKind::Audio ? "audio-" : "text-") + std::to_string(index);
+  return std::format("{}-{}", kind == TrackKind::Audio ? "audio" : "text", index);
 }
 
 std::string stringField(const folly::dynamic &object, const char *name) {
@@ -18,7 +19,7 @@ std::string stringField(const folly::dynamic &object, const char *name) {
 } // namespace
 
 folly::dynamic trackPayload(TrackKind kind, const MediaTrack &track, int current) {
-  const auto label = track.language == "und" ? "Track " + std::to_string(track.index + 1) : track.language;
+  const auto label = track.language == "und" ? std::format("Track {}", track.index + 1) : track.language;
   return folly::dynamic::object("id", trackId(kind, track.index))("language", track.language)("label", label)(
       "name", label)("isDefault", track.index == 0)("autoSelect", track.index == current);
 }

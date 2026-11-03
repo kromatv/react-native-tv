@@ -2,10 +2,12 @@
 
 #include "threading/TaskQueueThread.h"
 
+#include <folly/Indestructible.h>
+
 namespace rntizen::expo {
 
 void runOnPlayerThread(std::function<void()> task) {
-  static auto *thread = new TaskQueueThread("rn-tizen-player");
+  static folly::Indestructible<TaskQueueThread> thread("rn-tizen-player");
   thread->runOnQueue(std::move(task));
 }
 

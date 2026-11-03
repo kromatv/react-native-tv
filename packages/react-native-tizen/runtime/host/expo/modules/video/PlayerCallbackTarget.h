@@ -5,6 +5,7 @@
 
 #include "threading/MainThread.h"
 
+#include <format>
 #include <mutex>
 #include <set>
 #include <string>
@@ -18,7 +19,7 @@ struct TizenPlayer::CallbackTarget {
   void post(const char *callback, Effect effect) {
     {
       std::lock_guard lock(mutex);
-      if (seen.insert(callback).second) playerLog(number, std::string(callback) + " arrives " + threadDescription());
+      if (seen.emplace(callback).second) playerLog(number, std::format("{} arrives {}", callback, threadDescription()));
     }
     runOnMainThread([player = player, effect = std::move(effect)]() mutable {
       if (auto locked = player.lock()) locked->perform(std::move(effect));
@@ -28,7 +29,7 @@ struct TizenPlayer::CallbackTarget {
   const std::weak_ptr<TizenPlayer> player;
   const int number;
   std::mutex mutex;
-  std::set<std::string> seen;
+  std::set<std::string, std::less<>> seen;
 };
 
 } // namespace rntizen::expo

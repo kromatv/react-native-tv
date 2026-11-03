@@ -9,6 +9,7 @@
 
 #include "logging/Log.h"
 
+#include <format>
 #include <stdexcept>
 
 namespace rntizen::expo {
@@ -16,6 +17,11 @@ namespace rntizen::expo {
 namespace {
 
 constexpr int kFullscreenLayer = 2000;
+
+class UnsupportedFeatureError : public std::runtime_error {
+ public:
+  using std::runtime_error::runtime_error;
+};
 
 Evas_Object *transparentHole(Evas *evas) {
   auto *hole = evas_object_rectangle_add(evas);
@@ -51,9 +57,8 @@ void VideoView::setPlayer(const folly::dynamic &value) {
   if (value.isNumber()) {
     player_ = SharedObjectRegistry::shared().find<VideoPlayer>(static_cast<SharedObjectId>(value.asDouble()));
   }
-  log(LogLevel::Info,
-      "VideoView " + std::to_string(tag()) +
-          (player_ ? " shows video " + std::to_string(player_->number()) : std::string(" has no player")));
+  const auto shows = player_ ? std::format("shows video {}", player_->number()) : std::string("has no player");
+  log(LogLevel::Info, std::format("VideoView {} {}", tag(), shows));
   present();
 }
 
@@ -77,7 +82,7 @@ void VideoView::exitFullscreen() {
 }
 
 void VideoView::startPictureInPicture() {
-  throw std::runtime_error("Picture in picture is not supported on Tizen");
+  throw UnsupportedFeatureError("Picture in picture is not supported on Tizen");
 }
 
 void VideoView::stopPictureInPicture() {}

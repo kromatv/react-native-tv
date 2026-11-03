@@ -4,15 +4,14 @@
 
 #include "threading/MainThread.h"
 
-#include <iomanip>
-#include <locale>
+#include <format>
 #include <sstream>
 #include <thread>
 
 namespace rntizen::expo {
 
 void playerLog(int number, const std::string &message, LogLevel level) {
-  log(level, "[video " + std::to_string(number) + "] " + message);
+  log(level, std::format("[video {}] {}", number, message));
 }
 
 std::string playerErrorName(int code) {
@@ -57,11 +56,8 @@ std::string playerErrorName(int code) {
       return "PLAYER_ERROR_NOT_SUPPORTED_FORMAT";
     case PLAYER_ERROR_NOT_AVAILABLE:
       return "PLAYER_ERROR_NOT_AVAILABLE";
-    default: {
-      std::ostringstream hex;
-      hex << "player error 0x" << std::hex << static_cast<unsigned int>(code);
-      return hex.str();
-    }
+    default:
+      return std::format("player error 0x{:x}", static_cast<unsigned int>(code));
   }
 }
 
@@ -81,10 +77,7 @@ const char *playerStateName(player_state_e state) {
 }
 
 std::string decimal(double value, int digits) {
-  std::ostringstream text;
-  text.imbue(std::locale::classic());
-  text << std::fixed << std::setprecision(digits) << value;
-  return text.str();
+  return std::format("{:.{}f}", value, digits);
 }
 
 std::string millisSince(std::chrono::steady_clock::time_point start) {
@@ -99,23 +92,25 @@ std::string threadDescription() {
 }
 
 const char *statusName(PlayerStatus status) {
+  using enum PlayerStatus;
   switch (status) {
-    case PlayerStatus::Idle:
+    case Idle:
       return "idle";
-    case PlayerStatus::Loading:
+    case Loading:
       return "loading";
-    case PlayerStatus::ReadyToPlay:
+    case ReadyToPlay:
       return "readyToPlay";
-    case PlayerStatus::Error:
+    case Error:
       return "error";
   }
   return "idle";
 }
 
-ContentFit contentFitFrom(const std::string &name) {
-  if (name == "cover") return ContentFit::Cover;
-  if (name == "fill") return ContentFit::Fill;
-  return ContentFit::Contain;
+ContentFit contentFitFrom(std::string_view name) {
+  using enum ContentFit;
+  if (name == "cover") return Cover;
+  if (name == "fill") return Fill;
+  return Contain;
 }
 
 } // namespace rntizen::expo

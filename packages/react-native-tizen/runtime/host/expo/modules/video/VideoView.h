@@ -28,7 +28,7 @@ class VideoView final : public ExpoView {
   void enterFullscreen();
   void exitFullscreen();
   /// Throws: Tizen has no picture in picture.
-  void startPictureInPicture();
+  [[noreturn]] void startPictureInPicture();
   void stopPictureInPicture();
 
  protected:

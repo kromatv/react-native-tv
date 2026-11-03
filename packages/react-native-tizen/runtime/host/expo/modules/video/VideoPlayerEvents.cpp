@@ -99,19 +99,20 @@ void VideoPlayer::playerVideoChanged(const VideoStream &video) {
 }
 
 void VideoPlayer::playerTrackChanged(TrackKind kind, int index) {
+  using enum TrackKind;
   folly::dynamic payload;
   {
     std::lock_guard lock(mutex_);
     auto &media = snapshot_.media;
-    auto &current = kind == TrackKind::Audio ? media.audioTrack : media.textTrack;
-    const auto &tracks = kind == TrackKind::Audio ? media.audioTracks : media.textTracks;
+    auto &current = kind == Audio ? media.audioTrack : media.textTrack;
+    const auto &tracks = kind == Audio ? media.audioTracks : media.textTracks;
     const auto old = std::exchange(current, index);
-    const char *name = kind == TrackKind::Audio ? "audioTrack" : "subtitleTrack";
-    const char *oldName = kind == TrackKind::Audio ? "oldAudioTrack" : "oldSubtitleTrack";
+    const char *name = kind == Audio ? "audioTrack" : "subtitleTrack";
+    const char *oldName = kind == Audio ? "oldAudioTrack" : "oldSubtitleTrack";
     payload = folly::dynamic::object(name, currentTrackPayload(kind, tracks, index))(
         oldName, currentTrackPayload(kind, tracks, old));
   }
-  emit(kind == TrackKind::Audio ? "audioTrackChange" : "subtitleTrackChange", std::move(payload));
+  emit(kind == Audio ? "audioTrackChange" : "subtitleTrackChange", std::move(payload));
 }
 
 folly::dynamic VideoPlayer::audioTrack() const {
@@ -126,7 +127,7 @@ void VideoPlayer::setAudioTrack(const folly::dynamic &track) {
     std::lock_guard lock(mutex_);
     index = trackIndexOf(TrackKind::Audio, track, snapshot_.media.audioTracks);
   }
-  if (index) command([index = *index](TizenPlayer &tizen) { tizen.selectTrack(TrackKind::Audio, index); });
+  if (index.has_value()) command([index = *index](TizenPlayer &tizen) { tizen.selectTrack(TrackKind::Audio, index); });
 }
 
 folly::dynamic VideoPlayer::subtitleTrack() const {
@@ -141,7 +142,7 @@ void VideoPlayer::setSubtitleTrack(const folly::dynamic &track) {
     std::lock_guard lock(mutex_);
     index = trackIndexOf(TrackKind::Text, track, snapshot_.media.textTracks);
   }
-  if (index) command([index = *index](TizenPlayer &tizen) { tizen.selectTrack(TrackKind::Text, index); });
+  if (index.has_value()) command([index = *index](TizenPlayer &tizen) { tizen.selectTrack(TrackKind::Text, index); });
 }
 
 folly::dynamic VideoPlayer::availableAudioTracks() const {

@@ -10,20 +10,24 @@ namespace rntizen::expo {
 
 namespace {
 
-std::atomic<int> nextNumber{1};
+int takeNumber() {
+  static std::atomic next{1};
+  return next++;
+}
 
 std::string uriOf(const folly::dynamic &source) {
-  const auto *uri = source.isObject() ? source.get_ptr("uri") : nullptr;
-  if (uri != nullptr && uri->isString()) return uri->getString();
+  if (const auto *uri = source.isObject() ? source.get_ptr("uri") : nullptr; uri != nullptr && uri->isString()) {
+    return uri->getString();
+  }
   return source.isString() ? source.getString() : std::string();
 }
 
-std::map<std::string, std::string> headersOf(const folly::dynamic &source) {
-  std::map<std::string, std::string> headers;
+SourceHeaders headersOf(const folly::dynamic &source) {
+  SourceHeaders headers;
   const auto *field = source.isObject() ? source.get_ptr("headers") : nullptr;
   if (field == nullptr || !field->isObject()) return headers;
   for (const auto &[name, value] : field->items()) {
-    if (name.isString() && value.isString()) headers.emplace(name.getString(), value.getString());
+    if (name.isString() && value.isString()) headers.try_emplace(name.getString(), value.getString());
   }
   return headers;
 }
@@ -35,7 +39,7 @@ double numberField(const folly::dynamic &object, const char *name, double fallba
 
 } // namespace
 
-VideoPlayer::VideoPlayer(std::weak_ptr<Context> context) : context_(std::move(context)), number_(nextNumber++) {}
+VideoPlayer::VideoPlayer(std::weak_ptr<Context> context) : context_(std::move(context)), number_(takeNumber()) {}
 
 VideoPlayer::~VideoPlayer() {
   if (player_) runOnMainThread([player = std::move(player_)] { player->release(); });
@@ -258,8 +262,8 @@ void VideoPlayer::setMaxResolution(const folly::dynamic &size) {
     std::lock_guard lock(mutex_);
     snapshot_.maxResolution = size;
   }
-  const int width = static_cast<int>(numberField(size, "width", -1));
-  const int height = static_cast<int>(numberField(size, "height", -1));
+  const auto width = static_cast<int>(numberField(size, "width", -1));
+  const auto height = static_cast<int>(numberField(size, "height", -1));
   command([width, height](TizenPlayer &tizen) { tizen.setMaxResolution(width, height); });
 }
 

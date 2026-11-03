@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace rntizen::expo {
@@ -43,6 +44,6 @@ enum class TrackKind { Audio, Text };
 /// expo-video's `contentFit`.
 enum class ContentFit { Contain, Cover, Fill };
 
-ContentFit contentFitFrom(const std::string &name);
+ContentFit contentFitFrom(std::string_view name);
 
 } // namespace rntizen::expo

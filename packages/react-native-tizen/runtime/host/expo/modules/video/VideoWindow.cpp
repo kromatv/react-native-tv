@@ -6,16 +6,24 @@ namespace rntizen::expo {
 
 namespace {
 
-int shownViews = 0;
-bool windowTransparent = false;
+struct WindowState {
+  int shownViews{0};
+  bool transparent{false};
+};
+
+WindowState &windowState() {
+  static WindowState state;
+  return state;
+}
 
 } // namespace
 
 void videoViewShown(bool shown) {
-  shownViews += shown ? 1 : -1;
-  const bool transparent = shownViews > 0;
-  if (transparent == windowTransparent) return;
-  windowTransparent = transparent;
+  auto &state = windowState();
+  state.shownViews += shown ? 1 : -1;
+  const bool transparent = state.shownViews > 0;
+  if (transparent == state.transparent) return;
+  state.transparent = transparent;
   setHostWindowTransparent(transparent);
 }
 

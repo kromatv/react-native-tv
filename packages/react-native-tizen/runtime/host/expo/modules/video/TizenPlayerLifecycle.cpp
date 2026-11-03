@@ -21,8 +21,8 @@ std::string between(Clock::time_point start, Clock::time_point end) {
 } // namespace
 
 void TizenPlayer::perform(std::function<void(TizenPlayer &)> command) {
-  if (lent_) {
-    deferred_.push_back(std::move(command));
+  if (lending_.lent) {
+    lending_.deferred.push_back(std::move(command));
     return;
   }
   command(*this);
@@ -55,8 +55,8 @@ void TizenPlayer::create(std::function<void(TizenPlayer &)> then) {
 }
 
 void TizenPlayer::lend(std::function<player_h(player_h)> work, std::function<void(TizenPlayer &)> resume) {
-  lent_ = true;
-  resume_ = std::move(resume);
+  lending_.lent = true;
+  lending_.resume = std::move(resume);
   runOnPlayerThread([weak = weak_from_this(),
                      handle = std::exchange(handle_, nullptr),
                      work = std::move(work),
@@ -75,25 +75,25 @@ void TizenPlayer::lend(std::function<player_h(player_h)> work, std::function<voi
 
 void TizenPlayer::reclaim(player_h handle) {
   handle_ = handle;
-  lent_ = false;
+  lending_.lent = false;
   if (released_) {
     releaseHandle();
     return;
   }
-  if (auto resume = std::exchange(resume_, nullptr)) resume(*this);
-  while (!lent_ && !deferred_.empty()) {
-    auto command = std::move(deferred_.front());
-    deferred_.pop_front();
+  if (auto resume = std::exchange(lending_.resume, nullptr)) resume(*this);
+  while (!lending_.lent && !lending_.deferred.empty()) {
+    auto command = std::move(lending_.deferred.front());
+    lending_.deferred.pop_front();
     command(*this);
   }
-  if (!lent_) applyDisplay();
+  if (!lending_.lent) applyDisplay();
 }
 
 void TizenPlayer::release() {
   if (released_) return;
   released_ = true;
-  deferred_.clear();
-  if (!lent_) releaseHandle();
+  lending_.deferred.clear();
+  if (!lending_.lent) releaseHandle();
 }
 
 void TizenPlayer::releaseHandle() {
@@ -103,7 +103,7 @@ void TizenPlayer::releaseHandle() {
   if (handle_ == nullptr) return;
   setVisible(false);
   releaseOnPlayerThread(std::exchange(handle_, nullptr), target_, number_, preparing);
-  displayBound_ = false;
+  display_.bound = false;
   notifyDisplayChange();
 }
 
