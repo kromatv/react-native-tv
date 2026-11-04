@@ -15,10 +15,12 @@ Verified on a Samsung TV running Tizen 9.0 (armv7), built from macOS.
 ### 1. Install the tools
 
 - [Tizen Studio](https://developer.tizen.org/development/tizen-studio/download)
-  with, from its Package Manager, `TIZEN-9.0-NativeAppDevelopment-CLI` (the
-  rootstrap and GCC runtime the native build links against) and the Samsung
-  Certificate Extension. `rn-tizen` never runs Tizen Studio's `sdb` or `tizen`
-  tools: it reaches the TV and signs the package itself.
+  with, from its Package Manager, `IOT-Headed-6.0-NativeAppDevelopment-CLI`
+  (the rootstrap for the default floor, Tizen 6.0), `NativeToolchain-Gcc-14.2`
+  (the GCC runtime the native build links against) and the Samsung Certificate
+  Extension. Another floor takes its own rootstrap package, which `npx rn-tizen
+  init` and `npx rn-tizen doctor` name. `rn-tizen` never runs Tizen Studio's
+  `sdb` or `tizen` tools: it reaches the TV and signs the package itself.
 - LLVM, CMake, Ninja and .NET:
 
   ```sh
@@ -52,6 +54,10 @@ export default withTizen(getDefaultConfig(import.meta.dirname));
 An app that already has a Metro config keeps it: `init` wraps its export with
 `withTizen`, or prints the two lines to add when it cannot change the file
 safely. Running `init` again changes nothing.
+
+With Bun, pnpm or Yarn, run these commands with `bunx`, `pnpm exec` or `yarn`
+where they say `npx`, as `init` prints them: in a Bun workspace,
+`npx rn-tizen` asks the npm registry for a package of that name and fails.
 
 ### 3. Put the TV in Developer mode
 

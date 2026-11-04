@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { checkApp } from '../doctor/app-check.ts';
+import { appFloor, checkApp } from '../doctor/app-check.ts';
 import { passed, type CheckResult } from '../doctor/check-result.ts';
 import * as tizenChecks from '../doctor/tizen-checks.ts';
 import * as toolchainChecks from '../doctor/toolchain-checks.ts';
@@ -9,7 +9,7 @@ import { locateTizenSdk } from '../tizen/tizen-sdk.ts';
 import { doctorCommand } from './doctor.ts';
 
 vi.mock('../tizen/tizen-sdk.ts', () => ({ locateTizenSdk: vi.fn() }));
-vi.mock('../doctor/app-check.ts', () => ({ checkApp: vi.fn() }));
+vi.mock('../doctor/app-check.ts', () => ({ appFloor: vi.fn(() => undefined), checkApp: vi.fn() }));
 vi.mock('../doctor/tizen-checks.ts', () => ({
   checkCertificates: vi.fn(),
   checkDevices: vi.fn(),
@@ -104,8 +104,24 @@ describe('rn-tizen doctor', () => {
 
     expect(tizenChecks.checkGcc).not.toHaveBeenCalled();
     expect(output.stdout()).toMatch(/- GCC runtime {7}needs Tizen Studio/);
+    expect(output.stdout()).toContain(
+      'needs Tizen Studio, then IOT-Headed-6.0-NativeAppDevelopment-CLI',
+    );
     expect(output.stdout()).toContain('Tizen Studio not found at /nowhere');
     expect(output.stdout()).toContain('1 check failed.');
+  });
+
+  it("checks for the floor the app's platform prop sets, unless --platform says otherwise", async () => {
+    vi.mocked(appFloor).mockReturnValue('8.0');
+
+    await doctorCommand.run([], { cwd: '/work' });
+    await doctorCommand.run(['--platform', '7.0'], { cwd: '/work' });
+
+    expect(vi.mocked(tizenChecks.checkRootstrap).mock.calls.map((call) => call[1])).toEqual([
+      { arch: 'armv7l', platformVersion: '8.0' },
+      { arch: 'armv7l', platformVersion: '7.0' },
+    ]);
+    expect(appFloor).toHaveBeenCalledOnce();
   });
 
   it('lets a bug in locating Tizen Studio through', async () => {

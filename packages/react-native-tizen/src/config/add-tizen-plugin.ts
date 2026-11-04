@@ -30,7 +30,7 @@ function readAppJson(file: string): JsonObject {
   } catch {
     throw new FixableError(
       `${file} is not a JSON object`,
-      'Fix app.json, then run npx rn-tizen init again.',
+      'Fix app.json, then run rn-tizen init again.',
     );
   }
 }

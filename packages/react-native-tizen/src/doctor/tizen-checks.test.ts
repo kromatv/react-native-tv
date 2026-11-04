@@ -45,7 +45,7 @@ describe('checkGcc and checkRootstrap', () => {
     });
     expect(await checkRootstrap(sdk, TARGET)).toMatchObject({
       status: 'ok',
-      detail: 'tizen-9.0-device.core',
+      detail: 'tizen-9.0-device.core, from TIZEN-9.0-NativeAppDevelopment-CLI',
     });
   });
 

@@ -11,9 +11,12 @@ the only host verified so far.
 
 - [Bun](https://bun.sh) 1.4 or newer. CI runs the version in `.bun-version`.
 - [Tizen Studio](https://developer.tizen.org/development/tizen-studio/download).
-  From its Package Manager, install `TIZEN-9.0-NativeAppDevelopment-CLI`, which
-  carries the Tizen 9.0 rootstrap and the GCC runtime the runtime links against,
-  and the Samsung Certificate Extension. Set `TIZEN_SDK_DIR` if it is not in
+  From its Package Manager, install `IOT-Headed-6.0-NativeAppDevelopment-CLI`,
+  the rootstrap for the default floor, Tizen 6.0, `NativeToolchain-Gcc-14.2`, the
+  GCC runtime the runtime links against, and the Samsung Certificate Extension.
+  Each other floor needs its own rootstrap package (`IOT-Headed-<v>-...` for 6.0
+  to 7.0, `TIZEN-<v>-...` from 8.0); `bun src/cli/main.ts doctor --platform <v>`
+  names it. Set `TIZEN_SDK_DIR` if it is not in
   `~/tizen-studio`. Its `sdb` and `tizen` tools are not used: `rn-tizen` speaks
   to the TV and signs packages itself.
 - Homebrew's LLVM and lld, which cross-compile the runtime, plus the build tools:

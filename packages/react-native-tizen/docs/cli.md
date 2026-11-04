@@ -24,7 +24,10 @@ and where Samsung's certificates are created, once. A TV takes one sdb connectio
 Tizen Studio's `sdb` or Device Manager is connected to it, `rn-tizen` cannot
 reach it: `sdb disconnect <tv ip>` frees it.
 
-`rn-tizen <command> --help` lists a command's options.
+`rn-tizen <command> --help` lists a command's options. In an app, run it with
+the app's package manager: `npx rn-tizen`, `bunx rn-tizen`, `pnpm exec rn-tizen`
+or `yarn rn-tizen`. `init` and the hints `rn-tizen` prints name the one the
+app's lockfile points to.
 
 ## Configuration
 
@@ -195,6 +198,8 @@ Sets an Expo app up for Tizen. Running it again changes nothing.
   existing config whose export is a single line is wrapped with `withTizen`.
   For any other, a JSON one, `package.json`'s `metro` key or a config at the
   workspace root above the app, it prints the two lines to add.
+- **The rootstrap.** It names the Package Manager package the app's floor
+  needs, `IOT-Headed-6.0-NativeAppDevelopment-CLI` for the default 6.0.
 
 | Option | |
 |---|---|
@@ -209,8 +214,9 @@ npx rn-tizen init --package com.example.myapp
 ### `rn-tizen doctor`
 
 Checks everything a build, a signature and an install need, and prints the
-exact fix for each problem: Tizen Studio, its GCC runtime and rootstrap for the
-target, Homebrew's LLVM (clang and lld), CMake 3.24 or newer, Ninja, the .NET
+exact fix for each problem: Tizen Studio, its GCC runtime and the rootstrap for
+the target's floor (the app's `platform` prop when run in an app), with the
+Package Manager package it comes in, Homebrew's LLVM (clang and lld), CMake 3.24 or newer, Ninja, the .NET
 SDK, Node.js, the certificates of the active signing profile (opened with their
 passwords, not expired), the TVs reached before (each one
 probed), ccache, and the app's config when run in an app. Exits 1 when a check
@@ -219,7 +225,7 @@ fails; a warning (no TV answers, no ccache) does not fail it.
 | Option | |
 |---|---|
 | `--arch <arch>` | The CPU to check a toolchain for (default `armv7l`) |
-| `--platform <version>` | The Tizen version to check a rootstrap for (default `6.0`) |
+| `--platform <version>` | The Tizen version to check a rootstrap for (default: the app's `platform` prop when run in an app, else `6.0`) |
 | `--project <dir>` | The app to check |
 
 ### `rn-tizen devices`

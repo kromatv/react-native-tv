@@ -2,6 +2,7 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { z } from 'zod';
+import { packageRunner } from '../cli/package-runner.ts';
 import { FixableError } from '../errors.ts';
 import { CommandError, lastLines, runSync } from '../exec.ts';
 import { TIZEN_PLATFORM } from './with-tizen.ts';
@@ -62,6 +63,6 @@ export function tizenMetroIssue(root: string): FixableError | null {
   if (metroPlatforms(root).includes(TIZEN_PLATFORM)) return null;
   return new FixableError(
     `The app's Metro config does not know the ${TIZEN_PLATFORM} platform`,
-    'Run npx rn-tizen init: it wraps the Metro config with withTizen.',
+    `Run ${packageRunner(root)} rn-tizen init: it wraps the Metro config with withTizen.`,
   );
 }

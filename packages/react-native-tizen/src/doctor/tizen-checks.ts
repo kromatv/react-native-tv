@@ -19,7 +19,8 @@ export function checkGcc(sdk: TizenSdk, target: TizenTarget): Promise<CheckResul
 export function checkRootstrap(sdk: TizenSdk, target: TizenTarget): Promise<CheckResult> {
   return checking('Rootstrap', () => {
     locateRootstrap(sdk, target);
-    return passed('Rootstrap', rootstrapFor(target).name);
+    const rootstrap = rootstrapFor(target);
+    return passed('Rootstrap', `${rootstrap.name}, from ${rootstrap.sdkPackage}`);
   });
 }
 

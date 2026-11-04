@@ -22,6 +22,7 @@ how they load the app's Metro config. Checked on 2026-11-03 and 2026-11-04.
 | For a TypeScript plugin file, Expo transpiles or strips the types of that file only; the `.ts` files it imports are loaded by Node. On Node 22.13.1 the example's plugin listed as `../src/config/config-plugin.ts` failed with `SyntaxError: Unexpected identifier 'PluginMatcher'`, a type in an imported file; on Node 26.5 it loaded. | S, O | `@expo/require-utils` `build/load.js:333-360` |
 | Running Expo's `applyPluginsAsync` on the installed package printed `› Added config plugin: @kromatv/react-native-tizen` and wrote `"plugins": ["@kromatv/react-native-tizen"]` to `app.json`. | O | |
 | `npx expo install <path to a .tgz>` installed the tarball under the key `"undefined"` in `package.json`, and added no plugin. | O | |
+| In a Bun workspace, `npx rn-tizen` answered 404 from the npm registry while `bunx rn-tizen` ran the package's command (KROMA's acceptance test, Bun 1.4.2, 2026-11-04). | O | |
 | A plugin that throws stops `npx expo config` with its message: a bad prop printed `Invalid @kromatv/react-native-tizen props:` and the field. | O | |
 
 ## 2. Dev tools plugins

@@ -2,6 +2,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { readExpoConfig } from '../app/expo-config.ts';
 import { ask, canAsk } from '../cli/ask.ts';
 import { captureProcessOutput } from '../fakes.fixtures.ts';
 import { initCommand } from './init.ts';
@@ -84,6 +85,29 @@ describe('rn-tizen init', () => {
     expect(output.stdout()).toContain(
       "const { withTizen } = require('@kromatv/react-native-tizen/metro');",
     );
+  });
+
+  it("gives the commands to run with the app's package manager", async () => {
+    writeFileSync(join(dir, 'bun.lock'), '');
+
+    await run('--package', 'com.example.tv');
+
+    expect(output.stdout()).toContain('Next: bunx expo start');
+    expect(output.stdout()).toContain('bunx rn-tizen doctor checks it');
+  });
+
+  it("names the rootstrap package the app's floor needs", async () => {
+    await run('--package', 'com.example.tv');
+    vi.mocked(readExpoConfig).mockReturnValueOnce({
+      name: 'TV',
+      plugins: [['@kromatv/react-native-tizen', { package: 'com.example.tv', platform: '8.0' }]],
+    });
+    await run();
+
+    expect(output.stdout()).toContain(
+      "Builds for Tizen 6.0, the app's floor, need IOT-Headed-6.0-NativeAppDevelopment-CLI",
+    );
+    expect(output.stdout()).toContain('need TIZEN-8.0-NativeAppDevelopment-CLI');
   });
 
   it('prints the plugin entry to add to an app.config file', async () => {

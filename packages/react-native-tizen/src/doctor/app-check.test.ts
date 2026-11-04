@@ -7,7 +7,7 @@ import { fakeApp } from '../app/app.fixtures.ts';
 import * as appProject from '../app/app-project.ts';
 import { openBuild } from '../commands/build-options.ts';
 import { EXPO_TIZEN_DEPRECATION } from '../config/tizen-settings.ts';
-import { checkApp } from './app-check.ts';
+import { appFloor, checkApp } from './app-check.ts';
 
 const dirs: string[] = [];
 
@@ -75,5 +75,25 @@ describe('checkApp', () => {
       status: 'ok',
       detail: 'org.example.demo 1.0.0, react-native 0.88.0',
     });
+  });
+});
+
+describe('appFloor', () => {
+  it('reads the floor an app sets, and none for a directory that is not an app or does not load', () => {
+    const floor = appDir({
+      name: 'Floor',
+      tizen: { package: 'org.example.floor', platform: '8.0' },
+    });
+    const plain = appDir({ name: 'Plain', tizen: { package: 'org.example.plain' } });
+    const empty = mkdtempSync(join(tmpdir(), 'rn-tizen-no-app-'));
+    dirs.push(floor, plain, empty);
+    vi.spyOn(appProject, 'loadAppProject').mockImplementationOnce(() => {
+      throw new Error('broken config');
+    });
+
+    expect(appFloor(floor)).toBeUndefined();
+    expect(appFloor(floor)).toBe('8.0');
+    expect(appFloor(plain)).toBeUndefined();
+    expect(appFloor(empty)).toBeUndefined();
   });
 });
