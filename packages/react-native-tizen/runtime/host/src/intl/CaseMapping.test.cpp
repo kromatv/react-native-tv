@@ -24,3 +24,7 @@ TEST_CASE("toLocaleLowerCase and toLocaleUpperCase follow the requested locale's
 TEST_CASE("toLocaleLowerCase without a locale uses the default one") {
   CHECK(evaluate("'\xC3\x89T\xC3\x89'.toLocaleLowerCase()") == "\xC3\xA9t\xC3\xA9");
 }
+
+TEST_CASE("toLocaleUpperCase of an empty string is empty") {
+  CHECK(evaluate("''.toLocaleUpperCase('tr')").empty());
+}

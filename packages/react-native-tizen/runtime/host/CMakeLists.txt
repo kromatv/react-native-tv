@@ -88,4 +88,7 @@ if(RN_TIZEN_TESTS)
   # (cmake/Libraries.cmake); its path and viewBox math needs no package.
   target_sources(rn-tizen-host-tests PRIVATE
     src/svg/PathData.cpp src/svg/SvgPath.cpp src/svg/SvgViewBox.cpp)
+  # The full ICU data file ICU's sources ship, for the host's ICU setup to load.
+  set_source_files_properties(src/intl/IcuData.test.cpp PROPERTIES
+    COMPILE_DEFINITIONS "RN_TIZEN_TEST_ICU_DATA_DIR=\"${icu_SOURCE_DIR}/source/data/in\"")
 endif()
