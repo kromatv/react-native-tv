@@ -33,6 +33,7 @@ TEST_CASE("decodeBase64 skips whitespace and stops at padding") {
   CHECK(decodeBase64("Zm9v\r\nYmFy") == "foobar");
   CHECK(decodeBase64(" Zm8=\t") == "fo");
   CHECK(decodeBase64("Zg==Zm9v") == "f");
+  CHECK(decodeBase64("Zm\t9v") == "foo");
 }
 
 TEST_CASE("decodeBase64 rejects a character outside the alphabet") {

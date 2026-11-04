@@ -10,7 +10,7 @@ namespace {
 
 constexpr std::string_view kAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-constexpr std::array<int, 256> decodingTable() {
+consteval std::array<int, 256> decodingTable() {
   std::array<int, 256> table{};
   table.fill(-1);
   for (std::size_t index = 0; index < kAlphabet.size(); ++index) {
