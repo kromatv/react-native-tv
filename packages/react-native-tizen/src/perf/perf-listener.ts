@@ -8,6 +8,8 @@ interface PerfListenerOptions {
   readonly paint: Paint;
   readonly minimum: LogLevel;
   readonly device: string | null;
+  /** The package to read; with none, the first app that names one is followed. */
+  readonly app?: string | null;
   readonly out?: NodeJS.WritableStream;
   readonly now?: () => Date;
 }
@@ -16,6 +18,7 @@ interface PerfListenerOptions {
  * Asks every development build that connects for perf samples, prints each
  * one as it arrives and keeps them for the summary. Log lines at `minimum` or
  * louder are printed between them; with a `device`, other TVs are ignored.
+ * Samples come from one app: the one asked for, else the first that connects.
  */
 export class PerfListener implements LogListener {
   readonly wantsPerf = true;
@@ -24,16 +27,24 @@ export class PerfListener implements LogListener {
   readonly firstSample: Promise<void>;
   private readonly options: PerfListenerOptions;
   private markFirstSample: () => void = () => undefined;
+  private followed: string | null;
+  private readonly passedOver = new Set<string>();
 
   constructor(options: PerfListenerOptions) {
     this.options = options;
+    this.followed = options.app ?? null;
     this.firstSample = new Promise((resolve) => {
       this.markFirstSample = resolve;
     });
   }
 
-  onEntry(entry: LogEntry, from?: string): void {
-    if (!this.accepts(from)) return;
+  /** The package the samples come from, null until an app that names one connects. */
+  get app(): string | null {
+    return this.followed;
+  }
+
+  onEntry(entry: LogEntry, from?: string, app: string | null = null): void {
+    if (!this.accepts(from, app)) return;
     const time = this.options.now?.() ?? new Date();
     const sample = perfSampleOf(entry);
     if (sample !== null) {
@@ -47,19 +58,32 @@ export class PerfListener implements LogListener {
     }
   }
 
-  onConnect(from: string): void {
-    if (this.accepts(from))
-      this.print(this.options.paint('gray', `The app connected from ${from}`));
-  }
-
-  onDisconnect(from: string): void {
-    if (this.accepts(from)) {
-      this.print(this.options.paint('gray', `The app at ${from} disconnected`));
+  onConnect(from: string, app: string | null = null): void {
+    if (this.accepts(from, app)) {
+      this.print(this.options.paint('gray', `${app ?? 'The app'} connected from ${from}`));
+    } else if (app !== null && !this.passedOver.has(app)) {
+      this.passedOver.add(app);
+      this.print(
+        this.options.paint(
+          'gray',
+          `${app} connected too, not read: pass --package ${app} to read it`,
+        ),
+      );
     }
   }
 
-  private accepts(from: string | undefined): boolean {
-    return this.options.device === null || from === undefined || from === this.options.device;
+  onDisconnect(from: string, app: string | null = null): void {
+    if (this.accepts(from, app)) {
+      this.print(this.options.paint('gray', `${app ?? 'The app'} at ${from} disconnected`));
+    }
+  }
+
+  private accepts(from: string | undefined, app: string | null): boolean {
+    const device = this.options.device;
+    if (device !== null && from !== undefined && from !== device) return false;
+    if (app === null) return true;
+    this.followed ??= app;
+    return app === this.followed;
   }
 
   private print(line: string): void {

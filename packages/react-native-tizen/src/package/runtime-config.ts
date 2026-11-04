@@ -16,6 +16,7 @@ export interface LogEndpoint {
 
 const runtimeConfigSchema = z.object({
   appKey: z.string().min(1),
+  packageId: z.string().min(1),
   bundleFile: z.string().min(1),
   bundleUrl: z.url().optional(),
   development: z.boolean(),
@@ -64,6 +65,7 @@ export function runtimeConfig(
   const { voice, resolution, backgroundMedia } = config.features;
   return runtimeConfigSchema.parse({
     appKey: 'main',
+    packageId: config.packageId,
     bundleFile,
     ...(bundleUrl === undefined ? {} : { bundleUrl }),
     development: log !== null,

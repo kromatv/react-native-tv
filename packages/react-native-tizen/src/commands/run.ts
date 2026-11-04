@@ -58,7 +58,7 @@ export const runCommand: Command = {
     const listening = log !== null && flags['no-logs'] !== true;
     const peer = device.address.host;
     const server: LogServer | null = listening
-      ? await listenForLogs(log.port, printer, { peer })
+      ? await listenForLogs(log.port, printer, { peer, app: app.config.packageId })
       : null;
     try {
       const { tpk, distributor } = await packageSteps(reporter, {

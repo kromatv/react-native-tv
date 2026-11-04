@@ -28,11 +28,13 @@ function frameOf(frame: StreamFrame, port: number): ScreenFrame {
 
 /**
  * Asks the `rn-tizen run` or `rn-tizen logs` that holds `port` on this
- * computer to capture the screen of the app on `device` (any when null).
+ * computer to capture the screen of the app `app` on `device`, either the
+ * listener's own choice when null.
  */
 export function captureThroughRelay(
   port: number,
   device: string | null,
+  app: string | null,
   timeoutMs: number,
 ): Promise<ScreenFrame> {
   return new Promise((resolve, reject) => {
@@ -58,7 +60,7 @@ export function captureThroughRelay(
           }
         }),
     });
-    socket.on('connect', () => socket.write(relayRequest(device)));
+    socket.on('connect', () => socket.write(relayRequest(device, app)));
     socket.on('data', (chunk: Buffer) => sink.push(chunk));
     socket.on('end', () => sink.end());
     socket.on('error', (error) =>

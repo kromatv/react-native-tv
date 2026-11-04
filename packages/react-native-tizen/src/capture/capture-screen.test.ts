@@ -74,7 +74,7 @@ describe('captureScreen', () => {
   it('says no development build is connected when none comes', async () => {
     const server = await listen();
 
-    await expect(server.capture('10.0.0.9', 50)).rejects.toThrow(
+    await expect(server.capture('10.0.0.9', null, 50)).rejects.toThrow(
       `No development build on 10.0.0.9 is connected to port ${server.port}`,
     );
   });
@@ -91,7 +91,7 @@ describe('listenForLogs with a control link', () => {
     );
     opened.push({ close: () => logs.destroy() });
 
-    await server.capture(null, 1000);
+    await server.capture(null, null, 1000);
     await expect.poll(() => entries).toEqual([{ level: 'warn', message: 'hi' }]);
 
     expect(connections).toEqual(['127.0.0.1']);

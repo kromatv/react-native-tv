@@ -35,12 +35,12 @@ export class LogPrinter implements LogListener {
     this.print(formatLogEntry(shown, new Date(), this.options.paint));
   }
 
-  onConnect(from: string): void {
-    this.print(this.options.paint('gray', `The app connected from ${from}`));
+  onConnect(from: string, app: string | null = null): void {
+    this.print(this.options.paint('gray', `${app ?? 'The app'} connected from ${from}`));
   }
 
-  onDisconnect(from: string): void {
-    this.print(this.options.paint('gray', `The app at ${from} disconnected`));
+  onDisconnect(from: string, app: string | null = null): void {
+    this.print(this.options.paint('gray', `${app ?? 'The app'} at ${from} disconnected`));
   }
 
   release(): void {

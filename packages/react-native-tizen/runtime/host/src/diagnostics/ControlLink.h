@@ -19,7 +19,7 @@ namespace rntizen {
 /// after the app finds it at once.
 class ControlLink final {
  public:
-  ControlLink(std::string host, std::uint16_t port);
+  ControlLink(std::string host, std::uint16_t port, std::string app);
   ~ControlLink();
 
   ControlLink(const ControlLink &) = delete;
@@ -41,6 +41,7 @@ class ControlLink final {
 
   const std::string host_;
   const std::uint16_t port_;
+  const std::string app_;
   std::mutex mutex_;
   std::condition_variable wake_;
   bool stopping_{false};

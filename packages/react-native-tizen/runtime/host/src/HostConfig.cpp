@@ -79,6 +79,7 @@ HostConfig loadHostConfig(const std::string &resourceDir) {
   if (!config.isObject()) throw HostConfigError(std::string(kConfigFile) + " must hold a JSON object");
   return HostConfig{
       .appKey = requireString(config, "appKey"),
+      .packageId = optionalString(config, "packageId").value_or(""),
       .bundleFile = requireString(config, "bundleFile"),
       .bundleUrl = optionalString(config, "bundleUrl"),
       .logEndpoint = optionalLogEndpoint(config),

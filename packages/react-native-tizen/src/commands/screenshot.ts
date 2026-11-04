@@ -3,9 +3,10 @@ import { dirname, join, resolve } from 'node:path';
 import { cacheDir } from '../cache-dir.ts';
 import { captureScreen } from '../capture/capture-screen.ts';
 import { encodePng } from '../capture/png.ts';
-import { COMMON_OPTIONS, parseCommandArgs, type Command } from '../cli/command.ts';
+import { COMMON_OPTIONS, parseCommandArgs, PROJECT_OPTIONS, type Command } from '../cli/command.ts';
 import { deviceAddress } from '../cli/device-option.ts';
 import { parsePort } from '../cli/log-options.ts';
+import { PACKAGE_OPTIONS, targetPackage } from '../cli/package-option.ts';
 import { Reporter } from '../cli/reporter.ts';
 
 const OPTIONS = {
@@ -25,6 +26,8 @@ const OPTIONS = {
     placeholder: '<port>',
     description: 'The port the app streams its logs to, as packaged (default: 8099)',
   },
+  ...PACKAGE_OPTIONS,
+  ...PROJECT_OPTIONS,
   ...COMMON_OPTIONS,
 } as const;
 
@@ -40,7 +43,7 @@ export const screenshotCommand: Command = {
   examples: [
     'rn-tizen screenshot --device 192.168.1.50 --out shot.png',
     'rn-tizen screenshot',
-    'rn-tizen screenshot --port 9000',
+    'rn-tizen screenshot --package com.example.myapp',
   ],
   async run(args, context) {
     const flags = parseCommandArgs('screenshot', args, OPTIONS);
@@ -48,15 +51,20 @@ export const screenshotCommand: Command = {
     const port = parsePort(flags.port, '--port', 'screenshot');
     const device = flags.device === undefined ? null : deviceAddress(flags.device, 'screenshot');
     const path = flags.out === undefined ? defaultPath(device) : resolve(context.cwd, flags.out);
+    const app = targetPackage(
+      flags.package,
+      resolve(context.cwd, flags.project ?? '.'),
+      'screenshot',
+    );
     await reporter.step(
       'Screenshot',
       async () => {
-        const frame = await captureScreen(port, device);
+        const frame = await captureScreen(port, device, app);
         await mkdir(dirname(path), { recursive: true });
         await writeFile(path, encodePng(frame));
         return path;
       },
-      (saved) => saved,
+      (saved) => (app === null ? saved : `${app}, ${saved}`),
     );
   },
 };

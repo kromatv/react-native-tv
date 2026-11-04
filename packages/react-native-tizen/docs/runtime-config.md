@@ -6,6 +6,7 @@ starts. `rn-tizen package` and `rn-tizen run` write it; you do not edit it.
 ```json
 {
   "appKey": "main",
+  "packageId": "com.example.myapp",
   "bundleFile": "index.tizen.hbc",
   "development": true,
   "log": { "host": "192.168.1.20", "port": 8099 }
@@ -15,6 +16,7 @@ starts. `rn-tizen package` and `rn-tizen run` write it; you do not edit it.
 | Field | Required | Meaning |
 |-------|----------|---------|
 | `appKey` | yes | The component to run: what `AppRegistry.registerComponent` registered. Expo's `registerRootComponent` registers `main`. |
+| `packageId` | no | The Tizen package id. A development build names it when it connects its log stream and control link, so `rn-tizen run`, `logs`, `perf` and `screenshot` read one app when several on the TV stream to the same port. |
 | `bundleFile` | yes | The bundle in `res/`, Hermes bytecode or plain JavaScript. |
 | `bundleUrl` | no | Load the bundle from this URL (a Metro or Expo dev server) instead of `bundleFile`. The development runtime then connects to that server for Fast Refresh, reload, LogBox and logs in its terminal ([reference](reference/react-native-dev-tooling.md)). `rn-tizen run --dev-server <origin>`, `rn-tizen simulator run --dev-server <origin>` and the shift+m commands of `expo start` write Expo's virtual entry on that server. |
 | `development` | no, default `false` | A fatal JavaScript error shows a red error screen with its stack, and Back closes the app. In a release build the app closes after logging the error, as React Native does on Android and iOS. |

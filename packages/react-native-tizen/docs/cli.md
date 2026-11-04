@@ -467,10 +467,18 @@ native runtime.
 Prints what a development build streams, from any number of launches, until
 Ctrl+C. Use it to follow an app launched from the TV's own menu.
 
+Every development build names its package when it connects, so one port can
+carry several apps on a TV. `logs`, `perf` and `screenshot` read the app
+`--package` names, else the one in `--project` or the current directory, and
+each connection line names its app. `run` reads the app it installed. A build
+made before this release names no package and is read whatever the target.
+
 | Option | |
 |---|---|
 | `--port <port>` | The port the app was packaged with (default `8099`) |
 | `--level <level>` | The quietest level to show (default `info`) |
+| `--package <id>` | The app to read, by package id (default: the app in `--project` or the current directory, else the only one connected) |
+| `--project <dir>` | The app whose package to read |
 
 ### `rn-tizen key`
 
@@ -509,6 +517,11 @@ it until the app connects.
 | `--device, -d <ip>` | The TV whose app to capture (default: the only one connected) |
 | `--out <file.png>` | Where to save it (default `tv/<ip>/screenshot.png` in the cache) |
 | `--port <port>` | The port the app was packaged with (default `8099`) |
+| `--package <id>` | The app to read, by package id (default: the app in `--project` or the current directory, else the only one connected) |
+| `--project <dir>` | The app whose package to read |
+
+With no target and several apps connected, it names them and asks for
+`--package` instead of guessing.
 
 ### `rn-tizen perf`
 
@@ -521,8 +534,11 @@ highest memory came from Samsung's budget: 380 MB on a UHD model, 300 MB on
 FHD. The memory is the process's PSS and swap, read on the TV from
 `/proc/self/smaps_rollup`; the budget also counts GPU and GEM memory, which an
 app cannot read about itself, so treat the figure as a floor. It listens on the
-log port, as `logs` does, and asks every app that connects for samples: an app
-measures nothing until asked, and stops when `perf` exits. A release build has none of it.
+log port, as `logs` does, and asks the app for samples: an app measures nothing
+until asked, and stops when `perf` exits. A release build has none of it.
+Samples come from one app: the one `--package` names, else the app in the
+current directory, else the first that connects, and `perf` names any other
+app that connects too.
 
 ```sh
 rn-tizen run --device 192.168.1.50 --no-logs
@@ -541,6 +557,8 @@ To measure a cold start, start `perf` first, then launch the app. Since
 | `--duration <seconds>` | Stop this long after the first sample and print the summary (default: at Ctrl+C) |
 | `--out <file.jsonl>` | Also save every sample, one JSON object per line |
 | `--level <level>` | The quietest log level to print between samples (default `warn`) |
+| `--package <id>` | The app to read, by package id (default: the app in `--project` or the current directory, else the only one connected) |
+| `--project <dir>` | The app whose package to read |
 
 Each line reads:
 
@@ -553,6 +571,7 @@ as `--out` saves them (times in milliseconds):
 
 | Field | Meaning |
 |---|---|
+| `app` | The package the sample came from (null for a build that names none) |
 | `t`, `window` | When the sample ended, since the app started, and how long it covers (about 1000) |
 | `frames` | Canvas renders that finished (`EVAS_CALLBACK_RENDER_POST`) |
 | `renderAvg`, `renderMax` | Time from `EVAS_CALLBACK_RENDER_PRE` to `RENDER_POST`, per frame |

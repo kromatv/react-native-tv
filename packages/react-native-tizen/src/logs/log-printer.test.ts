@@ -35,6 +35,20 @@ describe('LogPrinter', () => {
     ]);
   });
 
+  it('names the app that connects when it names itself', () => {
+    const out = capturedOutput();
+    const printer = new LogPrinter({ paint, minimum: 'debug', held: false, out });
+
+    printer.onConnect('192.168.1.50', 'tv.kroma.app');
+    printer.onDisconnect('192.168.1.50', 'tv.kroma.app');
+
+    expect(out.text().split('\n')).toEqual([
+      'tv.kroma.app connected from 192.168.1.50',
+      'tv.kroma.app at 192.168.1.50 disconnected',
+      '',
+    ]);
+  });
+
   it('keeps only the newest lines it held', () => {
     const out = capturedOutput();
     const printer = new LogPrinter({ paint, minimum: 'debug', held: true, out });

@@ -35,12 +35,14 @@ struct ResourceDirectory {
 
 TEST_CASE_FIXTURE(ResourceDirectory, "loadHostConfig reads every field") {
   const auto config = load(R"({
-    "appKey": "main", "bundleFile": "index.bundle", "bundleUrl": "http://10.0.0.2:8081/index.bundle",
+    "appKey": "main", "packageId": "org.example.tv", "bundleFile": "index.bundle",
+    "bundleUrl": "http://10.0.0.2:8081/index.bundle",
     "log": {"host": "10.0.0.2", "port": 9100}, "development": true, "resolution": "4k",
     "backgroundMedia": true, "voice": {"searchUrl": "app://search?q={query}"}
   })");
 
   CHECK(config.appKey == "main");
+  CHECK(config.packageId == "org.example.tv");
   CHECK(config.bundleFile == "index.bundle");
   CHECK(config.bundleUrl == "http://10.0.0.2:8081/index.bundle");
   REQUIRE(config.logEndpoint.has_value());
@@ -65,6 +67,7 @@ TEST_CASE_FIXTURE(ResourceDirectory, "loadHostConfig defaults every optional fie
   CHECK_FALSE(config.uhd);
   CHECK_FALSE(config.voice);
   CHECK_FALSE(config.voiceSearchUrl.has_value());
+  CHECK(bare.packageId.empty());
   CHECK_FALSE(bare.voice);
   CHECK_FALSE(bare.voiceSearchUrl.has_value());
 }

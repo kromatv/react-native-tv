@@ -71,7 +71,7 @@ describe('listenForLogs relaying a screenshot', () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     const server = await listenForLogs(0, { onEntry: () => undefined });
 
-    const answering = exchange(server.port, '127.0.0.1', relayRequest('192.168.1.50'));
+    const answering = exchange(server.port, '127.0.0.1', relayRequest('192.168.1.50', null));
     await vi.waitFor(() => expect(vi.getTimerCount()).toBe(1), { interval: 5 });
     await vi.advanceTimersByTimeAsync(LINK_WAIT_MS);
     const answer = await answering;
@@ -134,6 +134,47 @@ describe('listenForLogs with a perf listener', () => {
     await server.close();
 
     expect(sources).toEqual(['127.0.0.1']);
+  });
+});
+
+describe('listenForLogs with two apps on one port', () => {
+  const hello = (app: string) => `${JSON.stringify({ type: 'log', version: 1, app })}\n`;
+
+  it('names the app of each line, and reads a build that names none', async () => {
+    const heard: string[] = [];
+    const connected: (string | null)[] = [];
+    const server = await listenForLogs(0, {
+      onEntry: (entry, _from, app) => heard.push(`${app}: ${entry.message}`),
+      onConnect: (_from, app) => connected.push(app),
+    });
+
+    await send(server.port, `${hello('org.example.a')}{"level":"info","message":"from a"}\n`);
+    await send(server.port, '{"level":"info","message":"from an old build"}\n');
+    await vi.waitFor(() => expect(heard).toHaveLength(2));
+    await server.close();
+
+    expect([...heard].sort()).toEqual(['null: from an old build', 'org.example.a: from a']);
+    expect([...connected].sort()).toEqual(['org.example.a', null].sort());
+  });
+
+  it('ignores the lines and the control link of another app than the one asked for', async () => {
+    const heard: string[] = [];
+    const server = await listenForLogs(
+      0,
+      { onEntry: (entry, _from, app) => heard.push(`${app}: ${entry.message}`) },
+      { app: 'org.example.a' },
+    );
+
+    await send(server.port, `${hello('org.example.b')}{"level":"info","message":"from b"}\n`);
+    await send(server.port, `${hello('org.example.a')}{"level":"info","message":"from a"}\n`);
+    await send(server.port, '{"type":"control","version":1,"app":"org.example.b"}\n');
+    await vi.waitFor(() => expect(heard).toHaveLength(1));
+
+    await expect(server.capture(null, 'org.example.b', 50)).rejects.toThrow(
+      'No development build of org.example.b is connected',
+    );
+    await server.close();
+    expect(heard).toEqual(['org.example.a: from a']);
   });
 });
 

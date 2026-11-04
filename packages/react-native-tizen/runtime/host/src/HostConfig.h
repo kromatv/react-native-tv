@@ -18,6 +18,9 @@ struct LogEndpoint {
 /// packaged `bundleFile` otherwise. See docs/runtime-config.md.
 struct HostConfig {
   std::string appKey;
+  /// The Tizen package id, which the log stream and the control link name so
+  /// `rn-tizen` tells apart the builds on one TV. Empty in a config without it.
+  std::string packageId;
   std::string bundleFile;
   std::optional<std::string> bundleUrl;
   std::optional<LogEndpoint> logEndpoint;

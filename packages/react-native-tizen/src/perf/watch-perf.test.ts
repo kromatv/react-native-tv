@@ -1,3 +1,6 @@
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { untilInterrupted } from '../cli/log-level-option.ts';
 import { Reporter } from '../cli/reporter.ts';
@@ -12,7 +15,14 @@ vi.mock('../cli/log-level-option.ts', async (importOriginal) => ({
   untilInterrupted: vi.fn(),
 }));
 
-const WATCH = { out: null, minimum: 'warn', port: 8102, device: null, inUseHint: 'busy' } as const;
+const WATCH = {
+  out: null,
+  minimum: 'warn',
+  port: 8102,
+  device: null,
+  app: null,
+  inUseHint: 'busy',
+} as const;
 
 let listener: LogListener | null;
 let server: LogServer;
@@ -21,6 +31,7 @@ function sample(frames: number) {
   listener?.onEntry(
     { level: 'debug', message: `perf ${JSON.stringify(idleSample({ frames }))}` },
     '192.168.1.50',
+    null,
   );
 }
 
@@ -66,6 +77,37 @@ describe('watchPerf', () => {
     expect(out.text()).toContain('Stopping 0.02 s after the first sample.');
     expect(out.text()).toContain('1 samples');
     expect(server.close).toHaveBeenCalled();
+  });
+
+  it('names the app it read in the summary and on every line of --out', async () => {
+    vi.mocked(untilInterrupted).mockReturnValue(new Promise(() => undefined));
+    const out = capturedOutput();
+    const dir = mkdtempSync(join(tmpdir(), 'rn-tizen-perf-out-'));
+    const file = join(dir, 'samples.jsonl');
+
+    try {
+      const watching = watchPerf(new Reporter({ verbose: false, out, env: { NO_COLOR: '1' } }), {
+        ...WATCH,
+        out: file,
+        durationMs: 20,
+      });
+      await vi.waitFor(() => expect(listener).not.toBeNull());
+      listener?.onConnect?.('192.168.1.50', 'tv.kroma.app');
+      listener?.onEntry(
+        { level: 'debug', message: `perf ${JSON.stringify(idleSample({ frames: 42 }))}` },
+        '192.168.1.50',
+        'tv.kroma.app',
+      );
+      await watching;
+
+      expect(JSON.parse(readFileSync(file, 'utf8'))).toMatchObject({
+        app: 'tv.kroma.app',
+        frames: 42,
+      });
+      expect(out.text()).toContain('1 samples of tv.kroma.app');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   it('says why nothing arrives when no sample came within ten seconds', async () => {

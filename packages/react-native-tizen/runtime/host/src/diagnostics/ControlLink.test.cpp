@@ -77,7 +77,7 @@ TEST_CASE("ControlLink greets the listener and takes perf requests until they st
   ecore_init();
   const Listener listener;
   {
-    const ControlLink link("127.0.0.1", listener.port());
+    const ControlLink link("127.0.0.1", listener.port(), "org.example.tv");
     const int client = listener.accept();
     REQUIRE(client >= 0);
 
@@ -94,7 +94,7 @@ TEST_CASE("ControlLink greets the listener and takes perf requests until they st
     close(client);
     const bool dropped = waitFor([&link] { return !link.perfRequested(); });
 
-    CHECK(hello == folly::dynamic::object("type", "control")("version", 1));
+    CHECK(hello == folly::dynamic::object("type", "control")("version", 1)("app", "org.example.tv"));
     CHECK(turnedOn);
     CHECK(turnedOff);
     CHECK(turnedOnAgain);
@@ -107,7 +107,7 @@ TEST_CASE("ControlLink answers a screenshot it cannot take with an error") {
   ecore_init();
   const Listener listener;
   {
-    const ControlLink link("127.0.0.1", listener.port());
+    const ControlLink link("127.0.0.1", listener.port(), "org.example.tv");
     const int client = listener.accept();
     REQUIRE(client >= 0);
     readLine(client);
@@ -133,7 +133,7 @@ TEST_CASE("ControlLink answers a screenshot it cannot take with an error") {
 TEST_CASE("ControlLink drops a listener whose request grows past 4 KiB") {
   const Listener listener;
   {
-    const ControlLink link("127.0.0.1", listener.port());
+    const ControlLink link("127.0.0.1", listener.port(), "org.example.tv");
     const int client = listener.accept();
     REQUIRE(client >= 0);
     readLine(client);

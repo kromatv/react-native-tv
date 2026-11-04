@@ -15,6 +15,7 @@ describe('runtimeConfig', () => {
   it('marks a development build and points it at the log listener', () => {
     expect(runtimeConfig('index.tizen.hbc', { host: '192.168.1.20', port: 8099 }, app)).toEqual({
       appKey: 'main',
+      packageId: 'org.example.app',
       bundleFile: 'index.tizen.hbc',
       development: true,
       log: { host: '192.168.1.20', port: 8099 },
@@ -26,6 +27,7 @@ describe('runtimeConfig', () => {
   it('marks a release build, which streams no logs', () => {
     expect(runtimeConfig('index.tizen.hbc', null, app)).toEqual({
       appKey: 'main',
+      packageId: 'org.example.app',
       bundleFile: 'index.tizen.hbc',
       development: false,
       resolution: '1080p',

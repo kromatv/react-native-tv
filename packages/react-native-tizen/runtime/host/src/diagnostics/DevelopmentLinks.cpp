@@ -8,9 +8,9 @@ namespace rntizen {
 std::unique_ptr<ControlLink> openDevelopmentLinks(const HostConfig &config) {
   if (!config.logEndpoint) return nullptr;
   const auto &[host, port] = *config.logEndpoint;
-  setLogSink(std::make_shared<NetworkLogSink>(host, port));
+  setLogSink(std::make_shared<NetworkLogSink>(host, port, config.packageId));
   if (!config.development) return nullptr;
-  return std::make_unique<ControlLink>(host, port);
+  return std::make_unique<ControlLink>(host, port, config.packageId);
 }
 
 } // namespace rntizen

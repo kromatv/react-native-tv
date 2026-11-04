@@ -16,12 +16,28 @@ export interface ScreenFrame {
   readonly pixels: Buffer;
 }
 
-const helloSchema = z.object({ type: z.literal('control'), version: z.literal(1) });
+const appSchema = z.string().max(256).optional();
+const controlHelloSchema = z.object({
+  type: z.literal('control'),
+  version: z.literal(1),
+  app: appSchema,
+});
+const logHelloSchema = z.object({ type: z.literal('log'), version: z.literal(1), app: appSchema });
 
 const relayRequestSchema = z.object({
   type: z.literal('screenshot-request'),
   device: z.string().max(64).nullable(),
+  app: z.string().max(256).nullable().optional(),
 });
+
+/** Which connection an app opened, and the package it names: null for a build that names none. */
+export type Hello = { readonly kind: 'control' | 'log'; readonly app: string | null };
+
+/** What a relayed screenshot request asks for: the TV and the package, any when null. */
+export interface RelayTarget {
+  readonly device: string | null;
+  readonly app: string | null;
+}
 
 const frameHeaderSchema = z
   .object({
@@ -71,15 +87,22 @@ function parseJson(line: string): unknown {
   }
 }
 
-/** True for the first line of an app's control link. */
-export function isControlHello(line: string): boolean {
-  return helloSchema.safeParse(parseJson(line)).success;
+const named = (app: string | undefined): string | null =>
+  app === undefined || app === '' ? null : app;
+
+/** The hello an app opens its control link or its log stream with, or null for any other line. */
+export function parseHello(line: string): Hello | null {
+  const json = parseJson(line);
+  const control = controlHelloSchema.safeParse(json);
+  if (control.success) return { kind: 'control', app: named(control.data.app) };
+  const log = logHelloSchema.safeParse(json);
+  return log.success ? { kind: 'log', app: named(log.data.app) } : null;
 }
 
-/** The device a relayed screenshot request names, or undefined when the line is not one. */
-export function relayRequestDevice(line: string): string | null | undefined {
+/** What a relayed screenshot request asks for, or undefined when the line is not one. */
+export function parseRelayRequest(line: string): RelayTarget | undefined {
   const parsed = relayRequestSchema.safeParse(parseJson(line));
-  return parsed.success ? parsed.data.device : undefined;
+  return parsed.success ? { device: parsed.data.device, app: parsed.data.app ?? null } : undefined;
 }
 
 /** Reads a reply line. A header that does not add up is `invalid`, never a frame. */
@@ -117,8 +140,8 @@ export function perfRequest(on: boolean): string {
 }
 
 /** The line that asks a running `rn-tizen run` or `logs` to capture for this process. */
-export function relayRequest(device: string | null): string {
-  return `${JSON.stringify({ type: 'screenshot-request', device })}\n`;
+export function relayRequest(device: string | null, app: string | null): string {
+  return `${JSON.stringify({ type: 'screenshot-request', device, app })}\n`;
 }
 
 /** A frame as bytes on the wire: its header line, then its pixels. */

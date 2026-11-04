@@ -1,6 +1,8 @@
-import { COMMON_OPTIONS, parseCommandArgs, type Command } from '../cli/command.ts';
+import { resolve } from 'node:path';
+import { COMMON_OPTIONS, parseCommandArgs, PROJECT_OPTIONS, type Command } from '../cli/command.ts';
 import { deviceAddress } from '../cli/device-option.ts';
 import { parsePort } from '../cli/log-options.ts';
+import { PACKAGE_OPTIONS, targetPackage } from '../cli/package-option.ts';
 import { Reporter } from '../cli/reporter.ts';
 import { parsePerfFlags, PERF_OPTIONS } from '../perf/perf-options.ts';
 import { watchPerf } from '../perf/watch-perf.ts';
@@ -28,6 +30,8 @@ const OPTIONS = {
     placeholder: '<level>',
     description: 'The quietest log level to print between samples (default: warn)',
   },
+  ...PACKAGE_OPTIONS,
+  ...PROJECT_OPTIONS,
   ...COMMON_OPTIONS,
 } as const;
 
@@ -50,6 +54,7 @@ export const perfCommand: Command = {
       ...parsePerfFlags(flags, 'perf', context.cwd),
       port: parsePort(flags.port, '--port', 'perf'),
       device: flags.device === undefined ? null : deviceAddress(flags.device, 'perf'),
+      app: targetPackage(flags.package, resolve(context.cwd, flags.project ?? '.'), 'perf'),
       inUseHint: IN_USE_HINT,
     });
   },

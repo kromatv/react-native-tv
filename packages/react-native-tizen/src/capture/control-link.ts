@@ -24,13 +24,16 @@ interface PendingCapture {
  */
 export class ControlLink {
   readonly address: string;
+  /** The package the app named in its hello, null for a build that names none. */
+  readonly app: string | null;
   private readonly socket: Socket;
   private readonly pending = new Map<number, PendingCapture>();
   private nextId = 1;
 
-  constructor(socket: Socket, address: string) {
+  constructor(socket: Socket, address: string, app: string | null = null) {
     this.socket = socket;
     this.address = address;
+    this.app = app;
   }
 
   /** Asks the app for its screen; rejects after `timeoutMs` or when the link drops. */

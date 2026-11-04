@@ -75,8 +75,8 @@ std::optional<std::string> takeLine(std::string &pending) {
 
 } // namespace
 
-ControlLink::ControlLink(std::string host, std::uint16_t port)
-    : host_(std::move(host)), port_(port), thread_([this] { run(); }) {}
+ControlLink::ControlLink(std::string host, std::uint16_t port, std::string app)
+    : host_(std::move(host)), port_(port), app_(std::move(app)), thread_([this] { run(); }) {}
 
 ControlLink::~ControlLink() {
   {
@@ -100,7 +100,7 @@ bool ControlLink::isStopping() {
 void ControlLink::run() {
   while (!isStopping()) {
     if (const int socket = connectTcp(host_, port_, kConnectTimeout, [this] { return isStopping(); }); socket >= 0) {
-      if (adopt(socket) && sendLine(socket, folly::dynamic::object("type", "control")("version", 1))) serve(socket);
+      if (adopt(socket) && sendLine(socket, folly::dynamic::object("type", "control")("version", 1)("app", app_))) serve(socket);
       perfRequested_.store(false);
       forget();
       close(socket);

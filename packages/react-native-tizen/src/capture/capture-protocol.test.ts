@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   encodeFailure,
   encodeFrame,
-  isControlHello,
+  parseHello,
+  parseRelayRequest,
   parseCaptureReply,
-  relayRequestDevice,
   replyPayloadLength,
 } from './capture-protocol.ts';
 
@@ -98,17 +98,29 @@ describe('parseCaptureReply', () => {
 });
 
 describe('connection roles', () => {
-  it('knows the control hello and nothing else as one', () => {
-    expect(isControlHello('{"type":"control","version":1}')).toBe(true);
-    expect(isControlHello('{"level":"info","message":"control"}')).toBe(false);
-    expect(isControlHello('not json')).toBe(false);
+  it('knows the control and log hellos, with the package they name, and nothing else', () => {
+    expect(parseHello('{"type":"control","version":1}')).toEqual({ kind: 'control', app: null });
+    expect(parseHello('{"type":"control","version":1,"app":"org.example.tv"}')).toEqual({
+      kind: 'control',
+      app: 'org.example.tv',
+    });
+    expect(parseHello('{"type":"log","version":1,"app":""}')).toEqual({ kind: 'log', app: null });
+    expect(parseHello('{"type":"log","version":1,"app":"org.example.tv"}')).toEqual({
+      kind: 'log',
+      app: 'org.example.tv',
+    });
+    expect(parseHello('{"level":"info","message":"control"}')).toBeNull();
+    expect(parseHello('not json')).toBeNull();
   });
 
-  it('reads the device a relay request names, null for any', () => {
-    expect(relayRequestDevice('{"type":"screenshot-request","device":"192.168.1.50"}')).toBe(
-      '192.168.1.50',
-    );
-    expect(relayRequestDevice('{"type":"screenshot-request","device":null}')).toBeNull();
-    expect(relayRequestDevice('{"level":"info","message":"hi"}')).toBeUndefined();
+  it('reads the device and the package a relay request names, null for any', () => {
+    expect(
+      parseRelayRequest('{"type":"screenshot-request","device":"192.168.1.50","app":"a.b"}'),
+    ).toEqual({ device: '192.168.1.50', app: 'a.b' });
+    expect(parseRelayRequest('{"type":"screenshot-request","device":null}')).toEqual({
+      device: null,
+      app: null,
+    });
+    expect(parseRelayRequest('{"level":"info","message":"hi"}')).toBeUndefined();
   });
 });

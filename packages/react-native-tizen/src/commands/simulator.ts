@@ -215,6 +215,7 @@ const ACTIONS: Readonly<Record<string, Action>> = {
       ...parsePerfFlags(flags, 'simulator', context.cwd),
       port: parsePort(flags['log-port'], '--log-port', 'simulator', instance.logPort),
       device: null,
+      app: null,
       inUseHint: `Another \`${simulatorCommandLine('run', instance.name)}\` is printing its logs: stop it, or start the app with --no-logs.`,
     }).then(() => undefined),
   restart: async ({ reporter, instance }) => {

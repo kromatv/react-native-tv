@@ -25,28 +25,31 @@ std::pair<std::string, std::string> readEntry(int socket) {
 
 TEST_CASE("log lines reach the listener as one JSON object per line, in order") {
   LoopbackServer server;
-  NetworkLogSink sink("127.0.0.1", server.port());
+  NetworkLogSink sink("127.0.0.1", server.port(), "org.example.tv");
 
   sink.write(LogLevel::Info, "first");
   sink.write(LogLevel::Error, "second \"quoted\"");
   const int peer = server.accept(5s);
+  const auto hello = folly::parseJson(testing::readUntil(peer, "\n"));
   const auto first = readEntry(peer);
   const auto second = readEntry(peer);
   ::close(peer);
 
+  CHECK(hello == folly::dynamic::object("type", "log")("version", 1)("app", "org.example.tv"));
   CHECK(first == std::pair<std::string, std::string>{"info", "first"});
   CHECK(second == std::pair<std::string, std::string>{"error", "second \"quoted\""});
 }
 
 TEST_CASE("a listener that comes late reads how many lines nobody heard, then the kept ones") {
   const auto port = LoopbackServer().port();
-  NetworkLogSink sink("127.0.0.1", port);
+  NetworkLogSink sink("127.0.0.1", port, "org.example.tv");
 
   sink.write(LogLevel::Info, "kept");
   std::this_thread::sleep_for(100ms);
   sink.write(LogLevel::Debug, "dropped");
   LoopbackServer server(port);
   const int peer = server.accept(5s);
+  testing::readUntil(peer, "\n");
   const auto notice = readEntry(peer);
   const auto kept = readEntry(peer);
   ::close(peer);

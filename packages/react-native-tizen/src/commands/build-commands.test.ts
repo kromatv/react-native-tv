@@ -135,7 +135,10 @@ describe('rn-tizen run', () => {
   it('packages, installs and launches the app, then prints its logs until Ctrl+C', async () => {
     await runCommand.run(['--log-host', '10.0.0.2'], context);
 
-    expect(listenForLogs).toHaveBeenCalledWith(8099, expect.anything(), { peer: '192.168.1.50' });
+    expect(listenForLogs).toHaveBeenCalledWith(8099, expect.anything(), {
+      peer: '192.168.1.50',
+      app: 'org.example.demo',
+    });
     expect(onDevice).toHaveBeenCalledOnce();
     expect(installOn).toHaveBeenCalledWith(CONNECTION, expect.anything(), TV, {
       file: import.meta.filename,

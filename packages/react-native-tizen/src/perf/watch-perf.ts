@@ -24,6 +24,8 @@ const FIRST_SAMPLE_GRACE_MS = 30_000;
 export interface PerfWatch extends PerfChoice {
   readonly port: number;
   readonly device: string | null;
+  /** The package to read; with none, the first app that connects. */
+  readonly app: string | null;
   readonly inUseHint: string;
 }
 
@@ -37,10 +39,12 @@ export async function watchPerf(reporter: Reporter, watch: PerfWatch): Promise<P
     paint: reporter.paint,
     minimum: watch.minimum,
     device: watch.device,
+    app: watch.app,
   });
   const server = await listenForLogs(watch.port, listener, {
     inUseHint: watch.inUseHint,
     peer: watch.device,
+    app: watch.app,
   });
   const address = pickLanAddress(networkInterfaces(), watch.device) ?? 'this computer';
   const until =
@@ -68,11 +72,16 @@ export async function watchPerf(reporter: Reporter, watch: PerfWatch): Promise<P
   const samples = listener.samples;
   if (watch.out !== null) {
     await mkdir(dirname(watch.out), { recursive: true });
-    await writeFile(watch.out, samples.map((sample) => `${JSON.stringify(sample)}\n`).join(''));
+    const app = listener.app;
+    await writeFile(
+      watch.out,
+      samples.map((sample) => `${JSON.stringify({ app, ...sample })}\n`).join(''),
+    );
   }
   reporter.line();
   const saved = watch.out === null ? '' : `, saved to ${watch.out}`;
-  reporter.line(`${samples.length} samples${saved}`);
+  const of = listener.app === null ? '' : ` of ${listener.app}`;
+  reporter.line(`${samples.length} samples${of}${saved}`);
   const lines = [
     ...formatPerfSummary(summarizePerf(samples), reporter.paint),
     ...formatMemoryBudget(samples, reporter.paint),

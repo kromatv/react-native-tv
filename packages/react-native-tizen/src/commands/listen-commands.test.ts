@@ -36,9 +36,19 @@ describe('rn-tizen logs', () => {
   it('listens on --port until Ctrl+C, then closes', async () => {
     await logsCommand.run(['--port', '8102', '--level', 'debug'], { cwd: dir });
 
-    expect(listenForLogs).toHaveBeenCalledWith(8102, expect.anything());
-    expect(output.stdout()).toMatch(/Listening on .+:8102\. Press Ctrl\+C to stop\./);
+    expect(listenForLogs).toHaveBeenCalledWith(8102, expect.anything(), { app: null });
+    expect(output.stdout()).toMatch(/Listening on .+:8102 for every app\. Press Ctrl\+C to stop\./);
     expect(server.close).toHaveBeenCalled();
+  });
+
+  it('listens to the app --package names only', async () => {
+    await logsCommand.run(['--package', 'com.example.tv'], { cwd: dir });
+
+    expect(listenForLogs).toHaveBeenCalledWith(8099, expect.anything(), { app: 'com.example.tv' });
+    expect(output.stdout()).toContain('for com.example.tv.');
+    await expect(logsCommand.run(['--package', 'tv'], { cwd: dir })).rejects.toThrow(
+      '--package is not a Tizen package id',
+    );
   });
 
   it('refuses a level it does not know', async () => {
@@ -55,6 +65,7 @@ describe('rn-tizen perf', () => {
     expect(listenForLogs).toHaveBeenCalledWith(8099, expect.anything(), {
       inUseHint: expect.stringContaining('rn-tizen perf listens on the log port itself'),
       peer: '192.168.1.50',
+      app: null,
     });
     expect(readFileSync(join(dir, 'boot.jsonl'), 'utf8')).toBe('');
     expect(output.stdout()).toContain(`0 samples, saved to ${join(dir, 'boot.jsonl')}`);
@@ -78,7 +89,10 @@ describe('rn-tizen screenshot', () => {
 
     await screenshotCommand.run(['--device', '192.168.1.50', '--out', 'shot.png'], { cwd: dir });
 
-    expect(captureScreen).toHaveBeenCalledWith(8099, '192.168.1.50');
+    expect(captureScreen).toHaveBeenCalledWith(8099, '192.168.1.50', null);
+    await screenshotCommand.run(['--package', 'com.example.tv', '--out', 'shot.png'], { cwd: dir });
+    expect(captureScreen).toHaveBeenLastCalledWith(8099, null, 'com.example.tv');
+    expect(output.stdout()).toContain('com.example.tv, ');
     expect(readFileSync(join(dir, 'shot.png')).subarray(1, 4).toString()).toBe('PNG');
   });
 
