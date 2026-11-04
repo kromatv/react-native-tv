@@ -448,8 +448,8 @@ Unknowns worth a hardware or Samsung answer:
 
 The size of the app's own window on a 4K set. The video plane is separate and
 decodes at 4K on its own ([tizen-media-playback.md](tizen-media-playback.md),
-section 3). Checked on 2026-11-03. **R** marks a third party's report from
-their own set.
+section 3). Checked on 2026-11-03, the compositor rows on 2026-11-04. **R**
+marks a third party's report from their own set.
 
 ### What is documented
 
@@ -467,6 +467,12 @@ their own set.
 | Web apps stay at 1080p with a 3840 viewport and `screen-resolution="3840x2160"`; the project owner blames "the limitations of Tizen's internal web engine" | R | [tt-39] |
 | A web app on a 2024 4K set running Tizen 9 "rendered on an upscaled 1920 surface and looked soft" | R | [ht-10] |
 | Samsung signage players are "set to a 1920x1080 resolution as this is the highest resolution Samsung (Tizen) ... will allow" (Xibo's maintainer, not Samsung) | R | [xibo-4k] |
+| The rootstrap's `Ecore_Wl2.h` includes `<wayland-client.h>`, but the rootstrap ships neither that header, nor `libwayland-client`, nor any `*-client-protocol.h`, and its manifest names no Wayland library: no Tizen Wayland extension has a client definition in the SDK | D | SDK `rootstraps/tizen-9.0-device.core/usr/include/ecore-wl2-1/Ecore_Wl2.h:6`, `rootstraps/info/tizen-9.0-device.core.dev.xml` |
+| A `wl_output.mode` is given "in physical hardware units of the output device", and "there will always be one mode, the current mode"; flags `current` 0x1 and `preferred` 0x2; `refresh` in mHz | D | [wl-xml] `wl_output.mode` |
+| A `wl_output.scale` above 1 "means that the compositor will automatically scale surface buffers by this amount when rendering"; a client on such an output should call `wl_surface.set_buffer_scale` with that scale. Without the event, the scale is 1 | D | [wl-xml] `wl_output.scale` |
+| `wl_surface.set_buffer_scale` exists "to allow clients to supply higher resolution buffer data for use on high resolution outputs"; at scale N the buffer is N times the surface size in each dimension. The intended scale is the output's, so the compositor "can avoid scaling" | D | [wl-xml] `wl_surface.set_buffer_scale` |
+| Tizen's public Wayland protocols have no request that sets an output or screen size. `wtz_screen` only reports `size`, `name` and `capabilities` and opens a split screen; `tizen_display_policy` sets a window's brightness; `tizen_policy.set_window_screen_mode` is `default` or `always_on`; `tizen_launch_appinfo.get_base_output_resolution` asks for an app's base output resolution, which "the client can use ... as the resolution of the display outputs". `tizen_tv_virtualscreen` and `tizen_tv_screen_controller`, both advertised on the test TV, are in neither the Tizen 9.0 nor the 10.1 public tree | D | [tz-wlext] `protocol/tizen/wtz-screen.xml`, `tizen-extension.xml`, `tizen-launch.xml` |
+| Tizen 9.0's public Enlightenment applies a base output resolution as a per-client transform that scales the client from that size to its desk's geometry: it fits an app to the output there is, and changes no output mode. Whether a TV's compositor is this code is U | D | [tz-e] `src/bin/core/e_client.c` (`e_client_base_output_resolution_transform_adjust`) |
 
 ### What the TV does
 
@@ -475,9 +481,14 @@ their own set.
 | Which models configure a 3840x2160 output | U | |
 | On the GQ75LS03DAUXZG (The Frame, 2024, Tizen 9.0), with no metadata, with `base_screen_resolution` `4k_only` and with `max`, every source reports 1920x1080: `system_info` `screen.width`/`height`, `elm_win_screen_size_get`, `ecore_evas_screen_geometry_get`, `ecore_wl2_display_screen_size_get` and `ecore_wl2_display_all_screens_size_get` | H | the host's `Screen:` log line |
 | On that TV, a window resized to 3840x2160 right after creation is 1920x1080 again two seconds later, with a 1920x1080 canvas: the window manager does not grant a larger window | H | same |
+| On that TV the compositor advertises one `wl_output`, at version 2, with one mode: 1920x1080, flagged current and preferred. Its scale event carries 0, its geometry 678x380 mm, make `LVDS-0-Samsung`, model `unknown-0`, transform 0, and its refresh arrives as 60 where the protocol asks for mHz. There is no `zxdg_output_manager_v1`, and `wl_compositor` is at version 4, so a surface gets no `preferred_buffer_scale`. `ecore_wl2_output_dpi_get` says 72, and EOM's `eom_get_eom_output_ids` lists no external output | H | a temporary probe that binds `wl_output` on its own event queue of `ecore_wl2`'s display, 2026-11-04 |
+| The same compositor accepts a 3840x2160 `wl_shm` buffer with `wl_surface.set_buffer_scale(2)` on a subsurface of the app's 1920x1080 window, with no protocol error. On the panel, a test card of 1-pixel lines, a 1-pixel checkerboard and text with 1-pixel strokes shows 1080p detail, as the owner judged at the TV: the buffer is brought down to the 1920x1080 output. The app's own capture of that buffer is 3840x2160 | H | same probe |
+| Among the 75 globals the compositor advertises to an app are `wtz_screen` v1, `tizen_tv_virtualscreen` v1, `tizen_tv_screen_controller` v1, `tizen_display_policy` v1, `tizen_launch_appinfo` v2, `wl_scaler` v2 and `wl_subcompositor` v1 | H | same probe |
 
-So the test TV, a 4K set, gives an app a 1920x1080 window whatever its
-metadata asks; whether any model grants more, and what each value grants, is
+So the test TV, a 4K set, composes every app on one 1920x1080 output: no
+window size, metadata or buffer scale reaches its panel at 4K through public
+APIs (H), and Tizen's public protocols have no request for a larger output (D).
+Whether any model's compositor drives its panel at 3840x2160 for apps is
 undocumented. U
 
 ### What it costs
@@ -541,16 +552,18 @@ whose window manager reports 3840x2160 is still to be found.
 
 On the 2024 Samsung The Frame (LS03D), Tizen 9.0:
 
-1. With no metadata, log `system_info` `screen.width` and `screen.height`,
+1. Log the compositor's `wl_output` modes and scale first: a single
+   1920x1080 current mode at scale 1 or less rules 4K app pixels out on that set.
+2. With no metadata, log `system_info` `screen.width` and `screen.height`,
    `elm_win_screen_size_get`, `ecore_wl2_display_screen_size_get`,
    `ecore_wl2_display_all_screens_size_get`, `ecore_evas_screen_geometry_get`,
    `ecore_wl2_output_dpi_get`, the window's geometry once shown, and
    `GL_MAX_TEXTURE_SIZE`.
-2. Repeat with `base_screen_resolution` set to `max`, then to `4k_only`.
-3. If a window reports 3840x2160: capture a screenshot through `rn-tizen` and
+3. Repeat with `base_screen_resolution` set to `max`, then to `4k_only`.
+4. If a window reports 3840x2160: capture a screenshot through `rn-tizen` and
    check its pixel size, scroll a rail and log frame times, and read the
    memory the app uses.
-4. With a 4K window, play a video in a view and check that the picture
+5. With a 4K window, play a video in a view and check that the picture
    follows its rect.
 
 ## Sources
@@ -613,6 +626,9 @@ and this package's built `example/tizen/bin/Release/tizen90/*.tpk`.
 [tt-39]: https://github.com/reisxd/TizenTube/issues/39
 [ht-10]: https://github.com/stanislavnastasiu-dev/HyperTizen/pull/10
 [xibo-4k]: https://community.xibo.org.uk/t/tizen-native-4k-resolution/27925
+[wl-xml]: https://gitlab.freedesktop.org/wayland/wayland/-/blob/1.22.0/protocol/wayland.xml
+[tz-wlext]: git://git.tizen.org/platform/core/uifw/wayland-extension, branch `accepted/tizen_9.0_unified` at `5832daa` (MIT, `COPYING`); `accepted/tizen_10.1_unified` at `4ee3d14` checked too
+[tz-e]: git://git.tizen.org/platform/upstream/enlightenment, branch `accepted/tizen_9.0_unified` at `87b1dbf` (BSD-style, `COPYING`)
 [tomsguide]: https://www.tomsguide.com/tvs/samsung-is-giving-these-older-tvs-a-big-tizen-os-upgrade-see-if-yours-is-on-the-list
 [ked]: https://amp.kedglobal.com/newsView/ked202408230003
 [td-rn40m1]: https://github.com/Samsung/tizen-docs/blob/28241951fbe9a661dda87da2bc87aabb0ea436cf/docs/platform/release-notes/tizen-4-0-m1.md
