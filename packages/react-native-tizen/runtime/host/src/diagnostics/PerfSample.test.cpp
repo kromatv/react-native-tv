@@ -1,6 +1,7 @@
 #include "PerfSample.h"
 
 #include <doctest/doctest.h>
+#include <folly/json.h>
 
 #include <string>
 
@@ -22,6 +23,19 @@ TEST_CASE("perfLine lists the components that cost the most mount time first") {
   REQUIRE(text != std::string::npos);
   CHECK(image < view);
   CHECK(view < text);
+}
+
+TEST_CASE("perfLine carries the process's memory when it was read, and leaves it out when not") {
+  PerfSample sample;
+  sample.memory = {.pssMb = 142.04, .swapMb = 3.2, .source = "smaps_rollup"};
+  const auto read = folly::parseJson(perfLine(sample).substr(5));
+  sample.memory = {};
+  const auto unread = folly::parseJson(perfLine(sample).substr(5));
+
+  CHECK(read["pssMb"].asDouble() == 142.0);
+  CHECK(read["swapMb"].asDouble() == 3.2);
+  CHECK(read["memorySource"].asString() == "smaps_rollup");
+  CHECK(unread.count("pssMb") == 0);
 }
 
 } // namespace rntizen

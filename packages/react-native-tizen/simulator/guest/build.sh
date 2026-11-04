@@ -73,12 +73,15 @@ configure_runtime() {
     -DRN_TIZEN_LIBRARIES_FILE="${RN_TIZEN_LIBRARIES_FILE:-}"
   )
   local stamp="$RUNTIME_BUILD_DIR/.rn-tizen-simulator-configure"
+  # Checkouts share a build directory per key: without the source tree in the
+  # stamp, a build would keep compiling the checkout that configured it first.
+  local configured="$RUNTIME_DIR ${definitions[*]}"
   if [[ -f "$RUNTIME_BUILD_DIR/build.ninja" && -f "$stamp" ]] &&
-    [[ "$(cat "$stamp")" == "${definitions[*]}" ]]; then
+    [[ "$(cat "$stamp")" == "$configured" ]]; then
     return
   fi
   cmake -S "$RUNTIME_DIR" -B "$RUNTIME_BUILD_DIR" -G Ninja "${definitions[@]}"
-  printf '%s' "${definitions[*]}" >"$stamp"
+  printf '%s' "$configured" >"$stamp"
 }
 
 key="${RN_TIZEN_SIMULATOR_RUNTIME:-}"

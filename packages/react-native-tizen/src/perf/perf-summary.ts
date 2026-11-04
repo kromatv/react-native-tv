@@ -1,3 +1,4 @@
+import { processMemoryMb } from './memory-budget.ts';
 import type { Paint } from '../paint.ts';
 import { share, type MountCost, type PerfSample } from './perf-sample.ts';
 
@@ -124,12 +125,21 @@ export function summarizePerf(samples: readonly PerfSample[]): PerfSummaryRow[] 
       'MB',
       samples.map((s) => s.heapUsedMb),
     ),
+    ...memoryRow(samples),
     row(
       'cpu',
       '%',
       samples.map((s) => s.cpu),
     ),
   ];
+}
+
+function memoryRow(samples: readonly PerfSample[]): PerfSummaryRow[] {
+  const readings = samples.flatMap((s) => {
+    const memory = processMemoryMb(s);
+    return memory === null ? [] : [memory];
+  });
+  return readings.length === 0 ? [] : [row('pss + swap', 'MB', readings)];
 }
 
 function cell(value: number): string {

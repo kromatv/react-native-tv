@@ -33,6 +33,9 @@ const perfSampleSchema = z.object({
   heapUsedMb: millis,
   heapSizeMb: millis,
   gcs: count,
+  pssMb: millis.optional(),
+  swapMb: millis.optional(),
+  memorySource: z.enum(['smaps_rollup', 'status']).optional(),
   cpu: millis,
 });
 

@@ -514,11 +514,15 @@ it until the app connects.
 
 Prints, once a second, where a development build's time goes: the frames the
 main loop drew and dropped, Evas render times, how busy the main loop and the
-JavaScript thread were, Fabric's commits and mounts, the Hermes heap and the
-CPU. At Ctrl+C, or after `--duration`, it prints the run's average, 95th
-percentile and worst of each. It listens on the log port, as `logs` does, and
-asks every app that connects for samples: an app measures nothing until asked,
-and stops when `perf` exits. A release build has none of it.
+JavaScript thread were, Fabric's commits and mounts, the Hermes heap, the app
+process's memory and the CPU. At Ctrl+C, or after `--duration`, it prints the
+run's average, 95th percentile and worst of each, and how far the run's
+highest memory came from Samsung's budget: 380 MB on a UHD model, 300 MB on
+FHD. The memory is the process's PSS and swap, read on the TV from
+`/proc/self/smaps_rollup`; the budget also counts GPU and GEM memory, which an
+app cannot read about itself, so treat the figure as a floor. It listens on the
+log port, as `logs` does, and asks every app that connects for samples: an app
+measures nothing until asked, and stops when `perf` exits. A release build has none of it.
 
 ```sh
 rn-tizen run --device 192.168.1.50 --no-logs
@@ -541,7 +545,7 @@ To measure a cold start, start `perf` first, then launch the app. Since
 Each line reads:
 
 ```
-09:00:05  fps  58/60  drop   2  render   3.1/   9.4 ms  main  21%  js  35%  wait   4%  lag    2.0 ms  commit   3x  12.1/  30.2 ms  mount   4.0/   9.0 ms  heap  12.5/   32 MB  cpu  45%
+09:00:05  fps  58/60  drop   2  render   3.1/   9.4 ms  main  21%  js  35%  wait   4%  lag    2.0 ms  commit   3x  12.1/  30.2 ms  mount   4.0/   9.0 ms  heap  12.5/   32 MB  mem   142/380 MB  cpu  45%
 ```
 
 A second in which nothing drew, committed or ran prints `idle`. The fields,
@@ -563,6 +567,7 @@ as `--out` saves them (times in milliseconds):
 | `mountAvg`, `mountMax` | Diff and mount time on the main loop, per commit |
 | `mountLatencyMax` | The longest wait between a commit ending and the main loop mounting it |
 | `heapUsedMb`, `heapSizeMb`, `gcs` | Hermes's `getHeapInfo`: allocated bytes, heap size, collections so far |
+| `pssMb`, `swapMb`, `memorySource` | The process's PSS and proportional swap from `/proc/self/smaps_rollup` (`memorySource: "smaps_rollup"`), or its RSS and swap from `/proc/self/status` on a kernel without that file (`"status"`, shared pages counted in full). `mem` on each line is their sum, red past the FHD budget |
 | `cpu` | The process's CPU time, in percent of one core |
 
 ### `rn-tizen simulator`

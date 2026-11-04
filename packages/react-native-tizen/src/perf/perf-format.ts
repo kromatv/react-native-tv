@@ -1,3 +1,4 @@
+import { MEMORY_BUDGET_MB, processMemoryMb } from './memory-budget.ts';
 import type { Paint } from '../paint.ts';
 import { share, type PerfSample } from './perf-sample.ts';
 
@@ -26,15 +27,26 @@ function redAbove(paint: Paint, value: number, limit: number, text: string): str
   return value > limit ? paint('red', text) : text;
 }
 
+function memoryText(megabytes: number): string {
+  return `mem ${fixed(megabytes, 5, 0)}/${MEMORY_BUDGET_MB.uhd} MB`;
+}
+
 /**
  * One sample as one line: frames drawn against the display rate, dropped
  * frames, Evas render time (average/worst), main loop busy, the JavaScript
  * thread's busy share, its wait on the main loop and its queue delay, Fabric
- * commits and mounts (average/worst), the Hermes heap and the CPU.
+ * commits and mounts (average/worst), the Hermes heap, the process's PSS and
+ * swap against Samsung's budget, and the CPU.
  */
 export function formatPerfSample(sample: PerfSample, time: Date, paint: Paint): string {
   const clock = paint('gray', time.toTimeString().slice(0, TIME_WIDTH));
-  const memory = `heap ${fixed(sample.heapUsedMb, 5)}/${fixed(sample.heapSizeMb, 5, 0)} MB`;
+  const processMemory = processMemoryMb(sample);
+  const heap = `heap ${fixed(sample.heapUsedMb, 5)}/${fixed(sample.heapSizeMb, 5, 0)} MB`;
+  const mem =
+    processMemory === null
+      ? null
+      : redAbove(paint, processMemory, MEMORY_BUDGET_MB.fhd, memoryText(processMemory));
+  const memory = mem === null ? heap : `${heap}  ${mem}`;
   const cpu = `cpu ${percent(sample.cpu)}`;
   if (isIdle(sample)) return [clock, paint('gray', 'idle'), memory, cpu].join('  ');
   const jsBusy = share(sample.jsBusy, sample.window);

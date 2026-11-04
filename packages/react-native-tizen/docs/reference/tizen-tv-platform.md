@@ -461,6 +461,7 @@ their own set.
 | `webapis.productinfo.isUdPanelSupported()`: "true : 4K or higher resolution supported" (web only); it describes the panel, not the app's surface | D | [sam-4kvideo] |
 | The TV emulator has no UHD resolution | D | [sam-emu-limits] |
 | The 380 MB UHD budget counts GPU memory, "used by the GPU to render the application's UI, textures, and display output", and GEM memory, "graphics buffer memory used for display output" | D | [sam-hw] |
+| A process reads its own memory in `/proc/self`: `smaps_rollup` holds "the same fields as /proc/PID/smaps, but their values are the sums of the corresponding values for all mappings of the process", among them `Pss`, "the process's proportional share" of resident memory, and `SwapPss`, the "proportional swap share"; `status` holds `VmRSS` and `VmSwap`. GPU and GEM memory are in neither, so `rn-tizen perf` reports PSS and swap, a floor of what the budget counts | D, I | [kernel-proc] |
 | Native window APIs on Tizen 9: `ecore_wl2_display_screen_size_get` (`ecore-wl2-1/Ecore_Wayland2.h:264`), Tizen-only `ecore_wl2_display_all_screens_size_get` (`:276`), `elm_win_screen_size_get` (`elementary-1/elm_win_legacy.h:885`), `ecore_evas_screen_geometry_get` (`ecore-evas-1/Ecore_Evas.h:3138`), window auxiliary hints `elm_win_aux_hint_add` since Tizen 5.5 (`elm_win_legacy.h:1528`). No header names a resolution request | D | SDK `rootstraps/tizen-9.0-device.core/usr/include` |
 | flutter-tizen sizes its window to `ecore_wl2_display_screen_size_get` and, on TV, computes its pixel ratio from a fixed 72 DPI and a profile factor of 2.0 (1.6); nothing in it asks for a 4K surface | D | [ft-wl2] lines 196-206, [ft-sysutils] lines 13-33 |
 | Web apps stay at 1080p with a 3840 viewport and `screen-resolution="3840x2160"`; the project owner blames "the limitations of Tizen's internal web engine" | R | [tt-39] |
@@ -608,6 +609,7 @@ and this package's built `example/tizen/bin/Release/tizen90/*.tpk`.
 [ft-sysutils]: https://github.com/flutter-tizen/embedder/blob/44c61a1f069a11a166fbeef0cae17855e152ab40/flutter/shell/platform/tizen/system_utils.cc
 [sam-21x9]: https://developer.samsung.com/smarttv/develop/guides/base_screen_resolution.html
 [sam-4kvideo]: https://developer.samsung.com/smarttv/develop/guides/multimedia/4k-8k-uhd-video.html
+[kernel-proc]: https://www.kernel.org/doc/html/latest/filesystems/proc.html
 [tt-39]: https://github.com/reisxd/TizenTube/issues/39
 [ht-10]: https://github.com/stanislavnastasiu-dev/HyperTizen/pull/10
 [xibo-4k]: https://community.xibo.org.uk/t/tizen-native-4k-resolution/27925

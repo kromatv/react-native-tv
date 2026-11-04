@@ -65,6 +65,11 @@ std::string perfLine(const PerfSample &sample) {
   fields["heapUsedMb"] = tenths(sample.heap.usedMb);
   fields["heapSizeMb"] = tenths(sample.heap.sizeMb);
   fields["gcs"] = sample.heap.collections;
+  if (!sample.memory.source.empty()) {
+    fields["pssMb"] = tenths(sample.memory.pssMb);
+    fields["swapMb"] = tenths(sample.memory.swapMb);
+    fields["memorySource"] = sample.memory.source;
+  }
   fields["cpu"] = tenths(sample.cpuPercent);
   return "perf " + folly::toJson(fields);
 }

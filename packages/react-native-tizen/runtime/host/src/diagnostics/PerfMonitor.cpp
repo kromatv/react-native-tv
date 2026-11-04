@@ -142,6 +142,7 @@ void PerfMonitor::emit() {
     sample.jsLagMs = probe_->pending ? millis(now - probe_->postedAt) : probe_->lagMs;
     sample.heap = probe_->heap;
   }
+  sample.memory = readProcessMemory();
   const double cpuSeconds = processCpuSeconds();
   if (sample.windowMs > 0) sample.cpuPercent = (cpuSeconds - cpuSecondsAt_) * 100000 / sample.windowMs;
   cpuSecondsAt_ = cpuSeconds;

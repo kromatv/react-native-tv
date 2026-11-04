@@ -1,6 +1,7 @@
 #pragma once
 
 #include "FrameStats.h"
+#include "ProcessMemory.h"
 #include "TransactionStats.h"
 
 #include <cstdint>
@@ -25,6 +26,7 @@ struct PerfSample {
   double jsLagMs{0};
   TransactionStats transactions;
   HeapReading heap;
+  ProcessMemory memory;
   double cpuPercent{0};
 };
 

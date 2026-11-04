@@ -13,6 +13,14 @@ describe('formatPerfSample', () => {
     );
   });
 
+  it("prints the process's PSS and swap against Samsung's budget when the build reports them", () => {
+    const sample = idleSample({ pssMb: 140.2, swapMb: 1.8, memorySource: 'smaps_rollup' });
+
+    expect(formatPerfSample(sample, NINE_AM, plain)).toBe(
+      '09:00:05  idle  heap  12.5/   32 MB  mem   142/380 MB  cpu   1%',
+    );
+  });
+
   it('prints frames against the display rate, then each thread', () => {
     const line = formatPerfSample(
       idleSample({
