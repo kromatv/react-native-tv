@@ -6,6 +6,7 @@ import { fakeApp } from '../app/app.fixtures.ts';
 import { bundleApp } from '../bundle/bundle-app.ts';
 import { Reporter } from '../cli/reporter.ts';
 import { FixableError } from '../errors.ts';
+import { singleReactNativeIssue } from '../dependencies/react-native-copies.ts';
 import { capturedOutput } from '../fakes.fixtures.ts';
 import { tizenMetroIssue } from '../metro/metro-platforms.ts';
 import { buildDotnetProject } from '../package/dotnet-build.ts';
@@ -31,6 +32,9 @@ vi.mock('../signing/sign-package.ts', () => ({ signPackage: vi.fn() }));
 vi.mock('./runtime-steps.ts', () => ({ runtimeSteps: vi.fn() }));
 vi.mock('../metro/metro-platforms.ts', () => ({ tizenMetroIssue: vi.fn(() => null) }));
 vi.mock('../package/packaged-runtime.ts', () => ({ checkPackagedRuntime: vi.fn() }));
+vi.mock('../dependencies/react-native-copies.ts', () => ({
+  singleReactNativeIssue: vi.fn(() => null),
+}));
 
 const SDK = { root: '/tizen-studio', packageManager: '/pm' };
 const signer = testSigner('Store');
@@ -161,10 +165,11 @@ describe('packageSteps', () => {
     expect(runtimeSteps).not.toHaveBeenCalled();
   });
 
-  it("stops before compiling anything when the app's Metro config has no withTizen", async () => {
-    vi.mocked(tizenMetroIssue).mockReturnValueOnce(
-      new FixableError('no tizen platform', 'Run npx rn-tizen init'),
-    );
+  it.each([
+    ['loads two react-natives', () => vi.mocked(singleReactNativeIssue), 'two copies'],
+    ['Metro config has no withTizen', () => vi.mocked(tizenMetroIssue), 'no tizen platform'],
+  ])('stops before compiling anything when the app %s', async (_, check, message) => {
+    check().mockReturnValueOnce(new FixableError(message, 'Run npx rn-tizen init'));
 
     await expect(
       packageSteps(reporter(), {
@@ -175,7 +180,7 @@ describe('packageSteps', () => {
         log: null,
         signing: { profile: 'Store' },
       }),
-    ).rejects.toThrow('no tizen platform');
+    ).rejects.toThrow(message);
     expect(resolveSigning).not.toHaveBeenCalled();
     expect(runtimeSteps).not.toHaveBeenCalled();
   });

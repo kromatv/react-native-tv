@@ -9,6 +9,7 @@ import { ensureIcuData } from '../runtime/icu-data.ts';
 import type { Reporter } from '../cli/reporter.ts';
 import { devBuildHost, devServerBundleStep } from '../package/dev-server-bundle.ts';
 import { buildDotnetProject } from '../package/dotnet-build.ts';
+import { singleReactNativeIssue } from '../dependencies/react-native-copies.ts';
 import { tizenMetroIssue } from '../metro/metro-platforms.ts';
 import { checkPackagedRuntime } from '../package/packaged-runtime.ts';
 import { featureNotes } from '../package/feature-notes.ts';
@@ -73,9 +74,20 @@ export interface BuiltPackage {
   readonly distributor: X509Certificate;
 }
 
-/** Fails, as one step, unless the app's Metro config bundles for Tizen. */
-export function tizenMetroStep(reporter: Reporter, app: AppProject): Promise<void> {
-  return reporter.step(
+/**
+ * Fails, a step each, unless the app loads one react-native and its Metro
+ * config bundles for Tizen.
+ */
+export async function appSetupSteps(reporter: Reporter, app: AppProject): Promise<void> {
+  await reporter.step(
+    'React Native',
+    () => {
+      const issue = singleReactNativeIssue(app.root);
+      return issue === null ? Promise.resolve() : Promise.reject(issue);
+    },
+    () => `${app.packages.reactNative.name} ${app.packages.reactNative.version}`,
+  );
+  await reporter.step(
     'Metro config',
     () => {
       const issue = tizenMetroIssue(app.root);
@@ -88,8 +100,8 @@ export function tizenMetroStep(reporter: Reporter, app: AppProject): Promise<voi
 /**
  * Builds a signed `.tpk` from scratch or incrementally: the native runtime, the
  * bytecode bundle, the generated `tizen/` project, then .NET and signing.
- * Fails fast, before any compiling, when Metro cannot bundle for Tizen or
- * there is nothing to sign with.
+ * Fails fast, before any compiling, when the app loads more than one
+ * react-native, Metro cannot bundle for Tizen, or there is nothing to sign with.
  */
 export async function packageSteps(
   reporter: Reporter,
@@ -97,7 +109,7 @@ export async function packageSteps(
 ): Promise<BuiltPackage> {
   const { sdk, app, target, shell } = request;
   claimTizenDir(app.tizenDir);
-  await tizenMetroStep(reporter, app);
+  await appSetupSteps(reporter, app);
   const signing = await reporter.step(
     'Certificates',
     () =>

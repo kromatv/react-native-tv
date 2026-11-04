@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -74,6 +74,32 @@ describe('checkApp', () => {
       title: 'App',
       status: 'ok',
       detail: 'org.example.demo 1.0.0, react-native 0.88.0',
+    });
+  });
+});
+
+describe('an app that loads two react-natives', () => {
+  it('fails the doctor with the copies and the fix', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'rn-tizen-two-copies-'));
+    dirs.push(dir);
+    const install = (path: string, manifest: Record<string, unknown>) => {
+      mkdirSync(join(dir, path), { recursive: true });
+      writeFileSync(join(dir, path, 'package.json'), JSON.stringify(manifest));
+    };
+    install('.', { name: 'tv-app', dependencies: { 'react-native': '*', lib: '*' } });
+    install('node_modules/react-native', { name: 'react-native-tvos', version: '0.88.0-0' });
+    install('node_modules/lib', { name: 'lib', dependencies: { 'react-native': '*' } });
+    install('node_modules/lib/node_modules/react-native', {
+      name: 'react-native',
+      version: '0.88.0',
+    });
+    writeFileSync(join(dir, 'app.json'), '{}');
+    vi.spyOn(appProject, 'loadAppProject').mockReturnValue(fakeApp(dir));
+
+    expect(await checkApp(dir)).toMatchObject({
+      status: 'fail',
+      detail: expect.stringContaining('The app loads 2 copies of react-native'),
+      fix: expect.stringContaining('rn-tizen init'),
     });
   });
 });

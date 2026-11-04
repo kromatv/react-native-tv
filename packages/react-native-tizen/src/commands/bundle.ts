@@ -10,7 +10,7 @@ import {
 } from '../cli/command.ts';
 import { formatPath } from '../cli/format.ts';
 import { Reporter } from '../cli/reporter.ts';
-import { bundleStep, tizenMetroStep } from '../pipeline/package-steps.ts';
+import { bundleStep, appSetupSteps } from '../pipeline/package-steps.ts';
 
 const OPTIONS = {
   out: {
@@ -41,7 +41,7 @@ export const bundleCommand: Command = {
       entryPath(values, context),
     );
     const outDir = values.out === undefined ? undefined : resolve(context.cwd, values.out);
-    await tizenMetroStep(reporter, app);
+    await appSetupSteps(reporter, app);
     const bundle = await bundleStep(reporter, app, outDir);
     reporter.field('Bytecode', formatPath(bundle.bytecode, context.cwd));
     reporter.field('Assets', formatPath(bundle.assetsDir, context.cwd));

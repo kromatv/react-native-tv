@@ -2,6 +2,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { singleReactNativeIssue } from '../dependencies/react-native-copies.ts';
 import { FixableError } from '../errors.ts';
 import { tizenMetroIssue } from '../metro/metro-platforms.ts';
 import { jobPageUrl } from './devtools-commands.ts';
@@ -9,6 +10,9 @@ import { startJob, writeJob, type Job } from './jobs.ts';
 import { runDevtoolsCommand } from './run-devtools-command.ts';
 
 vi.mock('../metro/metro-platforms.ts', () => ({ tizenMetroIssue: vi.fn(() => null) }));
+vi.mock('../dependencies/react-native-copies.ts', () => ({
+  singleReactNativeIssue: vi.fn(() => null),
+}));
 vi.mock('./jobs.ts', async (importOriginal) => ({
   ...(await importOriginal<typeof import('./jobs.ts')>()),
   startJob: vi.fn(),
@@ -91,6 +95,22 @@ describe('runDevtoolsCommand', () => {
     );
     expect(tizenMetroIssue).toHaveBeenCalledOnce();
     expect(startJob).toHaveBeenCalledOnce();
+  });
+
+  it('refuses to run an app that loads two react-natives, before reading its Metro config', async () => {
+    vi.mocked(singleReactNativeIssue).mockReturnValueOnce(
+      new FixableError('The app loads 2 copies of react-native', 'Run npx rn-tizen init'),
+    );
+
+    const { lines, exitCode } = await runDevtoolsCommand(
+      ['run-tv', '{"device":"tv"}', DEV_SERVER],
+      dir,
+    );
+
+    expect(exitCode).toBe(1);
+    expect(lines[0]?.text).toBe('The app loads 2 copies of react-native. Run npx rn-tizen init');
+    expect(tizenMetroIssue).not.toHaveBeenCalled();
+    expect(startJob).not.toHaveBeenCalled();
   });
 
   it('says why a job could not start', async () => {

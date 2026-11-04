@@ -53,7 +53,13 @@ export default withTizen(getDefaultConfig(import.meta.dirname));
 
 An app that already has a Metro config keeps it: `init` wraps its export with
 `withTizen`, or prints the two lines to add when it cannot change the file
-safely. Running `init` again changes nothing.
+safely.
+
+Last, `init` points `react-native` at
+[react-native-tvos](https://github.com/react-native-tvos/react-native-tvos),
+which brings `useTVEventHandler` and the other TV APIs, adds the override that
+keeps every other package on that copy, and runs your package manager's
+install. Running `init` again changes nothing.
 
 With Bun, pnpm or Yarn, run these commands with `bunx`, `pnpm exec` or `yarn`
 where they say `npx`, as `init` prints them: in a Bun workspace,
@@ -84,8 +90,8 @@ Press **shift+m** ("more tools") and pick `@kromatv/react-native-tizen`:
 Each command prints the address of a page inside the dev server, where you can
 follow its progress and logs. The first run builds the native runtime, which
 takes a few minutes; later runs only rebuild what changed. Run on TV and Run
-in simulator check the Metro config first, and say to run `npx rn-tizen init`
-when it has no `withTizen`. `npx rn-tizen doctor` names the exact fix for
+in simulator check first that the app loads one `react-native` and that its
+Metro config has `withTizen`, and say to run `npx rn-tizen init` when not. `npx rn-tizen doctor` names the exact fix for
 anything a build needs.
 
 Expo has no `expo run:tizen` and no single-key shortcut for Tizen, and

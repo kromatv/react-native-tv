@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { packageRunner } from './package-runner.ts';
+import { findPackageManager, packageRunner } from './package-manager.ts';
 
 const dirs: string[] = [];
 
@@ -13,6 +13,7 @@ afterEach(() => {
 function project(lockfile?: string): string {
   const dir = mkdtempSync(join(tmpdir(), 'rn-tizen-runner-'));
   dirs.push(dir);
+  writeFileSync(join(dir, 'package.json'), '{}');
   if (lockfile !== undefined) writeFileSync(join(dir, lockfile), '');
   return dir;
 }
@@ -35,5 +36,17 @@ describe('packageRunner', () => {
 
     expect(packageRunner(app)).toBe('bunx');
     expect(packageRunner(project())).toBe('npx');
+  });
+});
+
+describe('findPackageManager', () => {
+  it('names the root it installs from: the workspace root, or the app without a lockfile', () => {
+    const workspace = project('pnpm-lock.yaml');
+    const app = join(workspace, 'apps', 'tv');
+    mkdirSync(app, { recursive: true });
+    const alone = project();
+
+    expect(findPackageManager(app)).toEqual({ name: 'pnpm', root: workspace });
+    expect(findPackageManager(alone)).toEqual({ name: 'npm', root: alone });
   });
 });

@@ -8,7 +8,7 @@ import { FixableError } from '../errors.ts';
 import { Reporter } from '../cli/reporter.ts';
 import { LogPrinter } from '../logs/log-printer.ts';
 import { listenForLogs, type LogServer } from '../logs/log-server.ts';
-import { bundleDir, bundleStep, tizenMetroStep } from '../pipeline/package-steps.ts';
+import { bundleDir, bundleStep, appSetupSteps } from '../pipeline/package-steps.ts';
 import { devServerBundleStep } from '../package/dev-server-bundle.ts';
 import { simulatorCommandLine, type SimulatorInstance } from '../simulator/instance.ts';
 import { ensureVm, hostAddress, startApp, type VmPreparation } from '../simulator/simulator.ts';
@@ -51,7 +51,7 @@ export async function prepareSimulator(
   const where = relative(context.cwd, app.root);
   const location = where === '' ? '' : `  ${reporter.paint('gray', where)}`;
   reporter.field('App', `${app.config.packageId} ${app.config.version}${location}`);
-  if (flags.bundle === undefined) await tizenMetroStep(reporter, app);
+  if (flags.bundle === undefined) await appSetupSteps(reporter, app);
   await reporter.step(
     'Simulator VM',
     (task) => ensureVm(task, app),

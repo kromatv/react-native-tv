@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { FixableError } from '../errors.ts';
+import { singleReactNativeIssue } from '../dependencies/react-native-copies.ts';
 import { tizenMetroIssue } from '../metro/metro-platforms.ts';
 import { CommandInputError, jobPageUrl, planCommand } from './devtools-commands.ts';
 import { jobsDir, listJobs, startJob, stopJob } from './jobs.ts';
@@ -17,8 +18,9 @@ const argvSchema = z.tuple([z.string().min(1), z.string().max(8192), z.url()]);
 async function start(argv: readonly string[], dir: string): Promise<OutputLine> {
   const [command, argsJson, devServer] = argvSchema.parse(argv);
   const plan = await planCommand(command, JSON.parse(argsJson), devServer);
-  const metroIssue = plan.bundles ? tizenMetroIssue(process.cwd()) : null;
-  if (metroIssue !== null) throw metroIssue;
+  const root = process.cwd();
+  const setupIssue = plan.bundles ? (singleReactNativeIssue(root) ?? tizenMetroIssue(root)) : null;
+  if (setupIssue !== null) throw setupIssue;
   if (plan.exclusive) {
     const running = (await listJobs(dir)).filter(
       (job) => job.kind === plan.kind && job.status === 'running',
@@ -29,7 +31,7 @@ async function start(argv: readonly string[], dir: string): Promise<OutputLine> 
     kind: plan.kind,
     title: plan.title,
     args: [...plan.args],
-    cwd: process.cwd(),
+    cwd: root,
   });
   const url = jobPageUrl(devServer, job.id);
   return { type: 'text', level: 'info', text: `${plan.title} started; progress and logs`, url };

@@ -2,7 +2,7 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { z } from 'zod';
-import { packageRunner } from '../cli/package-runner.ts';
+import { packageRunner } from '../dependencies/package-manager.ts';
 import { FixableError } from '../errors.ts';
 import { CommandError, lastLines, runSync } from '../exec.ts';
 import { TIZEN_PLATFORM } from './with-tizen.ts';

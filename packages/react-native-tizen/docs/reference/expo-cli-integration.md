@@ -8,6 +8,8 @@ how they load the app's Metro config. Checked on 2026-11-03 and 2026-11-04.
 |---|---|
 | **S** | Read in source: `@expo/cli` 58.1.18, `@expo/config-plugins` 58.0.11, `@expo/metro-config` 58.0.20, `@expo/require-utils` 58.0.5, `metro-config` 0.87.1 and 0.87.2, and `expo-modules-autolinking` 58.0.16 as installed in this repository, under `build/` (`src/` for `metro-config`). A fresh `create-expo-app` (SDK 58) installed `@expo/cli` 58.1.19 and autolinking 58.0.17; the files compared below are unchanged there |
 | **O** | Observed: a fresh `create-expo-app --template blank-typescript` app with this package installed from its packed tarball, on an arm64 Mac |
+| **P** | Observed in section 6: an app in `/tmp` with `expo` ~58.0.16 (58.0.23 installed, `@expo/cli` 58.1.19), `expo-image`, `react-native-svg` 15.16.0 and `react` 19.3.0, installed on an arm64 Mac on 2026-11-04 with npm 11.17.0, Bun 1.4.2, pnpm 9.15.9, 10.34.9, 11.28.9 and 12.16.1, and Yarn 1.22.22 and 4.18.1 (`nodeLinker: node-modules`). `fake-lib`, a local tarball that depends on `react-native` 0.88.0, tested the overrides |
+| **D** | Read in the documentation linked at the end |
 
 ## 1. Config plugins
 
@@ -73,6 +75,24 @@ how they load the app's Metro config. Checked on 2026-11-03 and 2026-11-04.
 | `loadUserConfig({ projectRoot, serverRoot: getMetroServerRoot(projectRoot) })`, from `expo/metro-config` and `@expo/config/paths`, returned the example's config in 0.6 s, its `resolver.platforms` `ios android tvos macos tizen`. | S, O | `@expo/config` 58.0.10 `build/paths/paths.js:31-32` |
 | `expo prebuild` suggests an Android package from the iOS bundle id when it is valid, else `com.<owner>.<slug>` with `anonymous` for an owner it does not know. It sanitizes it: characters other than letters, digits, `_` and `.` dropped, empty segments removed, `com.` added until there are two segments, and `x` before a segment that does not start with a letter. | S | `src/utils/getOrPromptApplicationId.js:93, 192-210`; `src/utils/validateApplicationId.js:108-130` |
 
+## 6. react-native-tvos and the package managers
+
+| Fact | Tag | Source |
+|---|---|---|
+| "You cannot use this package and the core react-native package simultaneously in a project." An app installs it as `"react-native": "npm:react-native-tvos@<version>"`. | D | [rntvos] |
+| Expo's TV guide: "In **package.json**, modify the `react-native` dependency to use the TV repo", `npm:react-native-tvos@0.85-stable` for SDK 56 and later, and "The `react-native-tvos` version must match the Expo SDK you are using." | D | [expo-tv] |
+| Expo treats an app as a TV app when its installed `react-native` is named `react-native-tvos`. `expo install --check` then compares only the major and minor version with Expo's bundled `react-native`, 0.88.1 in SDK 58, and suggests `npm:react-native-tvos@<major>.<minor>-stable` when that dist-tag is published, `@next` for a prerelease, else `@latest`. | S | `@expo/cli` 58.1.19 `build/src/start/doctor/dependencies/reactNativeTv.js:70-130`, `validateDependenciesVersions.js:242-266`; `expo` 58.0.23 `bundledNativeModules.json:105` |
+| react-native-tvos 0.88.0-0 depends on `@react-native-tvos/virtualized-lists` 0.88.0-0, whose peer is `"react-native": "0.88.0"`. No semver range, `*` included, matches the prerelease `0.88.0-0`. With the alias alone npm installs upstream `react-native` 0.88.0 for that peer at `node_modules/react-native/node_modules/react-native`, 31 MB. Bun, every pnpm and both Yarns install one copy. | P | `@react-native-tvos/virtualized-lists/package.json` |
+| npm: "overrides may also be defined as a reference to a spec for a direct dependency" "by prefixing the name of the package you wish the version to match with a `$`". With `"overrides": { "react-native": "$react-native" }`, a fresh npm install has one copy, and so does switching an installed app from `react-native` 0.88.1 to the alias and the override in one `npm install`. | D, P | [npm-overrides] |
+| Added to an app whose `package-lock.json` holds the second copy, the override changes nothing: `npm install` and `npm dedupe` answer `up to date`. The lock's entry for upstream `react-native` has no `name`; the alias's has `"name": "react-native-tvos"`. Deleting the upstream entries from the lock, then `npm install`, removed the copy (`removed 2 packages`). | P | |
+| Without an override, every manager gives `fake-lib` its own upstream `react-native`. With one, `fake-lib` loads react-native-tvos: npm and Bun with `"overrides": { "react-native": "$react-native" }`, pnpm 10.34.9 with the same under `pnpm.overrides` in `package.json`, pnpm 11.28.9 and 12.16.1 with `overrides` in `pnpm-workspace.yaml`, and both Yarns with `"resolutions": { "react-native": "npm:react-native-tvos@0.88.0-0" }`. | P | |
+| Bun: "A value of `"$name"` reuses the range you declared for `name` in your own dependencies", and "Bun only reads overrides from the root `package.json`". | D | [bun-overrides] |
+| Yarn's `resolutions` "can only be set at the root of the project"; its documentation shows versions as values and no `$` reference. | D | [yarn-resolutions] |
+| pnpm: "pnpm does not read settings from the `pnpm` field of `package.json`. Define settings in `pnpm-workspace.yaml` instead." pnpm 12.16.1 printed `The "pnpm" field in package.json is no longer read by pnpm. The following keys were ignored: "pnpm.overrides"`. pnpm 9.15.9 refused a `pnpm-workspace.yaml` without `packages`: `packages field missing or empty`. | D, P | [pnpm-package-json], [pnpm-overrides] |
+| Added to an existing install, the override replaced `fake-lib`'s copy with Bun, pnpm 12.16.1 and both Yarns. pnpm 10.34.9 wrote it into `pnpm-lock.yaml` and left `fake-lib` linked to the upstream copy. | P | |
+| Bun 1.4.2 fails on a dist-tag in an alias: `No version matching "npm:react-native-tvos@0.87-stable" found for specifier "react-native-tvos" (but package exists)`. | P | |
+| Five hours after react-native-tvos 0.88.1-0 was published, Yarn 4.18.1 refused it (`All versions satisfying "0.88.1-0" are quarantined`) and pnpm 12.16.1 resolved `0.88-stable` to `0.88.0-0rc2`. Semver sorts `0.88.0-0rc2` after `0.88.0-0`, so `~0.88.0-0` resolves to the release candidate. | P | `semver` 7 `compare`, `maxSatisfying` |
+
 ## What this means for this package
 
 - `app.plugin.js` re-exports the compiled config plugin as an ES module, plain
@@ -86,6 +106,17 @@ how they load the app's Metro config. Checked on 2026-11-03 and 2026-11-04.
   as `expo prebuild` does, for the package id. Builds load the Metro config
   with `loadUserConfig` before anything else, and stop with `npx rn-tizen init`
   as the fix when its platforms lack `tizen`.
+- `rn-tizen init` points `react-native` at `npm:react-native-tvos@0.88.0-0`,
+  the release this repository builds against, unless the app names a
+  react-native-tvos already. An exact version, because Bun refuses the
+  `-stable` tag and a range can pick a release candidate; Expo accepts it, as
+  it compares 0.88 only. It writes the override where the manager of the
+  nearest lockfile reads it (section 6): `$react-native` where the manager
+  takes it and the root depends on `react-native`, else the spec. For npm it
+  drops the lock's upstream entries, then it runs the install and checks that
+  one copy is left. Builds, shift+m and `doctor` follow the app's dependencies,
+  optional dependencies and peers from where each package is installed, as
+  Node looks them up, and stop when they reach more than one `react-native`.
 - `expo-module.config.json` declares the dev tools plugin. Each command starts
   a detached job and returns at once with the URL of the plugin's page, which
   shows each job's progress and output.
@@ -103,3 +134,11 @@ The files above, under `node_modules/.bun/@expo+cli@58.1.18*/node_modules/@expo/
 `node_modules/.bun/metro-config@0.87.1*/`, `node_modules/.bun/metro-config@0.87.2*/`,
 `node_modules/.bun/expo@58.0.22*/` and
 `node_modules/.bun/expo-modules-autolinking@58.0.16*/`.
+
+[rntvos]: https://github.com/react-native-tvos/react-native-tvos
+[expo-tv]: https://docs.expo.dev/guides/building-for-tv/
+[npm-overrides]: https://docs.npmjs.com/cli/v11/configuring-npm/package-json#overrides
+[bun-overrides]: https://bun.sh/docs/install/overrides
+[yarn-resolutions]: https://yarnpkg.com/configuration/manifest#resolutions
+[pnpm-package-json]: https://pnpm.io/package_json
+[pnpm-overrides]: https://pnpm.io/settings/dependency-resolution#overrides

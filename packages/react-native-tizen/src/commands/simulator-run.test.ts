@@ -5,7 +5,7 @@ import { Reporter } from '../cli/reporter.ts';
 import { capturedOutput, type CapturedOutput } from '../fakes.fixtures.ts';
 import { listenForLogs, type LogServer } from '../logs/log-server.ts';
 import { devServerBundleStep } from '../package/dev-server-bundle.ts';
-import { bundleStep, tizenMetroStep } from '../pipeline/package-steps.ts';
+import { bundleStep, appSetupSteps } from '../pipeline/package-steps.ts';
 import { simulatorInstance } from '../simulator/instance.ts';
 import { ensureVm, hostAddress, startApp } from '../simulator/simulator.ts';
 import { buildSimulatorRuntime } from '../simulator/simulator-runtime.ts';
@@ -20,7 +20,7 @@ vi.mock('../logs/log-server.ts', () => ({ listenForLogs: vi.fn() }));
 vi.mock('../pipeline/package-steps.ts', () => ({
   bundleStep: vi.fn(),
   bundleDir: vi.fn(() => '/b'),
-  tizenMetroStep: vi.fn(),
+  appSetupSteps: vi.fn(),
 }));
 vi.mock('../package/dev-server-bundle.ts', () => ({ devServerBundleStep: vi.fn() }));
 vi.mock('../runtime/icu-data.ts', () => ({
@@ -72,7 +72,7 @@ describe('prepareSimulator', () => {
     const prepared = await prepareSimulator(reporter, {}, context);
     await prepareSimulator(reporter, { bundle: 'app.hbc' }, context);
 
-    expect(tizenMetroStep).toHaveBeenCalledOnce();
+    expect(appSetupSteps).toHaveBeenCalledOnce();
     expect(prepared.runtime).toBe('0123456789ab');
     expect(ensureVm).toHaveBeenCalled();
     expect(out.text()).toContain('aarch64 Linux, 0123456789ab');

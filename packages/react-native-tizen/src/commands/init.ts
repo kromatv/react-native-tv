@@ -3,7 +3,7 @@ import { join, resolve } from 'node:path';
 import { ask, canAsk } from '../cli/ask.ts';
 import { COMMON_OPTIONS, parseCommandArgs, PROJECT_OPTIONS, type Command } from '../cli/command.ts';
 import { formatPath } from '../cli/format.ts';
-import { packageRunner } from '../cli/package-runner.ts';
+import { packageRunner } from '../dependencies/package-manager.ts';
 import { Reporter } from '../cli/reporter.ts';
 import { readExpoConfig } from '../app/expo-config.ts';
 import { addTizenPlugin, type PluginSetup } from '../config/add-tizen-plugin.ts';
@@ -14,12 +14,17 @@ import { TIZEN_PLUGIN } from '../config/tizen-settings.ts';
 import { FixableError } from '../errors.ts';
 import { setUpMetroConfig, type MetroSetup } from '../metro/set-up-metro-config.ts';
 import { DEFAULT_TARGET, rootstrapFor } from '../tizen/target.ts';
+import { installReactNative } from './init-react-native.ts';
 
 const OPTIONS = {
   package: {
     type: 'string',
     placeholder: '<id>',
     description: "The app's Tizen package id, such as com.example.myapp (asked when left out)",
+  },
+  'no-install': {
+    type: 'boolean',
+    description: "Change package.json without running the package manager's install",
   },
   ...PROJECT_OPTIONS,
   ...COMMON_OPTIONS,
@@ -101,11 +106,14 @@ function reportRootstrap(reporter: Reporter, root: string): void {
   );
 }
 
-/** `rn-tizen init`: lists the config plugin in the app's config and wraps its Metro config with `withTizen`. */
+/**
+ * `rn-tizen init`: lists the config plugin in the app's config, wraps its Metro
+ * config with `withTizen`, and installs one react-native-tvos.
+ */
 export const initCommand: Command = {
   name: 'init',
   summary:
-    'Set an Expo app up for Tizen: the config plugin in app.json, withTizen in the Metro config',
+    'Set an Expo app up for Tizen: the config plugin, withTizen in the Metro config, one react-native-tvos',
   options: OPTIONS,
   examples: ['npx rn-tizen init', 'npx rn-tizen init --package com.example.myapp'],
   async run(args, context) {
@@ -124,6 +132,7 @@ export const initCommand: Command = {
       context.cwd,
     );
     reportMetro(reporter, setUpMetroConfig(root), context.cwd);
+    await installReactNative(reporter, root, context.cwd, values['no-install'] ?? false);
     reporter.line();
     reportRootstrap(reporter, root);
     reporter.note(

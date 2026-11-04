@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadAppProject } from '../app/app-project.ts';
+import { singleReactNativeIssue } from '../dependencies/react-native-copies.ts';
 import { checking, failed, passed, type CheckResult } from './check-result.ts';
 
 const CONFIG_FILES = ['app.json', 'app.config.js', 'app.config.ts'];
@@ -26,6 +27,8 @@ export function checkApp(dir: string): Promise<CheckResult> {
   }
   return checking('App', () => {
     const app = loadAppProject(dir);
+    const duplicate = singleReactNativeIssue(dir);
+    if (duplicate !== null) throw duplicate;
     if (app.config.deprecation !== null) {
       return failed(
         'App',

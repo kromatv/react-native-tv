@@ -27,7 +27,7 @@ from memory.
 | `shell/`, `src/package/`, `src/tizen/`, manifests, signing | `tizen-tv-platform.md` |
 | `src/sdb/`, `src/tizen/devices.ts`, `src/tizen/install-app.ts` | `sdb-protocol.md` |
 | `src/discovery/` | `tv-discovery.md` |
-| `app.plugin.js`, `src/config/config-plugin.ts`, `src/devtools/`, `devtools/`, `expo-module.config.json` | `expo-cli-integration.md` |
+| `app.plugin.js`, `src/config/config-plugin.ts`, `src/commands/init*.ts`, `src/dependencies/`, `src/devtools/`, `devtools/`, `expo-module.config.json` | `expo-cli-integration.md` |
 | `src/signing/`, `src/tizen/signing-identity.ts`, `src/tizen/profiles-file.ts`, `src/tizen/profile-password.ts` | `tizen-package-signing.md` |
 | `runtime/host/src/input/` | `tizen-input.md` |
 | `<TextInput>`: `views/TextInput*`, `fabric/TextInput*`, `input/KeyboardFocus`, `input/Ime*` | `text-input.md` |

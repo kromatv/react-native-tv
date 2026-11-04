@@ -1,14 +1,22 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { readExpoConfig } from '../app/expo-config.ts';
 import { ask, canAsk } from '../cli/ask.ts';
+import { run as runCommand } from '../exec.ts';
 import { captureProcessOutput } from '../fakes.fixtures.ts';
 import { initCommand } from './init.ts';
 
 vi.mock('../cli/ask.ts', () => ({ ask: vi.fn(), canAsk: vi.fn(() => false) }));
 vi.mock('../app/expo-config.ts', () => ({ readExpoConfig: vi.fn(() => ({ slug: 'tv-app' })) }));
+vi.mock('../exec.ts', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../exec.ts')>()),
+  run: vi.fn(async () => ''),
+  runSync: vi.fn(() => '12.16.1\n'),
+}));
+
+const TVOS = 'npm:react-native-tvos@0.88.0-0';
 
 let dir = '';
 let output: ReturnType<typeof captureProcessOutput>;
@@ -24,10 +32,26 @@ afterEach(() => {
   vi.restoreAllMocks();
   vi.mocked(ask).mockReset();
   vi.mocked(canAsk).mockReset().mockReturnValue(false);
+  vi.mocked(runCommand).mockReset().mockResolvedValue('');
   rmSync(dir, { recursive: true, force: true });
 });
 
 const appJson = () => JSON.parse(readFileSync(join(dir, 'app.json'), 'utf8'));
+const packageJson = () => JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8'));
+
+function installPackage(path: string, manifest: Record<string, unknown>): void {
+  mkdirSync(join(dir, path), { recursive: true });
+  writeFileSync(join(dir, path, 'package.json'), JSON.stringify(manifest));
+}
+
+function installTwoCopies(): void {
+  installPackage('node_modules/react-native', { name: 'react-native-tvos', version: '0.88.0-0' });
+  installPackage('node_modules/lib', { name: 'lib', dependencies: { 'react-native': '0.88.0' } });
+  installPackage('node_modules/lib/node_modules/react-native', {
+    name: 'react-native',
+    version: '0.88.0',
+  });
+}
 const run = (...args: string[]) => initCommand.run(args, { cwd: dir });
 
 describe('rn-tizen init', () => {
@@ -120,6 +144,75 @@ describe('rn-tizen init', () => {
     );
     expect(output.stdout()).toContain(
       '["@kromatv/react-native-tizen",{"package":"com.anonymous.tvapp"}]',
+    );
+  });
+
+  it('points react-native at react-native-tvos, overrides it and installs, then leaves it', async () => {
+    await run('--package', 'com.example.tv');
+    await run();
+
+    expect(packageJson()).toEqual({
+      name: 'tv-app',
+      dependencies: { 'react-native': TVOS },
+      overrides: { 'react-native': '$react-native' },
+    });
+    expect(runCommand).toHaveBeenCalledOnce();
+    expect(runCommand).toHaveBeenCalledWith(['npm', 'install'], {
+      cwd: dir,
+      quiet: true,
+    });
+    expect(output.stdout()).toContain(`package.json now names ${TVOS}`);
+    expect(output.stdout()).toContain('package.json overrides react-native already');
+  });
+
+  it('says what to run with --no-install, and runs nothing', async () => {
+    await run('--package', 'com.example.tv', '--no-install');
+
+    expect(runCommand).not.toHaveBeenCalled();
+    expect(output.stdout()).toContain('Run npm install to apply it.');
+  });
+
+  it("gives the lines to add to a workspace's inline pnpm overrides, and where to install", async () => {
+    const app = join(dir, 'apps', 'tv');
+    mkdirSync(app, { recursive: true });
+    writeFileSync(join(app, 'package.json'), '{ "name": "tv" }');
+    writeFileSync(join(app, 'app.json'), '{ "expo": { "name": "TV", "slug": "tv" } }');
+    writeFileSync(join(dir, 'pnpm-lock.yaml'), '');
+    writeFileSync(join(dir, 'pnpm-workspace.yaml'), 'overrides: { foo: 1.0.0 }\n');
+
+    await initCommand.run(['--package', 'com.example.tv', '--no-install'], { cwd: app });
+
+    expect(output.stdout()).toContain(
+      'pnpm-workspace.yaml cannot be changed safely: add these lines',
+    );
+    expect(output.stdout()).toContain(`  react-native: '${TVOS}'`);
+    expect(output.stdout()).toContain(`Run pnpm install in ${dir} to apply it.`);
+  });
+
+  it('installs again when the app loads two copies, and fails when one is left', async () => {
+    writeFileSync(
+      join(dir, 'package.json'),
+      JSON.stringify({
+        name: 'tv-app',
+        dependencies: { 'react-native': TVOS, lib: '1.0.0' },
+        overrides: { 'react-native': '$react-native' },
+      }),
+    );
+    installTwoCopies();
+    vi.mocked(runCommand).mockImplementationOnce(async () => {
+      rmSync(join(dir, 'node_modules/lib/node_modules'), { recursive: true });
+      return '';
+    });
+
+    await run('--package', 'com.example.tv');
+    installTwoCopies();
+
+    expect(runCommand).toHaveBeenCalledOnce();
+    await expect(run()).rejects.toThrow(
+      expect.objectContaining({
+        message: expect.stringContaining('The app loads 2 copies of react-native'),
+        hint: 'Delete node_modules, then run npm install again.',
+      }),
     );
   });
 

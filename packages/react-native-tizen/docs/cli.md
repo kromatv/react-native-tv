@@ -158,8 +158,8 @@ background and prints the address of the plugin's page,
 `http://<dev server>/_expo/plugins/@kromatv/react-native-tizen/`, where every
 job's progress and output stream, and a running job can be stopped. Starting
 Run on TV or Run in simulator again stops the previous run of the same
-command. Both refuse to start, with the fix, when the app's Metro config has no
-`withTizen`. The jobs are kept in `~/.cache/react-native-tizen/devtools/jobs/`, the
+command. Both refuse to start, with the fix, when the app loads more than one
+`react-native` or its Metro config has no `withTizen`. The jobs are kept in `~/.cache/react-native-tizen/devtools/jobs/`, the
 twenty most recent.
 
 A development build loads its JavaScript from the dev server, and needs React
@@ -198,12 +198,24 @@ Sets an Expo app up for Tizen. Running it again changes nothing.
   existing config whose export is a single line is wrapped with `withTizen`.
   For any other, a JSON one, `package.json`'s `metro` key or a config at the
   workspace root above the app, it prints the two lines to add.
+- **React Native.** It points the app's `react-native` dependency at
+  `npm:react-native-tvos@0.88.0-0`, unless it names a react-native-tvos
+  already, and overrides every other `react-native` in the tree with it, where
+  the package manager of the nearest lockfile reads overrides: `overrides` in
+  `package.json` for npm and Bun, `resolutions` for Yarn, `pnpm.overrides` for
+  pnpm 10 and older, `overrides` in `pnpm-workspace.yaml` for pnpm 11 and later.
+  Without the override, npm installs a second, upstream `react-native` for
+  react-native-tvos's own `@react-native-tvos/virtualized-lists`. It then runs
+  the package manager's install when it changed anything or the app loads more
+  than one `react-native`, and fails, naming each copy and who loads it, unless
+  one is left.
 - **The rootstrap.** It names the Package Manager package the app's floor
   needs, `IOT-Headed-6.0-NativeAppDevelopment-CLI` for the default 6.0.
 
 | Option | |
 |---|---|
 | `--package <id>` | The package id, instead of asking |
+| `--no-install` | Change the files without running the install; `init` prints the command |
 | `--project <dir>` | The app to set up |
 
 ```sh
@@ -219,7 +231,8 @@ the target's floor (the app's `platform` prop when run in an app), with the
 Package Manager package it comes in, Homebrew's LLVM (clang and lld), CMake 3.24 or newer, Ninja, the .NET
 SDK, Node.js, the certificates of the active signing profile (opened with their
 passwords, not expired), the TVs reached before (each one
-probed), ccache, and the app's config when run in an app. Exits 1 when a check
+probed), ccache, and, when run in an app, its config and that it loads one
+`react-native`. Exits 1 when a check
 fails; a warning (no TV answers, no ccache) does not fail it.
 
 | Option | |
@@ -353,10 +366,11 @@ before (it leaves a `.rn-tizen-bundle` file there). Anything else, such as
 ### `rn-tizen package`
 
 Builds a signed `.tpk` from scratch or incrementally: the native runtime, the
-bundle, the `tizen/` project, the .NET build, then signing. It checks the Metro
-config and opens the certificates first, so a Metro config without `withTizen`,
-a missing profile, a wrong password or an expired certificate fails in seconds
-rather than after a build.
+bundle, the `tizen/` project, the .NET build, then signing. It checks the app's
+`react-native` and Metro config and opens the certificates first, so a second
+copy of `react-native`, a Metro config without `withTizen`, a missing profile, a
+wrong password or an expired certificate fails in seconds rather than after a
+build.
 
 The certificates come from Tizen Studio's `profiles.xml`
 (`~/tizen-studio-data/profile/profiles.xml`, or the data directory
