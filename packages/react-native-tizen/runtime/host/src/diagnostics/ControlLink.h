@@ -5,6 +5,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <cstdint>
+#include <functional>
 #include <mutex>
 #include <string>
 #include <thread>
@@ -19,7 +20,14 @@ namespace rntizen {
 /// after the app finds it at once.
 class ControlLink final {
  public:
-  ControlLink(std::string host, std::uint16_t port, std::string app);
+  using WindowCapture = std::function<void(CaptureDone)>;
+
+  /// `captureWindow` takes each screenshot, called on the main thread.
+  ControlLink(
+      std::string host,
+      std::uint16_t port,
+      std::string app,
+      WindowCapture captureWindow = captureHostWindow);
   ~ControlLink();
 
   ControlLink(const ControlLink &) = delete;
@@ -42,6 +50,7 @@ class ControlLink final {
   const std::string host_;
   const std::uint16_t port_;
   const std::string app_;
+  const WindowCapture captureWindow_;
   std::mutex mutex_;
   std::condition_variable wake_;
   bool stopping_{false};

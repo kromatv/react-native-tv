@@ -75,8 +75,12 @@ std::optional<std::string> takeLine(std::string &pending) {
 
 } // namespace
 
-ControlLink::ControlLink(std::string host, std::uint16_t port, std::string app)
-    : host_(std::move(host)), port_(port), app_(std::move(app)), thread_([this] { run(); }) {}
+ControlLink::ControlLink(std::string host, std::uint16_t port, std::string app, WindowCapture captureWindow)
+    : host_(std::move(host)),
+      port_(port),
+      app_(std::move(app)),
+      captureWindow_(std::move(captureWindow)),
+      thread_([this] { run(); }) {}
 
 ControlLink::~ControlLink() {
   {
@@ -163,8 +167,8 @@ bool ControlLink::answer(int socket, const std::string &line) {
 std::variant<ScreenCapture, std::string> ControlLink::capture() {
   auto promise = std::make_shared<std::promise<std::optional<ScreenCapture>>>();
   auto future = promise->get_future();
-  runOnMainThread([promise] {
-    captureHostWindow([promise](std::optional<ScreenCapture> captured) { promise->set_value(std::move(captured)); });
+  runOnMainThread([promise, captureWindow = captureWindow_] {
+    captureWindow([promise](std::optional<ScreenCapture> captured) { promise->set_value(std::move(captured)); });
   });
   const auto deadline = std::chrono::steady_clock::now() + kCaptureTimeout;
   while (future.wait_for(kStopPollInterval) != std::future_status::ready) {

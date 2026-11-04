@@ -1,84 +1,70 @@
 #include "ControlLink.h"
 
+#include "../network/LoopbackServer.test.h"
+
 #include <doctest/doctest.h>
 
 #include <Ecore.h>
 #include <folly/json.h>
 
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <unistd.h>
-
 #include <atomic>
 #include <chrono>
+#include <cstdint>
 #include <functional>
 #include <string>
 #include <thread>
+#include <vector>
 
 namespace rntizen {
 
 namespace {
 
-class Listener {
- public:
-  Listener() : descriptor_(socket(AF_INET, SOCK_STREAM, 0)) {
-    sockaddr_in address{};
-    address.sin_family = AF_INET;
-    address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-    REQUIRE(bind(descriptor_, reinterpret_cast<sockaddr *>(&address), sizeof address) == 0);
-    REQUIRE(listen(descriptor_, 4) == 0);
-    socklen_t length = sizeof address;
-    getsockname(descriptor_, reinterpret_cast<sockaddr *>(&address), &length);
-    port_ = ntohs(address.sin_port);
-  }
-  ~Listener() {
-    close(descriptor_);
-  }
-  Listener(const Listener &) = delete;
-  Listener &operator=(const Listener &) = delete;
+using namespace std::chrono_literals;
+using testing::LoopbackServer;
 
-  std::uint16_t port() const {
-    return port_;
-  }
-  int accept() const {
-    return ::accept(descriptor_, nullptr, nullptr);
-  }
-
- private:
-  int descriptor_;
-  std::uint16_t port_{0};
-};
+constexpr auto kAcceptTimeout = 5s;
+constexpr const char *kApp = "org.example.tv";
 
 std::string readLine(int socket) {
-  std::string line;
-  char character = 0;
-  while (recv(socket, &character, 1, 0) == 1 && character != '\n') line += character;
+  auto line = testing::readUntil(socket, "\n");
+  if (line.ends_with('\n')) line.pop_back();
   return line;
 }
 
 void sendText(int socket, const std::string &text) {
-  send(socket, text.data(), text.size(), MSG_NOSIGNAL);
+  testing::writeAll(socket, text);
 }
 
 bool waitFor(const std::function<bool()> &condition) {
-  const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
+  const auto deadline = std::chrono::steady_clock::now() + 5s;
   while (!condition()) {
     if (std::chrono::steady_clock::now() > deadline) return false;
     ecore_main_loop_iterate();
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    std::this_thread::sleep_for(10ms);
   }
   return true;
+}
+
+std::string readOnMainLoop(const std::function<std::string()> &read) {
+  std::string received;
+  std::atomic<bool> done{false};
+  std::thread reader([&read, &received, &done] {
+    received = read();
+    done = true;
+  });
+  waitFor([&done] { return done.load(); });
+  reader.join();
+  return received;
 }
 
 } // namespace
 
 TEST_CASE("ControlLink greets the listener and takes perf requests until they stop or the link drops") {
   ecore_init();
-  const Listener listener;
+  const LoopbackServer listener;
   {
-    const ControlLink link("127.0.0.1", listener.port(), "org.example.tv");
-    const int client = listener.accept();
+    const ControlLink link("127.0.0.1", listener.port(), kApp);
+    const int client = listener.accept(kAcceptTimeout);
     REQUIRE(client >= 0);
 
     const auto hello = folly::parseJson(readLine(client));
@@ -94,7 +80,7 @@ TEST_CASE("ControlLink greets the listener and takes perf requests until they st
     close(client);
     const bool dropped = waitFor([&link] { return !link.perfRequested(); });
 
-    CHECK(hello == folly::dynamic::object("type", "control")("version", 1)("app", "org.example.tv"));
+    CHECK(hello == folly::dynamic::object("type", "control")("version", 1)("app", kApp));
     CHECK(turnedOn);
     CHECK(turnedOff);
     CHECK(turnedOnAgain);
@@ -105,22 +91,15 @@ TEST_CASE("ControlLink greets the listener and takes perf requests until they st
 
 TEST_CASE("ControlLink answers a screenshot it cannot take with an error") {
   ecore_init();
-  const Listener listener;
+  const LoopbackServer listener;
   {
-    const ControlLink link("127.0.0.1", listener.port(), "org.example.tv");
-    const int client = listener.accept();
+    const ControlLink link("127.0.0.1", listener.port(), kApp);
+    const int client = listener.accept(kAcceptTimeout);
     REQUIRE(client >= 0);
     readLine(client);
 
     sendText(client, "{\"type\":\"screenshot\",\"id\":7}\n");
-    std::string answer;
-    std::atomic<bool> answered{false};
-    std::thread reader([client, &answer, &answered] {
-      answer = readLine(client);
-      answered = true;
-    });
-    waitFor([&answered] { return answered.load(); });
-    reader.join();
+    const auto answer = readOnMainLoop([client] { return readLine(client); });
     close(client);
 
     const auto reply = folly::parseJson(answer);
@@ -130,11 +109,76 @@ TEST_CASE("ControlLink answers a screenshot it cannot take with an error") {
   ecore_shutdown();
 }
 
-TEST_CASE("ControlLink drops a listener whose request grows past 4 KiB") {
-  const Listener listener;
+TEST_CASE("ControlLink sends a screenshot as a header line that sizes the pixels, then the pixels") {
+  ecore_init();
+  const LoopbackServer listener;
+  const std::vector<std::uint8_t> pixels{1, 2, 3, 4, 5, 6, 7, 8};
   {
-    const ControlLink link("127.0.0.1", listener.port(), "org.example.tv");
-    const int client = listener.accept();
+    const ControlLink link("127.0.0.1", listener.port(), kApp, [&pixels](const CaptureDone &done) {
+      done(ScreenCapture{.width = 2, .height = 1, .stride = 8, .pixels = pixels});
+    });
+    const int client = listener.accept(kAcceptTimeout);
+    REQUIRE(client >= 0);
+    readLine(client);
+
+    sendText(client, "{\"type\":\"screenshot\",\"id\":3}\n");
+    const auto answer =
+        readOnMainLoop([client] { return testing::readUntil(client, "\n") + testing::readBytes(client, 8); });
+    close(client);
+
+    const auto newline = answer.find('\n');
+    REQUIRE(newline != std::string::npos);
+    CHECK(folly::parseJson(answer.substr(0, newline)) ==
+          folly::dynamic::object("type", "screenshot")("id", 3)("width", 2)("height", 1)("stride", 8)("bytes", 8));
+    CHECK(answer.substr(newline + 1) == std::string(pixels.begin(), pixels.end()));
+  }
+  ecore_shutdown();
+}
+
+TEST_CASE("ControlLink answers nothing more once it is destroyed while a screenshot is being taken") {
+  ecore_init();
+  const LoopbackServer listener;
+  std::vector<CaptureDone> unfinished;
+  int client = -1;
+  {
+    const ControlLink link("127.0.0.1", listener.port(), kApp, [&unfinished](CaptureDone done) {
+      unfinished.push_back(std::move(done));
+    });
+    client = listener.accept(kAcceptTimeout);
+    REQUIRE(client >= 0);
+    readLine(client);
+
+    sendText(client, "{\"type\":\"screenshot\",\"id\":4}\n");
+    REQUIRE(waitFor([&unfinished] { return !unfinished.empty(); }));
+  }
+  char byte = 0;
+  const auto received = recv(client, &byte, 1, 0);
+  close(client);
+  unfinished.clear();
+  ecore_shutdown();
+
+  CHECK(received <= 0);
+}
+
+TEST_CASE("ControlLink keeps calling until a listener starts") {
+  const auto port = LoopbackServer().port();
+  const ControlLink link("127.0.0.1", port, kApp);
+  std::this_thread::sleep_for(50ms);
+  const LoopbackServer listener(port);
+
+  const int client = listener.accept(kAcceptTimeout);
+  REQUIRE(client >= 0);
+  const auto hello = folly::parseJson(readLine(client));
+  close(client);
+
+  CHECK(hello == folly::dynamic::object("type", "control")("version", 1)("app", kApp));
+}
+
+TEST_CASE("ControlLink drops a listener whose request grows past 4 KiB") {
+  const LoopbackServer listener;
+  {
+    const ControlLink link("127.0.0.1", listener.port(), kApp);
+    const int client = listener.accept(kAcceptTimeout);
     REQUIRE(client >= 0);
     readLine(client);
 
