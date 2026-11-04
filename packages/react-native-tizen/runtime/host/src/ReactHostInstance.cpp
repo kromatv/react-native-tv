@@ -104,7 +104,7 @@ void ReactHost::createInstance() {
               [weakHost = weakHost_](AlertRequest request) {
                 runOnMainThread([weakHost, request = std::move(request)]() mutable {
                   if (auto host = weakHost.lock()) {
-                    (*host)->alertDialog_->show(
+                    (*host)->overlays_.alertDialog->show(
                         std::move(request), (*host)->device_.screenWidth, (*host)->device_.screenHeight);
                   }
                 });
@@ -168,7 +168,7 @@ void ReactHost::showFatalError(const ErrorReport &report) {
     exit();
     return;
   }
-  errorScreen_->show(report, device_.screenWidth, device_.screenHeight);
+  overlays_.errorScreen->show(report, device_.screenWidth, device_.screenHeight);
 }
 
 } // namespace rntizen

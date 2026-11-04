@@ -13,8 +13,8 @@ void ReactHost::createWindow() {
   device_.screenHeight = size.height;
   keyboardFocus_ = std::make_unique<KeyboardFocus>(evas_object_evas_get(window_));
   textMeasurer_ = std::make_shared<EvasTextMeasurer>();
-  errorScreen_ = std::make_unique<ErrorScreen>(evas_object_evas_get(window_));
-  alertDialog_ = std::make_unique<AlertDialog>(evas_object_evas_get(window_));
+  overlays_.errorScreen = std::make_unique<ErrorScreen>(evas_object_evas_get(window_));
+  overlays_.alertDialog = std::make_unique<AlertDialog>(evas_object_evas_get(window_));
 }
 
 void ReactHost::routeInput() {
@@ -22,7 +22,8 @@ void ReactHost::routeInput() {
       window_,
       [this](const RemoteEvent &event) { onRemoteEvent(event); },
       [this](const Ecore_Event_Key &key, bool isDown) {
-        return !errorScreen_->isShown() && !alertDialog_->isShown() && keyboardFocus_->handleKey(key, isDown);
+        return !overlays_.errorScreen->isShown() && !overlays_.alertDialog->isShown() &&
+               keyboardFocus_->handleKey(key, isDown);
       });
 }
 
@@ -39,12 +40,12 @@ void ReactHost::emitDeviceEvent(const std::string &eventName, folly::dynamic pay
 }
 
 void ReactHost::onRemoteEvent(const RemoteEvent &event) {
-  if (errorScreen_->isShown()) {
+  if (overlays_.errorScreen->isShown()) {
     if (event.isBack) exit();
     return;
   }
-  if (alertDialog_->isShown()) {
-    alertDialog_->handle(event);
+  if (overlays_.alertDialog->isShown()) {
+    overlays_.alertDialog->handle(event);
     return;
   }
   if (event.isBack) {

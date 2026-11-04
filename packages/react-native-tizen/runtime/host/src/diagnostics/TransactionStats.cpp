@@ -15,6 +15,7 @@ using facebook::react::kTelemetryUndefinedTimePoint;
 using facebook::react::TelemetryTimePoint;
 
 struct Recorder {
+  std::atomic<bool> enabled{false};
   std::mutex mutex;
   TransactionStats stats;
 };
@@ -24,8 +25,6 @@ Recorder &recorder() {
   return shared;
 }
 
-std::atomic enabled{false};
-
 double millisBetween(TelemetryTimePoint start, TelemetryTimePoint end) {
   if (start == kTelemetryUndefinedTimePoint || end == kTelemetryUndefinedTimePoint || end < start) return 0;
   return std::chrono::duration<double, std::milli>(end - start).count();
@@ -34,11 +33,11 @@ double millisBetween(TelemetryTimePoint start, TelemetryTimePoint end) {
 } // namespace
 
 bool transactionStatsEnabled() {
-  return enabled.load();
+  return recorder().enabled.load();
 }
 
 void setTransactionStatsEnabled(bool on) {
-  enabled.store(on);
+  recorder().enabled.store(on);
 }
 
 void recordTransaction(

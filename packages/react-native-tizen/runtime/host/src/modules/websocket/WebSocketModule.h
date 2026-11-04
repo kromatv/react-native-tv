@@ -28,7 +28,7 @@ class WebSocketModule final : public facebook::react::NativeWebSocketModuleCxxSp
   void send(facebook::jsi::Runtime &runtime, std::string message, double forSocketID);
   void sendBinary(facebook::jsi::Runtime &runtime, const std::string &base64String, double forSocketID);
   void ping(facebook::jsi::Runtime &runtime, double socketID);
-  void close(facebook::jsi::Runtime &runtime, double code, std::string reason, double socketID);
+  void close(facebook::jsi::Runtime &runtime, double code, const std::string &reason, double socketID);
   void addListener(facebook::jsi::Runtime &runtime, const std::string &eventName);
   void removeListeners(facebook::jsi::Runtime &runtime, double count);
 

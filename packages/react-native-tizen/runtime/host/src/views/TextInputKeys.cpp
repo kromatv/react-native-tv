@@ -16,10 +16,7 @@ std::string_view keyName(const Ecore_Event_Key &key) {
 }
 
 bool isOneOf(std::string_view name, std::initializer_list<std::string_view> names) {
-  for (auto candidate : names) {
-    if (candidate == name) return true;
-  }
-  return false;
+  return std::ranges::any_of(names, [name](std::string_view candidate) { return candidate == name; });
 }
 
 bool hasShift(const Ecore_Event_Key &key) {

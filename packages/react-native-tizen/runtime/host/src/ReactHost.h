@@ -95,6 +95,11 @@ class ReactHost final {
     std::unique_ptr<VoiceController> voice;
   };
 
+  struct Overlays {
+    std::unique_ptr<ErrorScreen> errorScreen;
+    std::unique_ptr<AlertDialog> alertDialog;
+  };
+
   const HostConfig config_;
   DeviceProfile device_{readDeviceProfile()};
   std::shared_ptr<std::atomic<bool>> isActive_{std::make_shared<std::atomic<bool>>(true)};
@@ -111,8 +116,7 @@ class ReactHost final {
   std::unique_ptr<SurfacePresenter> presenter_;
   std::unique_ptr<KeyboardFocus> keyboardFocus_;
   std::unique_ptr<RemoteInput> remoteInput_;
-  std::unique_ptr<ErrorScreen> errorScreen_;
-  std::unique_ptr<AlertDialog> alertDialog_;
+  Overlays overlays_;
   Diagnostics diagnostics_;
   TvServices tv_;
   std::shared_ptr<DevSupport> devSupport_;

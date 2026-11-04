@@ -140,9 +140,9 @@ void WebSocketModule::ping(Runtime &, double socketID) {
   connection->send(WebSocketOpcode::Ping, {});
 }
 
-void WebSocketModule::close(Runtime &, double code, std::string reason, double socketID) {
+void WebSocketModule::close(Runtime &, double code, const std::string &reason, double socketID) {
   if (auto connection = WebSocketSockets::shared().find(static_cast<int>(socketID))) {
-    connection->close(static_cast<int>(code), std::move(reason));
+    connection->close(static_cast<int>(code), reason);
   }
 }
 

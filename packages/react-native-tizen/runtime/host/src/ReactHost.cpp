@@ -71,8 +71,8 @@ void ReactHost::stop() {
   devSupport_.reset();
   keyboardFocus_.reset();
   textMeasurer_.reset();
-  alertDialog_.reset();
-  errorScreen_.reset();
+  overlays_.alertDialog.reset();
+  overlays_.errorScreen.reset();
   if (window_ != nullptr) evas_object_del(std::exchange(window_, nullptr));
 }
 
@@ -95,8 +95,8 @@ void ReactHost::reload() {
   stopReactNative();
   openMainThreadSync();
   auto *evas = evas_object_evas_get(window_);
-  errorScreen_ = std::make_unique<ErrorScreen>(evas);
-  alertDialog_ = std::make_unique<AlertDialog>(evas);
+  overlays_.errorScreen = std::make_unique<ErrorScreen>(evas);
+  overlays_.alertDialog = std::make_unique<AlertDialog>(evas);
   createInstance();
   startPerfMonitor();
   loadBundle();
