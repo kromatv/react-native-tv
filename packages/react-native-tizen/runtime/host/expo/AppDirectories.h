@@ -12,8 +12,12 @@ struct AppDirectories {
   std::string resource;
 };
 
-/// The app's directories from Tizen's app_common API, read once. The data and
-/// cache directories exist when this returns.
+/// The app's directories as Tizen's app_common API reports them now, creating
+/// the data and cache directories. A path it does not report falls back to a
+/// private directory of the process's own.
+AppDirectories readAppDirectories();
+
+/// readAppDirectories(), read once.
 const AppDirectories &appDirectories();
 
 /// `path` as a `file://` URI.

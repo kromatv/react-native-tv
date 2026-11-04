@@ -11,7 +11,7 @@ bun run typecheck
 bun run test
 bun run check        # oxlint and oxfmt; bun run check:fix rewrites
 bun run build        # dist/, the compiled JavaScript npm ships
-bun run test:runtime # the host's C++ tests (runtime/host/src/**/*.test.cpp), in the simulator's VM
+bun run test:runtime # the host's C++ tests (runtime/host/src/**/*.test.cpp and runtime/host/expo/**/*.test.cpp), in the simulator's VM
 find simulator -name '*.sh' -print0 | xargs -0 shellcheck -x
 ```
 

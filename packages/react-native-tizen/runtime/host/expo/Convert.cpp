@@ -6,6 +6,7 @@
 
 #include <SharedObject.h>
 
+#include <cmath>
 #include <cstring>
 
 namespace rntizen::expo::detail {
@@ -13,6 +14,14 @@ namespace rntizen::expo::detail {
 using facebook::jsi::JSError;
 using facebook::jsi::Runtime;
 using facebook::jsi::Value;
+
+namespace {
+
+bool isByteCount(double value) {
+  return std::isfinite(value) && value >= 0;
+}
+
+} // namespace
 
 JSError typeError(Runtime &runtime, const char *expected) {
   return JSError(runtime, std::string("Expected ") + expected);
@@ -43,8 +52,12 @@ std::optional<Bytes> bytesFromJs(Runtime &runtime, const Value &value) {
   if (!buffer.isObject() || !offset.isNumber() || !length.isNumber()) return std::nullopt;
   auto arrayBuffer = buffer.getObject(runtime);
   if (!arrayBuffer.isArrayBuffer(runtime)) return std::nullopt;
-  const auto *start = reinterpret_cast<const char *>(arrayBuffer.getArrayBuffer(runtime).data(runtime));
-  return Bytes{std::string(start + static_cast<std::size_t>(offset.getNumber()), static_cast<std::size_t>(length.getNumber()))};
+  auto bytes = arrayBuffer.getArrayBuffer(runtime);
+  const auto start = offset.getNumber();
+  const auto count = length.getNumber();
+  if (!isByteCount(start) || !isByteCount(count) || start + count > static_cast<double>(bytes.size(runtime))) return std::nullopt;
+  const auto *data = reinterpret_cast<const char *>(bytes.data(runtime));
+  return Bytes{std::string(data + static_cast<std::size_t>(start), static_cast<std::size_t>(count))};
 }
 
 Value sharedObjectToJs(Runtime &runtime, const std::shared_ptr<SharedObject> &object) {

@@ -41,7 +41,9 @@ std::string writablePath(char *path, const char *fallback) {
   return withTrailingSlash(fallbackDirectory() + fallback);
 }
 
-AppDirectories readDirectories() {
+} // namespace
+
+AppDirectories readAppDirectories() {
   AppDirectories directories{
       .data = writablePath(app_get_data_path(), "data"),
       .cache = writablePath(app_get_cache_path(), "cache"),
@@ -53,10 +55,8 @@ AppDirectories readDirectories() {
   return directories;
 }
 
-} // namespace
-
 const AppDirectories &appDirectories() {
-  static const AppDirectories directories = readDirectories();
+  static const AppDirectories directories = readAppDirectories();
   return directories;
 }
 

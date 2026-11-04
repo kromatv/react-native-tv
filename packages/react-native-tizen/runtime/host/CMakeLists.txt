@@ -6,6 +6,7 @@ file(GLOB_RECURSE _host_sources CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/s
 list(FILTER _host_sources EXCLUDE REGEX "\\.test\\.cpp$")
 if(TARGET expo_modules_common)
   file(GLOB_RECURSE _expo_host_sources CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/expo/*.cpp")
+  list(FILTER _expo_host_sources EXCLUDE REGEX "\\.test\\.cpp$")
   list(APPEND _host_sources ${_expo_host_sources})
 endif()
 if(RN_TIZEN_DEVELOPMENT)
@@ -63,6 +64,10 @@ set_property(TARGET react-native-tizen APPEND PROPERTY LINK_DEPENDS "${CMAKE_CUR
 
 if(RN_TIZEN_TESTS)
   file(GLOB_RECURSE _host_test_sources CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.test.cpp")
+  if(TARGET expo_modules_common)
+    file(GLOB_RECURSE _expo_test_sources CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/expo/*.test.cpp")
+    list(APPEND _host_test_sources ${_expo_test_sources})
+  endif()
   if(RN_TIZEN_DEVELOPMENT)
     file(GLOB_RECURSE _devsupport_test_sources CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/devsupport/*.test.cpp")
     list(APPEND _host_test_sources ${_devsupport_test_sources})
@@ -73,6 +78,12 @@ if(RN_TIZEN_TESTS)
     ROOTS ${_react_native_roots}
     TIZEN_LIBRARIES ${_tizen_libraries}
     INSTRUMENT react_renderer_textlayoutmanager hermesPlatformIntl_obj)
+  if(TARGET expo_modules_common)
+    # An Expo module registers itself from a static initializer in its own file
+    # (RN_TIZEN_EXPO_MODULE), which never runs from an archive member no test
+    # references: link the Expo host's objects whole, as the library does.
+    target_sources(rn-tizen-host-tests PRIVATE "$<FILTER:$<TARGET_OBJECTS:rn_tizen_host>,INCLUDE,/expo/>")
+  endif()
   # react-native-svg's implementation compiles only for an app that uses it
   # (cmake/Libraries.cmake); its path and viewBox math needs no package.
   target_sources(rn-tizen-host-tests PRIVATE
