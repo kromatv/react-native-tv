@@ -141,9 +141,23 @@ names the one missing.
 
 ## Inside `npx expo start`
 
-The package is also an Expo dev tools plugin (`expo-module.config.json`): in
-`npx expo start`, **shift+m** ("more tools") lists `@kromatv/react-native-tizen`,
-with these commands:
+The package is also an Expo dev tools plugin (`expo-module.config.json`), which
+adds two keys to `npx expo start`, beside Expo's `a` and `i`:
+
+| Key | Does |
+|---|---|
+| **t** | Opens the app on the TV used last, else on the only TV in Developer mode on the network |
+| **shift+t** | Lists the TVs used before, those on the network and the simulator, and opens the app on the one whose number you press; Esc cancels |
+
+`expo start` prints `› Press t │ open on Tizen TV` under its own keys, and both
+lines in the list `?` shows. Opening does what Run on TV does below, with this
+dev server: Expo's terminal shows the build's progress, then the app's
+`console.log` and errors, as for Android. A key typed into one of Expo's own
+prompts does nothing here. This needs no setup and works the same whatever
+runs `expo start`: npm, pnpm, Yarn or Bun.
+
+**shift+m** ("more tools") lists `@kromatv/react-native-tizen`, with these
+commands:
 
 | Command | Runs |
 |---|---|
@@ -167,7 +181,7 @@ Native's development support in the runtime (`DevSettings`, Fast Refresh) to
 start from it.
 
 Expo does not know the Tizen platform beyond that: there is no
-`expo run:tizen` and no single-key shortcut, and neither `expo prebuild` nor
+`expo run:tizen`, and neither `expo prebuild` nor
 `expo export --platform tizen` takes it (`expo export` refuses a platform it
 does not bundle, which is why `rn-tizen bundle` goes through `expo
 export:embed`). A `package.json` script stands beside Expo's own:
@@ -436,12 +450,12 @@ rn-tizen run --dev-server http://localhost:8081
 ### Develop with `expo start`
 
 ```sh
-npx expo start                                   # in the app, as for Android
-rn-tizen run --dev-server http://localhost:8081  # once: install a build that loads from it
+npx expo start                                   # in the app, as for Android, then press t
+rn-tizen run --dev-server http://localhost:8081  # or install, once, a build that loads from it
 ```
 
-Run on TV and Run in simulator, under shift+m in `expo start`, run the same
-commands with the dev server's own address. A build made with `--dev-server`
+`t` and shift+t in `expo start`, and Run on TV and Run in simulator under
+shift+m, run the same commands with the dev server's own address. A build made with `--dev-server`
 carries no bundle: its runtime config names `bundleUrl`, Expo's entry
 (`/.expo/.virtual-metro-entry.bundle?platform=tizen&...`) on that server, with
 `localhost` replaced by an address the TV reaches, and the dev server serves

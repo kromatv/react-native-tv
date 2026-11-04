@@ -1,9 +1,8 @@
 import { z } from 'zod';
 import { FixableError } from '../errors.ts';
-import { singleReactNativeIssue } from '../dependencies/react-native-copies.ts';
-import { tizenMetroIssue } from '../metro/metro-platforms.ts';
 import { CommandInputError, jobPageUrl, planCommand } from './devtools-commands.ts';
-import { jobsDir, listJobs, startJob, stopJob } from './jobs.ts';
+import { jobsDir } from './jobs.ts';
+import { startPlannedJob } from './start-planned-job.ts';
 
 /** One line of the output Expo shows for a dev tools command. */
 export interface OutputLine {
@@ -18,26 +17,13 @@ const argvSchema = z.tuple([z.string().min(1), z.string().max(8192), z.url()]);
 async function start(argv: readonly string[], dir: string): Promise<OutputLine> {
   const [command, argsJson, devServer] = argvSchema.parse(argv);
   const plan = await planCommand(command, JSON.parse(argsJson), devServer);
-  const root = process.cwd();
-  const setupIssue = plan.bundles ? (singleReactNativeIssue(root) ?? tizenMetroIssue(root)) : null;
-  if (setupIssue !== null) throw setupIssue;
-  if (plan.exclusive) {
-    const running = (await listJobs(dir)).filter(
-      (job) => job.kind === plan.kind && job.status === 'running',
-    );
-    await Promise.all(running.map((job) => stopJob(dir, job.id)));
-  }
-  const job = await startJob(dir, {
-    kind: plan.kind,
-    title: plan.title,
-    args: [...plan.args],
-    cwd: root,
-  });
+  const job = await startPlannedJob(dir, plan, process.cwd());
   const url = jobPageUrl(devServer, job.id);
   return { type: 'text', level: 'info', text: `${plan.title} started; progress and logs`, url };
 }
 
-function failure(error: unknown): string {
+/** What a dev tools command that could not run tells the user. */
+export function describeFailure(error: unknown): string {
   if (error instanceof CommandInputError || error instanceof z.ZodError) return error.message;
   if (error instanceof FixableError) return `${error.message}. ${error.hint}`;
   const reason = error instanceof Error ? error.message : String(error);
@@ -56,6 +42,6 @@ export async function runDevtoolsCommand(
   try {
     return { lines: [await start(argv, dir)], exitCode: 0 };
   } catch (error) {
-    return { lines: [{ type: 'text', level: 'error', text: failure(error) }], exitCode: 1 };
+    return { lines: [{ type: 'text', level: 'error', text: describeFailure(error) }], exitCode: 1 };
   }
 }

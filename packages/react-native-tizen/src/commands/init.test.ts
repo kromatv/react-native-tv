@@ -76,7 +76,7 @@ describe('rn-tizen init', () => {
       'lists the @kromatv/react-native-tizen config plugin already',
     );
     expect(output.stdout()).toContain('metro.config.mjs uses withTizen already');
-    expect(output.stdout()).toContain('shift+m');
+    expect(output.stdout()).toContain('then press t to open the app on the TV used last');
   });
 
   it('takes the suggested id without a terminal, and says so', async () => {

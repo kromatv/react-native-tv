@@ -136,7 +136,7 @@ export const initCommand: Command = {
     reporter.line();
     reportRootstrap(reporter, root);
     reporter.note(
-      `Next: ${packageRunner(root)} expo start, then press shift+m and pick Run on TV or Run in simulator.`,
+      `Next: ${packageRunner(root)} expo start, then press t to open the app on the TV used last, or shift+t to pick a TV or the simulator.`,
     );
   },
 };

@@ -1,4 +1,7 @@
 import { jobsDir, listJobs, readJob, readLog, stopJob } from './jobs.ts';
+import { startTizenKeys } from './start-tizen-keys.ts';
+
+startTizenKeys();
 
 const JOB_ROUTE = /^\/api\/jobs\/([a-z0-9-]{1,64})\/(log|stop)$/;
 
@@ -25,7 +28,8 @@ async function jobRoute(request: Request, id: string, action: string): Promise<R
 /**
  * The dev tools plugin's server inside `expo start`: the jobs its commands
  * started, their logs, and a way to stop one. Any other path falls through to
- * the page in `devtools/`.
+ * the page in `devtools/`. Expo loads this module as its dev server starts,
+ * which is when the `t` key is added.
  */
 export default async function handler(request: Request): Promise<Response | undefined> {
   const { pathname } = new URL(request.url);

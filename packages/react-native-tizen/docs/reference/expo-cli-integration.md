@@ -93,6 +93,24 @@ how they load the app's Metro config. Checked on 2026-11-03 and 2026-11-04.
 | Bun 1.4.2 fails on a dist-tag in an alias: `No version matching "npm:react-native-tvos@0.87-stable" found for specifier "react-native-tvos" (but package exists)`. | P | |
 | Five hours after react-native-tvos 0.88.1-0 was published, Yarn 4.18.1 refused it (`All versions satisfying "0.88.1-0" are quarantined`) and pnpm 12.16.1 resolved `0.88-stable` to `0.88.0-0rc2`. Semver sorts `0.88.0-0rc2` after `0.88.0-0`, so `~0.88.0-0` resolves to the release candidate. | P | `semver` 7 `compare`, `maxSatisfying` |
 
+## 7. Keys in `expo start`
+
+| Fact | Tag | Source |
+|---|---|---|
+| Expo's documentation describes no `devtools` key but `devtools` as a value of `platforms`: not `webpageRoot`, `serverEntryPoint` or `cliExtensions`, not the arguments a command receives, no way for plugin code to learn the dev server's address, and no plugin keys in the terminal UI. | D | [module-config], [create-devtools-plugins], [devtools-plugins] |
+| A plugin's `serverEntryPoint` is loaded when the dev server starts, to read its `webSocketHandlers`, before the terminal UI starts, and through Node's `require` or `import`, so it runs once per process. | S | `src/start/server/metro/instantiateMetro.js:389-404`, `src/start/startAsync.js:175-197`; `@expo/require-utils` `build/load.js:393-431` |
+| A request under `/_expo/plugins/<package>/` goes to the entry's default-exported handler first; when it returns nothing, Expo serves the file from `webpageRoot`. | S | `src/start/server/middleware/DevToolsPluginMiddleware.js:76-87, 92-103` |
+| The terminal UI runs only when interactive: not in CI and with stdout a TTY. | S | `src/utils/interactive.js`, `src/start/startAsync.js:189-197` |
+| The UI prints the server's address and the usage, then creates its `KeyPressHandler`, which reads keys with `stdin.on('data', this.handleKeypress)` in raw mode, UTF-8, one chunk a key. | S | `src/start/interface/startInterface.js:105, 273-277`, `src/start/interface/KeyPressHandler.js:72-117` |
+| While one of Expo's prompts is open (`pauseInteractions`), the handler takes its listener off stdin and leaves raw mode, and puts it back after. | S | `src/start/interface/KeyPressHandler.js:59-75, 118-131`, `src/utils/prompts.js:121-143` |
+| A key with no case in `onPressAsync` does nothing: `t` and `T` reach no Expo action. `?` prints the full list synchronously, inside the handler. | S | `src/start/interface/startInterface.js:106-153, 158-268` |
+| A usage line is `› Press <key bold> <│ dim> <text>`, and `› shift+a │ ...` for a shifted key; the full list adds `shift+a` (select an Android device or emulator) and `shift+i`. `shift+a` and `shift+i` ask for a device first. | S | `src/start/interface/commandsTable.js:100-116, 145-190, 255-270`; `src/start/interface/startInterface.js:170-205` |
+| Right after Metro starts, Expo sets `EXPO_DEV_SERVER_ORIGIN` to `http://localhost:<port>` (`https` with `--https`) in its own process. expo-modules-core declares it in its published `ExpoProcessEnv` type ("Used in `@expo/metro-runtime`"). Expo also sets `RCT_METRO_PORT` to the port it picked. | S | `src/start/server/metro/MetroBundlerDevServer.js:977-978`; `expo-modules-core` `build/ts-declarations/global.d.ts:13-14`; `src/utils/port.js:224-226` |
+| In a standalone npm app (`/tmp`, packed tarball): `npx expo start` printed `› Press t │ open on Tizen TV` after `› Press ? │ show all commands`; `?` printed both lines after Expo's list; `t` and `T` typed into the open shift+m menu opened nothing; shift+t listed the TV used last, named from the scan, and the simulator; `2` opened the app in the simulator from the dev server, with Expo bundling `index.js` for `tizen` in its own terminal; an edit of a component module kept the app's state, an edit of the entry file reloaded it; `r` reloaded it; the plugin's page and `/api/jobs` still answered. | O | simulator, 2026-11-04 |
+| In the same app, `t` opened the app on GQ75LS03DAUXZG (The Frame, 2024, Tizen 9.0), the TV used last: Expo's terminal showed the build, install and launch, then the TV's `console.log`; an edit that renamed a log line went from `tick 20` to `tock 25`, the new code with the state kept; `r` restarted the count at 0. | O | TV, 2026-11-04 |
+| In a standalone Bun app (Bun 1.4.2, no config file), `bunx expo start` printed the same line; `t` and `T` typed into the shift+m menu opened nothing; shift+t, then `2`, opened the app in the simulator; an edit kept its state and `r` reloaded it. | O | simulator, 2026-11-04 |
+| `simulator run --dev-server` wrote `tizen/build/bundle` without claiming `tizen/`, so the next TV build refused it as the app's own. It claims the directory first now. | O | simulator, 2026-11-04 |
+
 ## What this means for this package
 
 - `app.plugin.js` re-exports the compiled config plugin as an ES module, plain
@@ -120,6 +138,15 @@ how they load the app's Metro config. Checked on 2026-11-03 and 2026-11-04.
 - `expo-module.config.json` declares the dev tools plugin. Each command starts
   a detached job and returns at once with the URL of the plugin's page, which
   shows each job's progress and output.
+- The plugin's server entry adds `t` and shift+t to an interactive `expo
+  start` (section 7): once Expo's `handleKeypress` listener is on stdin, it
+  prints its usage line and listens after it, and acts only while that
+  listener is there and stdin is raw, so a key typed into an Expo prompt does
+  nothing. shift+t takes Expo's listener off while its list is open, as Expo
+  does for its own prompts. Opening runs Run on TV's job with `--no-logs`
+  against `EXPO_DEV_SERVER_ORIGIN`, the only address Expo gives code in its
+  process, and copies the job's output to Expo's terminal; the app's logs
+  reach that terminal through Metro.
 - A development build's runtime config carries `bundleUrl`, the virtual entry
   on the dev server Expo passes in, its host replaced when it is a loopback
   address the TV cannot reach.
@@ -132,9 +159,12 @@ The files above, under `node_modules/.bun/@expo+cli@58.1.18*/node_modules/@expo/
 `node_modules/.bun/@expo+metro-config@58.0.20*/`,
 `node_modules/.bun/@expo+config@58.0.10*/`,
 `node_modules/.bun/metro-config@0.87.1*/`, `node_modules/.bun/metro-config@0.87.2*/`,
-`node_modules/.bun/expo@58.0.22*/` and
+`node_modules/.bun/expo@58.0.22*/` (with its `expo-modules-core`) and
 `node_modules/.bun/expo-modules-autolinking@58.0.16*/`.
 
+[module-config]: https://docs.expo.dev/modules/module-config/
+[create-devtools-plugins]: https://docs.expo.dev/debugging/create-devtools-plugins/
+[devtools-plugins]: https://docs.expo.dev/debugging/devtools-plugins/
 [rntvos]: https://github.com/react-native-tvos/react-native-tvos
 [expo-tv]: https://docs.expo.dev/guides/building-for-tv/
 [npm-overrides]: https://docs.npmjs.com/cli/v11/configuring-npm/package-json#overrides

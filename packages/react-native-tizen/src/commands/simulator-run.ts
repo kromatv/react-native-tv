@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
 import { loadAppProject, type AppProject } from '../app/app-project.ts';
+import { claimTizenDir } from '../app/tizen-dir.ts';
 import { entryPath, type CommandContext } from '../cli/command.ts';
 import { parseLevel, untilInterrupted } from '../cli/log-level-option.ts';
 import { parsePort } from '../cli/log-options.ts';
@@ -97,8 +98,10 @@ async function simulatorBundle(
   context: CommandContext,
 ): Promise<SimulatorBundle> {
   const devServer = flags['dev-server'];
-  if (devServer !== undefined)
+  if (devServer !== undefined) {
+    claimTizenDir(app.tizenDir);
     return devServerBundleStep(reporter, app, bundleDir(app), devServer, hostAddress);
+  }
   if (flags.bundle !== undefined) return givenBytecode(resolve(context.cwd, flags.bundle));
   return bundleStep(reporter, app);
 }

@@ -46,8 +46,8 @@ For an Expo app, Tizen is one more platform. The same project and the same
 ## Features
 
 - **Expo integration.** `npx expo install` adds the config plugin, and
-  `npx expo start` lists Run on TV, Run in simulator, Find TVs and Create
-  certificate under shift+m.
+  `npx expo start` opens the app on the TV with `t`, and lists Run on TV, Run
+  in simulator, Find TVs and Create certificate under shift+m.
 - **Development builds.** Fast Refresh, `r` to reload, `console.log` in the
   Expo terminal, LogBox on the TV, and React Native DevTools on the TV's Hermes
   with `j`. `rn-tizen screenshot` saves what a development build draws, on a
@@ -177,42 +177,41 @@ no other. `rn-tizen` reads the profile from there.
 npx expo start
 ```
 
-Press **shift+m** ("more tools") and pick `@kromatv/react-native-tizen`. Expo
-shows the command each entry runs and asks "(y/N)" before running it; answer
-`y`.
+Press **t**, as you press `a` for Android. The app opens on the TV you used
+last, or on the only TV in Developer mode on your network: a development build
+that loads its JavaScript from the dev server you are running, with Fast
+Refresh, `r` to reload, `j` for React Native DevTools, and its logs in this
+terminal. Press **shift+t** to pick another TV or
+[the simulator](simulator/README.md) from a list. It needs no setup and works
+the same with npm, pnpm, Yarn and Bun (`bunx expo start`).
 
-- **Run on TV** builds a development build, installs it on the TV and launches
-  it. It loads its JavaScript from the dev server you are running. Give it the
-  TV's IP address the first time; later, leave the address empty to use the TV
-  you used last.
-- **Run in simulator** does the same on the virtual TV of
-  [the simulator](simulator/README.md).
-- **Find TVs** lists the Samsung TVs on your network, with their Developer
-  mode, sdb and DUID.
-- **Create certificate** makes an author certificate.
-
-Each command prints the address of a page inside the dev server, where you can
-follow its progress and logs. The first run builds the native runtime, which
-takes a few minutes; later runs only rebuild what changed. Run on TV and Run
-in simulator check first that the app loads one `react-native` and that its
-Metro config has `withTizen`, and say to run `npx rn-tizen init` when not. `npx rn-tizen doctor` names the exact fix for
+The first run builds the native runtime, which takes a few minutes; later runs
+only rebuild what changed. Opening checks first that the app loads one
+`react-native` and that its Metro config has `withTizen`, and says to run
+`npx rn-tizen init` when not. `npx rn-tizen doctor` names the exact fix for
 anything a build needs.
 
-Expo has no `expo run:tizen` and no single-key shortcut for Tizen, and
-`expo prebuild` and `expo export --platform tizen` do not know the platform.
-For a script beside Expo's own, add one to `package.json`:
+**shift+m** ("more tools") lists `@kromatv/react-native-tizen` with more:
+**Run on TV** with an IP address, **Run in simulator**, **Find TVs**, which
+lists the Samsung TVs on your network with their Developer mode, sdb and DUID,
+and **Create certificate**, which makes an author certificate. Expo asks
+"(y/N)" before running one; answer `y`. Each prints the address of a page
+inside the dev server where you can follow its progress and logs.
+
+Expo has no `expo run:tizen`, and `expo prebuild` and `expo export --platform
+tizen` do not know the platform. To package the app with its JavaScript inside
+instead, add a script beside Expo's own:
 
 ```json
 {
   "scripts": {
-    "android": "expo start --android",
     "tizen": "rn-tizen run"
   }
 }
 ```
 
-`npm run tizen` packages the app with its JavaScript inside, installs it on the
-only TV used before, launches it and prints its logs until Ctrl+C.
+`npm run tizen` installs that build on the only TV used before, launches it and
+prints its logs until Ctrl+C.
 
 Store packages need a release build, which `package` makes; `--dev` makes a
 development one that streams its logs:

@@ -1,6 +1,8 @@
+import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeApp } from '../app/app.fixtures.ts';
 import { loadAppProject } from '../app/app-project.ts';
+import { claimTizenDir } from '../app/tizen-dir.ts';
 import { Reporter } from '../cli/reporter.ts';
 import { capturedOutput, type CapturedOutput } from '../fakes.fixtures.ts';
 import { listenForLogs, type LogServer } from '../logs/log-server.ts';
@@ -16,6 +18,7 @@ import { prepareSimulator, runInSimulator } from './simulator-run.ts';
 const ROOT = '/work/app';
 
 vi.mock('../app/app-project.ts', () => ({ loadAppProject: vi.fn() }));
+vi.mock('../app/tizen-dir.ts', () => ({ claimTizenDir: vi.fn() }));
 vi.mock('../logs/log-server.ts', () => ({ listenForLogs: vi.fn() }));
 vi.mock('../pipeline/package-steps.ts', () => ({
   bundleStep: vi.fn(),
@@ -152,6 +155,7 @@ describe('runInSimulator', () => {
     );
 
     expect(bundleStep).not.toHaveBeenCalled();
+    expect(claimTizenDir).toHaveBeenCalledWith(join(ROOT, 'tizen'));
     expect(devServerBundleStep).toHaveBeenCalledWith(
       reporter,
       expect.anything(),
