@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 interface FakePreview {
   isAvailable(): boolean;
+  unavailableReason(): string | null;
   launchedFromTile(): boolean;
   publish(json: string): Promise<string>;
   setSource(json: string | null): void;
@@ -22,6 +23,7 @@ async function loadPreview() {
 beforeEach(() => {
   state.native = {
     isAvailable: vi.fn(() => true),
+    unavailableReason: vi.fn((): string | null => null),
     launchedFromTile: vi.fn(() => true),
     publish: vi.fn(async () => 'ContentDBAPI'),
     setSource: vi.fn(),
@@ -35,7 +37,17 @@ describe('SmartHubPreview', () => {
     await expect(preview.clear()).resolves.toEqual({ published: true, channel: 'ContentDBAPI' });
     expect(state.native?.publish).toHaveBeenCalledWith('{"sections":[]}');
     expect(preview.isAvailable).toBe(true);
+    expect(preview.unavailableReason).toBeNull();
     expect(preview.launchedFromTile).toBe(true);
+  });
+
+  it('resolves with the reason the TV gives instead of publishing', async () => {
+    vi.mocked(state.native?.unavailableReason ?? vi.fn()).mockReturnValue('no preview prop');
+    const preview = await loadPreview();
+
+    await expect(preview.clear()).resolves.toEqual({ published: false, reason: 'no preview prop' });
+    expect(state.native?.publish).not.toHaveBeenCalled();
+    expect(preview.unavailableReason).toBe('no preview prop');
   });
 
   it('resolves with the reason a publish failed', async () => {
@@ -61,6 +73,7 @@ describe('SmartHubPreview', () => {
 
     expect(result.published).toBe(false);
     expect(preview.isAvailable).toBe(false);
+    expect(preview.unavailableReason).toMatch(/Samsung TV/);
     expect(preview.launchedFromTile).toBe(false);
   });
 });

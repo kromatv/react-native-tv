@@ -1,8 +1,9 @@
 import { FixableError } from '../errors.ts';
-import { newestPlatformFor, runsOn, SUPPORTED_PLATFORMS } from '../tizen/platform-profiles.ts';
+import { belowMinimumError, MINIMUM_PLATFORM, runsOn } from '../tizen/platform-profiles.ts';
 import type { DeviceCapabilities } from '../sdb/capabilities.ts';
 import {
   archFromDevice,
+  compareTizenVersions,
   DEFAULT_TARGET,
   platformVersionSchema,
   tizenArchSchema,
@@ -21,7 +22,7 @@ export const TARGET_OPTIONS = {
     type: 'string',
     placeholder: '<version>',
     description:
-      "The oldest Tizen the package runs on (default: expo.tizen.platform, else the TV's, else 9.0)",
+      "The oldest Tizen the package runs on (default: the plugin's platform prop, else 6.0)",
   },
 } as const satisfies OptionSpecs;
 
@@ -56,28 +57,25 @@ function choosePlatform(sources: TargetSources): string {
     if (platformVersionSchema.safeParse(sources.platform).success) return sources.platform;
     throw new UsageError(`--platform must look like 9.0, got ${sources.platform}`, sources.command);
   }
-  if (sources.configPlatform !== undefined) return sources.configPlatform;
-  if (sources.device === undefined) return DEFAULT_TARGET.platformVersion;
-  const platform = newestPlatformFor(sources.device.platformVersion);
-  if (platform !== null) return platform;
-  throw new FixableError(
-    `The TV runs Tizen ${sources.device.platformVersion}, older than every supported platform`,
-    `Supported: Tizen ${SUPPORTED_PLATFORMS.join(', ')} and later.`,
-  );
+  return sources.configPlatform ?? DEFAULT_TARGET.platformVersion;
 }
 
 /**
  * The target a build is for: flags first, then the app config's platform, then
- * what the TV reports, then armv7l on Tizen 9.0. Refuses a platform newer than
- * the TV's, since that package would not install.
+ * armv7l and Tizen 6.0, the floor every package runs above. Refuses a TV older
+ * than the floor, since the package would not install there.
  */
 export function chooseTarget(sources: TargetSources): TizenTarget {
   const target = { arch: chooseArch(sources), platformVersion: choosePlatform(sources) };
   const device = sources.device;
-  if (device !== undefined && !runsOn(target.platformVersion, device.platformVersion)) {
+  if (device === undefined) return target;
+  if (compareTizenVersions(device.platformVersion, MINIMUM_PLATFORM) < 0) {
+    throw belowMinimumError(`The TV runs Tizen ${device.platformVersion}, which`);
+  }
+  if (!runsOn(target.platformVersion, device.platformVersion)) {
     throw new FixableError(
       `The TV runs Tizen ${device.platformVersion}, older than the ${target.platformVersion} this build targets`,
-      'Pass an older --platform, or lower expo.tizen.platform in app.json.',
+      "Pass an older --platform, or lower the plugin's platform prop.",
     );
   }
   return target;

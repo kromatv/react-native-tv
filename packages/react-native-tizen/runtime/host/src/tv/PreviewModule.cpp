@@ -4,6 +4,7 @@
 #include "../modules/PlatformModuleRegistry.h"
 #include "../threading/MainThread.h"
 #include "PreviewFiles.h"
+#include "TvFeatures.h"
 #include "TvState.h"
 
 #include <array>
@@ -23,8 +24,12 @@ using facebook::jsi::Value;
 using facebook::react::TurboModule;
 
 PreviewModule::PreviewModule(std::shared_ptr<facebook::react::CallInvoker> jsInvoker, const ModuleContext &context)
-    : TurboModule("RNTizenSmartHubPreview", jsInvoker), invoker_(std::move(jsInvoker)), state_(context.tv) {
+    : TurboModule("RNTizenSmartHubPreview", jsInvoker),
+      invoker_(std::move(jsInvoker)),
+      state_(context.tv),
+      platformVersion_(context.device.platformVersion) {
   methodMap_["isAvailable"] = MethodMetadata{.argCount = 0, .invoker = &isAvailable};
+  methodMap_["unavailableReason"] = MethodMetadata{.argCount = 0, .invoker = &unavailableReason};
   methodMap_["launchedFromTile"] = MethodMetadata{.argCount = 0, .invoker = &launchedFromTile};
   methodMap_["publish"] = MethodMetadata{.argCount = 1, .invoker = &publish};
   methodMap_["setSource"] = MethodMetadata{.argCount = 1, .invoker = &setSource};
@@ -34,9 +39,19 @@ PreviewModule &PreviewModule::self(TurboModule &turboModule) {
   return static_cast<PreviewModule &>(turboModule);
 }
 
+std::optional<std::string> PreviewModule::whyUnavailable() const {
+  if (auto missing = missingOnVersion(TvFeature::SmartHubPreview, platformVersion_)) return missing;
+  if (state_ != nullptr && state_->previewPublisher() != nullptr) return std::nullopt;
+  return "no personal Smart Hub preview: run on a Samsung TV with the preview.refreshMinutes prop set";
+}
+
 Value PreviewModule::isAvailable(Runtime &, TurboModule &turboModule, const Value *, size_t) {
-  const auto &state = self(turboModule).state_;
-  return Value(state != nullptr && state->previewPublisher() != nullptr);
+  return Value(!self(turboModule).whyUnavailable().has_value());
+}
+
+Value PreviewModule::unavailableReason(Runtime &runtime, TurboModule &turboModule, const Value *, size_t) {
+  const auto reason = self(turboModule).whyUnavailable();
+  return reason ? Value(String::createFromUtf8(runtime, *reason)) : Value::null();
 }
 
 Value PreviewModule::launchedFromTile(Runtime &, TurboModule &turboModule, const Value *, size_t) {

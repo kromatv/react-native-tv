@@ -90,13 +90,13 @@ describe('rn-tizen bundle', () => {
 });
 
 describe('rn-tizen package', () => {
-  it('builds for the store by default, for the TV it was given', async () => {
+  it('builds for the store by default, at the 6.0 floor, for the TV it was given', async () => {
     await packageCommand.run(['--device', '192.168.1.50'], context);
 
     expect(resolveDevice).toHaveBeenCalledWith('192.168.1.50');
     expect(packageSteps).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ log: null, target: { arch: 'armv7l', platformVersion: '9.0' } }),
+      expect.objectContaining({ log: null, target: { arch: 'armv7l', platformVersion: '6.0' } }),
     );
     expect(output.stdout()).toContain('rn-tizen run --device 192.168.1.50:26101');
   });

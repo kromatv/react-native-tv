@@ -78,13 +78,13 @@ describe('the shell manifest', () => {
 });
 
 describe('the shell project', () => {
-  it('targets the framework and Tizen.NET version of the platform', () => {
+  it('targets TizenFX API 8 and the Tizen.NET version whatever the floor', () => {
     const project = renderTemplate(
       shellFile('ReactNativeTizen.csproj'),
       projectValues(platformProfile('9.0'), config),
     );
 
-    expect(project).toContain('<TargetFramework>tizen90</TargetFramework>');
+    expect(project).toContain('<TargetFramework>tizen80</TargetFramework>');
     expect(project).toContain('<TizenNetPackageVersion>12.0.0.18510</TizenNetPackageVersion>');
   });
 });

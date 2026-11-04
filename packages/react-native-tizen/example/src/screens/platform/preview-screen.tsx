@@ -75,6 +75,10 @@ export function PreviewScreen() {
   return (
     <View>
       <Fact label="SmartHubPreview.isAvailable" value={String(SmartHubPreview.isAvailable)} />
+      <Fact
+        label="SmartHubPreview.unavailableReason"
+        value={String(SmartHubPreview.unavailableReason)}
+      />
       <Fact label="launchedFromTile" value={String(SmartHubPreview.launchedFromTile)} />
       <Fact label="Linking.getInitialURL()" value={initialUrl ?? 'null'} />
       <Fact label="Enter" value="publishes 4 tiles; Play/Pause clears them" />

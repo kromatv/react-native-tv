@@ -63,7 +63,7 @@ are an error.
 | `version` | `expo.version` | The package version, `x.y.z` with numbers only. Set it when `expo.version` has a suffix such as `-beta`. |
 | `icon` | `expo.icon`, else a default | A PNG, relative to the app. |
 | `privileges` | `["internet"]` | Tizen privileges. A short name expands to `http://tizen.org/privilege/<name>`; a full URI is kept as written. |
-| `platform` | `9.0` | The oldest Tizen version the package runs on. |
+| `platform` | `6.0` | The floor: the oldest Tizen version the package runs on, `6.0` to `10.0`. One package reaches that version and every later one. See [tizen-versions.md](tizen-versions.md). |
 | `profile` | the active one | The Tizen Studio signing profile whose certificates sign the package. |
 | `locales` | `["en"]` | The locales `Intl` formats in, as BCP 47 tags (`fr`, `pt-BR`). Each adds its ICU data (by language) to the package and FormatJS's data to the bundle; any other locale falls back to the device's, then to the first listed. |
 | `voice` | off | `true`, or `{ "searchUrl": "myapp://search?q={query}" }`: Samsung's voice assistant. See [tv-features.md](tv-features.md#voice). |
@@ -80,7 +80,7 @@ config plugin option `supportsBackgroundPlayback` is read too
 |---|---|
 | The generated .NET project | `tizen/` in the app. It ignores itself (`tizen/.gitignore` is `*`), so it never reaches git. Delete it at any time. A `tizen/` that holds files and does not ignore itself is the app's own: `rn-tizen` refuses to build over it. |
 | The bundle | `tizen/build/bundle/` (`index.tizen.js`, `index.tizen.hbc`, `assets/`) |
-| The signed package | `tizen/bin/Release/<target framework>/<package>-<version>.tpk`, `tizen90` for Tizen 9.0 (TizenFX API 9, not the Tizen version) |
+| The signed package | `tizen/bin/Release/tizen80/<package>-<version>.tpk`: every floor builds the shell against TizenFX API 8 (`tizen80`, Tizen 6.0, not the Tizen version) |
 | Third-party licences | `res/THIRD_PARTY_NOTICES.md` in every package |
 | The native runtime | `~/.cache/react-native-tizen/runtime/<react-native>-<version>-<arch>-tizen<platform>-<key>/`, the key a hash of where this package's `runtime/` and the app's react-native are, so two checkouts or two apps never share a CMake build |
 | Hermes host compilers | `~/.cache/react-native-tizen/hermes/<version>/` |
@@ -104,12 +104,17 @@ A build is for one CPU and one Tizen version. Each is chosen in this order:
 
 - **CPU** (`--arch`): the flag, then what the TV reports, then `armv7l`.
 - **Tizen version** (`--platform`): the flag, then the plugin's `platform` prop, then
-  the newest supported version the TV can run, then `9.0`.
+  `6.0`. It is a floor, not the TV's version: the runtime is linked against
+  that version's rootstrap and the manifest's `api-version` says it, so the
+  package installs on that version and every later one.
 
-A package runs on its own Tizen version and every later one. Building for a
-version newer than the TV's is refused, since the TV could not install it.
-Only Tizen 9.0 is verified today; any other version is refused with the list of
-supported ones.
+Floors run from `6.0` (2021 models) to `10.0`. Below 6.0 Samsung's TVs refuse
+the native libraries an app carries, so a floor or a TV below it is refused
+with a pointer to the web build ([tizen-versions.md](tizen-versions.md)).
+Building for a floor newer than the TV's version is refused too, since the TV
+could not install it. Each floor needs its rootstrap: `IOT-Headed-<v>-NativeAppDevelopment-CLI`
+for 6.0 to 7.0, `TIZEN-<v>-NativeAppDevelopment-CLI` from 8.0; `rn-tizen doctor`
+names the one missing.
 
 ## Inside `npx expo start`
 
@@ -167,7 +172,7 @@ fails; a warning (no TV answers, no ccache) does not fail it.
 | Option | |
 |---|---|
 | `--arch <arch>` | The CPU to check a toolchain for (default `armv7l`) |
-| `--platform <version>` | The Tizen version to check a rootstrap for (default `9.0`) |
+| `--platform <version>` | The Tizen version to check a rootstrap for (default `6.0`) |
 | `--project <dir>` | The app to check |
 
 ### `rn-tizen devices`

@@ -1,7 +1,15 @@
 import { Voice } from '@kromatv/react-native-tizen/voice';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useEffect, useState } from 'react';
-import { Linking, Pressable, StyleSheet, Text, View, useTVEventHandler } from 'react-native';
+import {
+  Linking,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  useTVEventHandler,
+} from 'react-native';
 import { SAMPLES } from '../video/sources.ts';
 import { EventLog, Fact, useEventLog } from './event-log.tsx';
 
@@ -17,9 +25,14 @@ export function VoiceScreen() {
   });
 
   useEffect(() => {
-    const timer = setTimeout(() => setAvailable(Voice.isAvailable), 2000);
+    const timer = setTimeout(() => {
+      setAvailable(Voice.isAvailable);
+      add(
+        `Platform.Version ${Platform.Version}, unavailableReason ${String(Voice.unavailableReason)}, canSelectTitles ${String(Voice.canSelectTitles)}`,
+      );
+    }, 2000);
     return () => clearTimeout(timer);
-  }, []);
+  }, [add]);
 
   useEffect(() => {
     Voice.setScreen('list');
@@ -52,6 +65,9 @@ export function VoiceScreen() {
     <View style={styles.columns}>
       <View style={styles.column}>
         <Fact label="Voice.isAvailable" value={String(available)} />
+        <Fact label="Voice.unavailableReason" value={String(Voice.unavailableReason)} />
+        <Fact label="Voice.canSelectTitles" value={String(Voice.canSelectTitles)} />
+        <Fact label="Platform.Version" value={String(Platform.Version)} />
         <Fact
           label="Transport commands go to"
           value={

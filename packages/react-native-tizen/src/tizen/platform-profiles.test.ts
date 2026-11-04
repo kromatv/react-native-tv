@@ -1,27 +1,38 @@
 import { describe, expect, it } from 'vitest';
 import { FixableError } from '../errors.ts';
 import {
+  SUPPORTED_PLATFORMS,
   TIZENFX_API_LEVELS,
-  newestPlatformFor,
   platformProfile,
   profileFor,
   runsOn,
 } from './platform-profiles.ts';
 
 describe('platformProfile', () => {
-  it('builds a Tizen 9.0 package against TizenFX API 9 with Tizen.NET 12', () => {
-    expect(platformProfile('9.0')).toEqual({
-      platformVersion: '9.0',
-      tizenFxApiLevel: 9,
-      targetFramework: 'tizen90',
+  it('builds every floor against TizenFX API 8, the newest the shell calls', () => {
+    expect(platformProfile('6.0')).toEqual({
+      platformVersion: '6.0',
+      tizenFxApiLevel: 8,
+      targetFramework: 'tizen80',
       tizenNetVersion: '12.0.0.18510',
-      apiVersion: '9.0',
+      apiVersion: '6.0',
     });
+    expect(platformProfile('9.0')).toMatchObject({ targetFramework: 'tizen80', apiVersion: '9.0' });
   });
 
-  it('refuses a platform nobody has verified, naming the supported ones', () => {
-    expect(() => platformProfile('8.0')).toThrow(FixableError);
-    expect(() => platformProfile('8.0')).toThrow('Tizen 8.0 is not a supported platform');
+  it('takes every floor from 6.0 to 10.0', () => {
+    expect(SUPPORTED_PLATFORMS.map((platform) => platformProfile(platform).apiVersion)).toEqual(
+      SUPPORTED_PLATFORMS,
+    );
+  });
+
+  it('refuses a floor below 6.0, pointing at the web build', () => {
+    expect(() => platformProfile('5.5')).toThrow(FixableError);
+    expect(() => platformProfile('5.5')).toThrow('older than Tizen 6.0');
+  });
+
+  it('refuses a floor no rootstrap exists for, naming the supported ones', () => {
+    expect(() => platformProfile('7.5')).toThrow('Tizen 7.5 is not a supported platform');
   });
 });
 
@@ -53,20 +64,6 @@ describe('profileFor', () => {
 describe('TIZENFX_API_LEVELS', () => {
   it('maps tizen10.0 to Tizen 7.0, the name a version string would get wrong', () => {
     expect(TIZENFX_API_LEVELS[10]).toEqual({ targetFramework: 'tizen10.0', firstPlatform: '7.0' });
-  });
-});
-
-describe('newestPlatformFor', () => {
-  it('picks the platform a TV runs when it is supported', () => {
-    expect(newestPlatformFor('9.0')).toBe('9.0');
-  });
-
-  it('picks an older supported platform for a newer TV', () => {
-    expect(newestPlatformFor('10.0')).toBe('9.0');
-  });
-
-  it('finds nothing for a TV older than every supported platform', () => {
-    expect(newestPlatformFor('6.5')).toBeNull();
   });
 });
 

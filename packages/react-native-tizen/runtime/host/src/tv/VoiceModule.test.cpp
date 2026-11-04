@@ -7,6 +7,7 @@
 #include <hermes/hermes.h>
 
 #include <memory>
+#include <string>
 #include <utility>
 
 namespace rntizen {
@@ -29,9 +30,10 @@ Value call(Runtime &runtime, facebook::react::TurboModule &module, const char *m
   return function.call(runtime, std::forward<Arguments>(arguments)...);
 }
 
-std::shared_ptr<VoiceModule> voiceModule(std::shared_ptr<TvState> tv) {
+std::shared_ptr<VoiceModule> voiceModule(std::shared_ptr<TvState> tv, std::string platformVersion = "9.0") {
   ModuleContext context{};
   context.tv = std::move(tv);
+  context.device.platformVersion = std::move(platformVersion);
   return std::make_shared<VoiceModule>(std::make_shared<NoInvoker>(), context);
 }
 
@@ -61,8 +63,33 @@ TEST_CASE("RNTizenVoice without the TV's state is unavailable and ignores the re
   const auto voice = voiceModule(nullptr);
 
   CHECK_FALSE(call(rt, *voice, "isAvailable").getBool());
+  CHECK(call(rt, *voice, "unavailableReason").getString(rt).utf8(rt).starts_with("Samsung's voice service has not"));
   CHECK(call(rt, *voice, "setScreen", String::createFromAscii(rt, "home")).isUndefined());
   CHECK(call(rt, *voice, "addListener", String::createFromAscii(rt, "search")).isUndefined());
+}
+
+TEST_CASE("RNTizenVoice names the Tizen voice needs on an older TV") {
+  auto runtime = facebook::hermes::makeHermesRuntime();
+  auto &rt = *runtime;
+  const auto tv = std::make_shared<TvState>(true, std::nullopt);
+  tv->setVoiceAvailable(true);
+  const auto voice = voiceModule(tv, "5.5");
+
+  CHECK_FALSE(call(rt, *voice, "isAvailable").getBool());
+  CHECK(call(rt, *voice, "unavailableReason").getString(rt).utf8(rt) == "Voice control needs Tizen 6.0, and this TV runs 5.5");
+  CHECK_FALSE(call(rt, *voice, "canSelectTitles").getBool());
+}
+
+TEST_CASE("RNTizenVoice selects titles from Tizen 6.5") {
+  auto runtime = facebook::hermes::makeHermesRuntime();
+  auto &rt = *runtime;
+  const auto tv = std::make_shared<TvState>(true, std::nullopt);
+  tv->setVoiceAvailable(true);
+
+  CHECK(call(rt, *voiceModule(tv, "6.0"), "isAvailable").getBool());
+  CHECK(call(rt, *voiceModule(tv, "6.0"), "unavailableReason").isNull());
+  CHECK_FALSE(call(rt, *voiceModule(tv, "6.0"), "canSelectTitles").getBool());
+  CHECK(call(rt, *voiceModule(tv, "6.5"), "canSelectTitles").getBool());
 }
 
 } // namespace rntizen

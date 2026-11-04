@@ -102,11 +102,13 @@ struct Preview {
 TEST_CASE_FIXTURE(Preview, "RNTizenSmartHubPreview is available once the shell gives it a publisher") {
   auto &rt = *runtime;
   CHECK_FALSE(call(rt, *module, "isAvailable").getBool());
+  CHECK(call(rt, *module, "unavailableReason").getString(rt).utf8(rt).starts_with("no personal Smart Hub preview"));
 
   tv->setPreviewPublisher([](const std::string &) { return 1; });
   tv->setLaunchedFromTile(true);
 
   CHECK(call(rt, *module, "isAvailable").getBool());
+  CHECK(call(rt, *module, "unavailableReason").isNull());
   CHECK(call(rt, *module, "launchedFromTile").getBool());
   CHECK(call(rt, *module, "setSource").isUndefined());
 }

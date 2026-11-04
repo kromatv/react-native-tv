@@ -56,10 +56,10 @@ describe('rn-tizen doctor', () => {
     await doctorCommand.run(['--arch', 'aarch64', '--project', 'app'], { cwd: '/work' });
 
     expect(output.stdout()).toContain('Tizen Studio      /tizen-studio');
-    expect(output.stdout()).toContain('Ready to build for Tizen 9.0 on aarch64.');
+    expect(output.stdout()).toContain('Ready to build for Tizen 6.0 on aarch64.');
     expect(tizenChecks.checkGcc).toHaveBeenCalledWith(SDK, {
       arch: 'aarch64',
-      platformVersion: '9.0',
+      platformVersion: '6.0',
     });
     expect(checkApp).toHaveBeenCalledWith('/work/app');
     expect(process.exitCode).toBeUndefined();

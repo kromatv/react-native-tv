@@ -12,6 +12,16 @@ the web: the keys are props of the `@kromatv/react-native-tizen` config plugin, 
 | [Background audio](#background-audio) | expo-video's config plugin | nothing new |
 | [4K UI](#4k-ui) | `resolution` prop | nothing new |
 
+Each API also says why a feature is off on this TV (`unavailableReason`),
+such as a TV older than the Tizen version the feature needs, read at run time
+from the TV's `system_info` ([`tizen-versions.md`](tizen-versions.md)).
+`Platform.Version` is that version as a number, `6.5` on Tizen 6.5.
+
+| Feature | Needs |
+|---|---|
+| Voice | Tizen 6.0 (2021); selecting a title by voice, 6.5 (2022) |
+| Smart Hub preview | 2016 models, so every TV the package installs on |
+
 Picture-in-picture over other apps does not exist on Samsung TVs; see
 [the reference](reference/tizen-tv-app-integration.md#1-picture-in-picture).
 An in-app mini player is a small `VideoView` and needs nothing.
@@ -58,6 +68,8 @@ To take over, listen:
 import { Voice } from '@kromatv/react-native-tizen/voice';
 
 Voice.isAvailable; // false off a TV, in the simulator, and without the voice prop
+Voice.unavailableReason; // why not, or null
+Voice.canSelectTitles; // "select Dune" picks a title on screen: Tizen 6.5 and later
 
 const search = Voice.addListener('search', (query) => {
   // { utterance: 'search blade runner', title: 'blade runner', genre?, cast?, ... }
@@ -135,6 +147,7 @@ const result = await SmartHubPreview.set([
 
 SmartHubPreview.setSource({ url: 'https://example.com/me/preview.json', headers: { Authorization: 'Bearer …' } });
 SmartHubPreview.launchedFromTile; // exit on Back at the first screen, with no popup
+SmartHubPreview.unavailableReason; // why it cannot publish, or null
 ```
 
 `set` checks Samsung's rules before anything leaves JavaScript and throws a

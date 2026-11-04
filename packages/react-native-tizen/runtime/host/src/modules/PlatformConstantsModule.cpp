@@ -1,21 +1,12 @@
 #include "PlatformConstantsModule.h"
 
 #include "PlatformModuleRegistry.h"
+#include "TizenVersion.h"
 
 #include <cxxreact/ReactNativeVersion.h>
 #include <jsi/JSIDynamic.h>
 
-#include <cstdlib>
-
 namespace rntizen {
-
-namespace {
-
-int majorVersion(const std::string &version) {
-  return std::atoi(version.c_str());
-}
-
-} // namespace
 
 PlatformConstantsModule::PlatformConstantsModule(
     std::shared_ptr<facebook::react::CallInvoker> jsInvoker,
@@ -30,9 +21,9 @@ facebook::jsi::Object PlatformConstantsModule::getConstants(facebook::jsi::Runti
       ReactNativeVersion.Prerelease.empty() ? folly::dynamic(nullptr)
                                             : folly::dynamic(std::string(ReactNativeVersion.Prerelease)));
   folly::dynamic constants = folly::dynamic::object("isTesting", false)("reactNativeVersion", std::move(version))(
-      "Version", majorVersion(device_.platformVersion))("Release", device_.platformVersion)("Serial", "unknown")(
-      "Fingerprint", device_.buildString)("Model", device_.modelName)("uiMode", "tv")("Brand", "Samsung")(
-      "Manufacturer", "Samsung");
+      "Version", platformVersionNumber(device_.platformVersion))("Release", device_.platformVersion)(
+      "Serial", "unknown")("Fingerprint", device_.buildString)("Model", device_.modelName)("uiMode", "tv")(
+      "Brand", "Samsung")("Manufacturer", "Samsung");
   return facebook::jsi::valueFromDynamic(runtime, constants).asObject(runtime);
 }
 

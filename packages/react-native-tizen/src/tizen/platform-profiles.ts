@@ -1,4 +1,5 @@
 import { FixableError } from '../errors.ts';
+import { compareTizenVersions } from './target.ts';
 
 /** What the .NET shell is built against for one Tizen platform. */
 export interface PlatformProfile {
@@ -36,20 +37,16 @@ export interface ShellTarget {
   readonly tizenNetVersion: string;
 }
 
-const SHELL_TARGETS: readonly ShellTarget[] = [
-  { platformVersion: '9.0', tizenFxApiLevel: 9, tizenNetVersion: '12.0.0.18510' },
-];
+/** The oldest Tizen a package can run on (docs/tizen-versions.md). */
+export const MINIMUM_PLATFORM = '6.0';
 
-/** The platforms a package can be built for, oldest first. */
-export const SUPPORTED_PLATFORMS: readonly string[] = SHELL_TARGETS.map(
-  (target) => target.platformVersion,
-);
+// The shell calls nothing newer than TizenFX API 8 (Tizen 6.0), so every floor
+// compiles it there and only the manifest's api-version and the rootstrap move.
+const SHELL_API_LEVEL = 8;
+const TIZEN_NET_VERSION = '12.0.0.18510';
 
-function compareVersions(left: string, right: string): number {
-  const [leftMajor = 0, leftMinor = 0] = left.split('.').map(Number);
-  const [rightMajor = 0, rightMinor = 0] = right.split('.').map(Number);
-  return leftMajor - rightMajor || leftMinor - rightMinor;
-}
+/** The platforms a package can name as its floor, oldest first. */
+export const SUPPORTED_PLATFORMS: readonly string[] = ['6.0', '6.5', '7.0', '8.0', '9.0', '10.0'];
 
 /**
  * The profile of a shell target: its target framework comes from its TizenFX
@@ -59,7 +56,7 @@ function compareVersions(left: string, right: string): number {
 export function profileFor(target: ShellTarget): PlatformProfile {
   const level = TIZENFX_API_LEVELS[target.tizenFxApiLevel];
   if (level === undefined) throw new Error(`No TizenFX API level ${target.tizenFxApiLevel}`);
-  if (compareVersions(level.firstPlatform, target.platformVersion) > 0) {
+  if (compareTizenVersions(level.firstPlatform, target.platformVersion) > 0) {
     throw new Error(
       `TizenFX API level ${target.tizenFxApiLevel} needs Tizen ${level.firstPlatform}, newer than ${target.platformVersion}`,
     );
@@ -73,29 +70,33 @@ export function profileFor(target: ShellTarget): PlatformProfile {
   };
 }
 
-/** The shell profile for a platform, or a {@link FixableError} naming the supported ones. */
-export function platformProfile(platformVersion: string): PlatformProfile {
-  const target = SHELL_TARGETS.find((candidate) => candidate.platformVersion === platformVersion);
-  if (target !== undefined) return profileFor(target);
-  throw new FixableError(
-    `Tizen ${platformVersion} is not a supported platform`,
-    `Build for ${SUPPORTED_PLATFORMS.join(' or ')}: pass --platform, or set expo.tizen.platform in app.json.`,
+/** A {@link FixableError} for a TV or floor below {@link MINIMUM_PLATFORM}. */
+export function belowMinimumError(what: string): FixableError {
+  return new FixableError(
+    `${what} is older than Tizen ${MINIMUM_PLATFORM}, the oldest a native app runs on`,
+    'Samsung TVs before 2021 refuse the native libraries an app carries; reach them with a web build (docs/tizen-versions.md).',
   );
 }
 
-/**
- * The newest supported platform a TV running `devicePlatform` can install, since
- * a package runs on its own platform and every later one. Null when the TV is
- * older than every supported platform.
- */
-export function newestPlatformFor(devicePlatform: string): string | null {
-  const installable = SHELL_TARGETS.filter(
-    (target) => compareVersions(target.platformVersion, devicePlatform) <= 0,
-  );
-  return installable.at(-1)?.platformVersion ?? null;
+/** The shell profile for a floor, or a {@link FixableError} naming the supported ones. */
+export function platformProfile(platformVersion: string): PlatformProfile {
+  if (compareTizenVersions(platformVersion, MINIMUM_PLATFORM) < 0) {
+    throw belowMinimumError(`Tizen ${platformVersion}`);
+  }
+  if (!SUPPORTED_PLATFORMS.includes(platformVersion)) {
+    throw new FixableError(
+      `Tizen ${platformVersion} is not a supported platform`,
+      `Build for ${SUPPORTED_PLATFORMS.join(', ')}: pass --platform, or set the plugin's platform prop.`,
+    );
+  }
+  return profileFor({
+    platformVersion,
+    tizenFxApiLevel: SHELL_API_LEVEL,
+    tizenNetVersion: TIZEN_NET_VERSION,
+  });
 }
 
 /** True when a TV running `devicePlatform` can install a package built for `platformVersion`. */
 export function runsOn(platformVersion: string, devicePlatform: string): boolean {
-  return compareVersions(platformVersion, devicePlatform) <= 0;
+  return compareTizenVersions(platformVersion, devicePlatform) <= 0;
 }

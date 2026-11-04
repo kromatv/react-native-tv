@@ -83,4 +83,4 @@ export function archFromDevice(cpuArch: string): TizenArch | null {
   return DEVICE_ARCH[cpuArch.trim()] ?? null;
 }
 
-export const DEFAULT_TARGET: TizenTarget = { arch: 'armv7l', platformVersion: '9.0' };
+export const DEFAULT_TARGET: TizenTarget = { arch: 'armv7l', platformVersion: '6.0' };

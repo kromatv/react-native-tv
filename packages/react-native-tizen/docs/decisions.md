@@ -29,6 +29,23 @@ no TV rootstrap: floors 6.0 to 7.0 link against IoT Headed, the profile with
 armv7 and aarch64 rootstraps, and 8.0 on against the unified `tizen` profile
 (`src/tizen/target.ts`).
 
+## Tizen 6.0 is the floor; older TVs get a web build
+
+A package names its floor (the plugin's `platform` prop, default `6.0`) and
+one `.tpk` per CPU runs on that Tizen and every later one: 2021 to 2026 TVs.
+Below 6.0 Samsung's TVs refuse the native libraries an app carries, the wall
+flutter-tizen hit, and the runtime would also lose glibc, curl and EFL
+symbols; the facts and the cost of each step lower are in
+[tizen-versions.md](tizen-versions.md). The shell is compiled against TizenFX
+API 8 whatever the floor, and the manifest's `api-version` is the floor. TV
+features that need a newer Tizen check the TV's version at run time and say
+why they are off.
+
+Consequence: 2015 to 2020 TVs need a react-native-web build packaged as a
+`.wgt`, a second Seller Office application released to those model groups. It
+is designed in [tizen-versions.md](tizen-versions.md), not built. On Tizen 6.0
+the SVG views call nine Evas VG functions that 6.0 exports but did not publish.
+
 ## ICU inside the runtime, FormatJS for the rest of `Intl`
 
 Every app gets `Intl` and Unicode-correct strings. Tizen 9 ships ICU 74 and

@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 interface FakeVoice {
   isAvailable(): boolean;
+  unavailableReason(): string | null;
+  canSelectTitles(): boolean;
   setScreen(screen: string | null): void;
   addListener(event: string): void;
   removeListener(event: string): void;
@@ -34,6 +36,8 @@ async function loadVoice() {
 beforeEach(() => {
   state.native = {
     isAvailable: vi.fn(() => true),
+    unavailableReason: vi.fn((): string | null => null),
+    canSelectTitles: vi.fn(() => true),
     setScreen: vi.fn(),
     addListener: vi.fn(),
     removeListener: vi.fn(),
@@ -74,7 +78,18 @@ describe('Voice', () => {
     Voice.setScreen('player');
 
     expect(Voice.isAvailable).toBe(true);
+    expect(Voice.unavailableReason).toBeNull();
+    expect(Voice.canSelectTitles).toBe(true);
     expect(state.native?.setScreen).toHaveBeenCalledWith('player');
+  });
+
+  it('says why voice is unavailable on an older TV', async () => {
+    vi.mocked(state.native?.unavailableReason ?? vi.fn()).mockReturnValue(
+      'Voice control needs Tizen 6.0, and this TV runs 5.5',
+    );
+    const Voice = await loadVoice();
+
+    expect(Voice.unavailableReason).toBe('Voice control needs Tizen 6.0, and this TV runs 5.5');
   });
 
   it('does nothing where there is no voice module', async () => {
@@ -86,6 +101,8 @@ describe('Voice', () => {
     Voice.setScreen(null);
 
     expect(Voice.isAvailable).toBe(false);
+    expect(Voice.unavailableReason).toBe('voice control needs a Samsung TV');
+    expect(Voice.canSelectTitles).toBe(false);
     expect(state.listeners.size).toBe(0);
   });
 });

@@ -16,6 +16,7 @@ export {
 
 interface NativePreview extends TurboModule {
   isAvailable(): boolean;
+  unavailableReason(): string | null;
   launchedFromTile(): boolean;
   publish(json: string): Promise<string>;
   setSource(json: string | null): void;
@@ -30,7 +31,9 @@ const NO_SMART_HUB: PublishResult = {
 };
 
 const publishQueue = createPublishQueue(async (json) => {
-  if (!native?.isAvailable()) return NO_SMART_HUB;
+  if (native === null) return NO_SMART_HUB;
+  const reason = native.unavailableReason();
+  if (reason !== null) return { published: false, reason };
   try {
     return { published: true, channel: await native.publish(json) };
   } catch (error) {
@@ -47,6 +50,10 @@ export const SmartHubPreview = {
   /** Whether the app can publish: on a Samsung TV, with the `preview.refreshMinutes` prop set. */
   get isAvailable(): boolean {
     return native?.isAvailable() ?? false;
+  },
+  /** Why the app cannot publish, such as a missing `preview.refreshMinutes` prop; null when it can. */
+  get unavailableReason(): string | null {
+    return native === null ? NO_SMART_HUB.reason : native.unavailableReason();
   },
   /**
    * Whether the app was opened from one of its tiles. Samsung asks that Back on

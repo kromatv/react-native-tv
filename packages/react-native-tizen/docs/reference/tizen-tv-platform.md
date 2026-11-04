@@ -204,6 +204,10 @@ The .NET shell (`shell/`), compiled with `dotnet build` per target framework
 | `tizen40` (API4), `tizen50` (API5) | fails: no `System.Text.Json` (`ShellConfig`, `TilePayload`, `PreviewPublisher`, `VoiceCommands`), no `Tizen.Applications.EventManager` (`VoiceChannel`) |
 | `tizen60` (API6), `tizen80` (API8) | builds unchanged |
 
+A package with the shell at `tizen80`, `api-version="6.0"` and the runtime
+linked against IoT Headed 6.0 installs and runs on the test TV (Tizen 9.0),
+voice and the Smart Hub preview included. H, 2026-11-04
+
 Manifest and privileges: every privilege the shell or a feature asks for
 (`internet`, `network.get`, `mediastorage`, `externalstorage`,
 `appmanager.launch`, `display`) is `Public` in the .NET privilege list of every
@@ -417,7 +421,7 @@ Where the current approach disagrees with the documentation:
 |---|---|---|
 | `shell/tizen-manifest.xml` said `<profile name="tv-samsung" />` | documented values are `common` and `tv`; Samsung's TV .NET samples and TV template use `tv` ([td-manifest], [cs-sample]) | done: `<profile name="tv" />`; `tv-samsung` is Tizen Studio's platform id, not a manifest value |
 | `api-version="9"` | format "x.y.z", z optional; samples write `10.0` ([td-manifest], [cs-sample]) | done: `9.0`, the platform version |
-| `platform-profiles.ts` paired Tizen `9.0` with TFM `tizen90` as if one named the other | `tizen90` is API9 = **Tizen 6.5**; Tizen 9.0 is API12, TFM `net6.0-tizen9.0` ([tizenfx], nuspec) | done: each platform names a TizenFX API level and its TFM comes from the level table (`TIZENFX_API_LEVELS`). Tizen 9.0 keeps API9 (`tizen90`): the shell calls nothing newer, it is the one verified on the TV (H), and API12 needs the Tizen .NET workload (O, below). For Tizen 10 the TFM is `net8.0-tizen10.0`, while `tizen10.0` means Tizen 7.0 |
+| `platform-profiles.ts` paired Tizen `9.0` with TFM `tizen90` as if one named the other | `tizen90` is API9 = **Tizen 6.5**; Tizen 9.0 is API12, TFM `net6.0-tizen9.0` ([tizenfx], nuspec) | done: the TFM comes from a TizenFX API level (`TIZENFX_API_LEVELS`). Every floor builds the shell at API8 (`tizen80`, Tizen 6.0), the newest it calls (section 2.1), and writes the floor as `api-version`; the net6.0 and net8.0 TFMs need the Tizen .NET workload (O, below) |
 | README: `rn-tizen package` builds a release package "for the store" | native `.so` in a store package requires partner group membership ([sam-netfaq]) | say so in the README and `doctor`; a Public profile only covers Developer mode |
 | clang + lld with static GCC 14 libstdc++ for Tizen 9.0 (2025) TVs | Samsung: 2025 and earlier products used GCC 9.2.0 and apps must "include a compatible library" ([sam-flutter], [sam-gs]) | works on hardware (H); store acceptance is unknown. Keep the compat shim and hidden symbols, and ask the Seller Office Content Manager before a release |
 

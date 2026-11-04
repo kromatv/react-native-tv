@@ -6,29 +6,29 @@ import { chooseTarget } from './target-options.ts';
 const TV = { cpuArch: 'armv7', platformVersion: '9.0', profile: 'tv' };
 
 describe('chooseTarget', () => {
-  it('builds for armv7l on Tizen 9.0 when nothing says otherwise', () => {
+  it('builds for armv7l at the Tizen 6.0 floor when nothing says otherwise', () => {
     expect(chooseTarget({ command: 'package' })).toEqual({
       arch: 'armv7l',
-      platformVersion: '9.0',
+      platformVersion: '6.0',
     });
   });
 
-  it('takes the arch and platform the TV reports', () => {
+  it('takes the arch the TV reports and keeps the floor', () => {
     const device = { cpuArch: 'aarch64', platformVersion: '9.0', profile: 'tv' };
 
     expect(chooseTarget({ command: 'run', device })).toEqual({
       arch: 'aarch64',
-      platformVersion: '9.0',
+      platformVersion: '6.0',
     });
   });
 
-  it('builds a newer TV the newest supported platform', () => {
+  it('builds a newer TV the same floor, so one package reaches every TV', () => {
     const device = { ...TV, platformVersion: '10.0' };
 
-    expect(chooseTarget({ command: 'run', device }).platformVersion).toBe('9.0');
+    expect(chooseTarget({ command: 'run', device }).platformVersion).toBe('6.0');
   });
 
-  it('lets the app config platform win over the TV', () => {
+  it('lets the app config platform win over the default', () => {
     const device = { ...TV, platformVersion: '10.0' };
 
     expect(chooseTarget({ command: 'run', configPlatform: '9.0', device }).platformVersion).toBe(
@@ -56,9 +56,11 @@ describe('chooseTarget', () => {
     expect(() => chooseTarget({ command: 'run', platform: '9.0', device })).toThrow(FixableError);
   });
 
-  it('refuses a TV older than every supported platform', () => {
-    const device = { ...TV, platformVersion: '6.5' };
+  it('refuses a TV below the floor, which blocks the native libraries of apps', () => {
+    const device = { ...TV, platformVersion: '5.5' };
 
-    expect(() => chooseTarget({ command: 'run', device })).toThrow('older than every supported');
+    expect(() => chooseTarget({ command: 'run', device })).toThrow(
+      'The TV runs Tizen 5.5, which is older than Tizen 6.0',
+    );
   });
 });

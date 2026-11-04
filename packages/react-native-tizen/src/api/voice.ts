@@ -16,6 +16,8 @@ export interface VoiceSubscription {
 
 interface NativeVoice extends TurboModule {
   isAvailable(): boolean;
+  unavailableReason(): string | null;
+  canSelectTitles(): boolean;
   setScreen(screen: string | null): void;
   addListener(event: string): void;
   removeListener(event: string): void;
@@ -35,6 +37,7 @@ const PARSERS: { readonly [E in keyof VoiceEvents]: (payload: unknown) => VoiceE
   };
 
 const native = TurboModuleRegistry.get<NativeVoice>('RNTizenVoice');
+const NOT_A_TV = 'voice control needs a Samsung TV';
 
 function addListener<E extends keyof VoiceEvents>(
   event: E,
@@ -67,6 +70,14 @@ export const Voice = {
   /** Whether Samsung's voice service took the app: false without the config plugin's `voice` prop, off a TV, and in the simulator. */
   get isAvailable(): boolean {
     return native?.isAvailable() ?? false;
+  },
+  /** Why voice is unavailable, such as a TV older than Tizen 6.0; null when it is available. */
+  get unavailableReason(): string | null {
+    return native === null ? NOT_A_TV : native.unavailableReason();
+  },
+  /** Whether "select Dune" can pick a title on screen: Tizen 6.5 and later. */
+  get canSelectTitles(): boolean {
+    return native?.canSelectTitles() ?? false;
   },
   /**
    * What the screen shows, which the assistant reads before each utterance.
