@@ -16,6 +16,9 @@ namespace {
 using namespace std::chrono_literals;
 using testing::LoopbackServer;
 
+constexpr const char *kApp = "org.example.tv";
+constexpr int kUnheardLines = 300;
+
 std::pair<std::string, std::string> readEntry(int socket) {
   const auto entry = folly::parseJson(testing::readUntil(socket, "\n"));
   return {entry["level"].asString(), entry["message"].asString()};
@@ -56,6 +59,46 @@ TEST_CASE("a listener that comes late reads how many lines nobody heard, then th
 
   CHECK(notice.second == "1 earlier log lines were dropped while nothing listened");
   CHECK(kept == std::pair<std::string, std::string>{"info", "kept"});
+}
+
+TEST_CASE("a listener that went away is noticed before the next line, which goes to the next listener") {
+  LoopbackServer server;
+  NetworkLogSink sink("127.0.0.1", server.port(), kApp);
+
+  sink.write(LogLevel::Info, "first");
+  const int gone = server.accept(5s);
+  testing::readUntil(gone, "\n");
+  const auto first = readEntry(gone);
+  ::close(gone);
+  std::this_thread::sleep_for(50ms);
+  sink.write(LogLevel::Info, "second");
+  const int next = server.accept(5s);
+  const auto hello = folly::parseJson(testing::readUntil(next, "\n"));
+  const auto second = readEntry(next);
+  ::close(next);
+
+  CHECK(first == std::pair<std::string, std::string>{"info", "first"});
+  CHECK(hello["app"] == kApp);
+  CHECK(second == std::pair<std::string, std::string>{"info", "second"});
+}
+
+TEST_CASE("a sink nothing hears keeps its last 200 lines and counts the rest") {
+  const auto port = LoopbackServer().port();
+  NetworkLogSink sink("127.0.0.1", port, kApp);
+
+  sink.write(LogLevel::Info, "first");
+  std::this_thread::sleep_for(100ms);
+  for (int index = 0; index < kUnheardLines; ++index) sink.write(LogLevel::Info, "line " + std::to_string(index));
+  sink.write(LogLevel::Debug, "dropped");
+  LoopbackServer server(port);
+  const int peer = server.accept(5s);
+  testing::readUntil(peer, "\n");
+  const auto notice = readEntry(peer);
+  const auto oldestKept = readEntry(peer);
+  ::close(peer);
+
+  CHECK(notice.second == "102 earlier log lines were dropped while nothing listened");
+  CHECK(oldestKept.second == "line 100");
 }
 
 } // namespace rntizen
