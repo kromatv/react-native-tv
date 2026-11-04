@@ -69,7 +69,7 @@ or `bun ../src/cli/main.ts` from `example/`.
 |------|------|
 | `runtime/` | the native runtime: CMake, the Tizen toolchain, the C++ host (`host/`) |
 | `src/` | the `rn-tizen` CLI and the Metro integration (`src/metro/with-tizen.ts`) |
-| `dist/` | the compiled JavaScript npm ships (`bun run build`, run by `prepack`); never edited, never committed |
+| `dist/` | the compiled JavaScript npm ships (`bun run build`, run by `prepare` on every install and before packing); never edited, never committed |
 | `src/api/` | what apps import: `@kromatv/react-native-tizen/voice`, `/preview`, `/preview-json` (its own tsconfig: React Native's types, not Bun's) |
 | `shell/` | the .NET app template every package is generated from |
 | `react-native-overrides/` | the few React Native JavaScript files Tizen replaces |

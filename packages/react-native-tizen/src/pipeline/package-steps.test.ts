@@ -5,7 +5,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeApp } from '../app/app.fixtures.ts';
 import { bundleApp } from '../bundle/bundle-app.ts';
 import { Reporter } from '../cli/reporter.ts';
+import { FixableError } from '../errors.ts';
 import { capturedOutput } from '../fakes.fixtures.ts';
+import { tizenMetroIssue } from '../metro/metro-platforms.ts';
 import { buildDotnetProject } from '../package/dotnet-build.ts';
 import { writeTizenProject } from '../package/tizen-project.ts';
 import { ensureIcuData } from '../runtime/icu-data.ts';
@@ -26,6 +28,7 @@ vi.mock('../package/dotnet-build.ts', () => ({ buildDotnetProject: vi.fn() }));
 vi.mock('../tizen/signing-identity.ts', () => ({ resolveSigning: vi.fn() }));
 vi.mock('../signing/sign-package.ts', () => ({ signPackage: vi.fn() }));
 vi.mock('./runtime-steps.ts', () => ({ runtimeSteps: vi.fn() }));
+vi.mock('../metro/metro-platforms.ts', () => ({ tizenMetroIssue: vi.fn(() => null) }));
 
 const SDK = { root: '/tizen-studio', packageManager: '/pm' };
 const signer = testSigner('Store');
@@ -147,6 +150,25 @@ describe('packageSteps', () => {
         signing: { profile: 'Store' },
       }),
     ).rejects.toThrow("is the app's own");
+    expect(resolveSigning).not.toHaveBeenCalled();
+    expect(runtimeSteps).not.toHaveBeenCalled();
+  });
+
+  it("stops before compiling anything when the app's Metro config has no withTizen", async () => {
+    vi.mocked(tizenMetroIssue).mockReturnValueOnce(
+      new FixableError('no tizen platform', 'Run npx rn-tizen init'),
+    );
+
+    await expect(
+      packageSteps(reporter(), {
+        sdk: SDK,
+        app: fakeApp(root),
+        target: { arch: 'armv7l', platformVersion: '9.0' },
+        shell: platformProfile('9.0'),
+        log: null,
+        signing: { profile: 'Store' },
+      }),
+    ).rejects.toThrow('no tizen platform');
     expect(resolveSigning).not.toHaveBeenCalled();
     expect(runtimeSteps).not.toHaveBeenCalled();
   });

@@ -72,7 +72,7 @@
   },
   "scripts": {
     "build": "rm -rf dist && tsc -p tsconfig.build.json && tsc -p src/api/tsconfig.build.json",
-    "prepack": "bun run build",
+    "prepare": "bun run build",
     "typecheck": "tsc -p tsconfig.json && tsc -p src/api && tsc -p example/tsconfig.json",
     "test": "vitest run",
     "test:runtime": "bun scripts/test-runtime.ts",

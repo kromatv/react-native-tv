@@ -9,6 +9,8 @@ export interface JobPlan {
   readonly args: readonly string[];
   /** Only one job of this kind runs at a time: a new one stops the last. */
   readonly exclusive: boolean;
+  /** The job bundles the app, so the app's Metro config must know the `tizen` platform. */
+  readonly bundles: boolean;
 }
 
 const emptyArgs = z.object({}).strict();
@@ -48,6 +50,7 @@ export async function planCommand(
       title: `Run on TV ${target}`,
       args: ['run', '--device', target, '--dev-server', devServer],
       exclusive: true,
+      bundles: true,
     };
   }
   if (command === 'run-simulator') {
@@ -57,11 +60,18 @@ export async function planCommand(
       title: 'Run in simulator',
       args: ['simulator', 'run', '--dev-server', devServer],
       exclusive: true,
+      bundles: true,
     };
   }
   if (command === 'find-tvs') {
     emptyArgs.parse(args);
-    return { kind: command, title: 'Find TVs', args: ['devices'], exclusive: false };
+    return {
+      kind: command,
+      title: 'Find TVs',
+      args: ['devices'],
+      exclusive: false,
+      bundles: false,
+    };
   }
   if (command === 'create-certificate') {
     const { name } = nameArgs.parse(args);
@@ -70,6 +80,7 @@ export async function planCommand(
       title: `Create certificate ${name}`,
       args: ['certificate', 'create-author', name],
       exclusive: false,
+      bundles: false,
     };
   }
   throw new CommandInputError(`Unknown command ${command}`);

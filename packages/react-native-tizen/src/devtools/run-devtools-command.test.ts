@@ -2,10 +2,13 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { FixableError } from '../errors.ts';
+import { tizenMetroIssue } from '../metro/metro-platforms.ts';
 import { jobPageUrl } from './devtools-commands.ts';
 import { startJob, writeJob, type Job } from './jobs.ts';
 import { runDevtoolsCommand } from './run-devtools-command.ts';
 
+vi.mock('../metro/metro-platforms.ts', () => ({ tizenMetroIssue: vi.fn(() => null) }));
 vi.mock('./jobs.ts', async (importOriginal) => ({
   ...(await importOriginal<typeof import('./jobs.ts')>()),
   startJob: vi.fn(),
@@ -69,6 +72,25 @@ describe('runDevtoolsCommand', () => {
     expect(exitCode).toBe(1);
     expect(lines).toEqual([expect.objectContaining({ level: 'error' })]);
     expect(lines[0]?.text).toContain(message);
+  });
+
+  it('refuses to run the app when its Metro config has no withTizen, and says how to fix it', async () => {
+    vi.mocked(tizenMetroIssue).mockReturnValueOnce(
+      new FixableError(
+        "The app's Metro config does not know the tizen platform",
+        'Run npx rn-tizen init',
+      ),
+    );
+
+    const { lines, exitCode } = await runDevtoolsCommand(['run-simulator', '{}', DEV_SERVER], dir);
+    await runDevtoolsCommand(['find-tvs', '{}', DEV_SERVER], dir);
+
+    expect(exitCode).toBe(1);
+    expect(lines[0]?.text).toBe(
+      "The app's Metro config does not know the tizen platform. Run npx rn-tizen init",
+    );
+    expect(tizenMetroIssue).toHaveBeenCalledOnce();
+    expect(startJob).toHaveBeenCalledOnce();
   });
 
   it('says why a job could not start', async () => {

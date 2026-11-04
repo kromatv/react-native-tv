@@ -7,6 +7,7 @@ it on a TV and prints what it logs. Run it from the app's directory, or pass
 instead of the app's `main`, such as one screen under test.
 
 ```sh
+rn-tizen init                            # set the app up for Tizen, once
 rn-tizen doctor                          # is this machine ready?
 rn-tizen package                         # build a signed .tpk
 rn-tizen run --device 192.168.1.50      # build, install, launch, print logs
@@ -29,8 +30,8 @@ reach it: `sdb disconnect <tv ip>` frees it.
 
 The Tizen settings are the props of this package's config plugin in `app.json`
 (or `app.config.js`, read through Expo's own config loader). `npx expo install
-@kromatv/react-native-tizen` adds the plugin to `expo.plugins` by itself; give it
-props. Only `package` is required.
+@kromatv/react-native-tizen` adds the plugin to `expo.plugins` by itself, and
+`npx rn-tizen init` gives it its props. Only `package` is required.
 
 ```json
 {
@@ -73,6 +74,25 @@ are an error.
 An unknown key is an error, so a typo does not pass silently. expo-video's
 config plugin option `supportsBackgroundPlayback` is read too
 ([tv-features.md](tv-features.md#background-audio)).
+
+### The Metro config
+
+Metro learns the `tizen` platform from `withTizen`, which wraps the app's Metro
+config. A config plugin cannot do it: Expo's Metro setup has no hook for a
+package. `rn-tizen init` writes this `metro.config.mjs`, which Expo loads as an
+ES module:
+
+```js
+import { getDefaultConfig } from 'expo/metro-config';
+import { withTizen } from '@kromatv/react-native-tizen/metro';
+export default withTizen(getDefaultConfig(import.meta.dirname));
+```
+
+An app with its own Metro config wraps its export the same way. `bundle`,
+`package`, `run`, `simulator run`, and Run on TV and Run in simulator under
+shift+m, load the config as `expo start` does before anything else. When it
+does not know the `tizen` platform, they stop and say to run
+`npx rn-tizen init`.
 
 ## Where things go
 
@@ -135,7 +155,8 @@ background and prints the address of the plugin's page,
 `http://<dev server>/_expo/plugins/@kromatv/react-native-tizen/`, where every
 job's progress and output stream, and a running job can be stopped. Starting
 Run on TV or Run in simulator again stops the previous run of the same
-command. The jobs are kept in `~/.cache/react-native-tizen/devtools/jobs/`, the
+command. Both refuse to start, with the fix, when the app's Metro config has no
+`withTizen`. The jobs are kept in `~/.cache/react-native-tizen/devtools/jobs/`, the
 twenty most recent.
 
 A development build loads its JavaScript from the dev server, and needs React
@@ -158,6 +179,32 @@ export:embed`). A `package.json` script stands beside Expo's own:
 ```
 
 ## Commands
+
+### `rn-tizen init`
+
+Sets an Expo app up for Tizen. Running it again changes nothing.
+
+- **The config plugin.** It lists the plugin in `app.json` with the app's
+  package id, or gives the entry `npx expo install` added by name its props. On
+  a terminal it asks for the id, suggesting the app's `android.package`, else
+  `com.anonymous.<slug>` as `expo prebuild` does; without one it takes the
+  suggestion. `expo.tizen` of earlier releases moves into the plugin's props.
+  Expo evaluates an `app.config.*` file, so `init` prints the entry to add to
+  it instead.
+- **The Metro config.** It writes `metro.config.mjs` when the app has none. An
+  existing config whose export is a single line is wrapped with `withTizen`.
+  For any other, a JSON one, `package.json`'s `metro` key or a config at the
+  workspace root above the app, it prints the two lines to add.
+
+| Option | |
+|---|---|
+| `--package <id>` | The package id, instead of asking |
+| `--project <dir>` | The app to set up |
+
+```sh
+npx rn-tizen init
+npx rn-tizen init --package com.example.myapp
+```
 
 ### `rn-tizen doctor`
 
@@ -282,9 +329,10 @@ a runtime without the dev server tooling ([decisions](decisions.md)).
 
 ### `rn-tizen bundle`
 
-Bundles the app's JavaScript with `expo export:embed --platform tizen`, through
-the app's Metro config, and compiles it to Hermes bytecode with the `hermesc`
-that ships with the app's `react-native`.
+Checks that the app's Metro config knows the `tizen` platform, then bundles the
+app's JavaScript with `expo export:embed --platform tizen`, through that config,
+and compiles it to Hermes bytecode with the `hermesc` that ships with the app's
+`react-native`.
 
 | Option | |
 |---|---|
@@ -299,9 +347,10 @@ before (it leaves a `.rn-tizen-bundle` file there). Anything else, such as
 ### `rn-tizen package`
 
 Builds a signed `.tpk` from scratch or incrementally: the native runtime, the
-bundle, the `tizen/` project, the .NET build, then signing. It opens the
-certificates first, so a missing profile, a wrong password or an expired
-certificate fails in seconds rather than after a build.
+bundle, the `tizen/` project, the .NET build, then signing. It checks the Metro
+config and opens the certificates first, so a Metro config without `withTizen`,
+a missing profile, a wrong password or an expired certificate fails in seconds
+rather than after a build.
 
 The certificates come from Tizen Studio's `profiles.xml`
 (`~/tizen-studio-data/profile/profiles.xml`, or the data directory

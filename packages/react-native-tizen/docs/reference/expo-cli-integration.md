@@ -1,12 +1,12 @@
 # Expo CLI: config plugins and dev tools plugins
 
 What `npx expo install` and `npx expo start` do with a package that ships a
-config plugin and a dev tools plugin, as `@kromatv/react-native-tizen` does.
-Checked on 2026-11-03.
+config plugin and a dev tools plugin, as `@kromatv/react-native-tizen` does, and
+how they load the app's Metro config. Checked on 2026-11-03 and 2026-11-04.
 
 | Tag | Meaning |
 |---|---|
-| **S** | Read in source: `@expo/cli` 58.1.18, `@expo/config-plugins` 58.0.11 and `expo-modules-autolinking` 58.0.16 as installed in this repository, under `build/`. A fresh `create-expo-app` (SDK 58) installed `@expo/cli` 58.1.19 and autolinking 58.0.17; the files compared below are unchanged there |
+| **S** | Read in source: `@expo/cli` 58.1.18, `@expo/config-plugins` 58.0.11, `@expo/metro-config` 58.0.20, `@expo/require-utils` 58.0.5, `metro-config` 0.87.1 and 0.87.2, and `expo-modules-autolinking` 58.0.16 as installed in this repository, under `build/` (`src/` for `metro-config`). A fresh `create-expo-app` (SDK 58) installed `@expo/cli` 58.1.19 and autolinking 58.0.17; the files compared below are unchanged there |
 | **O** | Observed: a fresh `create-expo-app --template blank-typescript` app with this package installed from its packed tarball, on an arm64 Mac |
 
 ## 1. Config plugins
@@ -17,6 +17,9 @@ Checked on 2026-11-03.
 | A package is added to `expo.plugins` when it has a config plugin in an `app.plugin.*` file, is not listed yet, and is not one of Expo's automatic plugins; it is added by name, without props. | S | `src/install/utils/autoAddConfigPlugins.js:48-56, 72-98` |
 | A plugin is found as `<package>/app.plugin` with the extensions `.js .cjs .mjs .ts .cts .mts`, on disk whatever `exports` says; Expo warns when `exports` lacks `./app.plugin.js`. | S | `@expo/config-plugins` `build/utils/plugin-resolver.js:78-86, 100, 126` |
 | An ESM plugin file loads: Expo requires it, or evaluates it itself when `require` of ESM is off. | S | `@expo/require-utils` `build/load.js:406-430` |
+| Expo takes the module's `default` export when it has one, then requires a function. | S | `build/utils/plugin-resolver.js:204-208` |
+| A plugin listed by a path (starting with `.`, `/` or `~/`) resolves from the project root with the same extensions. | S | `build/utils/plugin-resolver.js:88-97, 137-142` |
+| For a TypeScript plugin file, Expo transpiles or strips the types of that file only; the `.ts` files it imports are loaded by Node. On Node 22.13.1 the example's plugin listed as `../src/config/config-plugin.ts` failed with `SyntaxError: Unexpected identifier 'PluginMatcher'`, a type in an imported file; on Node 26.5 it loaded. | S, O | `@expo/require-utils` `build/load.js:333-360` |
 | Running Expo's `applyPluginsAsync` on the installed package printed `› Added config plugin: @kromatv/react-native-tizen` and wrote `"plugins": ["@kromatv/react-native-tizen"]` to `app.json`. | O | |
 | `npx expo install <path to a .tgz>` installed the tarball under the key `"undefined"` in `package.json`, and added no plugin. | O | |
 | A plugin that throws stops `npx expo config` with its message: a bad prop printed `Invalid @kromatv/react-native-tizen props:` and the field. | O | |
@@ -56,12 +59,32 @@ Checked on 2026-11-03.
 | `expo export` accepts only the platforms Expo bundles with Metro and throws `Unsupported platform` for any other. `expo export:embed` takes a platform as given, which is why `rn-tizen bundle` uses it. | S | `src/export/resolveOptions.js:39-60`; `src/index.js:58` |
 | The keys under `expo start` are Expo's own; a plugin adds commands only to the shift+m menu. | S | `src/start/interface/startInterface.js:150-175` |
 
+## 5. The Metro config
+
+| Fact | Tag | Source |
+|---|---|---|
+| `expo start` and `expo export:embed` load the app's Metro config with `loadUserConfig` from `@expo/metro-config`, not with Metro's own `loadConfig`, and merge it over Expo's default config. | S | `@expo/cli` `src/start/server/metro/instantiateMetro.js:241-245`; `@expo/metro-config` `build/config/loadUserConfig.js:24-27` |
+| `loadUserConfig` looks for `metro.config`, then `.config/metro`, with `.js .cjs .mjs .json .ts .cts .mts`, from the project root up to the Metro server root, then for a `metro` key in the project's `package.json`. It loads the file with `loadModuleSync` and takes `default` when the module sets `__esModule`. | S | `@expo/metro-config` `build/config/resolveMetroUserConfig.js:48-56, 83-91, 100-124` |
+| `loadModuleSync` compiles a `.mjs` file as an ES module itself (`Module._compile` with the `module` format), so `import.meta.dirname` and named imports work in it. | S | `@expo/require-utils` `build/load.js:135-157, 205-265, 406-431` |
+| Metro's own `loadConfig` searches the same names and falls back to `import()` when `require` fails. Expo 58 ships `metro-config` 0.87.1 through `@expo/metro` 58.0.0. | S | `metro-config` 0.87.1 `src/loadConfig.js:57-64, 303-323`; 0.87.2 `src/loadConfig.js:57-64, 328-348` |
+| `withMetroMultiPlatformAsync` sets `resolver.platforms` to the platforms of the Expo config plus those of the Metro config. No step lets a package add a platform, and config plugins change only the app config and the native projects, so `withTizen` must wrap the Metro config. | S | `src/start/server/metro/withMetroMultiPlatform.js:719-765` |
+| `expo/metro-config` is `module.exports = require('@expo/metro-config')`, and `import { getDefaultConfig } from 'expo/metro-config'` gives the function on Node 22.13.1 and 26.5. | S, O | `expo` 58.0.22 `metro-config.js:1` |
+| `loadUserConfig({ projectRoot, serverRoot: getMetroServerRoot(projectRoot) })`, from `expo/metro-config` and `@expo/config/paths`, returned the example's config in 0.6 s, its `resolver.platforms` `ios android tvos macos tizen`. | S, O | `@expo/config` 58.0.10 `build/paths/paths.js:31-32` |
+| `expo prebuild` suggests an Android package from the iOS bundle id when it is valid, else `com.<owner>.<slug>` with `anonymous` for an owner it does not know. It sanitizes it: characters other than letters, digits, `_` and `.` dropped, empty segments removed, `com.` added until there are two segments, and `x` before a segment that does not start with a letter. | S | `src/utils/getOrPromptApplicationId.js:93, 192-210`; `src/utils/validateApplicationId.js:108-130` |
+
 ## What this means for this package
 
-- `app.plugin.js` re-exports the compiled config plugin. In a checkout of this
-  repository, which has no `dist/`, it passes the config through, since Node
-  22.13 cannot require the TypeScript source; `rn-tizen` checks the props
-  whenever it reads them. Its props are the Tizen settings, validated with zod.
+- `app.plugin.js` re-exports the compiled config plugin as an ES module, plain
+  JavaScript that Node loads under `node_modules`, where it refuses to strip
+  types. Its props are the Tizen settings, validated with zod. The example in
+  this repository lists `../app.plugin.js`: listing the TypeScript source fails
+  on Node 22.13 (section 1), and `bun install` builds `dist/` through the
+  `prepare` script.
+- `rn-tizen init` writes `metro.config.mjs` or wraps an existing config, and
+  suggests the app's `android.package`, else `com.anonymous.<slug>` sanitized
+  as `expo prebuild` does, for the package id. Builds load the Metro config
+  with `loadUserConfig` before anything else, and stop with `npx rn-tizen init`
+  as the fix when its platforms lack `tizen`.
 - `expo-module.config.json` declares the dev tools plugin. Each command starts
   a detached job and returns at once with the URL of the plugin's page, which
   shows each job's progress and output.
@@ -73,5 +96,9 @@ Checked on 2026-11-03.
 
 The files above, under `node_modules/.bun/@expo+cli@58.1.18*/node_modules/@expo/cli/build/`,
 `node_modules/.bun/@expo+config-plugins@58.0.11*/`,
-`node_modules/.bun/@expo+require-utils@*/` and
+`node_modules/.bun/@expo+require-utils@*/`,
+`node_modules/.bun/@expo+metro-config@58.0.20*/`,
+`node_modules/.bun/@expo+config@58.0.10*/`,
+`node_modules/.bun/metro-config@0.87.1*/`, `node_modules/.bun/metro-config@0.87.2*/`,
+`node_modules/.bun/expo@58.0.22*/` and
 `node_modules/.bun/expo-modules-autolinking@58.0.16*/`.

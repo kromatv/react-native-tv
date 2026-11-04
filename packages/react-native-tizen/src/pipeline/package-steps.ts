@@ -9,6 +9,7 @@ import { ensureIcuData } from '../runtime/icu-data.ts';
 import type { Reporter } from '../cli/reporter.ts';
 import { devBuildHost, devServerBundleStep } from '../package/dev-server-bundle.ts';
 import { buildDotnetProject } from '../package/dotnet-build.ts';
+import { tizenMetroIssue } from '../metro/metro-platforms.ts';
 import { featureNotes } from '../package/feature-notes.ts';
 import type { LogEndpoint } from '../package/runtime-config.ts';
 import { writeTizenProject } from '../package/tizen-project.ts';
@@ -65,23 +66,37 @@ function until(date: string): string {
   return new Date(date).toISOString().slice(0, 10);
 }
 
-/**
- * Builds a signed `.tpk` from scratch or incrementally: the native runtime, the
- * bytecode bundle, the generated `tizen/` project, then .NET and signing.
- * Fails fast, before any compiling, when there is nothing to sign with.
- */
 /** A built package and the distributor certificate that signed it. */
 export interface BuiltPackage {
   readonly tpk: string;
   readonly distributor: X509Certificate;
 }
 
+/** Fails, as one step, unless the app's Metro config bundles for Tizen. */
+export function tizenMetroStep(reporter: Reporter, app: AppProject): Promise<void> {
+  return reporter.step(
+    'Metro config',
+    () => {
+      const issue = tizenMetroIssue(app.root);
+      return issue === null ? Promise.resolve() : Promise.reject(issue);
+    },
+    () => 'withTizen',
+  );
+}
+
+/**
+ * Builds a signed `.tpk` from scratch or incrementally: the native runtime, the
+ * bytecode bundle, the generated `tizen/` project, then .NET and signing.
+ * Fails fast, before any compiling, when Metro cannot bundle for Tizen or
+ * there is nothing to sign with.
+ */
 export async function packageSteps(
   reporter: Reporter,
   request: PackageRequest,
 ): Promise<BuiltPackage> {
   const { sdk, app, target, shell } = request;
   claimTizenDir(app.tizenDir);
+  await tizenMetroStep(reporter, app);
   const signing = await reporter.step(
     'Certificates',
     () =>

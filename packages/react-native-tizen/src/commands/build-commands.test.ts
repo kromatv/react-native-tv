@@ -3,7 +3,7 @@ import { fakeApp } from '../app/app.fixtures.ts';
 import { loadAppProject } from '../app/app-project.ts';
 import { captureProcessOutput } from '../fakes.fixtures.ts';
 import { listenForLogs, type LogServer } from '../logs/log-server.ts';
-import { bundleStep, packageSteps } from '../pipeline/package-steps.ts';
+import { bundleStep, packageSteps, tizenMetroStep } from '../pipeline/package-steps.ts';
 import { runtimeSteps } from '../pipeline/runtime-steps.ts';
 import { testSigner } from '../signing/signing.fixtures.ts';
 import { setupTarget } from '../sysroot/setup-target.ts';
@@ -29,7 +29,11 @@ vi.mock('../app/app-project.ts', () => ({ loadAppProject: vi.fn() }));
 vi.mock('../tizen/tizen-sdk.ts', () => ({ locateTizenSdk: () => SDK }));
 vi.mock('../tizen/devices.ts', () => ({ resolveDevice: vi.fn() }));
 vi.mock('../tizen/install-app.ts', () => ({ installApp: vi.fn(), launchApp: vi.fn() }));
-vi.mock('../pipeline/package-steps.ts', () => ({ bundleStep: vi.fn(), packageSteps: vi.fn() }));
+vi.mock('../pipeline/package-steps.ts', () => ({
+  bundleStep: vi.fn(),
+  packageSteps: vi.fn(),
+  tizenMetroStep: vi.fn(),
+}));
 vi.mock('../pipeline/runtime-steps.ts', () => ({ runtimeSteps: vi.fn() }));
 vi.mock('../sysroot/setup-target.ts', () => ({ setupTarget: vi.fn() }));
 vi.mock('../logs/log-server.ts', () => ({ listenForLogs: vi.fn() }));
@@ -75,6 +79,7 @@ describe('rn-tizen bundle', () => {
     await bundleCommand.run([], context);
     await bundleCommand.run(['--out', 'dist'], context);
 
+    expect(tizenMetroStep).toHaveBeenCalledTimes(2);
     expect(vi.mocked(bundleStep).mock.calls.map((call) => call[2])).toEqual([
       undefined,
       `${ROOT}/dist`,

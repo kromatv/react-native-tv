@@ -35,26 +35,23 @@ Verified on a Samsung TV running Tizen 9.0 (armv7), built from macOS.
 
 ```sh
 npx expo install @kromatv/react-native-tizen
+npx rn-tizen init
 ```
 
-Expo adds its config plugin to `app.json`. Give it the app's Tizen package id:
-
-```json
-{
-  "expo": {
-    "plugins": [["@kromatv/react-native-tizen", { "package": "com.example.myapp" }]]
-  }
-}
-```
-
-Then teach Metro the `tizen` platform, in `metro.config.js`:
+`rn-tizen init` gives the config plugin Expo listed in `app.json` your app's
+Tizen package id. It asks for one, suggesting your Android package or one made
+from the slug. It also writes `metro.config.mjs`, which teaches Metro the
+`tizen` platform:
 
 ```js
-const { getDefaultConfig } = require('expo/metro-config');
-const { withTizen } = require('@kromatv/react-native-tizen/metro');
-
-module.exports = withTizen(getDefaultConfig(__dirname));
+import { getDefaultConfig } from 'expo/metro-config';
+import { withTizen } from '@kromatv/react-native-tizen/metro';
+export default withTizen(getDefaultConfig(import.meta.dirname));
 ```
+
+An app that already has a Metro config keeps it: `init` wraps its export with
+`withTizen`, or prints the two lines to add when it cannot change the file
+safely. Running `init` again changes nothing.
 
 ### 3. Put the TV in Developer mode
 
@@ -80,8 +77,10 @@ Press **shift+m** ("more tools") and pick `@kromatv/react-native-tizen`:
 
 Each command prints the address of a page inside the dev server, where you can
 follow its progress and logs. The first run builds the native runtime, which
-takes a few minutes; later runs only rebuild what changed. `npx rn-tizen
-doctor` names the exact fix for anything a build needs.
+takes a few minutes; later runs only rebuild what changed. Run on TV and Run
+in simulator check the Metro config first, and say to run `npx rn-tizen init`
+when it has no `withTizen`. `npx rn-tizen doctor` names the exact fix for
+anything a build needs.
 
 Expo has no `expo run:tizen` and no single-key shortcut for Tizen, and
 `expo prebuild` and `expo export --platform tizen` do not know the platform.

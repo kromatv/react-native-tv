@@ -24,7 +24,9 @@ the only host verified so far.
 
   CMake must be 3.24 or newer and the .NET SDK 6.0 or newer. ccache is optional.
   Set `TIZEN_LLVM_DIR` to use a clang and lld that are not Homebrew's.
-- Node.js, which runs Expo's CLI when the app is bundled.
+- Node.js, which runs Expo's CLI when the app is bundled. `npx expo start` in
+  the example needs 22.18 or newer: its Metro config imports `withTizen` from
+  `src/`, so Node must strip TypeScript types on its own.
 - A Samsung certificate profile, once: in Tizen Studio, Tools, Certificate
   Manager, create a Samsung profile with your TV's DUID and make it the active
   profile. Samsung issues its author and distributor certificates; `rn-tizen`
@@ -43,8 +45,11 @@ bun install
 ```
 
 The repository root is the package. `example/` is an Expo app in the same Bun
-workspace. Run the CLI from source with `bun src/cli/main.ts <command>`, and point
-it at the example with `--project example`:
+workspace. `bun install` builds `dist/` (the `prepare` script), which the
+example's `app.json` loads the config plugin from through `../app.plugin.js`;
+its `metro.config.mjs` imports `../src/metro/with-tizen.ts` directly. Run the CLI
+from source with `bun src/cli/main.ts <command>`, and point it at the example
+with `--project example`:
 
 ```sh
 bun src/cli/main.ts doctor --project example

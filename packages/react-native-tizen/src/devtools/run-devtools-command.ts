@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { FixableError } from '../errors.ts';
+import { tizenMetroIssue } from '../metro/metro-platforms.ts';
 import { CommandInputError, jobPageUrl, planCommand } from './devtools-commands.ts';
 import { jobsDir, listJobs, startJob, stopJob } from './jobs.ts';
 
@@ -15,6 +17,8 @@ const argvSchema = z.tuple([z.string().min(1), z.string().max(8192), z.url()]);
 async function start(argv: readonly string[], dir: string): Promise<OutputLine> {
   const [command, argsJson, devServer] = argvSchema.parse(argv);
   const plan = await planCommand(command, JSON.parse(argsJson), devServer);
+  const metroIssue = plan.bundles ? tizenMetroIssue(process.cwd()) : null;
+  if (metroIssue !== null) throw metroIssue;
   if (plan.exclusive) {
     const running = (await listJobs(dir)).filter(
       (job) => job.kind === plan.kind && job.status === 'running',
@@ -33,6 +37,7 @@ async function start(argv: readonly string[], dir: string): Promise<OutputLine> 
 
 function failure(error: unknown): string {
   if (error instanceof CommandInputError || error instanceof z.ZodError) return error.message;
+  if (error instanceof FixableError) return `${error.message}. ${error.hint}`;
   const reason = error instanceof Error ? error.message : String(error);
   return `rn-tizen could not start the command: ${reason}`;
 }

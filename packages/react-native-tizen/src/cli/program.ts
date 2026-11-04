@@ -6,6 +6,7 @@ import { bundleCommand } from '../commands/bundle.ts';
 import { certificateCommand } from '../commands/certificate.ts';
 import { devicesCommand } from '../commands/devices.ts';
 import { doctorCommand } from '../commands/doctor.ts';
+import { initCommand } from '../commands/init.ts';
 import { installCommand } from '../commands/install.ts';
 import { keyCommand } from '../commands/key.ts';
 import { logsCommand } from '../commands/logs.ts';
@@ -24,6 +25,7 @@ import { commandHelp, programHelp } from './help.ts';
 import { closestMatch } from './suggest.ts';
 
 const COMMANDS: readonly Command[] = [
+  initCommand,
   doctorCommand,
   devicesCommand,
   certificateCommand,

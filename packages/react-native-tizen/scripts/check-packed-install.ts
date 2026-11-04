@@ -14,6 +14,20 @@ import { Reporter } from '../src/cli/reporter.ts';
 
 const REPO = resolve(import.meta.dirname, '..');
 const BYTECODE = join('tizen', 'build', 'bundle', 'index.tizen.hbc');
+const METRO = 'metro.config.mjs';
+const LOAD_PLUGIN = `
+import plugin from '@kromatv/react-native-tizen/app.plugin.js';
+if (typeof plugin !== 'function') throw new Error('app.plugin.js exports no function');
+const config = { name: 'Packed' };
+if (plugin(config, { package: 'org.example.packed' }) !== config) throw new Error('the plugin changed the config');
+let refused = false;
+try {
+  plugin(config, { package: 'packed' });
+} catch {
+  refused = true;
+}
+if (!refused) throw new Error('the plugin took a bad package id');
+`;
 
 const exampleSchema = z.object({
   dependencies: z.object({ expo: z.string(), react: z.string(), 'react-native': z.string() }),
@@ -43,19 +57,7 @@ function writeApp(app: string, tarball: string): void {
       '@kromatv/react-native-tizen': `file:${tarball}`,
     },
   });
-  writeJson(join(app, 'app.json'), {
-    expo: { name: 'Packed', slug: 'packed', tizen: { package: 'org.example.packed' } },
-  });
-  writeFileSync(
-    join(app, 'metro.config.js'),
-    [
-      "const { getDefaultConfig } = require('expo/metro-config');",
-      "const { withTizen } = require('@kromatv/react-native-tizen/metro');",
-      '',
-      'module.exports = withTizen(getDefaultConfig(__dirname));',
-      '',
-    ].join('\n'),
-  );
+  writeJson(join(app, 'app.json'), { expo: { name: 'Packed', slug: 'packed' } });
   writeFileSync(
     join(app, 'index.js'),
     [
@@ -81,9 +83,25 @@ try {
   writeApp(app, join(packs, tarball));
   await sh(['npm', 'install', '--no-audit', '--no-fund', '--loglevel=error'], app);
   await sh(['npx', 'rn-tizen', '--version'], app);
+  await sh(['npx', 'rn-tizen', 'init', '--package', 'org.example.packed'], app);
+  const firstInit = [
+    readFileSync(join(app, 'app.json'), 'utf8'),
+    readFileSync(join(app, METRO), 'utf8'),
+  ];
+  await sh(['npx', 'rn-tizen', 'init'], app);
+  const secondInit = [
+    readFileSync(join(app, 'app.json'), 'utf8'),
+    readFileSync(join(app, METRO), 'utf8'),
+  ];
+  if (secondInit.join() !== firstInit.join())
+    throw new Error('rn-tizen init changed what it wrote before');
+  await sh(['node', '--input-type=module', '--eval', LOAD_PLUGIN], app);
+  await sh(['npx', 'expo', 'config', '--json'], app);
   await sh(['npx', 'rn-tizen', 'bundle'], app);
   if (!existsSync(join(app, BYTECODE))) throw new Error(`rn-tizen bundle wrote no ${BYTECODE}`);
-  reporter.line('The packed package bundles a fresh Expo app under Node.');
+  reporter.line(
+    'rn-tizen init sets a fresh Expo app up, plain Node and Expo load the packed config plugin, and the package bundles the app.',
+  );
 } finally {
   rmSync(work, { recursive: true, force: true });
 }

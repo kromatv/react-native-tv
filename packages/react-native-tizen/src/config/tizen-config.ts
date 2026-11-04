@@ -16,7 +16,8 @@ const PRIVILEGE_PREFIX = 'http://tizen.org/privilege/';
 const DEFAULT_PRIVILEGES = [`${PRIVILEGE_PREFIX}internet`];
 const CONFIG_HINT = 'Fix app.json. Every field is described in the CLI docs, under Configuration.';
 
-const packageIdSchema = z
+/** A Tizen package id: reverse-DNS, letters, digits and underscores, under 50 characters. */
+export const packageIdSchema = z
   .string()
   .max(50)
   .regex(
