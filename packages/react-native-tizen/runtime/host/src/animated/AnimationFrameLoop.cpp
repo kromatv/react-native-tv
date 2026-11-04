@@ -19,6 +19,8 @@ void deleteAnimator(Ecore_Animator *animator) {
 
 } // namespace
 
+AnimationFrameLoop::AnimationFrameLoop() = default;
+
 AnimationFrameLoop::~AnimationFrameLoop() {
   if (animator_ == nullptr) return;
   if (isMainThread()) {

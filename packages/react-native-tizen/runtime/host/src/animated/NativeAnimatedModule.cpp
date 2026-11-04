@@ -1,6 +1,7 @@
-#include "AnimationFrameLoop.h"
+#include "NativeAnimatedModule.h"
 
 #include "../modules/PlatformModuleRegistry.h"
+#include "AnimationFrameLoop.h"
 
 #include <react/featureflags/ReactNativeFeatureFlags.h>
 #include <react/renderer/animated/AnimatedModule.h>
@@ -8,9 +9,7 @@
 
 namespace rntizen {
 
-namespace {
-
-std::shared_ptr<facebook::react::TurboModule> createAnimatedModule(
+std::shared_ptr<facebook::react::TurboModule> createNativeAnimatedModule(
     std::shared_ptr<facebook::react::CallInvoker> jsInvoker,
     const ModuleContext &) {
   using namespace facebook::react;
@@ -23,9 +22,8 @@ std::shared_ptr<facebook::react::TurboModule> createAnimatedModule(
   return std::make_shared<AnimatedModule>(std::move(jsInvoker), std::move(provider));
 }
 
-} // namespace
-
 RN_TIZEN_REGISTRATION(
-    (registerPlatformModule(std::string(facebook::react::AnimatedModule::kModuleName), createAnimatedModule), true));
+    (registerPlatformModule(std::string(facebook::react::AnimatedModule::kModuleName), createNativeAnimatedModule),
+     true));
 
 } // namespace rntizen

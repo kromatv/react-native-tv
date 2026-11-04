@@ -17,7 +17,7 @@ namespace rntizen {
 /// destroyed driver.
 class AnimationFrameLoop final : public std::enable_shared_from_this<AnimationFrameLoop> {
  public:
-  AnimationFrameLoop() = default;
+  AnimationFrameLoop();
   ~AnimationFrameLoop();
 
   AnimationFrameLoop(const AnimationFrameLoop &) = delete;
