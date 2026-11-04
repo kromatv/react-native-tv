@@ -45,9 +45,7 @@ frames.
 - **FlatList.** 1,000 rows of 96 points, each a colored tile and two lines of
   text, with `getItemLayout`. Focus moves down one row on a timer, and an
   animated `scrollToIndex` keeps the focused row in the middle. The list has a
-  fixed height of 780 points. On a TV, react-native-tvos wraps every
-  virtualized list in a `TVFocusGuideView` with no flex, so a list sized by
-  `flex: 1` alone collapses to 1 point and draws nothing.
+  fixed height of 780 points.
 - **Native animated driver.** 12 views loop `translateX` over 1,400 points and
   `opacity`, with `useNativeDriver: true`, a 3 s cycle each, started 120 ms
   apart.

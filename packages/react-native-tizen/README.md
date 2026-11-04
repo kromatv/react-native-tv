@@ -411,9 +411,6 @@ Known gaps:
   the native libraries an app carries below 6.0
   ([reference](docs/reference/tizen-tv-platform.md#2-model-year-platform-runtime)).
 - No native focus engine, as above.
-- A `FlatList` sized only by `flex: 1` draws nothing. On a TV,
-  react-native-tvos wraps every virtualized list in a `TVFocusGuideView` that has
-  no flex, so the list collapses to 1 px. Give the list a height.
 - react-native-svg draws no text, images, masks or clip paths yet
   ([details](docs/native-modules.md#react-native-svg)).
 - A native library cannot declare Tizen privileges, and an app cannot leave a
