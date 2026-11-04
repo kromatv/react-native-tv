@@ -60,6 +60,11 @@ or `bun ../src/cli/main.ts` from `example/`.
   build, so your `restart` runs the last one anyone built of it.
 - The real TV is the final check: `rn-tizen run --device <ip>` from an app. Retail
   TVs block dlog, so the app streams its logs to `rn-tizen`.
+- Agents share the TV. Hold `/tmp/rn-tizen-tv.lock` for everything that reaches
+  it, remote keys (`rn-tizen key`, scripts on port 8002) as much as sdb: `mkdir`
+  it, write who and since when to its `owner` file, `rm -rf` it when done, and
+  wait while another agent holds it. A key sent without it lands in that agent's
+  app.
 - A behaviour seen on hardware goes into the reference with the TV's model,
   year and Tizen version.
 

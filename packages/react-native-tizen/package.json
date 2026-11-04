@@ -64,6 +64,7 @@
     "expo-module.config.json",
     "devtools",
     "THIRD_PARTY_NOTICES.md",
+    "!docs/assets/**",
     "!**/*.tsbuildinfo",
     "!**/*.fixtures.*"
   ],
