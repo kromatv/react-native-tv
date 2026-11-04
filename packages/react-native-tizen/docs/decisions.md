@@ -19,11 +19,15 @@ with a Public certificate.
 ## LLVM, a static GCC runtime, the oldest rootstrap
 
 The runtime is compiled with clang and linked with lld against a mirror of the
-oldest supported Tizen rootstrap (9.0, glibc 2.30), with GCC 14's libstdc++
-linked statically and three glibc symbols supplied by a hidden shim. One build
+package's floor rootstrap (6.0 by default, glibc 2.30), with GCC 14's libstdc++
+linked statically and the glibc symbols it needs beyond 2.30 (three, and
+`_dl_find_object` on aarch64 and x86_64) supplied by a hidden shim. One build
 then runs on every newer TV. Samsung's own GCC for macOS needs Intel Homebrew
 libraries, and lld rejects the rootstrap's stubs as shipped, hence the mirror
-(`runtime/cmake/toolchain/tizen.cmake`, `src/sysroot/`).
+(`runtime/cmake/toolchain/tizen.cmake`, `src/sysroot/`). Tizen Studio publishes
+no TV rootstrap: floors 6.0 to 7.0 link against IoT Headed, the profile with
+armv7 and aarch64 rootstraps, and 8.0 on against the unified `tizen` profile
+(`src/tizen/target.ts`).
 
 ## ICU inside the runtime, FormatJS for the rest of `Intl`
 

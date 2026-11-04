@@ -2,7 +2,7 @@ import { existsSync, readdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { FixableError } from '../errors.ts';
-import { rootstrapName, type TizenArch, type TizenTarget } from './target.ts';
+import { rootstrapFor, type TizenArch, type TizenTarget } from './target.ts';
 
 /** The pieces of a Tizen Studio installation a build reads: its rootstrap and GCC runtime. */
 export interface TizenSdk {
@@ -37,19 +37,19 @@ export function locateTizenSdk(env: NodeJS.ProcessEnv = process.env): TizenSdk {
 
 /** The installed rootstrap for a target, or a {@link FixableError} naming the package to install. */
 export function locateRootstrap(sdk: TizenSdk, target: TizenTarget): string {
+  const rootstrap = rootstrapFor(target);
   const path = join(
     sdk.root,
     'platforms',
-    `tizen-${target.platformVersion}`,
-    'tizen',
+    `tizen-${rootstrap.platformVersion}`,
+    rootstrap.profile,
     'rootstraps',
-    rootstrapName(target),
+    rootstrap.name,
   );
   if (existsSync(path)) return path;
-  const nativePackage = `TIZEN-${target.platformVersion}-NativeAppDevelopment-CLI`;
   throw new FixableError(
-    `No Tizen ${target.platformVersion} rootstrap for ${target.arch}`,
-    `Install it: ${packageManagerInstall(sdk, nativePackage)}`,
+    `No Tizen ${rootstrap.platformVersion} rootstrap for ${target.arch}`,
+    `Install it: ${packageManagerInstall(sdk, rootstrap.sdkPackage)}`,
   );
 }
 

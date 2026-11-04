@@ -4,7 +4,7 @@ import { RUNTIME_DIR } from '../package-paths.ts';
 import { buildCMakeProject, sourcesKey, tizenDefinitions } from '../runtime/cmake.ts';
 import type { Task } from '../task.ts';
 import { locateRootstrap, type TizenSdk } from '../tizen/tizen-sdk.ts';
-import { rootstrapName, type TizenTarget } from '../tizen/target.ts';
+import { rootstrapFor, type TizenTarget } from '../tizen/target.ts';
 import { mirrorSysroot, type MirroredSysroot } from './mirror-sysroot.ts';
 
 /**
@@ -18,7 +18,7 @@ export async function setupTarget(
   target: TizenTarget,
 ): Promise<MirroredSysroot> {
   const rootstrap = locateRootstrap(sdk, target);
-  const name = rootstrapName(target);
+  const { name } = rootstrapFor(target);
   const compatBuild = join(cacheDir(), 'compat', `${name}-${sourcesKey(RUNTIME_DIR)}`);
   await buildCMakeProject(task, {
     source: join(RUNTIME_DIR, 'compat'),

@@ -211,6 +211,21 @@ version from 4.0 to 10.0 (`platforms/tizen-<v>/common/privileges/privilege-dotne
 The manifest fields the shell writes (`profile name="tv"`, `type="dotnet"`,
 `hw-acceleration`, `metadata`) are the 4.0 schema's ([td-manifest]). D
 
+GCC 14's static DWARF unwinder, the one aarch64 and x86_64 use, finds unwind
+tables with `_dl_find_object`, a glibc 2.35 function, and has no fallback once
+built against it ([gcc-dip] L545-562); ARM's EHABI unwinder does not call it.
+Tizen's glibc 2.30 lacks it, so an aarch64 runtime does not link until
+`runtime/compat/` supplies it below glibc 2.35. O: the aarch64 runtime then
+links against IoT Headed 6.0 and its 579 imports resolve on the 6.0, 8.0, 9.0
+and 10.0 aarch64 rootstraps; on aarch64 Linux the same code, linked in place of
+glibc's, catches a C++ exception thrown in the executable and one thrown in a
+shared library.
+
+The x86_64 rootstraps of 8.0 and 9.0 carry IA-64's kernel headers in
+`usr/include/asm` (`break.h`, `ia64regs.h`, IA-64 syscall numbers), so Hermes'
+`perf_event_open` call does not compile against them; 10.0's carries x86's. O
+(as installed by Tizen Studio's package manager, 2026-11-04)
+
 Toolchains: Tizen Studio's only i586 GCC is 9.2 (`tools/i586-linux-gnueabi-gcc-9.2`),
 whose libstdc++ has no `<span>`, `<concepts>`, `<ranges>` or `<format>`;
 React Native 0.88's `ReactCommon` includes them in 9 files. O. So the 32-bit
@@ -607,4 +622,5 @@ and this package's built `example/tizen/bin/Release/tizen90/*.tpk`.
 [ft-pr106]: https://github.com/flutter-tizen/flutter-tizen/pull/106
 [ft-sysroot]: https://github.com/flutter-tizen/embedder/blob/85eec293413fdc25dd720f634a402f8da5c7b0f9/tools/generate_sysroot.py#L201-L202
 [tv-ext]: https://download.tizen.org/sdk/extensions/tv_extensions/snapshots/
+[gcc-dip]: https://github.com/gcc-mirror/gcc/blob/releases/gcc-14/libgcc/unwind-dw2-fde-dip.c
 [ft-runner]: https://github.com/flutter-tizen/flutter-tizen/blob/08014cb5b952850fdbf9c72d24540dfaa68eb807/templates/ui-app/csharp/Runner.csproj#L5

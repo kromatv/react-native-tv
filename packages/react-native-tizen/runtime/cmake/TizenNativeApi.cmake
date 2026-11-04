@@ -9,7 +9,7 @@
 # because the store rejects a package that links a private platform library.
 
 set(_tizen_manifest
-  "${TIZEN_SDK_DIR}/platforms/tizen-${TIZEN_PLATFORM_VERSION}/tizen/rootstraps/info/${TIZEN_ROOTSTRAP_NAME}.dev.xml")
+  "${TIZEN_SDK_DIR}/platforms/tizen-${TIZEN_ROOTSTRAP_VERSION}/${TIZEN_ROOTSTRAP_PROFILE}/rootstraps/info/${TIZEN_ROOTSTRAP_NAME}.dev.xml")
 if(NOT EXISTS "${_tizen_manifest}")
   message(FATAL_ERROR "Tizen native API manifest not found: ${_tizen_manifest}")
 endif()

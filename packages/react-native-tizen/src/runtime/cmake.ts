@@ -6,7 +6,7 @@ import { TOOLCHAIN_FILE } from '../package-paths.ts';
 import { stampAt } from '../stamp.ts';
 import type { Task } from '../task.ts';
 import type { TizenSdk } from '../tizen/tizen-sdk.ts';
-import type { TizenTarget } from '../tizen/target.ts';
+import { rootstrapFor, type TizenTarget } from '../tizen/target.ts';
 import { ninjaProgress } from './ninja-progress.ts';
 
 interface CMakeProject {
@@ -29,11 +29,14 @@ export function sourcesKey(...paths: readonly string[]): string {
 
 /** The definitions that cross-compile a project for one Tizen target. */
 export function tizenDefinitions(sdk: TizenSdk, target: TizenTarget): Record<string, string> {
+  const rootstrap = rootstrapFor(target);
   return {
     CMAKE_TOOLCHAIN_FILE: TOOLCHAIN_FILE,
     CMAKE_BUILD_TYPE: 'Release',
     TIZEN_ARCH: target.arch,
     TIZEN_PLATFORM_VERSION: target.platformVersion,
+    TIZEN_ROOTSTRAP_VERSION: rootstrap.platformVersion,
+    TIZEN_ROOTSTRAP_PROFILE: rootstrap.profile,
     TIZEN_SDK_DIR: sdk.root,
   };
 }

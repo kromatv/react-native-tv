@@ -3,7 +3,7 @@ import { DEVELOPER_MODE_HINT, listDevices } from '../tizen/devices.ts';
 import { FixableError } from '../errors.ts';
 import { resolveSigning } from '../tizen/signing-identity.ts';
 import { locateGccToolchain, locateRootstrap, type TizenSdk } from '../tizen/tizen-sdk.ts';
-import { rootstrapName, type TizenTarget } from '../tizen/target.ts';
+import { rootstrapFor, type TizenTarget } from '../tizen/target.ts';
 import { checking, failed, passed, type CheckResult } from './check-result.ts';
 
 const CONNECT_HINT = `${DEVELOPER_MODE_HINT} Then: rn-tizen devices --connect <tv ip>`;
@@ -19,7 +19,7 @@ export function checkGcc(sdk: TizenSdk, target: TizenTarget): Promise<CheckResul
 export function checkRootstrap(sdk: TizenSdk, target: TizenTarget): Promise<CheckResult> {
   return checking('Rootstrap', () => {
     locateRootstrap(sdk, target);
-    return passed('Rootstrap', rootstrapName(target));
+    return passed('Rootstrap', rootstrapFor(target).name);
   });
 }
 

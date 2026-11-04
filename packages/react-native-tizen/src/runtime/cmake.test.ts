@@ -66,7 +66,19 @@ describe('tizenDefinitions', () => {
       CMAKE_BUILD_TYPE: 'Release',
       TIZEN_ARCH: 'aarch64',
       TIZEN_PLATFORM_VERSION: '8.0',
+      TIZEN_ROOTSTRAP_VERSION: '8.0',
+      TIZEN_ROOTSTRAP_PROFILE: 'tizen',
       TIZEN_SDK_DIR: '/tizen-studio',
+    });
+  });
+
+  it('names the rootstrap a floor older than the tizen profile is linked against', () => {
+    const sdk = { root: '/tizen-studio', sdb: '', tizenCli: '', packageManager: '' };
+
+    expect(tizenDefinitions(sdk, { arch: 'armv7l', platformVersion: '6.0' })).toMatchObject({
+      TIZEN_PLATFORM_VERSION: '6.0',
+      TIZEN_ROOTSTRAP_VERSION: '6.0',
+      TIZEN_ROOTSTRAP_PROFILE: 'iot-headed',
     });
   });
 });

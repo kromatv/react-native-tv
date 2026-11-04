@@ -1,9 +1,13 @@
-// What GCC 14's static libstdc++ calls and the glibc 2.30 of a Tizen 9 TV does
-// not export. Hidden, so a newer glibc's own definition never competes.
+// What GCC 14's static libstdc++ and libgcc call and the glibc 2.30 of a Tizen
+// 6.0 to 9.0 TV does not export. Hidden, so a newer glibc's own definition never
+// competes.
 
+#define _GNU_SOURCE
 #include <errno.h>
+#include <link.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/random.h>
 #include <sys/types.h>
 
@@ -24,3 +28,50 @@ RN_TIZEN_HIDDEN uint32_t arc4random(void) {
     if (received < 0 && errno != EINTR) abort();
   }
 }
+
+#if (defined(__aarch64__) || defined(__x86_64__)) && !__GLIBC_PREREQ(2, 35)
+// GCC 14's DWARF unwinder needs glibc 2.35's _dl_find_object, with no fallback.
+// glibc's struct for these CPUs has no eh_dbase or eh_count; ARM's EHABI never calls it.
+struct dl_find_object {
+  unsigned long long dlfo_flags;
+  void *dlfo_map_start;
+  void *dlfo_map_end;
+  struct link_map *dlfo_link_map;
+  void *dlfo_eh_frame;
+  unsigned long long dlfo_reserved[7];
+};
+
+struct object_search {
+  uintptr_t address;
+  struct dl_find_object *result;
+};
+
+static int find_object(struct dl_phdr_info *info, size_t size, void *data) {
+  (void)size;
+  struct object_search *search = data;
+  uintptr_t start = UINTPTR_MAX;
+  uintptr_t end = 0;
+  void *eh_frame = NULL;
+  for (ElfW(Half) index = 0; index < info->dlpi_phnum; index++) {
+    const ElfW(Phdr) *header = &info->dlpi_phdr[index];
+    const uintptr_t segment = info->dlpi_addr + header->p_vaddr;
+    if (header->p_type == PT_LOAD) {
+      if (segment < start) start = segment;
+      if (segment + header->p_memsz > end) end = segment + header->p_memsz;
+    } else if (header->p_type == PT_GNU_EH_FRAME) {
+      eh_frame = (void *)segment;
+    }
+  }
+  if (search->address < start || search->address >= end) return 0;
+  memset(search->result, 0, sizeof *search->result);
+  search->result->dlfo_map_start = (void *)start;
+  search->result->dlfo_map_end = (void *)end;
+  search->result->dlfo_eh_frame = eh_frame;
+  return 1;
+}
+
+RN_TIZEN_HIDDEN int _dl_find_object(void *address, struct dl_find_object *result) {
+  struct object_search search = {.address = (uintptr_t)address, .result = result};
+  return dl_iterate_phdr(find_object, &search) != 0 ? 0 : -1;
+}
+#endif

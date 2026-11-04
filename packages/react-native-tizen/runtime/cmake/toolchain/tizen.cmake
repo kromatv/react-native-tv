@@ -4,6 +4,8 @@
 #   -DCMAKE_TOOLCHAIN_FILE=<this file>
 #   -DTIZEN_ARCH=x86_64|aarch64|armv7l     x86_64 is the emulator
 #   -DTIZEN_PLATFORM_VERSION=9.0           the oldest platform the build runs on
+#   -DTIZEN_ROOTSTRAP_VERSION=<version>    default: TIZEN_PLATFORM_VERSION
+#   -DTIZEN_ROOTSTRAP_PROFILE=tizen        iot-headed before 8.0 (src/tizen/target.ts)
 #   -DTIZEN_SDK_DIR=<dir>                  default: $TIZEN_SDK_DIR, then ~/tizen-studio
 #   -DTIZEN_LLVM_DIR=<dir>                 default: $TIZEN_LLVM_DIR, Homebrew, then PATH
 #
@@ -14,6 +16,9 @@ set(CMAKE_SYSTEM_NAME Linux)
 set(TIZEN_ARCH "x86_64" CACHE STRING "Target CPU: x86_64 (emulator), aarch64 or armv7l")
 set_property(CACHE TIZEN_ARCH PROPERTY STRINGS x86_64 aarch64 armv7l)
 set(TIZEN_PLATFORM_VERSION "9.0" CACHE STRING "Oldest Tizen platform the build runs on")
+set(TIZEN_ROOTSTRAP_VERSION "${TIZEN_PLATFORM_VERSION}" CACHE STRING "Tizen version of the rootstrap")
+set(TIZEN_ROOTSTRAP_PROFILE "tizen" CACHE STRING "Tizen Studio profile of the rootstrap")
+set_property(CACHE TIZEN_ROOTSTRAP_PROFILE PROPERTY STRINGS tizen iot-headed)
 
 if(DEFINED ENV{TIZEN_SDK_DIR})
   set(TIZEN_SDK_DIR "$ENV{TIZEN_SDK_DIR}" CACHE PATH "Tizen Studio installation")
@@ -25,7 +30,8 @@ if(DEFINED ENV{TIZEN_LLVM_DIR})
 endif()
 
 list(APPEND CMAKE_TRY_COMPILE_PLATFORM_VARIABLES
-  TIZEN_ARCH TIZEN_PLATFORM_VERSION TIZEN_SDK_DIR TIZEN_LLVM_DIR TIZEN_USE_RAW_ROOTSTRAP)
+  TIZEN_ARCH TIZEN_PLATFORM_VERSION TIZEN_ROOTSTRAP_VERSION TIZEN_ROOTSTRAP_PROFILE TIZEN_SDK_DIR
+  TIZEN_LLVM_DIR TIZEN_USE_RAW_ROOTSTRAP)
 
 if(TIZEN_ARCH STREQUAL "x86_64")
   set(CMAKE_SYSTEM_PROCESSOR x86_64)
@@ -62,13 +68,12 @@ if(NOT EXISTS "${TIZEN_GCC_INSTALL_DIR}/crtbegin.o")
     "Install the Native toolchain from the Tizen Studio Package Manager.")
 endif()
 
-set(TIZEN_ROOTSTRAP_NAME "tizen-${TIZEN_PLATFORM_VERSION}-${_tizen_rootstrap}.core")
+set(TIZEN_ROOTSTRAP_NAME "${TIZEN_ROOTSTRAP_PROFILE}-${TIZEN_ROOTSTRAP_VERSION}-${_tizen_rootstrap}.core")
 set(TIZEN_ROOTSTRAP
-  "${TIZEN_SDK_DIR}/platforms/tizen-${TIZEN_PLATFORM_VERSION}/tizen/rootstraps/${TIZEN_ROOTSTRAP_NAME}")
+  "${TIZEN_SDK_DIR}/platforms/tizen-${TIZEN_ROOTSTRAP_VERSION}/${TIZEN_ROOTSTRAP_PROFILE}/rootstraps/${TIZEN_ROOTSTRAP_NAME}")
 if(NOT IS_DIRECTORY "${TIZEN_ROOTSTRAP}")
   message(FATAL_ERROR
-    "Rootstrap not found: ${TIZEN_ROOTSTRAP}. Install TIZEN-${TIZEN_PLATFORM_VERSION}-NativeAppDevelopment-CLI "
-    "from the Tizen Studio Package Manager.")
+    "Rootstrap not found: ${TIZEN_ROOTSTRAP}. Run: rn-tizen setup --arch ${TIZEN_ARCH} --platform ${TIZEN_PLATFORM_VERSION}")
 endif()
 
 if(DEFINED ENV{RN_TIZEN_CACHE_DIR})

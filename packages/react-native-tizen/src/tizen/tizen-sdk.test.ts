@@ -52,6 +52,28 @@ describe('locateRootstrap', () => {
     expect(locateRootstrap(sdk, TARGET)).toBe(rootstrap);
   });
 
+  it('finds a floor before 8.0 under the IoT Headed profile, and names its package', () => {
+    const sdk = locateTizenSdk({ TIZEN_SDK_DIR: root });
+    const floor = { arch: 'aarch64', platformVersion: '6.0' } as const;
+
+    expect(() => locateRootstrap(sdk, floor)).toThrow(
+      expect.objectContaining({
+        hint: expect.stringContaining('install IOT-Headed-6.0-NativeAppDevelopment-CLI'),
+      }),
+    );
+    const rootstrap = join(
+      root,
+      'platforms',
+      'tizen-6.0',
+      'iot-headed',
+      'rootstraps',
+      'iot-headed-6.0-device64.core',
+    );
+    mkdirSync(rootstrap, { recursive: true });
+
+    expect(locateRootstrap(sdk, floor)).toBe(rootstrap);
+  });
+
   it('names the package that installs a missing rootstrap', () => {
     const sdk = locateTizenSdk({ TIZEN_SDK_DIR: root });
 

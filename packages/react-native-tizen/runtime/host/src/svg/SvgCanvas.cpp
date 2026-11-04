@@ -1,5 +1,7 @@
 #include "SvgCanvas.h"
 
+#include "EvasVgLegacy.h"
+
 #include <algorithm>
 #include <cmath>
 
