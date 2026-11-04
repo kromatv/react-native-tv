@@ -163,9 +163,10 @@ from 1.0.0 on and the minor version before it. The `Pull request title` check
 refuses a title in any other form.
 
 While the version is an alpha, every release bumps the alpha number
-(`0.1.0-alpha.1`, `0.1.0-alpha.2`) and goes to npm's `next` tag. Setting
-`prerelease` to `false` in `release-please-config.json` ends the alpha: the next
-release is `0.1.0`, on `latest`.
+(`0.1.0-alpha.1`, `0.1.0-alpha.2`). Until a stable version is on npm, each one
+goes to the `latest` tag, which `npx expo install` takes; after that,
+prereleases go to `next`. Setting `prerelease` to `false` in
+`release-please-config.json` ends the alpha: the next release is `0.1.0`.
 
 How a release goes out:
 
@@ -201,9 +202,10 @@ To choose the next version, end a squash commit's body with `Release-As: 1.0.0`.
   `RELEASE_APP_PRIVATE_KEY`.
 - Add the app to the bypass list of the `release tags` ruleset, which lets only
   admins create `v*` tags.
-- npm's trusted publisher form lives in the package's settings, so the first
-  version goes out with the `NPM_TOKEN` secret. Then add a trusted publisher on
-  npmjs.com (GitHub Actions, `kromatv/react-native-tizen`, workflow
-  `release.yml`, environment `npm`, `npm publish` allowed), delete `NPM_TOKEN`,
-  and set the package's publishing access to require 2FA and disallow tokens.
+- npm only lets a package that exists name a trusted publisher, so the first
+  version, `0.1.0-alpha.0`, was published by hand. Then
+  `npm trust github --file release.yml --repo kromatv/react-native-tizen --env npm --allow-publish`
+  made the workflow its only publisher, and `npm access set mfa=publish` makes
+  the package refuse tokens. No npm token is stored in GitHub.
+- The `npm` environment deploys from `main` only.
 - Make `Conventional title` a required check in the `main` ruleset.

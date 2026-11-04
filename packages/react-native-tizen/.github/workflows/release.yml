@@ -84,21 +84,6 @@ jobs:
             exit 1
           fi
 
-      - name: Read the version and its dist-tag
-        id: version
-        env:
-          RELEASED: ${{ needs.release-please.outputs.version }}
-        run: |
-          version="$(jq -r .version package.json)"
-          if [ -n "$RELEASED" ] && [ "$RELEASED" != "$version" ]; then
-            echo "::error::Release Please released $RELEASED, but package.json at that commit says $version."
-            exit 1
-          fi
-          case "$version" in
-            *-*) echo "dist-tag=next" >> "$GITHUB_OUTPUT" ;;
-            *) echo "dist-tag=latest" >> "$GITHUB_OUTPUT" ;;
-          esac
-
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version-file: .bun-version
@@ -109,6 +94,19 @@ jobs:
           package-manager-cache: false
 
       - run: bun install --frozen-lockfile
+
+      - name: Read the version and its dist-tag
+        id: version
+        env:
+          RELEASED: ${{ needs.release-please.outputs.version }}
+        run: |
+          version="$(jq -r .version package.json)"
+          if [ -n "$RELEASED" ] && [ "$RELEASED" != "$version" ]; then
+            echo "::error::Release Please released $RELEASED, but package.json at that commit says $version."
+            exit 1
+          fi
+          bun scripts/print-dist-tag.ts | tee -a "$GITHUB_OUTPUT"
+
       - run: bun run typecheck
       - run: bun run test
       - run: bun run check
@@ -159,12 +157,11 @@ jobs:
           name: package
           path: ${{ runner.temp }}/package
 
-      # npm tries the trusted publisher (OIDC) first and falls back to the
-      # token, which the first version needs: the package does not exist yet.
+      # npm's trusted publisher for the package names this file and the npm
+      # environment: renaming either stops publishing until npm trust is redone.
       - name: Publish
         env:
           DIST_TAG: ${{ needs.pack.outputs.dist-tag }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           VERSION: ${{ needs.release-please.outputs.version }}
         run: |
           if npm view "@kromatv/react-native-tizen@$VERSION" version >/dev/null 2>&1; then

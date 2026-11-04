@@ -26,7 +26,7 @@
     "example"
   ],
   "bin": {
-    "rn-tizen": "./dist/cli/main.js"
+    "rn-tizen": "dist/cli/main.js"
   },
   "exports": {
     "./metro": {

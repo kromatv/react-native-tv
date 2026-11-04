@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@kromatv/react-native-tizen"><img alt="npm" src="https://img.shields.io/npm/v/@kromatv/react-native-tizen/next?label=npm"></a>
+  <a href="https://www.npmjs.com/package/@kromatv/react-native-tizen"><img alt="npm" src="https://img.shields.io/npm/v/@kromatv/react-native-tizen?label=npm"></a>
   <a href="https://github.com/kromatv/react-native-tizen/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/kromatv/react-native-tizen/actions/workflows/ci.yml/badge.svg?branch=main"></a>
   <a href="https://sonarcloud.io/summary/new_code?id=kromatv_react-native-tizen"><img alt="Quality gate" src="https://sonarcloud.io/api/project_badges/measure?project=kromatv_react-native-tizen&metric=alert_status"></a>
   <a href="https://sonarcloud.io/component_measures?id=kromatv_react-native-tizen&metric=coverage"><img alt="Coverage" src="https://sonarcloud.io/api/project_badges/measure?project=kromatv_react-native-tizen&metric=coverage"></a>
