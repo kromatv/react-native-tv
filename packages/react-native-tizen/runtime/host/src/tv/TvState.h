@@ -20,57 +20,27 @@ class TvState final {
   using PreviewPublisher = std::function<int(const std::string &json)>;
 
   /// The search URL template `expo.tizen.voice.searchUrl` set; nullopt without voice or a URL.
-  explicit TvState(bool voiceConfigured, std::optional<std::string> searchUrl)
-      : voiceConfigured_(voiceConfigured), searchUrl_(std::move(searchUrl)) {}
+  explicit TvState(bool voiceConfigured, std::optional<std::string> searchUrl);
 
-  bool voiceConfigured() const {
-    return voiceConfigured_;
-  }
+  bool voiceConfigured() const;
+  const std::optional<std::string> &searchUrl() const;
 
-  const std::optional<std::string> &searchUrl() const {
-    return searchUrl_;
-  }
-
-  bool voiceAvailable() const {
-    return voiceAvailable_.load();
-  }
-
-  void setVoiceAvailable(bool available) {
-    voiceAvailable_ = available;
-  }
+  bool voiceAvailable() const;
+  void setVoiceAvailable(bool available);
 
   /// Whether JavaScript listens to `event`: `search`, or any other name for commands.
   bool listening(std::string_view event) const;
   void addListener(std::string_view event, int delta);
 
   /// The screen JavaScript said it shows; nullopt until it says.
-  std::optional<std::string> screen() const {
-    std::lock_guard lock(mutex_);
-    return screen_;
-  }
+  std::optional<std::string> screen() const;
+  void setScreen(std::optional<std::string> screen);
 
-  void setScreen(std::optional<std::string> screen) {
-    std::lock_guard lock(mutex_);
-    screen_ = std::move(screen);
-  }
+  bool launchedFromTile() const;
+  void setLaunchedFromTile(bool fromTile);
 
-  bool launchedFromTile() const {
-    return launchedFromTile_.load();
-  }
-
-  void setLaunchedFromTile(bool fromTile) {
-    launchedFromTile_ = fromTile;
-  }
-
-  PreviewPublisher previewPublisher() const {
-    std::lock_guard lock(mutex_);
-    return previewPublisher_;
-  }
-
-  void setPreviewPublisher(PreviewPublisher publisher) {
-    std::lock_guard lock(mutex_);
-    previewPublisher_ = std::move(publisher);
-  }
+  PreviewPublisher previewPublisher() const;
+  void setPreviewPublisher(PreviewPublisher publisher);
 
  private:
   const bool voiceConfigured_;

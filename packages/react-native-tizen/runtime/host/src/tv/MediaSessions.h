@@ -8,7 +8,7 @@ namespace rntizen {
 /// the app leaving the foreground. Every method may be called from any thread.
 class MediaSession {
  public:
-  virtual ~MediaSession() = default;
+  virtual ~MediaSession();
 
   virtual bool isPlaying() const = 0;
   /// expo-video's `staysActiveInBackground`.

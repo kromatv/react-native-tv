@@ -40,6 +40,8 @@ Snapshot snapshot() {
 
 } // namespace
 
+MediaSession::~MediaSession() = default;
+
 void addMediaSession(const std::shared_ptr<MediaSession> &session) {
   auto &state = registry();
   std::lock_guard lock(state.mutex);

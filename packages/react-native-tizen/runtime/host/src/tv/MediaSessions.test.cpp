@@ -80,4 +80,13 @@ TEST_CASE("pauseMediaSessionsForBackground pauses every player that may not play
   CHECK_FALSE(idle->isPlaying());
 }
 
+TEST_CASE("pauseMediaSessionsForBackground pauses the only player when it may not play hidden") {
+  const auto player = std::make_shared<FakeSession>(true, false);
+  addMediaSession(player);
+
+  pauseMediaSessionsForBackground(true);
+
+  CHECK_FALSE(player->isPlaying());
+}
+
 } // namespace rntizen
