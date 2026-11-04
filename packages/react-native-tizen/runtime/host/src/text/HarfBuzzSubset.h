@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 
 namespace rntizen {
 
@@ -40,10 +41,14 @@ struct HarfBuzzSubset {
   HbFace *(*subset)(HbFace *face, const HbSubsetInput *input);
 };
 
+/// The calls from the libraries named, or nothing when either is missing or
+/// lacks one of them.
+std::optional<HarfBuzzSubset> loadHarfBuzzSubset(const char *coreLibrary, const char *subsetLibrary);
+
 /// The calls, or null when either library or any symbol is missing. Resolved once.
 const HarfBuzzSubset *harfBuzzSubset();
 
-constexpr std::uint32_t hbTag(char a, char b, char c, char d) {
+consteval std::uint32_t hbTag(char a, char b, char c, char d) {
   return (static_cast<std::uint32_t>(a) << 24) | (static_cast<std::uint32_t>(b) << 16) |
       (static_cast<std::uint32_t>(c) << 8) | static_cast<std::uint32_t>(d);
 }

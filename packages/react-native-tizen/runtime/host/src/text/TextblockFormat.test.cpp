@@ -1,9 +1,15 @@
 #include "TextblockFormat.h"
 
+#include "AppFont.test.h"
+#include "AppFonts.h"
+
 #include <Ecore_Evas.h>
 #include <doctest/doctest.h>
 
+#include <array>
+#include <filesystem>
 #include <string>
+#include <utility>
 
 namespace rntizen {
 
@@ -37,11 +43,14 @@ TEST_CASE("fragmentFormat falls back to the system font at 14 points") {
   CHECK_FALSE(run.tightLineShift.has_value());
 }
 
-TEST_CASE("fragmentFormat escapes the spaces in a family name") {
+TEST_CASE("fragmentFormat escapes the spaces and backslashes in a family name") {
   TextAttributes attributes;
   attributes.fontFamily = "One UI Sans";
+  TextAttributes slashed;
+  slashed.fontFamily = "Back\\slash";
 
   CHECK(has(fragmentFormat(attributes, 1).format, "font=One\\ UI\\ Sans "));
+  CHECK(has(fragmentFormat(slashed, 1).format, "font=Back\\\\slash "));
 }
 
 TEST_CASE("fragmentFormat names the weight class and slant") {
@@ -64,6 +73,52 @@ TEST_CASE("fragmentFormat rounds a weight up to the next named one") {
   CHECK(has(fragmentFormat(attributes, 1).format, "font_weight=semibold"));
   attributes.fontWeight = static_cast<FontWeight>(900);
   CHECK(has(fragmentFormat(attributes, 1).format, "font_weight=black"));
+}
+
+TEST_CASE("fragmentFormat names each weight class") {
+  const std::array<std::pair<int, std::string>, 9> classes{{
+      {100, "thin"},
+      {200, "ultralight"},
+      {300, "light"},
+      {400, "normal"},
+      {500, "medium"},
+      {600, "semibold"},
+      {700, "bold"},
+      {800, "ultrabold"},
+      {900, "black"},
+  }};
+  TextAttributes attributes;
+
+  for (const auto &[weight, name] : classes) {
+    attributes.fontWeight = static_cast<FontWeight>(weight);
+    CHECK(has(fragmentFormat(attributes, 1).format, " font_weight=" + name + " "));
+  }
+}
+
+TEST_CASE("fragmentFormat slants oblique text as italic") {
+  TextAttributes attributes;
+  attributes.fontStyle = FontStyle::Oblique;
+
+  CHECK(has(fragmentFormat(attributes, 1).format, " font_style=italic"));
+}
+
+TEST_CASE("fragmentFormat aligns a run left, right, centered or by the locale") {
+  using enum TextAlignment;
+  const std::array<std::pair<TextAlignment, std::string>, 7> alignments{{
+      {Left, "left"},
+      {Start, "left"},
+      {Justified, "left"},
+      {Right, "right"},
+      {End, "right"},
+      {Center, "center"},
+      {Natural, "auto"},
+  }};
+  TextAttributes attributes;
+
+  for (const auto &[alignment, name] : alignments) {
+    attributes.alignment = alignment;
+    CHECK(fragmentFormat(attributes, 1).format.ends_with(" align=" + name));
+  }
 }
 
 TEST_CASE("fragmentFormat rounds the size to whole pixels, one at least") {
@@ -120,6 +175,33 @@ TEST_CASE("fragmentFormat draws underlines, double underlines and strikes in the
   CHECK(has(format, " strikethrough=on strikethrough_color=#ff0000ff"));
 }
 
+TEST_CASE("fragmentFormat draws a single underline or a strike alone in the text color") {
+  TextAttributes underlined;
+  underlined.foregroundColor = colorFromRGBA(0, 255, 0, 255);
+  underlined.textDecorationLineType = TextDecorationLineType::Underline;
+  TextAttributes struck = underlined;
+  struck.textDecorationLineType = TextDecorationLineType::Strikethrough;
+  TextAttributes plain = underlined;
+  plain.textDecorationLineType = TextDecorationLineType::None;
+
+  const auto underline = fragmentFormat(underlined, 1).format;
+  const auto strike = fragmentFormat(struck, 1).format;
+
+  CHECK(underline.ends_with(" underline=single underline_color=#00ff00ff"));
+  CHECK(strike.ends_with(" strikethrough=on strikethrough_color=#00ff00ff"));
+  CHECK_FALSE(has(fragmentFormat(plain, 1).format, "underline"));
+}
+
+TEST_CASE("fragmentFormat sets no line size for a lineHeight of zero") {
+  TextAttributes attributes;
+  attributes.lineHeight = 0;
+
+  const auto run = fragmentFormat(attributes, 1);
+
+  CHECK_FALSE(has(run.format, "line"));
+  CHECK_FALSE(run.tightLineShift.has_value());
+}
+
 TEST_CASE("fragmentFormat backs the run with its background color") {
   TextAttributes attributes;
   attributes.backgroundColor = colorFromRGBA(0, 0, 255, 255);
@@ -133,6 +215,30 @@ TEST_CASE("fragmentFormat keeps the family when letter spacing names no app font
   attributes.letterSpacing = 2;
 
   CHECK(has(fragmentFormat(attributes, 1).format, "font=Unregistered "));
+}
+
+TEST_CASE("fragmentFormat sets letter-spaced text in the app font tracked for that spacing") {
+  namespace fs = std::filesystem;
+  const auto root = fs::temp_directory_path() / "rn-tizen-textblock-format-test";
+  fs::remove_all(root);
+  fs::create_directories(root / "Spaced");
+  registerAppFontFiles("Spaced", {testing::writeFile(root / "Spaced" / "Bold.ttf", testing::appFont(700, 1000))});
+  TextAttributes attributes;
+  attributes.fontFamily = "Spaced";
+  attributes.fontWeight = FontWeight::Bold;
+  attributes.fontSize = 10;
+  attributes.letterSpacing = 1;
+  TextAttributes unspaced = attributes;
+  unspaced.letterSpacing = 0;
+
+  const auto format = fragmentFormat(attributes, 1).format;
+  const auto tracked = trackedAppFont("Spaced", 700, false, 0.1);
+  const auto unspacedFormat = fragmentFormat(unspaced, 1).format;
+  fs::remove_all(root);
+
+  REQUIRE(tracked.has_value());
+  CHECK(format.starts_with("font=" + tracked->string() + " "));
+  CHECK(unspacedFormat.starts_with("font=Spaced "));
 }
 
 TEST_CASE("paragraphFormat ellipsizes a single line where ellipsizeMode says") {

@@ -18,6 +18,15 @@ TEST_CASE("transformedText capitalizes the first letter after a space, a tab or 
   CHECK(transformedText("élan vital\tà bientôt", TextTransform::Capitalize) == "Élan Vital\tÀ Bientôt");
 }
 
+TEST_CASE("transformedText pairs each Latin Extended-A letter with its capital, whichever code point is even") {
+  CHECK(transformedText("āĀŋŊĺĹźŹ÷ȁ", TextTransform::Uppercase) == "ĀĀŊŊĹĹŹŹ÷ȁ");
+  CHECK(transformedText("ĀāŊŋĹĺŹź×Ȁ", TextTransform::Lowercase) == "āāŋŋĺĺźź×Ȁ");
+}
+
+TEST_CASE("transformedText starts a word after a line break, a carriage return or a no-break space") {
+  CHECK(transformedText("one\ntwo\rthree\u00a0four", TextTransform::Capitalize) == "One\nTwo\rThree\u00a0Four");
+}
+
 TEST_CASE("transformedText leaves other characters and other transforms alone") {
   CHECK(transformedText("straße αβ", TextTransform::Uppercase) == "STRAßE αβ");
   CHECK(transformedText("Mixed Case", TextTransform::None) == "Mixed Case");
