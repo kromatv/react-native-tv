@@ -7,11 +7,11 @@ namespace rntizen {
 
 namespace {
 
-constexpr RemoteKey press(std::string_view eventType) {
+consteval RemoteKey press(std::string_view eventType) {
   return {.eventType = eventType, .longEventType = {}, .isBack = false};
 }
 
-constexpr RemoteKey hold(std::string_view eventType, std::string_view longEventType) {
+consteval RemoteKey hold(std::string_view eventType, std::string_view longEventType) {
   return {.eventType = eventType, .longEventType = longEventType, .isBack = false};
 }
 

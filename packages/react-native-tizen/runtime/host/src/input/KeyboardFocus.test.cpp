@@ -132,4 +132,49 @@ TEST_CASE("KeyboardFocus passes on a key the field leaves, and tells a field it 
   CHECK(focus.hasFocus(second));
 }
 
+TEST_CASE("KeyboardFocus keeps the keyboard with a field focused twice, and a field without it cannot blur it") {
+  const Canvas canvas;
+  KeyboardFocus focus(canvas.evas());
+  Field field;
+  Field other;
+
+  focus.focus(field, ImeOptions{});
+  focus.focus(field, ImeOptions{});
+  focus.blur(other);
+
+  CHECK(focus.hasFocus(field));
+  CHECK(field.lost == 0);
+}
+
+TEST_CASE("KeyboardFocus keeps a key the field took from the remote after the field blurs, release included") {
+  const Canvas canvas;
+  KeyboardFocus focus(canvas.evas());
+  Field field;
+  const auto right = keyEvent("Right", 114);
+  focus.focus(field, ImeOptions{});
+  REQUIRE(focus.handleKey(right, true));
+
+  focus.blur(field);
+
+  CHECK(focus.handleKey(right, true));
+  CHECK(focus.handleKey(right, false));
+  CHECK(field.keys == std::vector<std::string>{"down Right"});
+  CHECK_FALSE(focus.handleKey(right, false));
+}
+
+TEST_CASE("KeyboardFocus keeps a repeat the field refuses from the remote when the field took its key") {
+  const Canvas canvas;
+  KeyboardFocus focus(canvas.evas());
+  Field field;
+  const auto left = keyEvent("Left", 113);
+  focus.focus(field, ImeOptions{});
+  REQUIRE(focus.handleKey(left, true));
+  field.takesKeys = false;
+
+  CHECK(focus.handleKey(left, true));
+  CHECK(focus.handleKey(left, false));
+
+  CHECK(field.keys == std::vector<std::string>{"down Left", "repeat Left", "up Left"});
+}
+
 } // namespace rntizen

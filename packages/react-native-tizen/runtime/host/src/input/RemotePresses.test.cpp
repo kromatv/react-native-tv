@@ -15,6 +15,7 @@ namespace {
 constexpr unsigned int kReturn = 36;
 constexpr unsigned int kUp = 111;
 constexpr unsigned int kPlay = 172;
+constexpr unsigned int kStop = 174;
 constexpr double kPastHoldDelay = 0.4;
 
 Ecore_Event_Key keyEvent(const char *name, unsigned int keycode, unsigned int timestamp = 0) {
@@ -177,6 +178,19 @@ TEST_CASE("a hold not started when the presses are destroyed never starts") {
   runMainLoopFor(kPastHoldDelay);
 
   CHECK(events.empty());
+}
+
+TEST_CASE("presses with no key filter report a key at its release, and nothing for a key down when destroyed") {
+  EcoreLoop loop;
+  std::vector<std::string> events;
+  {
+    RemotePresses presses([&events](const RemoteEvent &event) { events.push_back(describe(event)); });
+    presses.keyDown(keyEvent("XF86AudioPlay", kPlay));
+    CHECK(presses.keyUp(keyEvent("XF86AudioPlay", kPlay)));
+    presses.keyDown(keyEvent("XF86AudioStop", kStop));
+  }
+
+  CHECK(events == std::vector<std::string>{"play/1"});
 }
 
 } // namespace rntizen
