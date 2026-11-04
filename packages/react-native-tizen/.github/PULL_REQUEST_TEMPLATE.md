@@ -1,4 +1,4 @@
-<!-- The title becomes the squash commit: conventional form, such as fix(input): map the Back key on Tizen 8 -->
+<!-- The title becomes the squash commit and its CHANGELOG.md line: conventional form, such as fix(input): map the Back key on Tizen 8. CONTRIBUTING.md, Releases, lists the types. -->
 
 ## What
 

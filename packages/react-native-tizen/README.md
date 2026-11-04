@@ -428,6 +428,8 @@ Known gaps:
 - [Tizen versions](docs/tizen-versions.md): which Samsung TVs a package
   reaches, and why the floor is 6.0
 - [Benchmarks](docs/benchmarks.md): the method and the raw results
+- [Releases](https://github.com/kromatv/react-native-tizen/releases): what
+  each version changed, also in `CHANGELOG.md`
 
 **CLI**
 

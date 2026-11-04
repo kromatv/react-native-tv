@@ -60,6 +60,7 @@
     "react-native-overrides",
     "docs",
     "README.md",
+    "CHANGELOG.md",
     "app.plugin.js",
     "expo-module.config.json",
     "devtools",

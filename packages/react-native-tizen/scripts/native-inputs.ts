@@ -1,5 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, normalize } from 'node:path';
+import { runSync } from '../src/exec.ts';
+import { onlyVersionChanged } from './only-version-changed.ts';
 
 const ENTRIES = ['scripts/compile-simulator-runtime.ts', 'scripts/test-runtime.ts'];
 const NATIVE_ROOTS = [
@@ -32,13 +34,25 @@ function importClosure(entries: readonly string[]): Set<string> {
   return seen;
 }
 
+function releaseBumpOnly(file: string, base: string | undefined): boolean {
+  if (file !== 'package.json' || !base) return false;
+  try {
+    const before = runSync(['git', 'show', `${base}:package.json`], { maxBytes: 1_000_000 });
+    return onlyVersionChanged(before, readFileSync(file, 'utf8'));
+  } catch {
+    return false;
+  }
+}
+
 const changed = readFileSync(0, 'utf8')
   .split('\n')
   .map((line) => line.trim())
   .filter((line) => line !== '');
 const inputs = importClosure(ENTRIES);
 const touched = changed.filter(
-  (file) => inputs.has(file) || NATIVE_ROOTS.some((root) => file.startsWith(root)),
+  (file) =>
+    (inputs.has(file) || NATIVE_ROOTS.some((root) => file.startsWith(root))) &&
+    !releaseBumpOnly(file, process.env.BASE),
 );
 for (const file of touched) console.error(`native input changed: ${file}`);
 console.log(`native=${touched.length > 0}`);

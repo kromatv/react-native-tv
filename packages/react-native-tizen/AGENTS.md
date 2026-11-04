@@ -29,6 +29,9 @@ and the pull request says which.
   stop.
 - Commit messages are conventional and short: `fix(input): map the Back key on
   Tizen 8`. The body, when there is one, says why.
+- A pull request's title becomes its squash commit and, for `feat`, `fix`,
+  `perf`, `revert` and `docs`, its line in `CHANGELOG.md`: write it for a user
+  of the package. `CONTRIBUTING.md`, Releases, has the types and what they bump.
 
 ## Comments
 

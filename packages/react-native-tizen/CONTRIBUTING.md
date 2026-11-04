@@ -144,5 +144,66 @@ on; a change to one of them changes that file too.
 
 ## Releases
 
-Maintainers tag `vX.Y.Z` on `main`, and the release workflow publishes that
-version to npm with provenance.
+[Release Please](https://github.com/googleapis/release-please) cuts every
+release from the squash commits on `main`, so a pull request's title is its line
+in `CHANGELOG.md`:
+
+| Title type | Changelog section | Bumps |
+|------------|-------------------|-------|
+| `feat` | Features | minor |
+| `fix` | Bug fixes | patch |
+| `perf` | Performance | patch |
+| `revert` | Reverts | patch |
+| `docs` | Documentation | patch |
+| `refactor`, `test`, `build`, `ci`, `chore`, `style` | none | nothing on their own |
+
+A `!` after the type or scope (`feat(cli)!: rename --device to --tv`) or a
+`BREAKING CHANGE:` footer marks a breaking change, which bumps the major version
+from 1.0.0 on and the minor version before it. The `Pull request title` check
+refuses a title in any other form.
+
+While the version is an alpha, every release bumps the alpha number
+(`0.1.0-alpha.1`, `0.1.0-alpha.2`) and goes to npm's `next` tag. Setting
+`prerelease` to `false` in `release-please-config.json` ends the alpha: the next
+release is `0.1.0`, on `latest`.
+
+How a release goes out:
+
+1. Every push to `main` updates one pull request, `chore: release <version>`. It
+   sets the version in `package.json` and `.release-please-manifest.json` and
+   adds the release's section to `CHANGELOG.md`.
+2. A maintainer merges it when `main` is worth releasing. The `Release` workflow
+   then tags `v<version>` with a draft GitHub release, checks and packs the
+   package, publishes it to npm with provenance, attaches the tarball to the
+   release and publishes the release. A release that fails to reach npm stays a
+   draft.
+
+To fix a changelog line after its pull request merged, add the line as it should
+read to that pull request's description, then run the `Release` workflow on
+`main` from the Actions tab:
+
+```text
+BEGIN_COMMIT_OVERRIDE
+fix(input): map the Back key on Tizen 8
+END_COMMIT_OVERRIDE
+```
+
+To choose the next version, end a squash commit's body with `Release-As: 1.0.0`.
+
+### One-time setup
+
+- A GitHub App opens the release pull request, because CI does not run on one
+  opened with `GITHUB_TOKEN` until someone approves it. Create it under the
+  organisation's Developer settings with no webhook and the repository
+  permissions Contents, Issues and Pull requests set to read and write, and
+  install it on this repository only. Save its client ID as the Actions variable
+  `RELEASE_APP_CLIENT_ID` and a private key as the secret
+  `RELEASE_APP_PRIVATE_KEY`.
+- Add the app to the bypass list of the `release tags` ruleset, which lets only
+  admins create `v*` tags.
+- npm's trusted publisher form lives in the package's settings, so the first
+  version goes out with the `NPM_TOKEN` secret. Then add a trusted publisher on
+  npmjs.com (GitHub Actions, `kromatv/react-native-tizen`, workflow
+  `release.yml`, environment `npm`, `npm publish` allowed), delete `NPM_TOKEN`,
+  and set the package's publishing access to require 2FA and disallow tokens.
+- Make `Conventional title` a required check in the `main` ruleset.
