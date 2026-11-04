@@ -84,6 +84,11 @@ if(RN_TIZEN_TESTS)
     # references: link the Expo host's objects whole, as the library does.
     target_sources(rn-tizen-host-tests PRIVATE "$<FILTER:$<TARGET_OBJECTS:rn_tizen_host>,INCLUDE,/expo/>")
   endif()
+  # A component descriptor registers itself from a static initializer too
+  # (RN_TIZEN_COMPONENT_DESCRIPTOR): link the core's, so the registry a test
+  # builds has them.
+  target_sources(rn-tizen-host-tests PRIVATE
+    "$<FILTER:$<TARGET_OBJECTS:rn_tizen_host>,INCLUDE,/fabric/[A-Za-z]+ComponentDescriptors?\\.cpp\\.o>")
   # react-native-svg's implementation compiles only for an app that uses it
   # (cmake/Libraries.cmake); its path and viewBox math needs no package.
   target_sources(rn-tizen-host-tests PRIVATE
