@@ -12,6 +12,7 @@ for `runtime/host/src`.
 |-----|---------|
 | **doc** | Read in the cited source line or page. |
 | **inf** | Inferred; the reason is given next to it. |
+| **sim** | Seen in the simulator (`simulator/`, Ubuntu's EFL on X11), not on a TV. |
 
 Nothing here is verified on hardware yet. Host line numbers were read on
 2026-11-02 while the host was being edited; re-check them before acting. Paths
@@ -21,6 +22,7 @@ are abbreviated:
 |--------|------|
 | `RN/` | `node_modules/.bun/react-native-tvos@0.88.0-0+79564db6e6a74bb7/node_modules/react-native-tvos/` (line numbers are pinned to this build) |
 | `RC/` | `RN/ReactCommon/react/` |
+| `VL/` | `node_modules/.bun/@react-native-tvos+virtualized-lists@0.88.0-0+56658b3b731fa59a/node_modules/@react-native-tvos/virtualized-lists/` |
 | `RA/` | `RN/ReactAndroid/src/main/java/com/facebook/react/` |
 | `RI/` | `RN/ReactCommon/react/runtime/platform/ios/ReactCommon/` |
 | `host/` | `runtime/host/src/` in this package |
@@ -390,6 +392,8 @@ events off iOS. doc: `RN/Libraries/Components/TV/TVEventHandler.js:48-70`.
 | `focusable`, `hasTVPreferredFocus`, `nextFocus{Up,Down,Left,Right,Forward}`, `autoFocus`, `trapFocus*` | View props parsed on Android only; they drive Android's and UIKit's focus engines. | doc: `HostPlatformViewProps.h:44-61` (android), `RN/README.md:250-263` |
 | `TVFocusGuideView` | A `View` with `autoFocus`/`trapFocus*`, plus the View command `setDestinations` on TV. | doc: `RN/Libraries/Components/TV/TVFocusGuideView.js:93-160` |
 | VirtualizedList | On TV, wraps its content in a `TVFocusGuideView` with `trapFocus*`. | doc: `RN/README.md:347` |
+| The list's wrapper | Added when `Platform.isTV`, so on Android TV and tvOS as well, with no `style`: the list's `style` goes to the ScrollView inside. `TVFocusGuideView`'s own style is `minWidth: 1, minHeight: 1` on every platform. | doc: `VL/Lists/VirtualizedList.js:1167-1190`, `RN/Libraries/Components/TV/TVFocusGuideView.js:143-144,169-174` |
+| A list sized by `flex: 1` in a column | Its wrapper is 1 px and nothing draws. The ScrollView's flex basis is 0, and Yoga gives a node sized by its content no more than its minimum when the content is smaller, before the legacy stretch React Native turns on (`YGErrataAll`) could let the child grow. A list with no style, or `flexGrow: 1`, sizes from its content and is not hit; neither is one in a row, whose wrapper's height stretches. The layout code is shared C++, so Android TV and tvOS should collapse the same way (inf: same branch, style and Yoga; not run there). | doc: `RC/renderer/components/view/YogaLayoutableShadowNode.cpp:649`, `RN/ReactCommon/yoga/yoga/algorithm/CalculateLayout.cpp:2020-2042`, `RN/Libraries/Components/ScrollView/ScrollView.js:2023-2034`; sim: `example/src/screens/flatlist` |
 | Select on a focused Pressable | Android TV dispatches `topPressIn`/`topPressOut` on DPAD_CENTER/ENTER down/up to the focused view; Pressability drops a TV click with no `eventType`. | doc: `RA/views/view/ReactViewGroup.kt:1397-1437`, `RN/Libraries/Pressability/Pressability.js:604-610` |
 | `TVEventControl` | `enable/disableTVMenuKey`, `enable/disableTVPanGesture`, `enable/disableGestureHandlersCancelTouches`; Apple TV only, each a no-op when `TVNavigationEventEmitter` is missing. | doc: `RN/Libraries/Components/TV/TVEventControl.js`, `RN/README.md:243-247` |
 
@@ -399,8 +403,11 @@ scroll (`scrollTo`), and an app that does not also rely on the native focus
 engine. It ignores `focusable`, `nextFocus*` and `TVFocusGuideView`, so their
 absence on Tizen costs it nothing (inf: from [`packages/spatial-nav/README.md`](https://github.com/kromatv/kroma/blob/1d270635adcc9f3a81283e04f06336845d8c5985/packages/spatial-nav/README.md)
 and [`packages/ui/src/lib/seam-keys.ts:36-40`](https://github.com/kromatv/kroma/blob/1d270635adcc9f3a81283e04f06336845d8c5985/packages/ui/src/lib/seam-keys.ts#L36-L40), which treats a key as released
-only on Android). The wrappers stay harmless: a `TVFocusGuideView` is a plain
-View and its `setDestinations` command is dropped.
+only on Android). A `TVFocusGuideView` is a plain View on Tizen and its
+`setDestinations` command is dropped. The list's wrapper still lays out, so a
+Tizen bundle gives it the flex its ScrollView would take
+(`src/metro/tizen-list-focus-guide.ts`, with
+`react-native-overrides/Libraries/Lists/list-focus-guide-style.ts`).
 
 ## 5. Animated native driver
 

@@ -8,9 +8,10 @@ import {
 } from './intl-locale-data.ts';
 import { INTL_LOCALES_ENV, UPSTREAM_TRANSFORMER_ENV } from './tizen-babel-transformer-env.ts';
 import { tizenAndroidBranchPlugin } from './tizen-android-branch.ts';
+import { tizenListFocusGuidePlugin } from './tizen-list-focus-guide.ts';
 import { tizenPlatformSelectPlugin } from './tizen-platform-select.ts';
 
-const CACHE_VERSION = 'rn-tizen-transform-2';
+const CACHE_VERSION = 'rn-tizen-transform-3';
 
 interface TransformArgs {
   readonly filename?: string;
@@ -53,8 +54,9 @@ function tizenSource(args: TransformArgs): string | undefined {
 }
 
 /**
- * The app's Babel transformer, with {@link tizenPlatformSelectPlugin} and
- * {@link tizenAndroidBranchPlugin} added for a Tizen bundle, and the Intl
+ * The app's Babel transformer, with {@link tizenPlatformSelectPlugin},
+ * {@link tizenAndroidBranchPlugin} and {@link tizenListFocusGuidePlugin} added
+ * for a Tizen bundle, and the Intl
  * locale data module written for the locales `RN_TIZEN_INTL_LOCALES` names.
  * Every other platform goes through it unchanged.
  */
@@ -63,7 +65,12 @@ export function transform(args: TransformArgs): unknown {
   return upstream.transform({
     ...args,
     src: tizenSource(args),
-    plugins: [...(args.plugins ?? []), tizenPlatformSelectPlugin, tizenAndroidBranchPlugin],
+    plugins: [
+      ...(args.plugins ?? []),
+      tizenPlatformSelectPlugin,
+      tizenAndroidBranchPlugin,
+      tizenListFocusGuidePlugin,
+    ],
   });
 }
 

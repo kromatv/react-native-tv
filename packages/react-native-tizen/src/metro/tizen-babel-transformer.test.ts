@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { INTL_LOCALES_ENV, UPSTREAM_TRANSFORMER_ENV } from './tizen-babel-transformer-env.ts';
 import { tizenAndroidBranchPlugin } from './tizen-android-branch.ts';
+import { tizenListFocusGuidePlugin } from './tizen-list-focus-guide.ts';
 import { tizenPlatformSelectPlugin } from './tizen-platform-select.ts';
 
 const upstream = join(mkdtempSync(join(tmpdir(), 'rn-tizen-transformer-')), 'upstream.cjs');
@@ -15,7 +16,7 @@ process.env[UPSTREAM_TRANSFORMER_ENV] = upstream;
 const transformer = await import('./tizen-babel-transformer.ts');
 
 describe('the Tizen Babel transformer', () => {
-  it('adds the Platform plugins to a Tizen transform', () => {
+  it('adds the Platform and list plugins to a Tizen transform', () => {
     const args = transformer.transform({
       options: { platform: 'tizen' },
       plugins: ['metro-plugin'],
@@ -23,7 +24,12 @@ describe('the Tizen Babel transformer', () => {
 
     expect(args).toEqual({
       options: { platform: 'tizen' },
-      plugins: ['metro-plugin', tizenPlatformSelectPlugin, tizenAndroidBranchPlugin],
+      plugins: [
+        'metro-plugin',
+        tizenPlatformSelectPlugin,
+        tizenAndroidBranchPlugin,
+        tizenListFocusGuidePlugin,
+      ],
     });
   });
 
@@ -34,13 +40,13 @@ describe('the Tizen Babel transformer', () => {
   });
 
   it('extends the app transformer cache key', () => {
-    expect(transformer.getCacheKey()).toBe('upstream-key$rn-tizen-transform-2$');
+    expect(transformer.getCacheKey()).toBe('upstream-key$rn-tizen-transform-3$');
   });
 
   it('keys the cache by the locales a bundle carries Intl data for', () => {
     process.env[INTL_LOCALES_ENV] = 'en,fr';
 
-    expect(transformer.getCacheKey()).toBe('upstream-key$rn-tizen-transform-2$en,fr');
+    expect(transformer.getCacheKey()).toBe('upstream-key$rn-tizen-transform-3$en,fr');
 
     delete process.env[INTL_LOCALES_ENV];
   });
