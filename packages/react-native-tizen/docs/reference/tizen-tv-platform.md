@@ -1,7 +1,7 @@
 # Tizen TV platform reference
 
 What Samsung and Tizen document about the platform react-native-tizen runs on,
-checked on 2026-11-02. Every row names its source; the links are at the end.
+checked on 2026-11-02; section 2 on 2026-11-04. Every row names its source; the links are at the end.
 
 | Tag | Meaning |
 |---|---|
@@ -58,27 +58,61 @@ checked on 2026-11-02. Every row names its source; the links are at the end.
 ## 2. Model year, platform, runtime
 
 `Initial` firmware per model year, from Samsung's platform features table
-([sam-gs], Table 2) and the model-group table ([sam-mg]). glibc, ICU and EFL
-come from the Tizen Studio rootstraps (`platforms/tizen-<v>/tizen/rootstraps/`).
+([sam-gs], Table 2) and the model-group table ([sam-mg]). glibc, EFL and the GL
+headers come from the Tizen Studio rootstraps of each version (2.1); ICU and
+.NET from the Tizen release notes, which describe the open-source platform a
+TV firmware is built on, not the firmware itself.
 
-| Year | Tizen | .NET framework | TizenFX API | GCC | glibc | ICU | EFL |
-|---|---|---|---|---|---|---|---|
-| 2026 | 10.0 | .NET 8.0 / netstandard2.1 | 13 | 14.2.0 | 2.40 | 76.1 | 1.25.1 |
-| 2025 | 9.0 | net6.0 / netstandard2.1 | 12 | 9.2.0 | 2.30 | 74.1 | 1.25.1 |
-| 2024 | 8.0 | net6.0 / netstandard2.1 | 11 | 9.2.0 | ? | ? | ? |
-| 2023 | 7.0 | v2.1 | 10 | 9.2.0 | ? | ? | ? |
-| 2022 | 6.5 | v2.1 | 9 | 9.2.0 | ? | ? | ? |
-| 2021 | 6.0 | v2.1 | 8 | 9.2.0 | ? | ? | ? |
-| 2020 | 5.5 | v2.1 | 6 | ? | ? | ? | ? |
-| 2019 | 5.0 | v2.0 | 5 | ? | ? | ? | ? |
-| 2018 | 4.0 | v2.0 | 4 | ? | ? | ? | ? |
-| 2015 to 2017 | 2.3 to 3.0 | Not supported | | | | | |
+| Year | Tizen | .NET framework (Samsung) | .NET runtime (Tizen) | TizenFX API | GCC | glibc | ICU | EFL | GLES headers |
+|---|---|---|---|---|---|---|---|---|---|
+| 2026 | 10.0 | .NET 8.0 / netstandard2.1 | .NET 8 | 13 | 14.2.0 | 2.40 | 76.1 | 1.25.1 | 3.2 |
+| 2025 | 9.0 | net6.0 / netstandard2.1 | .NET 6.0.9 (H) | 12 | 9.2.0 | 2.30 | 74.1 | 1.25.1 | 3.2 |
+| 2024 | 8.0 | net6.0 / netstandard2.1 | .NET 6 | 11 | 9.2.0 | 2.30 | 70 | 1.25.1 | 3.2 |
+| 2023 | 7.0 | v2.1 | .NET 6 | 10 | 9.2.0 | 2.30 | 70.1 | 1.25.1 | 3.2 |
+| 2022 | 6.5 | v2.1 | .NET Core 3.1 | 9 | 9.2.0 | 2.30 | 67.1 | 1.25.1 | 3.2 |
+| 2021 | 6.0 | v2.1 | .NET Core 3.1.3 | 8 | 9.2.0 | 2.30 | 65 | 1.25.0 | 3.2 |
+| 2020 | 5.5 | v2.1 | .NET Core 3.0.0 | 6 | ? | 2.24 | 63.2 | 1.23.99 | 3.2 |
+| 2019 | 5.0 | v2.0 | .NET Core 2.1 (CoreCLR 2.1.4) | 5 | ? | 2.24 | 60.2 | 1.21.99 | 3.2 |
+| 2018 | 4.0 | v2.0 | .NET Core 2.0.0 | 4 | 6.2.1 | 2.24 | 58.2 | 1.16.0 | 3.2 |
+| 2015 to 2017 | 2.3 to 3.0 | Not supported | | | | | | | |
 
-- GCC column: "GCC 9.2.0 was used until the 2025 model, but GCC 14.2.0 was
-  adopted from the 2026 model" ([sam-gs]); flutter-tizen says Tizen 6.0 to 9.0
-  use 9.2.0 ([ft-embedder98]). Tizen 10.0 release notes: gcc 9.2.0 to 14.2.0,
-  glibc 2.30 to 2.40, llvm 17.0.6 to 19.1.4 ([td-rn10]). D
-- `?` means undocumented here: only the 9.0 and 10.0 rootstraps are installed.
+- **Columns.** Samsung's .NET cell reads `v2.0`, `v2.1`, then `net6.0
+  netstandard2.1`: the .NET Standard each runtime implements, which matches
+  the release notes' .NET Core 2.x (Standard 2.0) and 3.x (Standard 2.1). I.
+  The .NET runtime column: release notes for 4.0 to 7.0 ([td-rn40m2] L606,
+  [td-rn50m2] L446, [td-rn55m2] L582, [td-rn60m1] L644, [td-rn60m2] L340,
+  [td-rn70m1] L491), the TV Extension emulators for 6.5 (".NET Core 3.1") and
+  8.0 to 10.0 ([sam-relhist]). D. Samsung's `v2.1` for 2023 disagrees with
+  Tizen 7.0's ".NET Runtime has been upgraded from NETCore 3.1.3 to .NET 6" and
+  with the 7.0 emulator's ".NET 6 / TizenFX TV API 10.10.0" ([sam-relhist]):
+  read the 2023 row as .NET 6. I
+- **GCC.** 4.0: "upgraded from 4.9.2 to 6.2.1" ([td-rn40m1] L630). 6.0: "GNU
+  GCC 9.2 has been enabled by default from Tizen 6.0" ([td-rn60m1] L652). 10.0:
+  9.2.0 to 14.2.0 ([td-rn10]). "GCC 9.2.0 was used until the 2025 model, but
+  GCC 14.2.0 was adopted from the 2026 model" ([sam-gs]). D. 5.0 and 5.5: not in
+  the release notes; flutter-tizen links libstdc++ statically on 4.0 and 5.5
+  "to remove dependency on GLIBCXX_3.4.26" ([ft-pr106]), a GCC 9 symbol, so
+  their GCC predates 9. I
+- **glibc.** 4.0: "upgraded from 2.20 to 2.24" ([td-rn40m1] L639); 6.0: "Glibc
+  (GNU 2.30)" ([td-rn60m1] L655); 10.0: 2.30 to 2.40 ([td-rn10]). D. Every
+  rootstrap agrees: `libc-2.24.so` in 4.0, 5.0 and 5.5, `libc-2.30.so` in 6.0
+  to 9.0, `__GLIBC_MINOR__ 40` in 10.0's `features.h`. O
+- **ICU.** 58.2 ([td-rn40m2] L79), 60.2 ([td-rn50m2] L92), 63.2 ([td-rn55m2]
+  L84), 65 ([td-rn60m1] L77), 67.1 ([td-rn65m1] L59), 70.1 ([td-rn70m1] L102),
+  74.1 ([td-rn90m2] L124), 76.1 ([td-rn10]). D. The rootstraps carry
+  `libicuuc.so.58`, `.60`, `.63`, `.65` (IoT Headed 6.0), `.70` (8.0), `.74`,
+  `.76`; the mobile 6.0 to 7.0 rootstraps carry none. O
+- **EFL.** The `libelementary.so.1.<x>` and `libevas.so.1.<x>` file names and
+  `elementary.pc` of each rootstrap. O. The release notes agree where they name
+  one: 1.16 to 1.20 to 1.21 in 5.0 ([td-rn50m1] L270, [td-rn50m2] L267), 1.22
+  to 1.23 in 5.5 ([td-rn55m1] L276, [td-rn55m2] L279), 1.24 to 1.25 in 6.0
+  ([td-rn60m2] L158). D. Tizen's `.99` versions are a release branch between
+  upstream EFL versions. I
+- **GL.** Every rootstrap from 4.0 ships `GLES3/gl32.h` and `EGL/` headers, and
+  Evas GL defines `EVAS_GL_GLES_3_X`. O. 4.0: "Support for OpenGL ES 3.2 has
+  been added" to Evas GL ([td-rn40m1] L270). D. Which GLES version a TV's GPU
+  exposes: undocumented. The runtime calls no GL function itself; it draws
+  through Evas, so only Evas symbols matter (2.1).
 - **OS upgrades.** "Samsung Smart TV from the 2023 lineup onwards will support
   OS Upgrade", so the model year no longer fixes the Tizen version; the table
   has identical `OS Upgrade` rows, meaning an upgraded TV runs the newer
@@ -89,12 +123,26 @@ come from the Tizen Studio rootstraps (`platforms/tizen-<v>/tizen/rootstraps/`).
   TizenFX TV API 12.12.0" ([sam-relhist]). D. The same release history
   reportedly lists .NET 6 for the 7.0 emulator where [sam-gs] says v2.1 for
   2023: unresolved.
-- **TizenFX API levels** ([tizenfx]): API8 `tizen80` = Tizen 6.0, API9
-  `tizen90` = 6.5, API10 `tizen10.0` = 7.0, API11 `net6.0-tizen8.0` = 8.0,
-  API12 `net6.0-tizen9.0` = 9.0, API13 `net8.0-tizen10.0` = 10.0, API14
-  `net8.0-tizen10.1`, API15 `net8.0-tizen11.0`. D. In the `Tizen.NET` 12.0.0.18510
-  nuspec, TFM `Tizen9.0` pulls `Tizen.NET.API9` 9.0.0.16760 and
-  `net6.0-tizen9.0` pulls `Tizen.NET.API12`. D (local `~/.nuget/packages/tizen.net/`)
+- **TizenFX API levels** ([tizenfx]): API4 `tizen40` = Tizen 4.0, API5
+  `tizen50` = 5.0, API6 `tizen60` = 5.5 M2, API7 `tizen70` = 5.5 M3, API8
+  `tizen80` = 6.0, API9 `tizen90` = 6.5, API10 `tizen10.0` = 7.0, API11
+  `net6.0-tizen8.0` = 8.0, API12 `net6.0-tizen9.0` = 9.0, API13
+  `net8.0-tizen10.0` = 10.0, API14 `net8.0-tizen10.1`, API15
+  `net8.0-tizen11.0`. Samsung lists API6, not 7, for 2020 ([sam-gs]). D. In
+  the `Tizen.NET` 12.0.0.18510 nuspec, TFM `Tizen9.0` pulls `Tizen.NET.API9`
+  9.0.0.16760 and `net6.0-tizen9.0` pulls `Tizen.NET.API12`. D (local
+  `~/.nuget/packages/tizen.net/`)
+- **What a TFM compiles against.** `Tizen.NET.API4` and `API5` reference .NET
+  Core 2.0 (`LICENSE.Microsoft.NETCore.App.txt`, no `System.Text.Json`);
+  `API6` references .NET Core 3.0 (`System.Runtime` 4.2.1.0, file version
+  4.700.19.46214); `API8` and `API9` reference .NET Core 3.1 (`System.Runtime`
+  4.2.2.0, 4.700.19.56404, `System.Text.Json` 4.0.1.0). O (each package's
+  `build/<tfm>/PlatformManifest.txt`)
+- **Install gate.** A .NET package whose `api-version` is newer than the TV's
+  platform fails to install: "Package's API version (5) is higher than platform
+  version (4.0.0) ... Failure occurs in step: CheckTizenVersion"
+  ([sam-baseline]). D. A web app's `required_version` gates the same way
+  ([sam-launch]). D
 - **CPU.** "For security reasons, the details are confidential" ([sam-devfaq]
   Q16). D. Tizen 9.0 rootstraps exist for armv7 (`device.core`) and aarch64
   (`device64.core`); 10.0 adds riscv64. D (SDK). flutter-tizen builds `arm`,
@@ -106,8 +154,68 @@ come from the Tizen Studio rootstraps (`platforms/tizen-<v>/tizen/rootstraps/`).
 - **Memory:** "UHD model 380 MB, FHD model 300 MB", counting PSS + SWAP + GPU +
   GEM memory ([sam-hw]). Flash targets 5 MB install, 20 MB data, "not mandatory
   certification requirements" ([sam-hw]). D
+- **Native libraries in an app below 6.0.** flutter-tizen: "Flutter apps
+  cannot be run on 2020 or earlier TV models (Tizen 5.5 or earlier) due to
+  Samsung TV division's security policies" ([ft-limits]); the TV refuses with
+  "refers a forbidden assembly directly - flutter_tizen.so" or "A malicious
+  process has been blocked" ([ft-226]); "cannot load user shared libs ...
+  removed in Tizen 6.0 and newer TV models" ([ft-633]). Its first README
+  already said "Tizen 6.0 or later (older devices are not supported due to
+  security reasons)" ([ft-readme0]). D (third party, from hardware). Samsung
+  documents only the partner rule for signed `.so` files ([sam-netfaq] Q3),
+  with no model years.
 - flutter-tizen supports TV from Tizen 6.0 (2021): "Flutter apps are not
-  compatible with 2020 or older models" ([ft-readme], [ft-publish]). D
+  compatible with 2020 or older models" ([ft-readme], [ft-publish]). Its
+  embedder's sysroot defaults to `--api-version 6.0` ([ft-sysroot]), its app
+  template targets `tizen80` with `api-version="6.0"` ([ft-runner]). D
+
+### 2.1 What each version lacks for the runtime
+
+Method: every symbol `libreact-native-tizen.so` imports (581, from a Tizen 9.0
+armv7 development build, `llvm-readelf --dyn-syms`) looked up in the dynamic
+symbol tables of the same libraries in each version's armv7 rootstrap, glibc's
+with their symbol versions. O. Tizen Studio publishes no TV rootstrap; it
+installs per-profile rootstraps up to 7.0 and one `tizen` profile from 8.0.
+Rootstraps read: IoT Headed 4.0 to 6.0 and mobile 6.0 to 7.0
+(`IOT-Headed-<v>-NativeAppDevelopment-CLI`, `MOBILE-<v>-...`), mobile 4.0 to 5.5
+(`mobile-<v>-rs-device.core` in Tizen Studio 5.6's repository [ts-56]), `tizen`
+8.0 to 10.0. The two profiles agree at every version both cover. O. Every
+library the runtime links (EFL, `dlog`, `curl`, `capi-system-info`,
+`capi-appfw-*`, `capi-media-player`, `efl-extension`) is in the public API
+list (`rootstraps/info/<rootstrap>.dev.xml`) of IoT Headed and mobile 6.0. O
+
+| Tizen | Missing symbols | What they are |
+|---|---|---|
+| 6.0 to 10.0 | 0 of 581 | |
+| 5.5 | 13 | glibc 2.25 to 2.30: `getrandom`, `getentropy`, `pthread_cond_clockwait`, the 2.27 and 2.29 versions of `exp` `expf` `log` `logf` `log2` `pow` `powf`, `fcntl@GLIBC_2.28`; curl 7.62 lacks `curl_multi_poll` (7.66) and `curl_multi_wakeup` (7.68) |
+| 5.0 | 17 | 5.5's, and `curl_url`, `curl_url_get`, `curl_url_set`, `curl_url_cleanup` |
+| 4.0 | 19 | 5.0's, and `evas_object_vg_root_node_set` (EFL 1.16), `player_set_video_roi_area` |
+
+The math and `fcntl` versions are only what a 2.30 build binds to; compiled
+against 2.24 they bind to older versions. `getrandom`, `getentropy` and
+`pthread_cond_clockwait` come from GCC 14's static libstdc++ and would need the
+glibc shim (`runtime/compat/`) to grow. I
+
+The .NET shell (`shell/`), compiled with `dotnet build` per target framework
+(O, 2026-11-04):
+
+| TFM | Result |
+|---|---|
+| `tizen40` (API4), `tizen50` (API5) | fails: no `System.Text.Json` (`ShellConfig`, `TilePayload`, `PreviewPublisher`, `VoiceCommands`), no `Tizen.Applications.EventManager` (`VoiceChannel`) |
+| `tizen60` (API6), `tizen80` (API8) | builds unchanged |
+
+Manifest and privileges: every privilege the shell or a feature asks for
+(`internet`, `network.get`, `mediastorage`, `externalstorage`,
+`appmanager.launch`, `display`) is `Public` in the .NET privilege list of every
+version from 4.0 to 10.0 (`platforms/tizen-<v>/common/privileges/privilege-dotnet.properties`). O.
+The manifest fields the shell writes (`profile name="tv"`, `type="dotnet"`,
+`hw-acceleration`, `metadata`) are the 4.0 schema's ([td-manifest]). D
+
+Toolchains: Tizen Studio's only i586 GCC is 9.2 (`tools/i586-linux-gnueabi-gcc-9.2`),
+whose libstdc++ has no `<span>`, `<concepts>`, `<ranges>` or `<format>`;
+React Native 0.88's `ReactCommon` includes them in 9 files. O. So the 32-bit
+TV emulator images (7.0, 8.0 and 9.0 are `tv-samsung-public-emulator-image-x86`,
+10.0 is x86-64 [sam-relhist]) cannot run the runtime. I
 
 ## 3. tizen-manifest.xml for a TV .NET app
 
@@ -235,6 +343,8 @@ The checklists are written for web apps; none says it excludes .NET (I).
 | Emulator: QEMU, needs Intel VT-x on macOS and Windows; Parallels and other VMs unsupported. | D | [sam-emu], [sam-prereq] |
 | Emulator lacks UHD resolution, long-press, Bluetooth, camera; TizenFX TV `Accessory`, `Multimedia`, `Service.Billing`, `Service.Sso`. | D | [sam-emu-limits], [sam-relhist] |
 | The installed TV image is `tv-samsung-10.0-x86_64` (base 10.0.6). On the arm64 Mac it boots in about 80 s of kernel time under emulation, then `launchpad-process-pool` segfaults. | O | `~/tizen-studio-data/emulator/vms/T-samsung-10.0-x86_64` |
+| The TV Extension 9.0 image (`tv-samsung-public-emulator-image-x86` 9.0.7, 32-bit) boots with the 10.0 extension's QEMU and `bzImage.x86`, software GL (`vigs,backend=sw`; the GL backend fails with "CGLCreateContext failed"), to `exec launchpad` in about 135 s with no fault; its sdb port 26101 accepts and never answers in 15 minutes. | O | 2026-11-04, VM made by hand: the emulator manager has no 9.0 TV platform without the 9.0 extension's resources |
+| TV emulator images exist in Samsung's repository for 7.0 (7.0.6), 8.0 (8.0.18), 9.0 (9.0.7), all x86, and 10.0 (x86-64); none for 6.5 or older. | D | [tv-ext] snapshot package lists |
 | flutter-tizen targets TV emulators with `--target-arch x86`. | D | [ft-commands] |
 | Tizen Studio ships `arm-linux-gnueabi` and `aarch64-linux-gnu` GCC 9.2 and 14.2 toolchains, `i586` 9.2, `riscv64` 14.2; sdb 4.2.36. | O | `~/tizen-studio/tools/` |
 
@@ -254,9 +364,9 @@ Rules:
    its symbols hidden instead of system ICU (74.1 on 9.0, 76.1 on 10.0 change
    the soname; see [intl.md](intl.md)). Link only C APIs from the rootstrap
    (EFL, appfw, dlog).
-4. **Build against the oldest glibc you target.** 9.0 ships glibc 2.30, 10.0
-   ships 2.40 (SDK, [td-rn10]); a 2.30 build should load on 2.40 (I, not
-   verified on a Tizen 10 TV).
+4. **Build against the oldest glibc you target.** 6.0 to 9.0 ship glibc 2.30,
+   10.0 ships 2.40, 4.0 to 5.5 ship 2.24 (section 2); a 2.30 build should load
+   on 2.40 (I, not verified on a Tizen 10 TV).
 5. **One arch per TPK, chosen from the TV.** armv7 is required for at least
    some 2024 sets (H); aarch64 sysroots exist and the mapping to models is
    secret ([sam-devfaq]). flutter-tizen also builds one arch per package (I).
@@ -282,6 +392,9 @@ Rules:
     confirm a launch by the app's first log line (H).
 14. **The emulator is no test target on Apple Silicon.** It is x86_64-only (O)
     and needs VT-x ([sam-prereq]); the repo's own simulator stays the fallback.
+15. **No native library below Tizen 6.0.** Samsung's TVs refuse an app's `.so`
+    on 5.5 and older ([ft-limits]), and the runtime's imports all resolve only
+    from 6.0 (section 2.1).
 
 Where the current approach disagrees with the documentation:
 
@@ -297,7 +410,10 @@ Unknowns worth a hardware or Samsung answer:
 
 - Store review of a .NET TPK whose `.so` is built by clang with a static GCC 14 `libstdc++`.
 - Which model years and panels run an aarch64 userland.
-- glibc, ICU and .NET runtime on Tizen 6.0 to 8.0 sets; the 2023 framework (v2.1 or .NET 6).
+- Whether a TV firmware's glibc, EFL and curl match the open-source Tizen of
+  its version (section 2 reads the rootstraps and release notes, not firmware).
+- Whether Samsung's review accepts the nine Evas VG functions Tizen 6.0
+  exports but does not declare (section 2.1, [efl-rendering.md](efl-rendering.md) section 8).
 - Whether a `tizen90` (API9) shell runs on Tizen 10.0's .NET 8.
 - Whether .NET apps see `XF86Exit`; Smart Hub deep links and prelaunch for .NET apps.
 - Developer mode lifetime, and the meaning of `mountinstall`.
@@ -470,3 +586,25 @@ and this package's built `example/tizen/bin/Release/tizen90/*.tpk`.
 [xibo-4k]: https://community.xibo.org.uk/t/tizen-native-4k-resolution/27925
 [tomsguide]: https://www.tomsguide.com/tvs/samsung-is-giving-these-older-tvs-a-big-tizen-os-upgrade-see-if-yours-is-on-the-list
 [ked]: https://amp.kedglobal.com/newsView/ked202408230003
+[td-rn40m1]: https://github.com/Samsung/tizen-docs/blob/28241951fbe9a661dda87da2bc87aabb0ea436cf/docs/platform/release-notes/tizen-4-0-m1.md
+[td-rn40m2]: https://github.com/Samsung/tizen-docs/blob/28241951fbe9a661dda87da2bc87aabb0ea436cf/docs/platform/release-notes/tizen-4-0-m2.md
+[td-rn50m1]: https://github.com/Samsung/tizen-docs/blob/28241951fbe9a661dda87da2bc87aabb0ea436cf/docs/platform/release-notes/tizen-5-0-m1.md
+[td-rn50m2]: https://github.com/Samsung/tizen-docs/blob/28241951fbe9a661dda87da2bc87aabb0ea436cf/docs/platform/release-notes/tizen-5-0-m2.md
+[td-rn55m1]: https://github.com/Samsung/tizen-docs/blob/28241951fbe9a661dda87da2bc87aabb0ea436cf/docs/platform/release-notes/tizen-5-5-m1.md
+[td-rn55m2]: https://github.com/Samsung/tizen-docs/blob/28241951fbe9a661dda87da2bc87aabb0ea436cf/docs/platform/release-notes/tizen-5-5-m2.md
+[td-rn60m1]: https://github.com/Samsung/tizen-docs/blob/28241951fbe9a661dda87da2bc87aabb0ea436cf/docs/platform/release-notes/tizen-6-0-m1.md
+[td-rn60m2]: https://github.com/Samsung/tizen-docs/blob/28241951fbe9a661dda87da2bc87aabb0ea436cf/docs/platform/release-notes/tizen-6-0-m2.md
+[td-rn65m1]: https://github.com/Samsung/tizen-docs/blob/28241951fbe9a661dda87da2bc87aabb0ea436cf/docs/platform/release-notes/tizen-6-5-m1.md
+[td-rn70m1]: https://github.com/Samsung/tizen-docs/blob/28241951fbe9a661dda87da2bc87aabb0ea436cf/docs/platform/release-notes/tizen-7-0-m1.md
+[td-rn90m2]: https://github.com/Samsung/tizen-docs/blob/28241951fbe9a661dda87da2bc87aabb0ea436cf/docs/platform/release-notes/tizen-9-0-m2.md
+[sam-baseline]: https://developer.samsung.com/tizen/Smart-TV/FAQ/Tizen-baseline-SDK.html
+[sam-launch]: https://developer.samsung.com/tv-seller-office/checklists-for-distribution/launch-checklist.html
+[ts-56]: http://download.tizen.org/sdk/tizenstudio/official/snapshots/Tizen_Studio_5.6/
+[ft-limits]: https://github.com/flutter-tizen/flutter-tizen/wiki/Limitations#tv-limitations
+[ft-226]: https://github.com/flutter-tizen/flutter-tizen/issues/226#issuecomment-910204965
+[ft-633]: https://github.com/flutter-tizen/flutter-tizen/issues/633#issuecomment-2922115390
+[ft-readme0]: https://github.com/flutter-tizen/flutter-tizen/blob/af6b2716ebd48bbb420da2717fd2b0185ca54540/README.md?plain=1#L19
+[ft-pr106]: https://github.com/flutter-tizen/flutter-tizen/pull/106
+[ft-sysroot]: https://github.com/flutter-tizen/embedder/blob/85eec293413fdc25dd720f634a402f8da5c7b0f9/tools/generate_sysroot.py#L201-L202
+[tv-ext]: https://download.tizen.org/sdk/extensions/tv_extensions/snapshots/
+[ft-runner]: https://github.com/flutter-tizen/flutter-tizen/blob/08014cb5b952850fdbf9c72d24540dfaa68eb807/templates/ui-app/csharp/Runner.csproj#L5
