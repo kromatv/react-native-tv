@@ -10,8 +10,17 @@ import {
   type FakeTv,
   type ServiceHandler,
 } from '../sdb/fake-tv.fixtures.ts';
+import { SDB_COMMAND } from '../sdb/packet.ts';
 import { probeDevice } from './devices.ts';
-import { installApp, installFailureReason, launchApp, uninstallApp } from './install-app.ts';
+import {
+  installApp,
+  installFailureReason,
+  installOn,
+  launchApp,
+  launchOn,
+  onDevice,
+  uninstallApp,
+} from './install-app.ts';
 
 const tvs: FakeTv[] = [];
 const dirs: string[] = [];
@@ -26,8 +35,9 @@ function answer(text: string): ServiceHandler {
   };
 }
 
-async function device(services: Record<string, ServiceHandler>) {
+async function device(services: Record<string, ServiceHandler>, holdMs?: number) {
   const started = await fakeTv({
+    holdMs,
     services: {
       'capability:': (stream) => {
         stream.write(capabilityPayload(TV_CAPABILITIES));
@@ -153,5 +163,30 @@ describe('launchApp', () => {
 
     await expect(launchApp(launched, 'org.example')).resolves.toBeUndefined();
     await expect(launchApp(missing, 'org.example')).rejects.toThrow('did not launch org.example');
+  });
+});
+
+describe('install, then launch', () => {
+  it('chains both on one connection, right after the check, on a TV that holds its last one', async () => {
+    const tv = await device(
+      {
+        'shell:0 vd_appinstall': answer('install completed\n'),
+        'shell:0 execute': answer('successfully launched\n'),
+      },
+      200,
+    );
+    const started = tvs.at(-1);
+
+    await onDevice(tv, async (open) => {
+      await installOn(open, task, tv, { file: tpk(), installId: 'org.example' });
+      await launchOn(open, tv, 'org.example.app');
+    });
+    await launchApp(tv, 'org.example.app');
+
+    const connections = started?.packets.filter((packet) => packet.command === SDB_COMMAND.CNXN);
+    expect(connections).toHaveLength(3);
+    expect(started?.opened.filter((service) => service.startsWith('shell:0 execute'))).toHaveLength(
+      2,
+    );
   });
 });

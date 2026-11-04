@@ -15,7 +15,7 @@ import { listenForLogs, type LogServer } from '../logs/log-server.ts';
 import { packageSteps } from '../pipeline/package-steps.ts';
 import { RUNTIME_LIBRARY } from '../runtime/build-runtime.ts';
 import { distributorDuids } from '../signing/distributor-duids.ts';
-import { installApp, launchApp } from '../tizen/install-app.ts';
+import { installOn, launchOn, onDevice } from '../tizen/install-app.ts';
 import { BUILD_OPTIONS, findDevice, openBuild, settleBuild } from './build-options.ts';
 
 const OPTIONS = {
@@ -66,17 +66,19 @@ export const runCommand: Command = {
         signing: { profile: flags.profile, author: flags.author, distributor: flags.distributor },
         devServer: flags['dev-server'],
       });
-      await reporter.step(
-        'Install',
-        (task) =>
-          installApp(task, device, {
-            file: tpk,
-            installId: app.config.packageId,
-            duids: distributorDuids(distributor),
-          }),
-        () => device.serial,
-      );
-      await reporter.step('Launch', () => launchApp(device, app.config.packageId));
+      await onDevice(device, async (tv) => {
+        await reporter.step(
+          'Install',
+          (task) =>
+            installOn(tv, task, device, {
+              file: tpk,
+              installId: app.config.packageId,
+              duids: distributorDuids(distributor),
+            }),
+          () => device.serial,
+        );
+        await reporter.step('Launch', () => launchOn(tv, device, app.config.packageId));
+      });
       if (server === null) return;
       reporter.line();
       reporter.note(`Logs from ${app.config.packageId}. Press Ctrl+C to stop.`);

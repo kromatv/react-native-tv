@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs';
-import { copyFile, cp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { basename, extname, join, resolve } from 'node:path';
 import type { AppProject } from '../app/app-project.ts';
 import { claimTizenDir } from '../app/tizen-dir.ts';
@@ -12,6 +12,7 @@ import type { PlatformProfile } from '../tizen/platform-profiles.ts';
 import { writeAppConfig } from './app-config-file.ts';
 import { RUNTIME_CONFIG_FILE, runtimeConfig, type LogEndpoint } from './runtime-config.ts';
 import { hasPreviewService, PREVIEW_SERVICE_DIR } from './feature-manifest.ts';
+import { stageFile } from './stage-file.ts';
 import {
   manifestValues,
   projectValues,
@@ -63,7 +64,7 @@ async function renderShellFile(
 
 async function copyShellSources(from: string, dir: string): Promise<void> {
   const sources = (await readdir(from)).filter((name) => name.endsWith('.cs'));
-  await Promise.all(sources.map((name) => copyFile(join(from, name), join(dir, name))));
+  await Promise.all(sources.map((name) => stageFile(join(from, name), join(dir, name))));
 }
 
 async function writePreviewService(inputs: TizenProjectInputs, dir: string): Promise<void> {
@@ -83,9 +84,9 @@ async function writeResources(inputs: TizenProjectInputs, dir: string): Promise<
   const res = join(dir, 'res');
   await rm(res, { recursive: true, force: true });
   await mkdir(res, { recursive: true });
-  await copyFile(inputs.bundle.bytecode, join(res, BYTECODE_FILE));
-  await copyFile(inputs.icuData, join(res, basename(inputs.icuData)));
-  await copyFile(NOTICES_FILE, join(res, basename(NOTICES_FILE)));
+  await stageFile(inputs.bundle.bytecode, join(res, BYTECODE_FILE));
+  await stageFile(inputs.icuData, join(res, basename(inputs.icuData)));
+  await stageFile(NOTICES_FILE, join(res, basename(NOTICES_FILE)));
   await cp(inputs.bundle.assetsDir, join(res, 'assets'), { recursive: true });
   const config = runtimeConfig(
     BYTECODE_FILE,
@@ -111,8 +112,8 @@ export async function writeTizenProject(inputs: TizenProjectInputs): Promise<str
   await renderShellFile(MANIFEST_FILE, manifestValues(inputs.app.config, inputs.profile), dir);
   await copyShellSources(SHELL_DIR, dir);
   await writePreviewService(inputs, dir);
-  await copyFile(inputs.runtimeLibrary, join(dir, 'lib', RUNTIME_LIBRARY));
-  await copyFile(iconPath(inputs.app), join(dir, 'shared', 'res', 'icon.png'));
+  await stageFile(inputs.runtimeLibrary, join(dir, 'lib', RUNTIME_LIBRARY));
+  await stageFile(iconPath(inputs.app), join(dir, 'shared', 'res', 'icon.png'));
   await writeResources(inputs, dir);
   return dir;
 }

@@ -1,4 +1,5 @@
 import { basename } from 'node:path';
+import { setTimeout as delay } from 'node:timers/promises';
 import {
   bannerModel,
   DEFAULT_TOOL_PATH,
@@ -13,13 +14,16 @@ import {
   uninstallSucceeded,
 } from './app-commands.ts';
 import { readCapabilities, type DeviceCapabilities } from './capabilities.ts';
-import { SdbConnection, type SdbAddress } from './sdb-connection.ts';
+import { SdbConnectError, SdbConnection, type SdbAddress } from './sdb-connection.ts';
 import { runShell } from './shell-command.ts';
 import { pushFile } from './sync-push.ts';
 
 const INSTALL_TIMEOUT_MS = 300_000;
 const LAUNCH_TIMEOUT_MS = 60_000;
 const DUID = /^[A-Z0-9]{8,32}$/;
+// A Samsung TV takes one host connection at a time and holds the last one a moment after it
+// closes, so a connection right behind another one is refused: about 3 installs in 25 were.
+const REFUSED_RETRY_MS = [100, 250, 500, 1000];
 
 /** What an install or a launch printed, when it did not report success. */
 export class SdbCommandError extends Error {
@@ -76,9 +80,28 @@ async function install(
   }
 }
 
-/** Connects to a TV and reads its capabilities. */
+async function openConnection(
+  address: SdbAddress,
+  timeoutMs: number | undefined,
+  retries: readonly number[],
+): Promise<SdbConnection> {
+  try {
+    return await SdbConnection.open(address, timeoutMs);
+  } catch (error) {
+    const [wait, ...rest] = retries;
+    const refused = error instanceof SdbConnectError && error.reason === 'refused';
+    if (!refused || wait === undefined) throw error;
+    await delay(wait);
+    return openConnection(address, timeoutMs, rest);
+  }
+}
+
+/**
+ * Connects to a TV and reads its capabilities. A refused connection is tried
+ * again for about two seconds before the refusal is thrown.
+ */
 export async function openSdbDevice(address: SdbAddress, timeoutMs?: number): Promise<SdbDevice> {
-  const connection = await SdbConnection.open(address, timeoutMs);
+  const connection = await openConnection(address, timeoutMs, REFUSED_RETRY_MS);
   let capabilities: DeviceCapabilities | null;
   try {
     capabilities = await readCapabilities(connection);

@@ -358,6 +358,8 @@ The checklists are written for web apps; none says it excludes .NET (I).
 | A successful `tizen run` means the launch request was sent, not that the app runs (the native-only TPK "launched"). | H | |
 | With .NET SDK 10.0.107 and `Tizen.NET.Sdk/1.2.1`, a `net6.0-tizen9.0` project fails with `NETSDK1139: The target platform identifier tizen was not recognized` until the Tizen .NET workload is installed; `tizen90` builds with the SDK alone. | O | 2026-11-02, generated shell in a temp directory |
 | The generated shell (`tizen90`, Tizen.NET 12.0.0.18510, `<profile name="tv" />`, `api-version="9.0"`) builds to `bin/Release/tizen90/<package>-<version>.tpk`, signed with Tizen.NET's default certificate, and the manifest inside keeps both values. | O | same |
+| `Tizen.NET.Sdk` 1.2.1 takes the project's `lib/`, `res/` and `shared/` files into the package through `tpkroot`, copying them in `_TizenPrepareTpkPackage`, a target with MSBuild `Inputs` and `Outputs`. MSBuild counts an item as up to date "if its output file is the same age or newer than its input file", and skips it. So a file staged in `lib/` that is no newer than its last copy in `tpkroot` does not reach the package. | D | `Tizen.NET.Sdk/1.2.1/build/Tizen.NET.Sdk.Packaging.targets:299-308, 580-596` (NuGet cache); [msb-incr] |
+| A release `rn-tizen package` after a `--dev` one shipped the development `libreact-native-tizen.so`, while the log said "release, 17.2 MB"; deleting `tizen/` between builds avoided it (a benchmark on GQ75LS03DAUXZG, 2026-11-04). The same sequence with the example on an arm64 Mac (Darwin 27.2, Bun 1.4.2) shipped the release library: there, Node's and Bun's `copyFile` date a copy at the time it is made. | H, O | 2026-11-04 |
 | CLI exit codes: undocumented. | | [sam-cli] |
 | Emulator: QEMU, needs Intel VT-x on macOS and Windows; Parallels and other VMs unsupported. | D | [sam-emu], [sam-prereq] |
 | Emulator lacks UHD resolution, long-press, Bluetooth, camera; TizenFX TV `Accessory`, `Multimedia`, `Service.Billing`, `Service.Sso`. | D | [sam-emu-limits], [sam-relhist] |
@@ -414,6 +416,11 @@ Rules:
 15. **No native library below Tizen 6.0.** Samsung's TVs refuse an app's `.so`
     on 5.5 and older ([ft-limits]), and the runtime's imports all resolve only
     from 6.0 (section 2.1).
+16. **Stage the package's files dated now, and check what it carries.** The
+    .NET build copies a staged file only when it is newer than its last copy
+    (section 5), so `rn-tizen` dates every file it stages at the copy, leaves
+    one with the same bytes as it is, and after the build compares the `.tpk`'s
+    `lib/libreact-native-tizen.so` with the flavour it built (H, O).
 
 Where the current approach disagrees with the documentation:
 
@@ -566,6 +573,7 @@ and this package's built `example/tizen/bin/Release/tizen90/*.tpk`.
 [sam-devfaq]: https://developer.samsung.com/smarttv/develop/faq/device-information-and-firmware.html
 [sam-hw]: https://developer.samsung.com/smarttv/develop/ai-tv-platform-standards/hw-resource-management.html
 [sam-netfaq]: https://developer.samsung.com/smarttv/develop/faq/tizen-net-tv.html
+[msb-incr]: https://learn.microsoft.com/en-us/visualstudio/msbuild/incremental-builds
 [sam-netbasics]: https://developer.samsung.com/smarttv/develop/tizen-net-tv/guides/basics.html
 [sam-netkeys]: https://developer.samsung.com/smarttv/develop/tizen-net-tv/guides/user-interaction.html
 [sam-flutter]: https://developer.samsung.com/smarttv/develop/native/flutter.html

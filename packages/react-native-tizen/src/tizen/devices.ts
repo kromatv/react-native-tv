@@ -22,7 +22,7 @@ export const DEVELOPER_MODE_HINT =
   "On the TV, open Apps, type 12345 on the remote, turn Developer mode on with this computer's IP address, and restart the TV.";
 
 const ONE_CONNECTION_HINT =
-  "The TV takes one sdb connection at a time: if Tizen Studio is connected to it, run `sdb disconnect <tv ip>` or close its Device Manager. Otherwise, check that Developer mode names this computer's IP.";
+  "The TV takes one sdb connection at a time, and another host kept it for the two seconds rn-tizen waited: another rn-tizen on this TV, or Tizen Studio's sdb or Device Manager (`sdb disconnect <tv ip>` frees it). If none is connected, check that Developer mode names this computer's IP.";
 const PROBE_TIMEOUT_MS = 5000;
 
 const CONNECT_FAILURES: Record<ConnectFailure, (serial: string) => FixableError> = {

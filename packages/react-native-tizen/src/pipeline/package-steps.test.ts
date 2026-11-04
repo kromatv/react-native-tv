@@ -9,6 +9,7 @@ import { FixableError } from '../errors.ts';
 import { capturedOutput } from '../fakes.fixtures.ts';
 import { tizenMetroIssue } from '../metro/metro-platforms.ts';
 import { buildDotnetProject } from '../package/dotnet-build.ts';
+import { checkPackagedRuntime } from '../package/packaged-runtime.ts';
 import { writeTizenProject } from '../package/tizen-project.ts';
 import { ensureIcuData } from '../runtime/icu-data.ts';
 import { signPackage } from '../signing/sign-package.ts';
@@ -29,6 +30,7 @@ vi.mock('../tizen/signing-identity.ts', () => ({ resolveSigning: vi.fn() }));
 vi.mock('../signing/sign-package.ts', () => ({ signPackage: vi.fn() }));
 vi.mock('./runtime-steps.ts', () => ({ runtimeSteps: vi.fn() }));
 vi.mock('../metro/metro-platforms.ts', () => ({ tizenMetroIssue: vi.fn(() => null) }));
+vi.mock('../package/packaged-runtime.ts', () => ({ checkPackagedRuntime: vi.fn() }));
 
 const SDK = { root: '/tizen-studio', packageManager: '/pm' };
 const signer = testSigner('Store');
@@ -102,6 +104,11 @@ describe('packageSteps', () => {
       signing: { author: 'author.p12' },
     });
 
+    expect(checkPackagedRuntime).toHaveBeenCalledWith(
+      tpk,
+      join(root, 'libreact-native-tizen.so'),
+      'release',
+    );
     expect(tpk).toBe(join(root, 'app.tpk'));
     expect(distributor).toBe(SIGNING.distributor);
     expect(resolveSigning).toHaveBeenCalledWith({

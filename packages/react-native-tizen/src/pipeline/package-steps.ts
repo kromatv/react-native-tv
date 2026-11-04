@@ -10,6 +10,7 @@ import type { Reporter } from '../cli/reporter.ts';
 import { devBuildHost, devServerBundleStep } from '../package/dev-server-bundle.ts';
 import { buildDotnetProject } from '../package/dotnet-build.ts';
 import { tizenMetroIssue } from '../metro/metro-platforms.ts';
+import { checkPackagedRuntime } from '../package/packaged-runtime.ts';
 import { featureNotes } from '../package/feature-notes.ts';
 import type { LogEndpoint } from '../package/runtime-config.ts';
 import { writeTizenProject } from '../package/tizen-project.ts';
@@ -124,8 +125,12 @@ export async function packageSteps(
   );
   const tpk = await reporter.step(
     '.NET build',
-    (task) => buildDotnetProject(task, projectDir, app.config, shell),
-    () => shell.targetFramework,
+    async (task) => {
+      const built = await buildDotnetProject(task, projectDir, app.config, shell);
+      await checkPackagedRuntime(built, runtimeLibrary, flavour);
+      return built;
+    },
+    () => `${shell.targetFramework}, ${flavour} runtime`,
   );
   await reporter.step(
     'Signing',

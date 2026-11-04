@@ -62,13 +62,29 @@ describe('openSdbDevice', () => {
     expect(started.packets[0]?.arg0).toBe(0x00100000);
   });
 
-  it('calls a connection the TV resets before its banner refused', async () => {
+  it('calls a connection the TV keeps resetting refused, after about two seconds of tries', async () => {
     const started = await tv({}, 'reset');
+    const startedAt = Date.now();
 
     const opening = openSdbDevice({ host: '127.0.0.1', port: started.port }, 2000);
 
     await expect(opening).rejects.toBeInstanceOf(SdbConnectError);
     await expect(opening).rejects.toMatchObject({ reason: 'refused' });
+    expect(Date.now() - startedAt).toBeGreaterThanOrEqual(1800);
+    expect(Date.now() - startedAt).toBeLessThan(5000);
+  });
+
+  it('connects right behind its own last connection, which the TV still holds', async () => {
+    const started = await fakeTv({ services: { 'capability:': capability }, holdMs: 200 });
+    tvs.push(started);
+    const address = { host: '127.0.0.1', port: started.port };
+    const probe = await openSdbDevice(address, 2000);
+    probe.close();
+
+    const install = await openSdbDevice(address, 2000);
+    install.close();
+
+    expect([probe.model, install.model]).toEqual(['GQ75LS03DAUXZG', 'GQ75LS03DAUXZG']);
   });
 
   it('calls a TV that never sends its banner silent', async () => {

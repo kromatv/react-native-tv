@@ -50,6 +50,8 @@ export interface FakeTv {
 interface FakeTvOptions {
   /** `reset` drops every connection at once, as the TV does while another host holds it; `silent` never answers. */
   readonly handshake?: 'banner' | 'reset' | 'silent';
+  /** Resets a connection while another is open and this long after it closed, as the TV holds its one host connection. */
+  readonly holdMs?: number;
   readonly services: Readonly<Record<string, ServiceHandler>>;
 }
 
@@ -59,17 +61,29 @@ function handlerFor(services: FakeTvOptions['services'], service: string) {
 }
 
 /** A local TCP server that answers as a TV's sdb daemon, one handler per service prefix. */
-export async function fakeTv({ handshake = 'banner', services }: FakeTvOptions): Promise<FakeTv> {
+export async function fakeTv({
+  handshake = 'banner',
+  holdMs,
+  services,
+}: FakeTvOptions): Promise<FakeTv> {
   const packets: SdbPacket[] = [];
   const opened: string[] = [];
   const sockets: Socket[] = [];
+  let hosts = 0;
+  let heldUntil = 0;
   const server = createServer((socket) => {
     sockets.push(socket);
     socket.on('error', () => undefined);
-    if (handshake === 'reset') {
+    const held = holdMs !== undefined && (hosts > 0 || Date.now() < heldUntil);
+    if (handshake === 'reset' || held) {
       socket.resetAndDestroy();
       return;
     }
+    hosts += 1;
+    socket.on('close', () => {
+      hosts -= 1;
+      heldUntil = Date.now() + (holdMs ?? 0);
+    });
     const reader = new PacketReader();
     const listeners = new Map<number, (data: Buffer) => void>();
     let nextId = 0x700;

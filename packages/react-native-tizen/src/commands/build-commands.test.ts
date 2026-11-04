@@ -8,7 +8,7 @@ import { runtimeSteps } from '../pipeline/runtime-steps.ts';
 import { testSigner } from '../signing/signing.fixtures.ts';
 import { setupTarget } from '../sysroot/setup-target.ts';
 import { resolveDevice } from '../tizen/devices.ts';
-import { installApp, launchApp } from '../tizen/install-app.ts';
+import { installOn, launchOn, onDevice } from '../tizen/install-app.ts';
 import { buildRuntimeCommand } from './build-runtime.ts';
 import { bundleCommand } from './bundle.ts';
 import { packageCommand } from './package.ts';
@@ -28,7 +28,14 @@ const TV = {
 vi.mock('../app/app-project.ts', () => ({ loadAppProject: vi.fn() }));
 vi.mock('../tizen/tizen-sdk.ts', () => ({ locateTizenSdk: () => SDK }));
 vi.mock('../tizen/devices.ts', () => ({ resolveDevice: vi.fn() }));
-vi.mock('../tizen/install-app.ts', () => ({ installApp: vi.fn(), launchApp: vi.fn() }));
+const CONNECTION = { address: { host: '192.168.1.50', port: 26101 } };
+vi.mock('../tizen/install-app.ts', () => ({
+  onDevice: vi.fn(async (_device: unknown, work: (tv: unknown) => Promise<unknown>) =>
+    work(CONNECTION),
+  ),
+  installOn: vi.fn(),
+  launchOn: vi.fn(),
+}));
 vi.mock('../pipeline/package-steps.ts', () => ({
   bundleStep: vi.fn(),
   packageSteps: vi.fn(),
@@ -129,12 +136,13 @@ describe('rn-tizen run', () => {
     await runCommand.run(['--log-host', '10.0.0.2'], context);
 
     expect(listenForLogs).toHaveBeenCalledWith(8099, expect.anything(), { peer: '192.168.1.50' });
-    expect(installApp).toHaveBeenCalledWith(expect.anything(), TV, {
+    expect(onDevice).toHaveBeenCalledOnce();
+    expect(installOn).toHaveBeenCalledWith(CONNECTION, expect.anything(), TV, {
       file: import.meta.filename,
       installId: 'org.example.demo',
       duids: [],
     });
-    expect(launchApp).toHaveBeenCalledWith(TV, 'org.example.demo');
+    expect(launchOn).toHaveBeenCalledWith(CONNECTION, TV, 'org.example.demo');
     expect(server.close).toHaveBeenCalled();
   });
 
@@ -143,7 +151,7 @@ describe('rn-tizen run', () => {
     await runCommand.run(['--release'], context);
 
     expect(listenForLogs).not.toHaveBeenCalled();
-    expect(launchApp).toHaveBeenCalledTimes(2);
+    expect(launchOn).toHaveBeenCalledTimes(2);
   });
 
   it('closes the log server when the build fails', async () => {

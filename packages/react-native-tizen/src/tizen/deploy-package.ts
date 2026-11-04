@@ -6,7 +6,7 @@ import { packageEntries, signFiles, type SigningIdentity } from '../signing/sign
 import { readZip } from '../signing/zip-read.ts';
 import { writeZip } from '../signing/zip-write.ts';
 import type { Device } from './devices.ts';
-import { installApp, launchApp } from './install-app.ts';
+import { installOn, launchOn, onDevice } from './install-app.ts';
 import { packageInfo, type PackageInfo } from './package-info.ts';
 import type { ResolvedSigning } from './signing-identity.ts';
 
@@ -52,14 +52,17 @@ export async function deployPackage(request: DeployRequest): Promise<void> {
   const { info } = request.package;
   const signed =
     request.signing === null ? null : await signedCopy(request.package, request.signing.identity);
+  const task = { progress: request.progress ?? (() => undefined) };
   try {
-    await installApp({ progress: request.progress ?? (() => undefined) }, request.device, {
-      file: signed ?? request.package.file,
-      installId: info.installId,
-      duids: request.signing === null ? [] : distributorDuids(request.signing.distributor),
+    await onDevice(request.device, async (tv) => {
+      await installOn(tv, task, request.device, {
+        file: signed ?? request.package.file,
+        installId: info.installId,
+        duids: request.signing === null ? [] : distributorDuids(request.signing.distributor),
+      });
+      if (request.launch) await launchOn(tv, request.device, info.appId);
     });
   } finally {
     if (signed !== null) await rm(join(signed, '..'), { recursive: true, force: true });
   }
-  if (request.launch) await launchApp(request.device, info.appId);
 }
