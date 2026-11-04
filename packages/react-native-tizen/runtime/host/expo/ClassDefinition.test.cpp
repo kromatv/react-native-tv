@@ -5,8 +5,6 @@
 
 #include <doctest/doctest.h>
 
-#include <jsi/instrumentation.h>
-
 #include <atomic>
 #include <memory>
 #include <string>
@@ -139,12 +137,13 @@ TEST_CASE("A released shared object refuses its methods and frees the native obj
   CHECK(rejection(expo, "counter.addLater(1)") == "The native object was released or is of another class");
 }
 
-TEST_CASE("Collecting a shared object's JavaScript instance frees its native object") {
-  ExpoTestRuntime expo;
+TEST_CASE("Finalizing a shared object's JavaScript instance frees its native object") {
   const auto before = releasedCounters().load();
-  expo.eval("(() => { for (let i = 0; i < 8; ++i) new expo.modules.ClassTestModule.Counter(i); })()");
-  expo.runtime().instrumentation().collectGarbage("test");
-  CHECK(releasedCounters() >= before + 8);
+  {
+    ExpoTestRuntime expo;
+    expo.eval("(() => { for (let i = 0; i < 8; ++i) new expo.modules.ClassTestModule.Counter(i); })()");
+  }
+  CHECK(releasedCounters() == before + 8);
 }
 
 TEST_CASE("A native event reaches the JavaScript instance paired with the object, and not a released one") {

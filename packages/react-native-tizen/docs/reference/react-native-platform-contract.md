@@ -115,6 +115,7 @@ then `HMRClient.setup`, and registers `DevSettings` and `LogBox` in C++ (doc:
 |----------|--------|
 | The platform creates the root component view (tag = surface id) and attaches it to its own window; Fabric never sends a Create for it. | doc: `RCTMountingManager.mm:164-185` |
 | A surface is a `SurfaceHandler` with layout constraints and a `LayoutContext` (`pointScaleFactor`, `fontSizeMultiplier`, `viewportOffset`). `pointScaleFactor` must match `PixelRatio`, which JS reads from `DeviceInfo`. | doc: `RC/renderer/scheduler/SurfaceHandler.h`; inf: rounding in layout uses the factor, JS uses `scale`. |
+| A component no registered descriptor answers: with `useFabricInterop` on (the default), the registry creates an `UnstableLegacyViewManagerAutomaticComponentDescriptor` under the component's own name, a plain view whose props subclass `ViewProps`. The platform's fallback descriptor (`setFallbackComponentDescriptor`) is used only with the flag off, and with no fallback the lookup throws. | doc: `RC/renderer/componentregistry/ComponentDescriptorRegistry.cpp:88-117`, `RC/featureflags/ReactNativeFeatureFlagsDefaults.h:340-342`, `RC/renderer/components/legacyviewmanagerinterop/UnstableLegacyViewManagerAutomaticShadowNode.h:22`, `LegacyViewManagerInteropViewProps.h:19` |
 
 ### Mutations
 
@@ -548,7 +549,7 @@ What `rn-tizen` relies on to build a library's native code
 | 13 | `host/modules/NetworkingModule.cpp` | A `formData` or `uri` body is sent as no body instead of failing the request (a `blob` body is sent since `BlobModule` exists). Fixed: both are built as on Android (section 3, Networking), verified in simulator. A POST with no body goes out through `CURLOPT_CUSTOMREQUEST` without `POSTFIELDS` (`host/network/HttpEngine.cpp:127-133`), so curl sends no `Content-Length`. | inf: libcurl semantics, not tested | low |
 | 14 | `host/network/HttpEngine.cpp:159-161` | The body is delivered once, after the transfer ends: incremental XHR (`onprogress`, streaming responses) sees nothing until completion. | doc: `XMLHttpRequest.js:570-571` | low |
 | 15 | `host/HostFeatureFlags.cpp:13-25` with `host/fabric/SurfacePresenter.cpp:37` | OSS Stable turns on native view configs, but the binding they need is never installed (gap P3), and the `Scheduler` gets no animation delegate, so `LayoutAnimation` is a no-op. | doc: `RI/RCTInstance.mm:457-459`, `RA/runtime/ReactInstance.kt:219-224` | low |
-| 16 | `host/fabric/CoreComponents.cpp:48-58`, `host/views/ComponentView.cpp:94` | Every mounted view's props are `static_cast` to `ViewProps`. Safe for the registered components and the unimplemented fallback, all `ViewProps` subclasses; a future component whose props are not would be undefined behaviour. | doc: the registry at `CoreComponents.cpp:21-37` | low |
+| 16 | `host/fabric/ComponentDescriptorRegistry.cpp:52-62`, `host/views/ComponentView.cpp:92` | Every mounted view's props are `static_cast` to `ViewProps`. Safe for the registered components, React Native's interop descriptor and the unimplemented fallback, all `ViewProps` subclasses; a future component whose props are not would be undefined behaviour. | doc: section 2, Root view and surfaces | low |
 
 What already matches the contract: timers on the buffered executor
 (`host/ReactHostInstance.cpp:77`), modules on `createJSCallInvoker`

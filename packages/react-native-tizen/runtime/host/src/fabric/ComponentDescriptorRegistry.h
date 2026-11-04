@@ -12,8 +12,8 @@ namespace rntizen {
 void registerComponentDescriptor(facebook::react::ComponentDescriptorProvider provider);
 
 /// Fabric's component registry over every registered descriptor. A component no
-/// descriptor answers lays out as an unimplemented view, so an unsupported native
-/// component shows up empty rather than crashing.
+/// descriptor answers gets React Native's interop descriptor under its own name and
+/// lays out as a plain view; with `useFabricInterop` off, as an unimplemented view.
 facebook::react::ComponentRegistryFactory componentRegistryFactory();
 
 /// Whether a native component exists for `name`, a JavaScript view name such as

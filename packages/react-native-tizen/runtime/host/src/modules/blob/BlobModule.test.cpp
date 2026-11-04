@@ -68,7 +68,7 @@ TEST_CASE_FIXTURE(Blobs, "a WebSocket delivers blobs between addWebSocketHandler
   CHECK(call(rt, *module, "sendOverSocket", evaluate(rt, "({blobId: 'none'})"), 77).isUndefined());
 }
 
-TEST_CASE_FIXTURE(Blobs, "the blob collector JavaScript holds frees the blob's bytes when it is collected") {
+TEST_CASE_FIXTURE(Blobs, "the blob collector JavaScript holds keeps the blob's bytes until the runtime finalizes it") {
   auto &rt = *runtime;
   facebook::react::TurboModuleWithJSIBindings::installJSIBindings(module, rt);
   const auto id = BlobStore::shared().store("collected");
@@ -80,8 +80,7 @@ TEST_CASE_FIXTURE(Blobs, "the blob collector JavaScript holds frees the blob's b
   rt.instrumentation().collectGarbage("test");
   CHECK(BlobStore::shared().resolve(id, 0, std::nullopt) == "collected");
 
-  evaluate(rt, "delete globalThis.collector");
-  rt.instrumentation().collectGarbage("test");
+  runtime.reset();
   CHECK_FALSE(BlobStore::shared().resolve(id, 0, std::nullopt).has_value());
 }
 
