@@ -30,7 +30,9 @@ class NativeResponse final : public SharedObject {
  public:
   explicit NativeResponse(std::shared_ptr<Context> context);
 
-  void awaitHead(Promise promise);
+  /// Holds `promise` until the response head arrives; rejects it at once, and
+  /// returns false, when the response already ended, as a cancelled one has.
+  bool awaitHead(Promise promise);
   void receiveHead(long status, std::vector<std::pair<std::string, std::string>> headers, std::string url, bool redirected);
   void receiveBody(std::string_view body);
   void complete(const std::string &error);

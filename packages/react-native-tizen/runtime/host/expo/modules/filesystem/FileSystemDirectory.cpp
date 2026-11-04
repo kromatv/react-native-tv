@@ -8,8 +8,8 @@ namespace fs = std::filesystem;
 
 namespace {
 
-std::string childUri(const FileSystemDirectory &directory, const std::string &name) {
-  return directory.uri() + name;
+std::string childPath(const FileSystemDirectory &directory, const std::string &name) {
+  return (fs::path(directory.path()) / name).string();
 }
 
 } // namespace
@@ -67,9 +67,9 @@ std::vector<folly::dynamic> FileSystemDirectory::listAsRecords() const {
   for (fs::directory_iterator entry(path(), error), end; !error && entry != end; entry.increment(error)) {
     std::error_code typeError;
     const bool directory = entry->is_directory(typeError);
-    auto uri = childUri(*this, entry->path().filename().string());
-    if (directory) uri += '/';
-    records.emplace_back(folly::dynamic::object("isDirectory", directory)("uri", std::move(uri)));
+    const auto child = entry->path().string();
+    records.emplace_back(folly::dynamic::object("isDirectory", directory)(
+        "uri", directory ? FileSystemDirectory(child).uri() : FileSystemFile(child).uri()));
   }
   if (error) throw CodedError("ERR_UNABLE_TO_LIST", "Unable to list " + uri() + ": " + error.message());
   return records;
@@ -103,12 +103,12 @@ ClassDefinition<FileSystemDirectory> directoryClass() {
       .function(
           "createFile",
           [](const Directory &directory, const std::string &name, const std::optional<std::string> &) {
-            auto file = std::make_shared<FileSystemFile>(childUri(directory, name));
+            auto file = std::make_shared<FileSystemFile>(childPath(directory, name));
             file->create(std::nullopt);
             return file;
           })
       .function("createDirectory", [](const Directory &directory, const std::string &name) {
-        auto child = std::make_shared<Directory>(childUri(directory, name));
+        auto child = std::make_shared<Directory>(childPath(directory, name));
         child->create(std::nullopt);
         return child;
       })

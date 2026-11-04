@@ -9,6 +9,7 @@
 #include <sys/statvfs.h>
 
 #include <filesystem>
+#include <format>
 #include <string_view>
 
 namespace rntizen::expo {
@@ -27,8 +28,9 @@ double diskSpace(bool available) {
 std::string fileNameOf(std::string_view url) {
   const auto path = url.substr(0, url.find_first_of("?#"));
   const auto slash = path.find_last_of('/');
-  const auto name = slash == std::string_view::npos ? path : path.substr(slash + 1);
-  return name.empty() ? "download" : std::string(name);
+  const auto encoded = slash == std::string_view::npos ? path : path.substr(slash + 1);
+  auto name = fs::path(pathFromUri(std::format("file:///{}", encoded))).filename().string();
+  return name.empty() ? "download" : name;
 }
 
 std::string download(const std::string &url, const FileSystemPath &destination, const std::optional<folly::dynamic> &options) {
@@ -37,7 +39,7 @@ std::string download(const std::string &url, const FileSystemPath &destination, 
     throw CodedError("ERR_DESTINATION_EXISTS", "Destination '" + target.string() + "' already exists");
   }
   writeFileAtomically(target, httpGet(url));
-  return FileSystemFile(fileUri(target.string())).uri();
+  return FileSystemFile(target.string()).uri();
 }
 
 class FileSystemModule final : public Module {

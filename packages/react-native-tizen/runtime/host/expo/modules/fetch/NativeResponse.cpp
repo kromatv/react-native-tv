@@ -4,9 +4,18 @@ namespace rntizen::expo {
 
 NativeResponse::NativeResponse(std::shared_ptr<Context> context) : context_(std::move(context)) {}
 
-void NativeResponse::awaitHead(Promise promise) {
-  std::lock_guard lock(mutex_);
-  head_ = std::move(promise);
+bool NativeResponse::awaitHead(Promise promise) {
+  std::string error;
+  {
+    std::lock_guard lock(mutex_);
+    if (!completed_) {
+      head_ = std::move(promise);
+      return true;
+    }
+    error = error_.value_or("The request ended without a response");
+  }
+  promise.reject("ERR_FETCH_FAILED", error);
+  return false;
 }
 
 void NativeResponse::receiveHead(

@@ -50,12 +50,13 @@ class NativeRequest final : public SharedObject {
 
   void start(const std::string &url, const folly::dynamic &init, std::optional<Bytes> body, Promise promise) {
     static std::atomic nextId{1};
-    id_ = nextId++;
-    response_->awaitHead(std::move(promise));
+    if (!response_->awaitHead(std::move(promise))) return;
+    const int id = nextId++;
+    id_ = id;
     auto response = response_;
     engine().start(
         HttpRequest{
-            .id = id_,
+            .id = id,
             .method = stringField(init, "method", "GET"),
             .url = url,
             .headers = requestHeaders(init),
@@ -73,13 +74,13 @@ class NativeRequest final : public SharedObject {
   }
 
   void cancel() const {
-    if (id_ != 0) engine().cancel(id_);
+    if (const int id = id_; id != 0) engine().cancel(id);
     response_->complete("The request was canceled");
   }
 
  private:
   const std::shared_ptr<NativeResponse> response_;
-  int id_{0};
+  std::atomic<int> id_{0};
 };
 
 class ExpoFetchModule final : public Module {
