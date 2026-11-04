@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.2](https://github.com/kromatv/react-native-tizen/compare/v0.1.0-alpha.1...v0.1.0-alpha.2) (2026-11-04)
+
+
+### Features
+
+* **devtools:** open the app on Tizen with t in expo start ([#63](https://github.com/kromatv/react-native-tizen/issues/63)) ([7a73eb4](https://github.com/kromatv/react-native-tizen/commit/7a73eb4c8d41cf7ce83a595bbc7d6227fec5dd82))
+
 ## [0.1.0-alpha.1](https://github.com/kromatv/react-native-tizen/compare/v0.1.0-alpha.0...v0.1.0-alpha.1) (2026-11-04)
 
 
