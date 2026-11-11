@@ -64,7 +64,7 @@ class ReactHost final {
 
   /// Leaves the app the way Back does on its first screen, which is also what
   /// `BackHandler.exitApp` asks for.
-  void leave();
+  void leave() const;
 
   /// Ends the main loop, which closes the app.
   void exit();

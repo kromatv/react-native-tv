@@ -79,7 +79,7 @@ void ReactHost::relaunch(const folly::dynamic &parameters) {
   if (const auto url = deepLinkOf(parameters)) openUrl(*url);
 }
 
-void ReactHost::leave() {
+void ReactHost::leave() const {
   leaveOnBackAtRoot(LunaBus::get(), kBackAtRoot, [weakHost = weakHost_] {
     if (auto host = weakHost.lock()) (*host)->exit();
   });
