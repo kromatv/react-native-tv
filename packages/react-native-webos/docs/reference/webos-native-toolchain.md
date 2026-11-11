@@ -133,6 +133,7 @@ libstdc++ file versions map to GCC releases per [gcc-abi].
 |---|---|---|
 | The sysroot's glibc 2.12.2 is older than the oldest TV's (2.14.1), so a binary whose glibc needs stop at `GLIBC_2.12` asks for nothing a TV lacks. webosbrew's tutorial says a C11 SDL2 app built this way "can run through webOS 1 to webOS 6 without any issue". | I, D | table above; [pages-tutorial] |
 | The sysroot is not an image of any webOS release: glibc older than any TV, kernel headers 3.10, upstream libraries newer than any TV, stubs for LG's libraries. No README or release note names a webOS version for it. webosbrew: "The SDK one holds the generic buildroot build, which is what you compile against. It is not what the TV runs". | Xw, Xo, D | section 2; [brew-gdb] |
+| `malloc_trim(0)` "attempts to release free memory from the heap", and "since glibc 2.8 this function frees memory in all arenas and in all chunks with whole free pages": on the sysroot's glibc and every TV's. | D | [man-malloc-trim] |
 | Old symbol versions stay resolvable on newer TVs: `clock_gettime@GLIBC_2.4` is in `librt.so.1` up to 6.4.0 and in `libc.so.6` from 7.4.0; `pthread_create@GLIBC_2.4` and `dlopen@GLIBC_2.4` are in `libpthread.so.0` and `libdl.so.2` up to 8.3.0 and in `libc.so.6` from 9.2.0. | D | [fw] |
 | "Do not link the system OpenSSL. It crosses four SONAMEs between webOS 1 and webOS 11, so a binary linked against one will not start on a TV carrying another." | D | [brew-net], [brew-crypto] |
 | "before webOS 5, webOS shipped libcurl as `libcurl.so.5` instead of `libcurl.so.4`". Homebrew apps bridge it with an empty shim library named for one SONAME and linked to the other. | D | [brew-net] |
@@ -356,4 +357,5 @@ with `ares-novacom --forward`.
 [ose-ndk]: https://www.webosose.org/docs/guides/setup/setting-up-native-development-kit/
 [ose-cli]: https://www.webosose.org/docs/tools/sdk/cli/cli-user-guide/
 [gcc-abi]: https://gcc.gnu.org/onlinedocs/libstdc++/manual/abi.html
+[man-malloc-trim]: https://man7.org/linux/man-pages/man3/malloc_trim.3.html
 [gcc12-status]: https://gcc.gnu.org/onlinedocs/gcc-12.2.0/libstdc++/manual/manual/status.html

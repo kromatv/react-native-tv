@@ -3,10 +3,15 @@
 #include "intl/IcuData.h"
 #include "logging/Log.h"
 #include "platform/BackAtRoot.h"
+#include "platform/MainLoop.h"
 
 #include <SDL3/SDL_video.h>
 
+#include <malloc.h>
+
+#include <chrono>
 #include <cstdlib>
+#include <format>
 
 namespace rnwebos {
 
@@ -15,6 +20,8 @@ namespace {
 // What `rn-webos` writes into appinfo.json as nativeLifeCycleInterfaceVersion,
 // for when the launch argument does not name the interface.
 constexpr int kLifecycleInterface = 2;
+
+constexpr std::chrono::seconds kTrimDelay{1};
 
 } // namespace
 
@@ -51,6 +58,15 @@ void ReactHost::readDevice(const DeviceProfileRequest &request, std::chrono::ste
   } else {
     useDeviceLocale(device_.locale);
   }
+}
+
+void ReactHost::releaseMemory() {
+  instanceGate_->collectGarbage();
+  const auto freed = window_->releaseGpuMemory();
+  log(LogLevel::Debug, std::format("Hidden: freed {:.1f} MB of GPU memory", static_cast<double>(freed) / (1024 * 1024)));
+  // The collection runs on the JavaScript thread; glibc then gives back the
+  // pages it freed (docs/reference/webos-native-toolchain.md, section 4).
+  MainLoop::get().addTimer(kTrimDelay, [] { malloc_trim(0); });
 }
 
 void ReactHost::relaunch(const folly::dynamic &parameters) {

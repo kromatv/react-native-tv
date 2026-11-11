@@ -22,6 +22,10 @@ class InstanceGate final {
   /// ReactInstance::callFunctionOnModule does; nothing once closed.
   void callFunctionOnModule(const std::string &moduleName, const std::string &method, folly::dynamic &&args);
 
+  /// Has the JavaScript engine collect its garbage, on its own thread, as
+  /// React Native does for an Android app in the background; nothing once closed.
+  void collectGarbage();
+
   void close();
 
  private:

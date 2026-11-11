@@ -74,6 +74,16 @@ fatal `onJsError` (inf: the two paths are split only by `isRuntimeReady`).
 | `~ReactInstance` quits the `TimerManager` and clears Hermes's event loop control before the scheduler dies. | doc: `ReactInstance.cpp:191-200` |
 | Reload is teardown plus a new instance; RNW exposes it as `ReactNativeHost.ReloadInstance`. | doc: https://microsoft.github.io/react-native-windows/docs/native-api/ReactNativeHost |
 
+### Memory
+
+| Contract | Source |
+|----------|--------|
+| `ReactInstance::handleMemoryPressureJs(level)` takes the levels Android passes to `onTrimMemory`. At `TRIM_MEMORY_BACKGROUND` (40), `MODERATE` (60), `COMPLETE` (80) and `RUNNING_CRITICAL` (15) it has the engine collect its garbage, on the JavaScript thread; at `UI_HIDDEN` (20), `RUNNING_LOW` (10) and `RUNNING_MODERATE` (5) it logs and does nothing. | doc: `ReactInstance.cpp:672-741` |
+
+The host calls it with `TRIM_MEMORY_BACKGROUND` when the TV hides the app
+(`host/threading/InstanceGate.cpp`), since webOS closes hidden apps when it
+needs memory (`webos-tv-platform.md`, section 3.4).
+
 ### Dev server, HMR, LogBox
 
 | Piece | Contract | Source |

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../render/ShaderCache.h"
 #include "../views/PixelGeometry.h"
 
 #include "include/core/SkBitmap.h"
@@ -9,6 +10,8 @@
 
 #include <SDL3/SDL_video.h>
 
+#include <cstddef>
+#include <memory>
 #include <string>
 
 namespace rnwebos {
@@ -19,9 +22,10 @@ namespace rnwebos {
 class HostWindow final {
  public:
   /// Opens the window fullscreen; `size` is what it asks for where the
-  /// display does not decide. Throws std::runtime_error when the window, the
-  /// context or the Skia surface cannot be made.
-  HostWindow(const std::string &title, PixelSize size);
+  /// display does not decide, and `shaderCacheDirectory` where Skia's compiled
+  /// shaders are kept between runs. Throws std::runtime_error when the
+  /// window, the context or the Skia surface cannot be made.
+  HostWindow(const std::string &title, PixelSize size, const std::string &shaderCacheDirectory);
   ~HostWindow();
 
   HostWindow(const HostWindow &) = delete;
@@ -40,6 +44,11 @@ class HostWindow final {
   /// paces the swap.
   void present();
 
+  /// Frees the GPU memory Skia keeps to draw the next frame faster, which it
+  /// makes again when asked to draw: for an app the TV has hidden. Returns the
+  /// bytes freed, by Skia's count.
+  std::size_t releaseGpuMemory();
+
   /// Copies the last drawn frame, top row first, into `pixels`. False when
   /// the driver refuses the read.
   bool readPixels(SkBitmap &pixels);
@@ -53,6 +62,7 @@ class HostWindow final {
 
   SDL_Window *window_{nullptr};
   SDL_GLContext context_{nullptr};
+  std::unique_ptr<ShaderCache> shaderCache_;
   sk_sp<GrDirectContext> gpu_;
   sk_sp<SkSurface> surface_;
   PixelSize size_;

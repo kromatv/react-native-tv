@@ -49,6 +49,7 @@ class ReactHost final {
 
   void pause();
   void resume();
+  void releaseMemory();
 
   /// Records how the app was launched: the deep link in its launch parameters,
   /// which `Linking.getInitialURL` answers.

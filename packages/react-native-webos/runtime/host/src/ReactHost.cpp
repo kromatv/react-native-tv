@@ -170,6 +170,7 @@ void ReactHost::pause() {
   keyboardFocus_->releaseKeys();
   pauseMediaSessionsForBackground();
   setActive(false);
+  releaseMemory();
 }
 
 void ReactHost::resume() {

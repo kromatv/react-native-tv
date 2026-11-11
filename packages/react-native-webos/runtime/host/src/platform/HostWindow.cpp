@@ -14,6 +14,8 @@
 #include <SDL3/SDL.h>
 
 #include <array>
+#include <chrono>
+#include <cstddef>
 #include <format>
 #include <stdexcept>
 
@@ -23,14 +25,19 @@ namespace {
 
 constexpr unsigned int kRgba8 = 0x8058;
 
-struct ContextRequest {
-  int major;
-  int stencil;
-};
+// OpenGL ES 3 where the TV has it, 2 everywhere
+// (docs/reference/webos-window-input.md, section 11).
+constexpr std::array<int, 2> kContextVersions{3, 2};
 
-// OpenGL ES 3 where the TV has it, 2 everywhere; some drivers have no stencil
-// for the window (docs/reference/webos-window-input.md, section 11).
-constexpr std::array<ContextRequest, 4> kContextRequests{{{3, 8}, {2, 8}, {3, 0}, {2, 0}}};
+// What Skia frees once it went unused this long, checked after every frame,
+// as Flutter does (docs/reference/skia-rendering.md, section 7).
+constexpr std::chrono::seconds kUnusedFor{15};
+
+// Room for 12 screens of pixels in Skia's cache of textures and render
+// targets: Android's formula, which Flutter uses too (same section).
+std::size_t resourceCacheLimit(PixelSize size) {
+  return static_cast<std::size_t>(size.width) * static_cast<std::size_t>(size.height) * 12 * 4;
+}
 
 std::runtime_error sdlError(const char *what) {
   return std::runtime_error(std::format("{}: {}", what, SDL_GetError()));
@@ -43,7 +50,8 @@ const char *glString(unsigned int name) {
 
 } // namespace
 
-HostWindow::HostWindow(const std::string &title, PixelSize size) {
+HostWindow::HostWindow(const std::string &title, PixelSize size, const std::string &shaderCacheDirectory)
+    : shaderCache_(std::make_unique<ShaderCache>(shaderCacheDirectory)) {
   if (!SDL_InitSubSystem(SDL_INIT_VIDEO)) throw sdlError("Cannot start SDL video");
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
   SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
@@ -51,10 +59,10 @@ HostWindow::HostWindow(const std::string &title, PixelSize size) {
   SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
   SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
   SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
-  for (const auto &request : kContextRequests) {
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, request.major);
+  SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 0);
+  for (const int version : kContextVersions) {
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, version);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
-    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, request.stencil);
     window_ = SDL_CreateWindow(title.c_str(), size.width, size.height, SDL_WINDOW_OPENGL | SDL_WINDOW_FULLSCREEN);
     if (window_ == nullptr) continue;
     context_ = SDL_GL_CreateContext(window_);
@@ -87,12 +95,16 @@ HostWindow::~HostWindow() {
 }
 
 void HostWindow::createSurface() {
-  gpu_ = GrDirectContexts::MakeGL(GrGLInterfaces::MakeEGL());
+  GrContextOptions options;
+  options.fPersistentCache = shaderCache_.get();
+  // Clips and paths without stencil buffers, which cost a TV's GPU memory
+  // and time: Flutter's setting (docs/reference/skia-rendering.md, section 7).
+  options.fAvoidStencilBuffers = true;
+  gpu_ = GrDirectContexts::MakeGL(GrGLInterfaces::MakeEGL(), options);
   if (!gpu_) throw std::runtime_error("Skia cannot use the window's OpenGL ES context");
-  int stencil = 0;
-  SDL_GL_GetAttribute(SDL_GL_STENCIL_SIZE, &stencil);
+  gpu_->setResourceCacheLimit(resourceCacheLimit(size_));
   const GrGLFramebufferInfo framebuffer{.fFBOID = 0, .fFormat = kRgba8};
-  const auto target = GrBackendRenderTargets::MakeGL(size_.width, size_.height, 0, stencil, framebuffer);
+  const auto target = GrBackendRenderTargets::MakeGL(size_.width, size_.height, 0, 0, framebuffer);
   surface_ = SkSurfaces::WrapBackendRenderTarget(
       gpu_.get(), target, kBottomLeft_GrSurfaceOrigin, kRGBA_8888_SkColorType, SkColorSpace::MakeSRGB(), nullptr);
   if (!surface_) throw std::runtime_error("Skia cannot draw into the window's framebuffer");
@@ -121,6 +133,16 @@ void HostWindow::flush() {
 void HostWindow::present() {
   flush();
   SDL_GL_SwapWindow(window_);
+  gpu_->performDeferredCleanup(kUnusedFor);
+}
+
+std::size_t HostWindow::releaseGpuMemory() {
+  std::size_t before = 0;
+  std::size_t after = 0;
+  gpu_->getResourceCacheUsage(nullptr, &before);
+  gpu_->freeGpuResources();
+  gpu_->getResourceCacheUsage(nullptr, &after);
+  return before > after ? before - after : 0;
 }
 
 bool HostWindow::readPixels(SkBitmap &pixels) {

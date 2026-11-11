@@ -67,6 +67,17 @@ class ProbeInstance final {
     return *instance_;
   }
 
+  /// Makes an object only JavaScript holds, then drops it: `heard` gets
+  /// "collected" once the engine frees it.
+  void makeGarbage() {
+    jsThread_->runOnQueueSync([this] {
+      auto &runtime = *static_cast<Runtime *>(instance_->getJavaScriptContext());
+      runtime.global().setProperty(
+          runtime, "garbage", facebook::jsi::Object::createFromHostObject(runtime, std::make_shared<Tracked>(heard_)));
+      runtime.global().setProperty(runtime, "garbage", Value::undefined());
+    });
+  }
+
   std::vector<std::string> heard() const {
     std::vector<std::string> words;
     jsThread_->runOnQueueSync([this, &words] { words = heard_; });
@@ -74,6 +85,17 @@ class ProbeInstance final {
   }
 
  private:
+  class Tracked final : public facebook::jsi::HostObject {
+   public:
+    explicit Tracked(std::vector<std::string> &heard) : heard_(heard) {}
+    ~Tracked() override {
+      heard_.push_back("collected");
+    }
+
+   private:
+    std::vector<std::string> &heard_;
+  };
+
   const std::shared_ptr<TaskQueueThread> jsThread_ = std::make_shared<TaskQueueThread>("rn-js-gate-test");
   std::shared_ptr<TimerManager> timers_;
   std::unique_ptr<ReactInstance> instance_;
@@ -91,6 +113,20 @@ TEST_CASE("InstanceGate passes calls to JavaScript until it is closed, then drop
   gate.callFunctionOnModule("Probe", "say", folly::dynamic::array("closed"));
 
   CHECK(probe.heard() == std::vector<std::string>{"open"});
+}
+
+TEST_CASE("InstanceGate has JavaScript collect its garbage until it is closed") {
+  ProbeInstance probe;
+  InstanceGate gate(probe.instance());
+  probe.makeGarbage();
+  CHECK(probe.heard().empty());
+
+  gate.collectGarbage();
+  gate.callFunctionOnModule("Probe", "say", folly::dynamic::array("after"));
+
+  CHECK(probe.heard() == std::vector<std::string>{"collected", "after"});
+  gate.close();
+  CHECK_NOTHROW(gate.collectGarbage());
 }
 
 } // namespace rnwebos

@@ -1,5 +1,6 @@
 #include "ReactHost.h"
 
+#include "platform/AppPaths.h"
 #include "platform/MainLoop.h"
 #include "views/ModalHostView.h"
 
@@ -8,7 +9,8 @@
 namespace rnwebos {
 
 void ReactHost::createWindow() {
-  window_ = std::make_unique<HostWindow>(config_.appKey, PixelSize{device_.screenWidth, device_.screenHeight});
+  window_ = std::make_unique<HostWindow>(
+      config_.appKey, PixelSize{device_.screenWidth, device_.screenHeight}, appPaths().cache + "shaders");
   const auto size = window_->size();
   device_.screenWidth = size.width;
   device_.screenHeight = size.height;
