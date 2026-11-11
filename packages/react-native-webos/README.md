@@ -6,170 +6,129 @@
 </p>
 
 <p align="center">
-  React Native and Expo apps on Samsung TVs, running natively on Hermes and Fabric.
+  React Native and Expo apps on LG webOS TVs, running natively on Hermes and Fabric.
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@kromatv/react-native-webos"><img alt="npm" src="https://img.shields.io/npm/v/@kromatv/react-native-webos?label=npm"></a>
-  <a href="https://github.com/kromatv/react-native-webos/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/kromatv/react-native-webos/actions/workflows/ci.yml/badge.svg?branch=main"></a>
-  <a href="https://sonarcloud.io/summary/new_code?id=kromatv_react-native-webos"><img alt="Quality gate" src="https://sonarcloud.io/api/project_badges/measure?project=kromatv_react-native-webos&metric=alert_status"></a>
-  <a href="https://sonarcloud.io/component_measures?id=kromatv_react-native-webos&metric=coverage"><img alt="Coverage" src="https://sonarcloud.io/api/project_badges/measure?project=kromatv_react-native-webos&metric=coverage"></a>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue"></a>
-  <br>
   <img alt="React Native 0.88 (react-native-tvos)" src="https://img.shields.io/badge/React%20Native-0.88%20(react--native--tvos)-61dafb">
   <img alt="Expo SDK 58" src="https://img.shields.io/badge/Expo%20SDK-58-000020">
-  <img alt="webOS TV 6.0 to 10.0, verified on 9.0" src="https://img.shields.io/badge/webOS%20TV-6.0%20to%2010.0%2C%20verified%20on%209.0-1428a0">
+  <img alt="webOS TV 4 and later, not yet run on a TV" src="https://img.shields.io/badge/webOS%20TV-4%20and%20later%2C%20not%20yet%20run%20on%20a%20TV-a50034">
 </p>
 
 <p align="center">
-  <img alt="The example app on a Samsung TV: the title React Native, native on a Samsung TV, and three cards for Hermes, Fabric and Expo" src="https://raw.githubusercontent.com/kromatv/react-native-webos/main/docs/assets/screenshot-home.png" width="720">
+  <img alt="The example app in the simulator: the title React Native, native on an LG TV, and three cards for Hermes, Fabric and Expo" src="https://raw.githubusercontent.com/kromatv/react-native-webos/main/docs/assets/screenshot-home.png" width="720">
   <br>
-  <sub>The example app on a Samsung The Frame (2024), webOS 9.0, captured by the app itself with <code>rn-webos screenshot</code>, which never includes video.</sub>
+  <sub>The example app in the simulator, captured with <code>rn-webos simulator screenshot</code>.</sub>
 </p>
+
+> **No LG TV has run this yet.** The port was made without one. Everything
+> below was built and checked in the [simulator](simulator/README.md), and the
+> TV build was checked against the firmware data of 14 webOS releases. What
+> only a TV can settle is listed under [Status](#status).
 
 ## Why
 
-Samsung's TV store takes two kinds of apps: web apps and .NET apps. A React
-Native app reaches a Samsung TV today as a web app: react-native-web renders
-it to the DOM, in the TV's browser engine. That is a second renderer, with its
-own layout, input and performance, to build and test for.
+LG's developer site documents web apps only, so a React Native app reaches an
+LG TV today through react-native-web, which renders it to the DOM in the TV's
+browser engine. That is a second renderer, with its own layout, input
+and performance, to build and test for.
 
-react-native-webos runs the app the way Android and iOS run it. A small .NET
-app, which the store accepts, loads `libreact-native-webos.so`. That library
-holds Hermes, React Native's C++ core (Fabric, TurboModules, Yoga) and a webOS
-host that draws with EFL, the TV's own graphics toolkit. Your JavaScript ships
-as Hermes bytecode. There is no browser and no WebView in the process.
+react-native-webos runs the app the way Android and iOS run it. The package
+holds one native executable, `react-native-webos`: Hermes, React Native's C++
+core (Fabric, TurboModules, Yoga) and a host that draws with Skia on OpenGL ES.
+Your JavaScript ships as Hermes bytecode. There is no browser and no WebView in
+the process.
 
 For an Expo app, webOS is one more platform. The same project and the same
 `app.json` build for it, and `Platform.OS` is `'webos'`.
+
+It is the sibling of
+[react-native-tizen](https://github.com/kromatv/react-native-tizen), which does
+the same for Samsung TVs, and shares its CLI design, its React Native and Expo
+integration and its simulator.
 
 ## Features
 
 - **Expo integration.** `npx expo install` adds the config plugin, and
   `npx expo start` opens the app on the TV with `t`, and lists Run on TV, Run
-  in simulator, Find TVs and Create certificate under shift+m.
+  in simulator, Find TVs and Connect TV under shift+m.
 - **Development builds.** Fast Refresh, `r` to reload, `console.log` in the
   Expo terminal, LogBox on the TV, and React Native DevTools on the TV's Hermes
-  with `j`. `rn-webos screenshot` saves what a development build draws, on a
-  retail TV too. It captures the app's window only: video plays on a plane
-  under it, so a video's area comes out transparent.
+  with `j`. `rn-webos screenshot` saves what a development build draws.
 - **The remote, as on Apple TV.** `useTVEventHandler` gets one event per
   press, a key held for 300 ms sends `longSelect` or `longUp`, and Back reaches
   `BackHandler`.
-- **Video.** `expo-video` plays on the TV's hardware player, with audio and
-  subtitle track selection.
-- **Samsung TV features.** Voice commands and voice search, Smart Hub preview
-  tiles, background audio, and a 3840x2160 UI plane on TVs that grant one. Each
-  is one prop in `app.json`.
+- **The Magic Remote's pointer.** It is a mouse: `Pressable` gets `onHoverIn`,
+  `onHoverOut` and presses, and the wheel scrolls the scroll view under it.
+- **Video.** `expo-video` plays on the TV's media pipeline, under the app's
+  window, with audio and subtitle track selection.
 - **Expo modules.** `expo-image`, `expo-video`, `expo-file-system`,
   `expo-font`, `expo-blur`, `expo-device`, `expo-constants`, `expo-keep-awake`
   and `expo/fetch` have webOS implementations.
 - **Native libraries.** A library with a `codegenConfig` compiles into the
   runtime. react-native-svg ships with a webOS implementation.
 - **`Intl`.** ICU 78.3 is compiled in, with its data trimmed to the locales you
-  list: 2.49 MB for English.
-- **No webOS Studio tools at run time.** `rn-webos` speaks sdb to the TV, signs
-  `.tpk` and `.wgt` packages in TypeScript and finds TVs on the network in about
-  five seconds. The same code is a Node API.
+  list.
+- **Its own HTTPS.** libcurl and Mbed TLS are compiled in with Mozilla's root
+  certificates, so TLS does not depend on the age of the TV's firmware.
+- **No LG tools.** `rn-webos` reaches the TV over SSH itself, writes the
+  `.ipk` in TypeScript and finds TVs on the network. `ares-*` is never run, and
+  a package is not signed. The same code is a Node API.
 - **A simulator.** The same runtime, built for aarch64 Linux, runs in a VM on
-  an Apple silicon Mac, with screenshots, remote keys and native backtraces. It
-  has no media player, so it plays no video.
+  an Apple silicon Mac, with a live screen, screenshots, remote keys, the
+  pointer and native backtraces. LG's own simulator runs web apps only.
 
 ## Quick start
 
 ### 1. Install the tools
 
-macOS on Apple silicon is the only build host verified so far.
+macOS on Apple silicon is the only build host tried so far.
 
 - [Node.js](https://nodejs.org) 22.13 or newer, which runs the CLI and Expo.
-- [webOS Studio](https://developer.webos.org/development/webos-studio/download)
-  with, from its Package Manager, `IOT-Headed-6.0-NativeAppDevelopment-CLI` (the
-  webOS 6.0 rootstrap the native build links against), `NativeToolchain-Gcc-14.2`
-  (the GCC runtime it links) and the Samsung Certificate Extension. A package
-  built against 6.0 runs on every later webOS. Another floor takes its own
-  rootstrap package, which `npx rn-webos init` and `npx rn-webos doctor` name.
-  `rn-webos` never runs webOS Studio's `sdb` or `webos` tools: it reaches the
-  TV and signs the package itself.
-- LLVM, CMake, Ninja and .NET:
+- LLVM, CMake and Ninja, which cross-compile the runtime:
 
   ```sh
-  brew install llvm lld cmake ninja dotnet ccache
+  brew install llvm lld cmake ninja ccache
   ```
 
-### 2. Put the TV in Developer mode
+The SDK the runtime compiles against (openlgtv's, a sysroot older than any
+TV's) is downloaded by `rn-webos` on the first build. Nothing from LG is
+installed on the computer.
 
-On the TV, open Apps, type `12345` on the remote, turn Developer mode on with
-your computer's IP address, then restart the TV.
+### 2. Put the TV in Developer Mode
+
+1. On the TV, install the **Developer Mode** app from LG's store and sign in
+   with an LG developer account.
+2. Turn **Dev Mode Status** on. The TV restarts.
+3. Open the app again and turn **Key Server** on. Note the passphrase it
+   shows.
 
 ### 3. Add the package
 
-In an Expo SDK 58 app, point `react-native` at
-[react-native-tvos](https://github.com/react-native-tvos/react-native-tvos), the
-TV fork of React Native this package is built and tested against. It brings
-`useTVEventHandler` and the other TV APIs. In `package.json`:
-
-```json
-{
-  "dependencies": {
-    "react-native": "npm:react-native-tvos@0.88.0-0"
-  },
-  "overrides": {
-    "react-native": "$react-native"
-  }
-}
-```
-
-The override keeps a single React Native in the app. react-native-tvos's own
-list package asks for `react-native` 0.88.0, so without it npm installs stock
-React Native beside the fork, and the app stops on the TV with `"main" has not
-been registered`. With Yarn or pnpm, put `npm:react-native-tvos@0.88.0-0` under
-`resolutions` or `pnpm.overrides` instead.
-
-Then install, add the package and set the app up:
+In an Expo SDK 58 app:
 
 ```sh
-npm install
 npx expo install @kromatv/react-native-webos
 npx rn-webos init
 ```
 
-The commands here use npm's `npx`. With Bun, pnpm or Yarn, run `rn-webos` with
-`bunx`, `pnpm exec` or `yarn` instead, as `init` prints them. In a Bun
-workspace `npx rn-webos` answers 404: npm finds no bin at the workspace root,
-where Bun does not link it, and asks the npm registry for a package of that
-name.
-
-`rn-webos init` gives the config plugin Expo listed in `app.json` your app's
-webOS package id. It asks for one, suggesting your Android package or one made
-from the slug. It also writes `metro.config.mjs`, which teaches Metro the
-`webos` platform:
-
-```js
-import { getDefaultConfig } from 'expo/metro-config';
-import { withWebOS } from '@kromatv/react-native-webos/metro';
-export default withWebOS(getDefaultConfig(import.meta.dirname));
-```
-
-An app that already has a Metro config keeps it: `init` wraps its export with
-`withWebOS`, or prints the two lines to add when it cannot change the file
-safely.
-
-Last, `init` points `react-native` at
+`init` asks for the app's webOS id, writes `metro.config.mjs` (or wraps the
+one you have with `withWebOS`), points `react-native` at
 [react-native-tvos](https://github.com/react-native-tvos/react-native-tvos),
-which brings `useTVEventHandler` and the other TV APIs, adds the override that
-keeps every other package on that copy, and runs your package manager's
-install. Running `init` again changes nothing.
+the TV fork of React Native this package is built against, and runs your
+package manager's install. Running it again changes nothing. With Bun, pnpm or
+Yarn, run `rn-webos` with `bunx`, `pnpm exec` or `yarn`.
 
-### 4. Get a Samsung certificate for your TV, once
+### 4. Connect the TV, once
 
 ```sh
-npx rn-webos devices
+npx rn-webos devices                 # the LG TVs on your network
+npx rn-webos connect 192.168.1.50    # asks for the passphrase
 ```
 
-lists the Samsung TVs on your network with each one's DUID. In webOS Studio,
-Tools, Certificate Manager, create a Samsung profile with that DUID and make it
-the active profile. Samsung issues both its certificates, and a retail TV takes
-no other. `rn-webos` reads the profile from there.
+`connect` fetches the TV's SSH key from its key server and keeps it for the
+other commands. Key Server can be turned off again afterwards.
 
 ### 5. Run it from `expo start`
 
@@ -178,56 +137,34 @@ npx expo start
 ```
 
 Press **t**, as you press `a` for Android. The app opens on the TV you used
-last, or on the only TV in Developer mode on your network: a development build
-that loads its JavaScript from the dev server you are running, with Fast
-Refresh, `r` to reload, `j` for React Native DevTools, and its logs in this
-terminal. Press **shift+t** to pick another TV or
-[the simulator](simulator/README.md) from a list. It needs no setup and works
-the same with npm, pnpm, Yarn and Bun (`bunx expo start`).
+last: a development build that loads its JavaScript from the dev server, with
+Fast Refresh and its logs in this terminal. **shift+t** picks another TV or
+the simulator.
 
-The first run builds the native runtime, which takes a few minutes; later runs
-only rebuild what changed. Opening checks first that the app loads one
-`react-native` and that its Metro config has `withWebOS`, and says to run
-`npx rn-webos init` when not. `npx rn-webos doctor` names the exact fix for
+The first run builds the native runtime, which takes several minutes; later
+runs rebuild only what changed. `npx rn-webos doctor` names the fix for
 anything a build needs.
 
-**shift+m** ("more tools") lists `@kromatv/react-native-webos` with more:
-**Run on TV** with an IP address, **Run in simulator**, **Find TVs**, which
-lists the Samsung TVs on your network with their Developer mode, sdb and DUID,
-and **Create certificate**, which makes an author certificate. Expo asks
-"(y/N)" before running one; answer `y`. Each prints the address of a page
-inside the dev server where you can follow its progress and logs.
-
-Expo has no `expo run:webos`, and `expo prebuild` and `expo export --platform
-webos` do not know the platform. To package the app with its JavaScript inside
-instead, add a script beside Expo's own:
-
-```json
-{
-  "scripts": {
-    "webos": "rn-webos run"
-  }
-}
-```
-
-`npm run webos` installs that build on the only TV used before, launches it and
-prints its logs until Ctrl+C.
-
-Store packages need a release build, which `package` makes; `--dev` makes a
-development one that streams its logs:
+To package the app with its JavaScript inside:
 
 ```sh
-npx rn-webos package
-npx rn-webos package --dev
+npx rn-webos package        # webos/<id>_<version>_arm.ipk, a release build
+npx rn-webos run            # package, install, launch, print the logs
 ```
 
-Publishing to Samsung's store needs a Seller Office partner group, because the
-package carries a native library.
+### Without a TV
+
+```sh
+brew install lima
+npx rn-webos simulator run --gui
+```
+
+runs the app on a virtual TV on the Mac and opens its live screen and a remote
+in the browser. See [the simulator](simulator/README.md).
 
 ## Examples
 
-Each one compiles against the package's API and react-native-tvos's types. The
-[example app](example/) has a screen for each.
+The [example app](example/) has a screen for each.
 
 ### Remote keys
 
@@ -250,45 +187,27 @@ export function LastKey() {
 ```
 
 `eventType` is `up`, `down`, `left`, `right`, `select`, `playPause`,
-`fastForward`, `rewind`, a digit, a color key, or `long<Key>` for a hold. A Back
-handler that returns `false` lets the app exit.
+`fastForward`, `rewind`, a digit, a color key, or `long<Key>` for a hold.
 
-### Focus
-
-webOS has no native focus engine yet: `focusable`, `hasTVPreferredFocus` and
-`TVFocusGuideView` do nothing. Keep the focused item in state and move it on
-remote events:
+### The pointer
 
 ```tsx
 import { useState } from 'react';
-import { StyleSheet, Text, View, useTVEventHandler } from 'react-native';
+import { Pressable, Text } from 'react-native';
 
-const ITEMS = ['Home', 'Movies', 'Shows', 'Settings'];
-
-export function Menu({ onOpen }: { onOpen: (item: string) => void }) {
-  const [focused, setFocused] = useState(0);
-  useTVEventHandler((event) => {
-    if (event.eventType === 'right') setFocused((index) => Math.min(ITEMS.length - 1, index + 1));
-    if (event.eventType === 'left') setFocused((index) => Math.max(0, index - 1));
-    if (event.eventType === 'select') onOpen(ITEMS[focused]!);
-  });
+export function Card({ title, onOpen }: { title: string; onOpen: () => void }) {
+  const [hovered, setHovered] = useState(false);
   return (
-    <View style={styles.row}>
-      {ITEMS.map((item, index) => (
-        <View key={item} style={[styles.item, index === focused && styles.focused]}>
-          <Text style={styles.label}>{item}</Text>
-        </View>
-      ))}
-    </View>
+    <Pressable
+      onHoverIn={() => setHovered(true)}
+      onHoverOut={() => setHovered(false)}
+      onPress={onOpen}
+      style={{ padding: 24, borderRadius: 12, backgroundColor: hovered ? '#3d5afe' : '#1b2233' }}
+    >
+      <Text style={{ color: '#fff', fontSize: 32 }}>{title}</Text>
+    </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  row: { flexDirection: 'row', gap: 24 },
-  item: { paddingHorizontal: 32, paddingVertical: 16, borderRadius: 12 },
-  focused: { backgroundColor: '#3d5afe' },
-  label: { color: '#fff', fontSize: 32 },
-});
 ```
 
 ### Video
@@ -311,182 +230,69 @@ export function Player({ uri }: { uri: string }) {
 }
 ```
 
-The TV draws video on its own plane, under the UI, so `rn-webos screenshot`
-shows the video's area transparent. What expo-video does on webOS, call by
-call, is in
-[the media reference](docs/reference/webos-media-playback.md#what-is-built).
-
-### Voice
-
-With `"voice": { "searchUrl": "myapp://search?q={query}" }` in the plugin's
-props, "pause", "skip forward 30 seconds" and "select Dune" work with no code.
-To handle a search yourself:
-
-```tsx
-import { Voice } from '@kromatv/react-native-webos/voice';
-import { useEffect } from 'react';
-
-export function useVoiceSearch(openSearch: (query: string) => void) {
-  useEffect(() => {
-    Voice.setScreen('home');
-    const search = Voice.addListener('search', (query) => openSearch(query.title ?? query.utterance));
-    return () => search.remove();
-  }, [openSearch]);
-}
-```
-
-### Smart Hub preview
-
-With `"preview": { "refreshMinutes": 30 }` in the plugin's props, the app
-publishes the tiles Samsung's home bar shows above its icon. Pressing a tile
-opens the app with its `url` through `Linking`.
-
-```ts
-import { SmartHubPreview } from '@kromatv/react-native-webos/preview';
-
-export async function publishContinueWatching() {
-  const result = await SmartHubPreview.set([
-    {
-      title: 'Continue watching',
-      tiles: [
-        {
-          title: 'Blade Runner',
-          subtitle: '1 h 12 left',
-          image: 'https://example.com/posters/blade-runner-640x360.jpg',
-          ratio: '16:9',
-          url: 'myapp://item/42',
-          playable: true,
-        },
-      ],
-    },
-  ]);
-  if (!result.published) console.warn(result.reason);
-}
-```
-
-Off a Samsung TV, `Voice` and `SmartHubPreview` answer "not available", so the
-same code runs on Android, iOS and the web. Samsung documents voice and the
-personal preview for web apps only; ask your Seller Office content manager
-before you ship either to the store. See [TV features](docs/tv-features.md).
-
-## Benchmarks
-
-Measured on a Samsung GQ75LS03DAUXZG (The Frame, 2024, webOS 9.0, armv7), with
-the example app's benchmark screen: a 1,000-row FlatList and 12 views on the
-native animated driver. Each figure is a median.
-
-| What | Result | Runs |
-|---|---|---|
-| Cold start, launch command to first frame (release) | 1,196 ms | 17 launches |
-| The same screen as a webOS web app (react-native-web), same launches | 2,075 ms | 17 launches |
-| FlatList, focus moving one row every 200 ms | 54.1 frames/s, 22 dropped frames in 114 s | 3 runs |
-| Native-driver animation | 49.9 frames/s at the TV's 50 Hz, 0 dropped | 3 runs |
-| Resident memory (release), list still / scrolling | 63.7 MB / 94.4 MB | 3 runs |
-| `.tpk` size (release) | 8.0 MB, against 0.16 MB for the web app | 1 build |
-
-<p align="center">
-  <img alt="The benchmark screen on the TV: a FlatList of 1,000 rows scrolling, row 75 focused, resident memory 87.2 MB" src="https://raw.githubusercontent.com/kromatv/react-native-webos/main/docs/assets/screenshot-flatlist.png" width="640">
-</p>
-
-Frame counts come from a development build, the only kind `rn-webos perf`
-reads. At one row every 50 ms the JavaScript thread saturates and frames drop.
-The web app was compared on cold start and size only: a web page cannot read
-the canvas's frame counter or its own process's memory. The method, every run
-and the commands to reproduce them are in [docs/benchmarks.md](docs/benchmarks.md).
+The TV draws video on its own plane, under the UI. What `expo-video` does on
+webOS, call by call, is in
+[the media reference](docs/reference/webos-media-playback.md).
 
 ## Status
 
-This is an alpha. `rn-webos` builds for webOS 6.0 to 10.0, Samsung's TVs from
-2021 on: a package reaches its floor, 6.0 by default, and every later version
-([webOS versions](docs/webos-versions.md)). One TV is verified on hardware so
-far: a Samsung GQ75LS03DAUXZG (The Frame, 2024) on webOS 9.0, armv7.
+This is an alpha, and no TV has run it. What stands behind each part:
+
+| Part | Evidence so far |
+|---|---|
+| The runtime: Hermes, Fabric, views, text, images, `TextInput`, remote keys, the pointer, Expo modules, react-native-svg | Runs in the simulator, the same source built for aarch64 Linux; 1001 C++ tests |
+| The TV executable | Cross-compiles on a Mac; its imports resolve on the firmware images of 14 releases, webOS 1.2 to 11.2 (`scripts/check-tv-binary.ts`). Never started on a TV |
+| The window, input and lifecycle on a TV | Written from SDL's webOS port and LG's and webOS OSE's sources; the simulator uses X11 instead |
+| Video | The player logic has tests against a fake of the TV's media service. Nothing has played on a TV |
+| `connect`, `install`, `run`, `key`, `logs` | Tests against a fake TV. Never run against a real one |
+| Publishing to LG's store | Unknown. LG documents web apps only; whether Seller Lounge accepts a native package is not stated anywhere ([reference](docs/reference/webos-tv-platform.md#12-who-may-publish-a-native-app)) |
 
 Known gaps:
 
-- Only webOS 9.0 has run on a TV. A 6.0-floor package runs there, and the
-  runtime's imports resolve in every rootstrap from 6.0 to 10.0, but no TV on
-  another version has run it.
-- TVs from 2020 and earlier (webOS 5.5 and below) cannot run it: Samsung blocks
-  the native libraries an app carries below 6.0
-  ([reference](docs/reference/webos-tv-platform.md#2-model-year-platform-runtime)).
-- No native focus engine, as above.
-- react-native-svg draws no images, markers or filters yet
-  ([details](docs/native-modules.md#react-native-svg)).
-- A native library cannot declare webOS privileges, and an app cannot leave a
-  library out of the runtime ([limits](docs/native-modules.md#limits)).
+- No native focus engine: `focusable`, `hasTVPreferredFocus` and
+  `TVFocusGuideView` do nothing. Keep the focused item in state and move it on
+  remote events.
+- The floor is webOS TV 4 (2018 models). Earlier releases set the permissions
+  of an app's directory wrong.
 - `expo prebuild`, `expo export --platform webos` and `expo run:webos` do not
   exist: Expo's CLI has no way to add a platform. `rn-webos package` and
   `rn-webos run` stand in.
 
+Measured in the simulator, on a software GPU, so only good for comparing one
+change with another ([docs/benchmarks.md](docs/benchmarks.md)): the example's
+1,000-row list scrolls at 60 frames a second with none dropped, and a release
+package of the example is 10.9 MB.
+
 ## Documentation
 
-**Getting started**
-
-- [Quick start](#quick-start), above
-- [The simulator](simulator/README.md): a virtual TV on an Apple silicon Mac
-- [webOS versions](docs/webos-versions.md): which Samsung TVs a package
-  reaches, and why the floor is 6.0
-- [Benchmarks](docs/benchmarks.md): the method and the raw results
-- [Releases](https://github.com/kromatv/react-native-webos/releases): what
-  each version changed, also in `CHANGELOG.md`
-
-**CLI**
-
 - [The `rn-webos` CLI](docs/cli.md): every command and option, the config
-  plugin's props, and where builds land
-- [The `webos` Node API](docs/webos-api.md): find TVs, sign and install packages
-  from your own tools
+  plugin's props, `expo start`, where builds land
+- [The simulator](simulator/README.md): a virtual TV on an Apple silicon Mac
+- [The `webos` Node API](docs/webos-api.md): find TVs, install and launch from
+  your own tools
 - [Runtime config](docs/runtime-config.md): what the runtime reads at startup
-
-**Expo**
-
-- [Inside `npx expo start`](docs/cli.md#inside-npx-expo-start): the shift+m
-  commands
-- [Develop with `expo start`](docs/cli.md#develop-with-expo-start): Fast
-  Refresh, reload, logs, LogBox, DevTools
-- [Native libraries and Expo modules](docs/native-modules.md): what compiles into
-  the runtime, and how a library adds webOS support
-- [Expo CLI integration](docs/reference/expo-cli-integration.md) and
-  [the Expo modules contract](docs/reference/expo-modules-contract.md)
-
-**TV features**
-
-- [Voice, Smart Hub preview, background audio and 4K](docs/tv-features.md)
-- [Remote keys and text input](docs/reference/webos-input.md),
-  [`<TextInput>`](docs/reference/text-input.md)
-- [Video](docs/reference/webos-media-playback.md)
-- [App integration](docs/reference/webos-tv-app-integration.md) and
-  [the Smart Hub preview](docs/reference/webos-smart-hub-preview.md)
-
-**Platform reference**
-
+- [Native libraries and Expo modules](docs/native-modules.md): what compiles
+  into the runtime, and how a library adds webOS support
 - [Design decisions](docs/decisions.md): what the package is built on, and why
-- [The reference index](docs/reference/README.md), with sources for every fact:
+- [The platform reference](docs/reference/README.md), with a source for every
+  fact:
   [the TV platform](docs/reference/webos-tv-platform.md),
-  [EFL rendering](docs/reference/efl-rendering.md),
-  [React Native's platform contract](docs/reference/react-native-platform-contract.md),
-  [dev tooling](docs/reference/react-native-dev-tooling.md),
-  [`Intl`](docs/reference/intl.md),
-  [networking](docs/reference/webos-network.md),
-  [the sdb protocol](docs/reference/sdb-protocol.md),
-  [package signing](docs/reference/webos-package-signing.md),
+  [the toolchain](docs/reference/webos-native-toolchain.md),
+  [the window and input](docs/reference/webos-window-input.md),
+  [Skia rendering](docs/reference/skia-rendering.md),
+  [media playback](docs/reference/webos-media-playback.md),
+  [the device protocol](docs/reference/webos-device-protocol.md),
+  [the `.ipk` format](docs/reference/webos-ipk-format.md),
+  [the remote control service](docs/reference/webos-remote-control.md),
   [TV discovery](docs/reference/tv-discovery.md)
-
-**Contributing**
-
-- [Contributing](CONTRIBUTING.md): set up, the loop, the checks
-- [Security policy](SECURITY.md)
-- [Third-party notices](THIRD_PARTY_NOTICES.md)
-
-CI runs the TypeScript tests on Linux and macOS and installs the packed package
-into a fresh Expo app under Node. When the runtime changes, it builds it for
-aarch64 Linux and runs its C++ tests (doctest). SonarCloud's quality gate checks
-every pull request, and mutation testing runs weekly.
+- [Benchmarks](docs/benchmarks.md)
+- [Contributing](CONTRIBUTING.md), [security policy](SECURITY.md),
+  [third-party notices](THIRD_PARTY_NOTICES.md)
 
 ## Licence
 
 MIT. What the runtime and the packages it builds carry from other projects,
 and under which licences, is in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
-Not affiliated with or endorsed by Samsung, the Linux Foundation, Meta or Expo.
-Samsung, webOS, Smart Hub, React Native and Expo are trademarks of their owners.
+Not affiliated with or endorsed by LG Electronics, Meta or Expo. LG, webOS,
+Magic Remote, React Native and Expo are trademarks of their owners.
