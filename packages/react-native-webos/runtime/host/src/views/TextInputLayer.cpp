@@ -1,187 +1,251 @@
 #include "TextInputLayer.h"
 
-#include "EvasColor.h"
+#include "../text/TextEngine.h"
+
+#include "include/core/SkPaint.h"
+#include "modules/skparagraph/include/Metrics.h"
 
 #include <algorithm>
+#include <chrono>
+#include <cmath>
+#include <limits>
+#include <mutex>
 
 namespace rnwebos {
 
 namespace {
 
-constexpr double kBlinkSeconds = 0.5;
-constexpr Evas_Coord kUnboundedWidth = 100000;
+using namespace skia::textlayout;
 
-Evas_Coord scrolledToShow(Evas_Coord scroll, Evas_Coord start, Evas_Coord size, Evas_Coord viewport, Evas_Coord content) {
+constexpr auto kBlinkPeriod = std::chrono::milliseconds(500);
+
+int scrolledToShow(int scroll, int start, int size, int viewport, int content) {
   if (content <= viewport) return 0;
   if (start < scroll) scroll = start;
   if (start + size > scroll + viewport) scroll = start + size - viewport;
-  return std::clamp<Evas_Coord>(scroll, 0, content - viewport);
+  return std::clamp(scroll, 0, content - viewport);
 }
 
 } // namespace
 
-TextInputLayer::TextInputLayer(Evas *evas)
-    : clip_(evas_object_rectangle_add(evas)),
-      text_(evas_object_textblock_add(evas)),
-      caret_(evas_object_rectangle_add(evas)),
-      style_(evas_textblock_style_new()),
-      cursor_(evas_object_textblock_cursor_new(text_)) {
-  evas_object_textblock_style_set(text_, style_);
-  for (auto *object : {clip_, text_, caret_}) evas_object_pass_events_set(object, EINA_TRUE);
-}
+TextInputLayer::TextInputLayer(Scene &scene) : scene_(scene) {}
 
 TextInputLayer::~TextInputLayer() {
-  if (blink_ != nullptr) ecore_timer_del(blink_);
-  evas_textblock_cursor_free(cursor_);
-  evas_object_del(caret_);
-  evas_object_del(text_);
-  evas_object_del(clip_);
-  evas_textblock_style_free(style_);
+  if (blink_ != 0) MainLoop::get().removeTimer(blink_);
 }
 
-Evas_Object *TextInputLayer::clip() const {
-  return clip_;
-}
-
-Evas_Object *TextInputLayer::text() const {
-  return text_;
-}
-
-Evas_Object *TextInputLayer::caret() const {
-  return caret_;
-}
-
-void TextInputLayer::setContent(const TextblockContent &content, std::size_t caret, bool multiline) {
-  evas_textblock_style_set(style_, content.style.c_str());
-  evas_object_textblock_text_markup_set(text_, content.markup.c_str());
-  caretIndex_ = caret;
+void TextInputLayer::setText(
+    const facebook::react::AttributedString &text,
+    const facebook::react::ParagraphAttributes &attributes,
+    bool multiline) {
+  if (multiline == multiline_ && attributes == attributes_ && text == text_) return;
+  text_ = text;
+  attributes_ = attributes;
   multiline_ = multiline;
-  layout(box_, caretWidth_);
+  layout_ = {};
+  restartBlink();
+}
+
+void TextInputLayer::setSelection(std::size_t caret, std::size_t start, std::size_t end, SkColor4f color) {
+  caret_ = caret;
+  selectionStart_ = start;
+  selectionEnd_ = end;
+  selectionColor_ = color;
+  placed_ = false;
   restartBlink();
 }
 
 void TextInputLayer::setVerticalAlignment(std::optional<facebook::react::TextAlignmentVertical> alignment) {
+  if (alignment == verticalAlignment_) return;
   verticalAlignment_ = alignment;
+  placed_ = false;
+  scene_.invalidate();
 }
 
-void TextInputLayer::setCaret(bool shown, const facebook::react::SharedColor &color) {
-  setColor(caret_, color);
+void TextInputLayer::setCaret(bool shown, SkColor4f color) {
+  caretColor_ = color;
+  if (shown == caretShown_) return;
   caretShown_ = shown;
   restartBlink();
 }
 
-void TextInputLayer::layout(const PixelRect &box, Evas_Coord caretWidth) {
-  using enum facebook::react::TextAlignmentVertical;
+void TextInputLayer::layout(const PixelRect &box, facebook::react::Float scale, int caretWidth) {
+  if (box.width != box_.width || scale != scale_) layout_ = {};
   box_ = box;
-  caretWidth_ = std::max<Evas_Coord>(1, caretWidth);
-  setGeometry(clip_, inflated(box, 0, 0, caretWidth_, 0));
-  Evas_Coord width = 0;
-  Evas_Coord height = 0;
-  if (multiline_) {
-    evas_object_resize(text_, std::max<Evas_Coord>(1, box.width), std::max<Evas_Coord>(1, box.height));
-    evas_object_textblock_size_formatted_get(text_, nullptr, &height);
-    width = std::max<Evas_Coord>(1, box.width);
-  } else {
-    evas_object_resize(text_, kUnboundedWidth, std::max<Evas_Coord>(1, box.height));
-    evas_object_textblock_size_native_get(text_, &width, &height);
-    width = std::max(width, box.width);
-  }
-  textWidth_ = width;
-  textHeight_ = std::max<Evas_Coord>(1, height);
-  evas_object_resize(text_, textWidth_, textHeight_);
+  scale_ = scale;
+  caretWidth_ = std::max(1, caretWidth);
+  placed_ = false;
+  scene_.invalidate();
+}
 
-  evas_textblock_cursor_pos_set(cursor_, static_cast<int>(caretIndex_));
-  Evas_Coord x = 0;
-  Evas_Coord y = 0;
-  Evas_Coord h = 0;
-  if (evas_textblock_cursor_geometry_get(cursor_, &x, &y, nullptr, &h, nullptr, EVAS_TEXTBLOCK_CURSOR_BEFORE) < 0 ||
-      h <= 0) {
-    x = 0;
-    y = 0;
-    h = textHeight_;
+bool TextInputLayer::ensureLaidOut() {
+  if (text_.isEmpty()) return false;
+  if (!layout_.paragraph) {
+    const auto boxWidth = std::max(1, box_.width);
+    if (multiline_) {
+      layout_ = layOutParagraph(text_, attributes_, static_cast<facebook::react::Float>(boxWidth) / scale_, scale_);
+      textWidth_ = boxWidth;
+    } else {
+      layout_ = layOutParagraph(text_, attributes_, std::numeric_limits<facebook::react::Float>::infinity(), scale_);
+      auto &paragraph = *layout_.paragraph;
+      const auto unbroken = std::max(paragraph.getMaxIntrinsicWidth(), paragraph.getLongestLine());
+      // One pixel more than the text needs: SkParagraph breaks a line that
+      // only just fits, and a single line would lose what follows the break.
+      textWidth_ = std::max(boxWidth, static_cast<int>(std::ceil(unbroken)) + 1);
+      const std::lock_guard lock(textEngine().mutex);
+      paragraph.layout(static_cast<float>(textWidth_));
+    }
+    textHeight_ = std::max(1, static_cast<int>(std::ceil(layout_.paragraph->getHeight())));
+    readLines();
+    placed_ = false;
   }
-  caretInText_ = {.x = x, .y = y, .width = caretWidth_, .height = h};
+  if (!placed_) place();
+  return true;
+}
 
-  Evas_Coord offsetY = 0;
-  if (textHeight_ < box.height) {
-    const auto alignment = verticalAlignment_.value_or(Auto);
-    if (alignment == Bottom) {
-      offsetY = box.height - textHeight_;
-    } else if (alignment != Top) {
-      offsetY = (box.height - textHeight_) / 2;
+void TextInputLayer::readLines() {
+  std::vector<LineMetrics> metrics;
+  layout_.paragraph->getLineMetrics(metrics);
+  lines_.clear();
+  for (const auto &line : metrics) {
+    const bool isLast = &line == &metrics.back();
+    lines_.push_back({
+        .start = line.fStartIndex,
+        .end = line.fHardBreak || isLast ? line.fEndIndex : line.fEndExcludingWhitespaces,
+        .left = static_cast<float>(line.fLeft),
+        .top = static_cast<float>(line.fBaseline - line.fAscent),
+        .height = static_cast<float>(line.fAscent + line.fDescent),
+    });
+  }
+}
+
+std::size_t TextInputLayer::lineOf(std::size_t offset) const {
+  std::size_t found = 0;
+  for (std::size_t index = 0; index < lines_.size(); ++index) {
+    if (lines_[index].start <= offset) found = index;
+  }
+  return found;
+}
+
+float TextInputLayer::caretX(const Line &line, std::size_t offset) const {
+  auto &paragraph = *layout_.paragraph;
+  const auto start = static_cast<unsigned>(line.start);
+  const auto at = static_cast<unsigned>(offset);
+  if (offset > line.start) {
+    // The whole line up to the caret, not the character before it alone:
+    // SkParagraph gives no box to part of a grapheme.
+    const auto before = paragraph.getRectsForRange(start, at, RectHeightStyle::kTight, RectWidthStyle::kTight);
+    if (!before.empty()) {
+      const auto &box = before.back();
+      return box.direction == TextDirection::kRtl ? box.rect.left() : box.rect.right();
     }
   }
+  const auto after = paragraph.getRectsForRange(at, at + 1, RectHeightStyle::kTight, RectWidthStyle::kTight);
+  if (after.empty()) return line.left;
+  const auto &box = after.front();
+  return box.direction == TextDirection::kRtl ? box.rect.right() : box.rect.left();
+}
+
+void TextInputLayer::place() {
+  using enum facebook::react::TextAlignmentVertical;
+  placed_ = true;
+  selectionRects_.clear();
+  caretInText_ = SkRect::MakeWH(static_cast<float>(caretWidth_), static_cast<float>(textHeight_));
+  if (!lines_.empty()) {
+    const auto &line = lines_[lineOf(caret_)];
+    caretInText_ = SkRect::MakeXYWH(
+        std::round(caretX(line, caret_)), std::floor(line.top), static_cast<float>(caretWidth_), std::ceil(line.height));
+  }
+  if (selectionEnd_ > selectionStart_) {
+    const auto boxes = layout_.paragraph->getRectsForRange(
+        static_cast<unsigned>(selectionStart_),
+        static_cast<unsigned>(selectionEnd_),
+        RectHeightStyle::kMax,
+        RectWidthStyle::kTight);
+    for (const auto &box : boxes) selectionRects_.push_back(box.rect);
+  }
+
+  offsetY_ = 0;
+  if (textHeight_ < box_.height) {
+    const auto alignment = verticalAlignment_.value_or(Auto);
+    if (alignment == Bottom) {
+      offsetY_ = box_.height - textHeight_;
+    } else if (alignment != Top) {
+      offsetY_ = (box_.height - textHeight_) / 2;
+    }
+  }
+  const auto caretLeft = static_cast<int>(caretInText_.left());
+  const auto caretTop = static_cast<int>(caretInText_.top());
   if (multiline_) {
     scrollX_ = 0;
-    scrollY_ = scrolledToShow(scrollY_, y, h, box.height, textHeight_);
+    scrollY_ = scrolledToShow(scrollY_, caretTop, static_cast<int>(caretInText_.height()), box_.height, textHeight_);
   } else {
     scrollY_ = 0;
-    scrollX_ = scrolledToShow(scrollX_, x, caretWidth_, box.width, textWidth_ + caretWidth_);
+    scrollX_ = scrolledToShow(scrollX_, caretLeft, caretWidth_, box_.width, textWidth_ + caretWidth_);
   }
-  setGeometry(text_, {.x = box.x - scrollX_, .y = box.y + offsetY - scrollY_, .width = textWidth_, .height = textHeight_});
-  placeCaret();
 }
 
-PixelRect TextInputLayer::caretRect() const {
-  Evas_Coord x = 0;
-  Evas_Coord y = 0;
-  evas_object_geometry_get(text_, &x, &y, nullptr, nullptr);
-  return {.x = x + caretInText_.x, .y = y + caretInText_.y, .width = caretInText_.width, .height = caretInText_.height};
-}
-
-Evas_Coord TextInputLayer::textWidth() const {
-  return textWidth_;
-}
-
-Evas_Coord TextInputLayer::textHeight() const {
-  return textHeight_;
-}
-
-std::optional<std::size_t> TextInputLayer::caretOnLine(int lines) const {
-  if (!multiline_) return std::nullopt;
-  const auto y = lines < 0 ? caretInText_.y - 1 : caretInText_.y + caretInText_.height + 1;
-  if (y < 0 || y >= textHeight_) return std::nullopt;
-  auto *probe = evas_object_textblock_cursor_new(text_);
-  std::optional<std::size_t> landed;
-  Evas_Coord charX = 0;
-  Evas_Coord charWidth = 0;
-  if (evas_textblock_cursor_char_coord_set(probe, caretInText_.x, y) == EINA_TRUE) {
-    evas_textblock_cursor_char_geometry_get(probe, &charX, nullptr, &charWidth, nullptr);
-    const auto position = static_cast<std::size_t>(std::max(0, evas_textblock_cursor_pos_get(probe)));
-    landed = caretInText_.x > charX + charWidth / 2 ? position + 1 : position;
-  } else if (evas_textblock_cursor_line_coord_set(probe, y) >= 0) {
-    evas_textblock_cursor_line_char_last(probe);
-    const auto position = static_cast<std::size_t>(std::max(0, evas_textblock_cursor_pos_get(probe)));
-    landed = evas_textblock_cursor_is_format(probe) == EINA_TRUE ? position : position + 1;
+void TextInputLayer::draw(SkCanvas &canvas) {
+  if (box_.width <= 0 || box_.height <= 0 || !ensureLaidOut()) return;
+  const SkAutoCanvasRestore restore(&canvas, true);
+  canvas.clipRect(SkRect::MakeXYWH(
+      static_cast<float>(box_.x),
+      static_cast<float>(box_.y),
+      static_cast<float>(box_.width + caretWidth_),
+      static_cast<float>(box_.height)));
+  canvas.translate(static_cast<float>(box_.x - scrollX_), static_cast<float>(box_.y + offsetY_ - scrollY_));
+  if (!selectionRects_.empty()) {
+    SkPaint highlight;
+    highlight.setColor4f(selectionColor_);
+    for (const auto &rect : selectionRects_) canvas.drawRect(rect, highlight);
   }
-  evas_textblock_cursor_free(probe);
-  return landed;
+  layout_.paragraph->paint(&canvas, 0, 0);
+  if (caretShown_ && caretLit_) {
+    SkPaint caret;
+    caret.setColor4f(caretColor_);
+    canvas.drawRect(caretInText_, caret);
+  }
+}
+
+PixelRect TextInputLayer::caretRect() {
+  if (!ensureLaidOut()) return {.x = box_.x, .y = box_.y, .width = caretWidth_, .height = box_.height};
+  return {
+      .x = box_.x - scrollX_ + static_cast<int>(caretInText_.left()),
+      .y = box_.y + offsetY_ - scrollY_ + static_cast<int>(caretInText_.top()),
+      .width = caretWidth_,
+      .height = static_cast<int>(caretInText_.height()),
+  };
+}
+
+PixelSize TextInputLayer::textSize() {
+  if (!ensureLaidOut()) return {};
+  return {.width = textWidth_, .height = textHeight_};
+}
+
+std::optional<std::size_t> TextInputLayer::caretOnLine(int lines) {
+  if (!multiline_ || !ensureLaidOut() || lines_.empty()) return std::nullopt;
+  const auto target = static_cast<long>(lineOf(caret_)) + lines;
+  if (target < 0 || target >= static_cast<long>(lines_.size())) return std::nullopt;
+  const auto &line = lines_[static_cast<std::size_t>(target)];
+  const auto hit = layout_.paragraph->getGlyphPositionAtCoordinate(caretInText_.left(), line.top + line.height / 2);
+  const auto landed = static_cast<std::size_t>(std::max(0, hit.position));
+  return std::clamp(landed, line.start, std::max(line.start, line.end));
 }
 
 void TextInputLayer::restartBlink() {
   caretLit_ = true;
-  if (blink_ != nullptr) {
-    ecore_timer_del(blink_);
-    blink_ = nullptr;
-  }
-  if (caretShown_) blink_ = ecore_timer_add(kBlinkSeconds, onBlink, this);
-  placeCaret();
+  if (blink_ != 0) MainLoop::get().removeTimer(blink_);
+  blink_ = 0;
+  if (caretShown_) armBlink();
+  scene_.invalidate();
 }
 
-Eina_Bool TextInputLayer::onBlink(void *self) {
-  auto &layer = *static_cast<TextInputLayer *>(self);
-  layer.caretLit_ = !layer.caretLit_;
-  layer.placeCaret();
-  return ECORE_CALLBACK_RENEW;
-}
-
-void TextInputLayer::placeCaret() {
-  setGeometry(caret_, caretRect());
-  if (caretShown_ && caretLit_) {
-    evas_object_show(caret_);
-  } else {
-    evas_object_hide(caret_);
-  }
+void TextInputLayer::armBlink() {
+  blink_ = MainLoop::get().addTimer(kBlinkPeriod, [this] {
+    caretLit_ = !caretLit_;
+    scene_.invalidate();
+    armBlink();
+  });
 }
 
 } // namespace rnwebos

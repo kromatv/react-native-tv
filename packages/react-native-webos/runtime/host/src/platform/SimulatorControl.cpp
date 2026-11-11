@@ -15,6 +15,8 @@
 #include <charconv>
 #include <chrono>
 #include <cstdlib>
+#include <memory>
+#include <string>
 #include <string_view>
 #include <utility>
 
@@ -38,6 +40,37 @@ void sendKey(SDL_Scancode scancode, bool down) {
 void pressKey(SDL_Scancode scancode, std::chrono::milliseconds length) {
   sendKey(scancode, true);
   MainLoop::get().addTimer(length, [scancode] { sendKey(scancode, false); });
+}
+
+// SDL owns the text of the events it makes; the text of this one has to
+// outlive its dispatch, which the loop does in its next turn before it runs
+// what was posted.
+void sendText(SDL_EventType type, std::string_view text) {
+  const auto kept = std::make_shared<const std::string>(text);
+  SDL_Event event{};
+  event.type = type;
+  if (type == SDL_EVENT_TEXT_EDITING) {
+    event.edit.timestamp = SDL_GetTicksNS();
+    event.edit.text = kept->c_str();
+    event.edit.start = -1;
+    event.edit.length = -1;
+  } else {
+    event.text.timestamp = SDL_GetTicksNS();
+    event.text.text = kept->c_str();
+  }
+  SDL_PushEvent(&event);
+  MainLoop::get().post([kept] {});
+}
+
+void sendKeyboardState(std::string_view state) {
+  if (state != "shown" && state != "hidden") {
+    log(LogLevel::Warning, "The simulator's keyboard is shown or hidden, not " + std::string(state));
+    return;
+  }
+  SDL_Event event{};
+  event.type = state == "shown" ? SDL_EVENT_SCREEN_KEYBOARD_SHOWN : SDL_EVENT_SCREEN_KEYBOARD_HIDDEN;
+  event.common.timestamp = SDL_GetTicksNS();
+  SDL_PushEvent(&event);
 }
 
 std::pair<std::string_view, std::string_view> splitWord(std::string_view text) {
@@ -70,6 +103,9 @@ void runCommand(const SimulatorControl::Host &host, std::string_view line) {
   if (command == "resume") return host.resume();
   if (command == "exit") return host.exit();
   if (command == "open-url") return host.openUrl(std::string(arguments));
+  if (command == "text") return sendText(SDL_EVENT_TEXT_INPUT, arguments);
+  if (command == "compose") return sendText(SDL_EVENT_TEXT_EDITING, arguments);
+  if (command == "keyboard") return sendKeyboardState(arguments);
   if (command.starts_with("key")) return runKeyCommand(command, arguments);
   log(LogLevel::Warning, "Unknown simulator command: " + std::string(line));
 }

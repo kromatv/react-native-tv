@@ -76,16 +76,29 @@ TEST_CASE("deleteBackward and deleteForward delete around the caret") {
   CHECK(buffer.caret() == 0);
 }
 
-TEST_CASE("deleteAround deletes from an offset after the caret, clamped to the text") {
+TEST_CASE("clear deletes the whole text and its composition, and reports an empty text unchanged") {
   EditBuffer buffer;
-  buffer.setText("abcdef");
-  buffer.moveTo(3, false);
+  buffer.setText("abc");
+  buffer.compose(U"de", 2, 100);
 
-  CHECK(buffer.deleteAround(-2, 2));
-  CHECK_FALSE(buffer.deleteAround(10, 1));
+  CHECK(buffer.clear());
+  CHECK_FALSE(buffer.clear());
 
-  CHECK(buffer.utf8() == "adef");
-  CHECK(buffer.caret() == 1);
+  CHECK(buffer.utf8().empty());
+  CHECK(buffer.caret() == 0);
+  CHECK_FALSE(buffer.composing().has_value());
+}
+
+TEST_CASE("positions and UTF-16 offsets convert both ways around a character outside the BMP") {
+  EditBuffer buffer;
+  buffer.setText("a\xF0\x9F\x98\x80" "b");
+
+  CHECK(buffer.utf16Offset(1) == 1);
+  CHECK(buffer.utf16Offset(2) == 3);
+  CHECK(buffer.utf16Offset(9) == 4);
+  CHECK(buffer.positionAtUtf16(2) == 1);
+  CHECK(buffer.positionAtUtf16(3) == 2);
+  CHECK(buffer.positionAtUtf16(9) == 3);
 }
 
 TEST_CASE("selectAll selects the whole text, and typing replaces it") {

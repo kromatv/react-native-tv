@@ -137,10 +137,8 @@ bool EditBuffer::deleteForward() {
   return range.end < text_.size() && erase(range.end, range.end + 1);
 }
 
-bool EditBuffer::deleteAround(long offset, std::size_t count) {
-  const auto from = std::clamp<long>(static_cast<long>(focus_) + offset, 0, static_cast<long>(text_.size()));
-  const auto start = static_cast<std::size_t>(from);
-  return erase(start, std::min(text_.size(), start + count));
+bool EditBuffer::clear() {
+  return erase(0, text_.size());
 }
 
 bool EditBuffer::erase(std::size_t start, std::size_t end) {

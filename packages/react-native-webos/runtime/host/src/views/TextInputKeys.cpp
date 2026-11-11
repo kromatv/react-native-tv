@@ -1,34 +1,36 @@
 #include "TextInputView.h"
 
+#include "../input/RemoteKeyMap.h"
+
 #include <algorithm>
-#include <initializer_list>
 #include <string_view>
 
 namespace rnwebos {
 
 namespace {
 
-constexpr char32_t kPasswordDot = U'•';
 constexpr std::size_t kKeyPressUnits = 2;
+constexpr SDL_Keycode kFirstPrintable = SDLK_SPACE;
 
-std::string_view keyName(const Ecore_Event_Key &key) {
-  return key.key != nullptr ? key.key : "";
+bool isBack(const SDL_KeyboardEvent &key) {
+  const auto remoteKey = remoteKeyFor(key.scancode, key.raw);
+  return remoteKey && remoteKey->isBack;
 }
 
-bool isOneOf(std::string_view name, std::initializer_list<std::string_view> names) {
-  return std::ranges::any_of(names, [name](std::string_view candidate) { return candidate == name; });
+bool isOk(const SDL_KeyboardEvent &key) {
+  const auto remoteKey = remoteKeyFor(key.scancode, key.raw);
+  return remoteKey && remoteKey->eventType == "select";
 }
 
-bool hasShift(const Ecore_Event_Key &key) {
-  return (key.modifiers & ECORE_EVENT_MODIFIER_SHIFT) != 0;
+bool hasShift(const SDL_KeyboardEvent &key) {
+  return (key.mod & SDL_KMOD_SHIFT) != 0;
 }
 
-std::u32string typedText(const Ecore_Event_Key &key) {
-  constexpr unsigned int kCommandModifiers = ECORE_EVENT_MODIFIER_CTRL | ECORE_EVENT_MODIFIER_ALT | ECORE_EVENT_MODIFIER_WIN;
-  if (key.string == nullptr || (key.modifiers & kCommandModifiers) != 0) return {};
-  auto text = decodeUtf8(key.string);
-  if (text.empty() || text.front() < 0x20 || text.front() == 0x7F) return {};
-  return text;
+// SDL sends what such a key types as a text input event of its own.
+bool typesText(const SDL_KeyboardEvent &key) {
+  constexpr SDL_Keymod kCommandModifiers = SDL_KMOD_CTRL | SDL_KMOD_ALT | SDL_KMOD_GUI;
+  if ((key.mod & kCommandModifiers) != 0) return false;
+  return key.key >= kFirstPrintable && key.key != SDLK_DELETE && (key.key & (SDLK_SCANCODE_MASK | SDLK_EXTENDED_MASK)) == 0;
 }
 
 std::optional<std::string> keyPressFor(std::u32string_view text) {
@@ -39,54 +41,55 @@ std::optional<std::string> keyPressFor(std::u32string_view text) {
 
 } // namespace
 
-bool TextInputView::keyDown(const Ecore_Event_Key &key, bool repeat) {
-  const auto name = keyName(key);
+bool TextInputView::keyDown(const SDL_KeyboardEvent &key, bool repeat) {
   const bool extend = hasShift(key);
-  if (name == "Select") {
-    if (!repeat) inputMethodDone();
+  if (isBack(key)) return true;
+  if (isOk(key)) {
+    if (submitBehavior() == facebook::react::SubmitBehavior::Newline && !reopensKeyboard()) insert(U"\n");
     return true;
   }
-  if (isOneOf(name, {"Cancel", "XF86Back", "Escape"})) return true;
-  if (isOneOf(name, {"Return", "KP_Enter"})) {
-    if (submitBehavior() == facebook::react::SubmitBehavior::Newline) insert(U"\n");
-    return true;
+  switch (key.scancode) {
+    case SDL_SCANCODE_BACKSPACE:
+      if (buffer_.deleteBackward()) {
+        edited("Backspace");
+      } else {
+        emit("keyPress", folly::dynamic::object("key", "Backspace"));
+      }
+      return true;
+    case SDL_SCANCODE_DELETE:
+      if (buffer_.deleteForward()) edited(std::nullopt);
+      return true;
+    case SDL_SCANCODE_CLEAR:
+      if (!repeat && buffer_.clear()) edited("Backspace");
+      return true;
+    case SDL_SCANCODE_LEFT:
+      return stepCaret(-1, extend);
+    case SDL_SCANCODE_RIGHT:
+      return stepCaret(1, extend);
+    case SDL_SCANCODE_UP:
+      return stepLine(-1, extend);
+    case SDL_SCANCODE_DOWN:
+      return stepLine(1, extend);
+    case SDL_SCANCODE_HOME:
+      moveCaret(0, extend);
+      return true;
+    case SDL_SCANCODE_END:
+      moveCaret(buffer_.size(), extend);
+      return true;
+    default:
+      break;
   }
-  if (name == "BackSpace") {
-    if (buffer_.deleteBackward()) {
-      edited("Backspace");
-    } else {
-      emit("keyPress", folly::dynamic::object("key", "Backspace"));
-    }
-    return true;
-  }
-  if (isOneOf(name, {"Delete", "KP_Delete"})) {
-    if (buffer_.deleteForward()) edited(std::nullopt);
-    return true;
-  }
-  if (isOneOf(name, {"Left", "KP_Left"})) return stepCaret(-1, extend);
-  if (isOneOf(name, {"Right", "KP_Right"})) return stepCaret(1, extend);
-  if (isOneOf(name, {"Up", "KP_Up"})) return stepLine(-1, extend);
-  if (isOneOf(name, {"Down", "KP_Down"})) return stepLine(1, extend);
-  if (isOneOf(name, {"Home", "KP_Home"})) {
-    moveCaret(0, extend);
-    return true;
-  }
-  if (isOneOf(name, {"End", "KP_End"})) {
-    moveCaret(buffer_.size(), extend);
-    return true;
-  }
-  const auto text = typedText(key);
-  if (text.empty()) return false;
-  insert(text);
+  auto *focus = keyboard();
+  if (!typesText(key) || focus == nullptr || !focus->ime().isActive()) return false;
+  typedWithKeys_ = true;
   return true;
 }
 
-void TextInputView::keyUp(const Ecore_Event_Key &key) {
-  const auto name = keyName(key);
-  if (isOneOf(name, {"Return", "KP_Enter"}) && submitBehavior() != facebook::react::SubmitBehavior::Newline) {
-    returnPressed();
-  } else if (isOneOf(name, {"XF86Back", "Escape"})) {
-    backPressed();
+void TextInputView::keyUp(const SDL_KeyboardEvent &key) {
+  if (isOk(key)) {
+    okReleased();
+  } else if (isBack(key)) {
+    backReleased();
   }
 }
 
@@ -120,7 +123,7 @@ bool TextInputView::stepCaret(int delta, bool extend) {
 bool TextInputView::stepLine(int lines, bool extend) {
   const auto landed = buffer_.size() > 0 ? layer_.caretOnLine(lines) : std::nullopt;
   if (!landed) return leave();
-  moveCaret(*landed, extend);
+  moveCaret(inputProps().secureTextEntry ? *landed : buffer_.positionAtUtf16(*landed), extend);
   return true;
 }
 
@@ -129,31 +132,30 @@ bool TextInputView::leave() {
   return false;
 }
 
-void TextInputView::returnPressed() {
+// A key that types lowers the TV's keyboard by itself, so OK brings the
+// keyboard back only when the user closed it: with Back, or on the keyboard.
+bool TextInputView::reopensKeyboard() const {
   auto *focus = keyboard();
-  if (panelClosed_ && focus != nullptr && focus->ime().isAvailable() && !focus->ime().isPanelShown()) {
-    panelClosed_ = false;
-    focus->ime().showPanel();
-    return;
-  }
-  submit();
+  return keyboardClosed_ && !typedWithKeys_ && focus != nullptr && focus->ime().isAvailable() &&
+      !focus->ime().isPanelShown();
 }
 
-void TextInputView::backPressed() {
+void TextInputView::okReleased() {
+  if (reopensKeyboard()) {
+    keyboardClosed_ = false;
+    keyboard()->ime().showPanel();
+    return;
+  }
+  if (submitBehavior() != facebook::react::SubmitBehavior::Newline) submit();
+}
+
+void TextInputView::backReleased() {
   auto *focus = keyboard();
   if (focus != nullptr && focus->ime().isPanelShown()) {
     focus->ime().hidePanel();
     return;
   }
   blur();
-}
-
-void TextInputView::inputMethodDone() {
-  if (submitBehavior() != facebook::react::SubmitBehavior::Newline) {
-    submit();
-  } else if (auto *focus = keyboard()) {
-    focus->ime().hidePanel();
-  }
 }
 
 void TextInputView::imeCommit(std::string_view text) {
@@ -169,8 +171,10 @@ void TextInputView::imeCommit(std::string_view text) {
 void TextInputView::imePreedit(std::string_view text, int cursor) {
   const auto decoded = decodeUtf8(text);
   const auto before = buffer_.composing();
+  if (decoded.empty() && !before) return;
   const auto composedBefore = before ? before->end - before->start : 0;
-  if (!buffer_.compose(decoded, static_cast<std::size_t>(std::max(0, cursor)), maxLength())) {
+  const auto caret = cursor < 0 ? decoded.size() : static_cast<std::size_t>(cursor);
+  if (!buffer_.compose(decoded, caret, maxLength())) {
     refresh();
     return;
   }
@@ -185,18 +189,8 @@ void TextInputView::imePreedit(std::string_view text, int cursor) {
   edited(key);
 }
 
-void TextInputView::imeDeleteSurrounding(int offset, int count) {
-  if (count > 0 && buffer_.deleteAround(offset, static_cast<std::size_t>(count))) edited("Backspace");
-}
-
-std::string TextInputView::imeSurrounding(int &cursor) const {
-  cursor = static_cast<int>(buffer_.caret());
-  if (props() && inputProps().secureTextEntry) return encodeUtf8(std::u32string(buffer_.size(), kPasswordDot));
-  return buffer_.utf8();
-}
-
 void TextInputView::imePanelHidden() {
-  panelClosed_ = true;
+  keyboardClosed_ = true;
 }
 
 } // namespace rnwebos

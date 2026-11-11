@@ -34,7 +34,11 @@ void ReactHost::start() {
   startDevSupport();
   createInstance();
   loadBundle();
-  remotePresses_ = std::make_unique<RemotePresses>([this](const RemoteEvent &event) { onRemoteEvent(event); });
+  remotePresses_ = std::make_unique<RemotePresses>(
+      [this](const RemoteEvent &event) { onRemoteEvent(event); },
+      [this](const SDL_KeyboardEvent &key, bool isDown) {
+        return !errorScreen_->isShown() && keyboardFocus_->handleKey(key, isDown);
+      });
   MainLoop::get().setEventHandler([this](const SDL_Event &event) { handleEvent(event); });
   startSurface();
 #if RN_WEBOS_SIMULATOR
@@ -66,6 +70,7 @@ void ReactHost::stop() {
   if (instanceGate_ != nullptr) instanceGate_->close();
   stopReactNative();
   devSupport_.reset();
+  keyboardFocus_.reset();
   textMeasurer_.reset();
   errorScreen_.reset();
   scene_.reset();
@@ -75,6 +80,7 @@ void ReactHost::stop() {
 void ReactHost::reload() {
   log(LogLevel::Info, "Reloading " + config_.appKey);
   remotePresses_->releaseAll();
+  keyboardFocus_->releaseKeys();
   closeMainThreadSync();
   instanceGate_->close();
   stopReactNative();
@@ -111,6 +117,7 @@ void ReactHost::setActive(bool isActive) {
 
 void ReactHost::pause() {
   remotePresses_->releaseAll();
+  keyboardFocus_->releaseKeys();
   pauseMediaSessionsForBackground(config_.backgroundMedia);
   setActive(false);
 }

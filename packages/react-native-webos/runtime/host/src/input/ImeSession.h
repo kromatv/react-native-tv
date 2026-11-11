@@ -1,100 +1,107 @@
 #pragma once
 
-#include <Ecore_IMF.h>
-#include <Ecore_Input.h>
-#include <Evas.h>
+#include "../views/PixelGeometry.h"
 
+#include <SDL3/SDL_events.h>
+#include <SDL3/SDL_keyboard.h>
+
+#include <memory>
+#include <set>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace rnwebos {
 
-/// What an input method asks of the text field it types into. Offsets and
-/// lengths count characters (Unicode code points).
+/// What the TV's keyboard asks of the text field it types into.
 class ImeClient {
  public:
   virtual ~ImeClient() = default;
 
-  /// Text the user finished typing, to replace the selection.
+  /// Text the user finished typing, to replace the composition or the selection.
   virtual void imeCommit(std::string_view text) = 0;
-  /// Text still being composed, drawn at the caret until it is committed.
-  /// `cursor` is inside `text`.
+  /// Text still being composed, drawn at the caret until it is committed, the
+  /// caret `cursor` characters into it. An empty `text` ends the composition.
   virtual void imePreedit(std::string_view text, int cursor) = 0;
-  /// Deletes `count` characters starting `offset` characters from the caret.
-  virtual void imeDeleteSurrounding(int offset, int count) = 0;
-  /// The field's text, masked when it is a password, and the caret in it.
-  virtual std::string imeSurrounding(int &cursor) const = 0;
   /// The on-screen keyboard closed while the field still had the keyboard.
   virtual void imePanelHidden() = 0;
 };
 
-/// How the on-screen keyboard looks for one field (`ecore_imf_context_*`
-/// options, docs/reference/webos-input.md, section 10).
-struct ImeOptions {
-  Ecore_IMF_Input_Panel_Layout layout{ECORE_IMF_INPUT_PANEL_LAYOUT_NORMAL};
-  int layoutVariation{0};
-  Ecore_IMF_Input_Panel_Return_Key_Type returnKey{ECORE_IMF_INPUT_PANEL_RETURN_KEY_TYPE_DEFAULT};
-  Ecore_IMF_Autocapital_Type autocapital{ECORE_IMF_AUTOCAPITAL_TYPE_SENTENCE};
-  bool prediction{true};
+/// The TextInput props that choose a keyboard.
+struct KeyboardProps {
+  std::string_view keyboardType{};
+  std::string_view returnKeyType{};
+  std::string_view autoCapitalize{};
+  bool autoCorrect{false};
   bool secure{false};
   bool multiline{false};
-  /// Whether the panel opens with the edit (`showSoftInputOnFocus`).
-  bool showPanel{true};
+  bool showOnFocus{true};
 };
 
-/// The options for React Native's TextInput props: `keyboardType`,
-/// `returnKeyType`, `autoCapitalize`, `autoCorrect`, `secureTextEntry`,
-/// `multiline`.
-ImeOptions imeOptionsFor(
-    const std::string &keyboardType,
-    const std::string &returnKeyType,
-    const std::string &autoCapitalize,
-    bool autoCorrect,
-    bool secure,
-    bool multiline);
+/// How SDL starts text input for one field: the properties of
+/// `SDL_StartTextInputWithProperties` (docs/reference/webos-window-input.md,
+/// sections 10 and 15).
+struct ImeOptions {
+  SDL_TextInputType type{SDL_TEXTINPUT_TYPE_TEXT};
+  SDL_Capitalization capitalization{SDL_CAPITALIZE_SENTENCES};
+  bool autocorrect{false};
+  bool multiline{false};
+  /// What the props ask that SDL's text input cannot say, one sentence each.
+  std::vector<std::string> unsupported{};
+};
 
-/// The canvas's Ecore IMF context, the documented way a native webOS app
-/// reaches the TV's on-screen keyboard: one per window, created on the first
-/// edit, as Elementary's own entry and flutter-webos do. One field edits
-/// through it at a time. Main thread only.
+ImeOptions imeOptionsFor(const KeyboardProps &props);
+
+/// SDL's text input on the app's window, the way a native webOS app reaches
+/// the TV's on-screen keyboard: starting it raises the keyboard, stopping it
+/// is the only way to lower it. One field edits through it at a time. Main
+/// thread only.
 class ImeSession final {
  public:
-  explicit ImeSession(Evas *evas);
+  /// `window` may be null, as for a scene without a window: the session then
+  /// keeps its own state and calls nothing.
+  explicit ImeSession(SDL_Window *window);
   ~ImeSession();
 
   ImeSession(const ImeSession &) = delete;
   ImeSession &operator=(const ImeSession &) = delete;
 
-  /// Whether an input method answered: false in a simulator with none.
+  /// Whether the device has an on-screen keyboard: SDL says so, or one showed.
   bool isAvailable() const;
-  /// Starts editing `client`: applies `options`, focuses the context and asks
-  /// for the panel unless `options.showPanel` is false.
+  /// Starts editing `client` with `options`, which raises the keyboard.
   void begin(ImeClient &client, const ImeOptions &options);
-  /// Ends the edit: drops the composition, unfocuses the context, hides the panel.
+  /// Ends the edit: stops text input, which lowers the keyboard.
   void end();
-  /// Offers a key to the input method first, as flutter-webos does: every key
-  /// while the panel shows, every key but navigation and remote keys while
-  /// editing. True when the input method took it.
-  bool filter(const Ecore_Event_Key &key, bool isDown);
+  /// Gives the field being edited what a text input event of SDL says: text
+  /// committed, text being composed, the keyboard shown or hidden. False for
+  /// any other event.
+  bool handleEvent(const SDL_Event &event);
+  /// Raises the keyboard again for the field being edited.
   void showPanel();
+  /// Lowers the keyboard and keeps the field: no text arrives until `showPanel`.
   void hidePanel();
   bool isPanelShown() const;
-  /// Tells the input method where the caret is: `position` in characters,
-  /// the rest in canvas pixels.
-  void caretMoved(int position, Evas_Coord x, Evas_Coord y, Evas_Coord width, Evas_Coord height);
+  /// Whether text input is started, so a key that types sends its text.
+  bool isActive() const;
+  /// Tells the keyboard where the caret is, in window pixels, inside `line`:
+  /// the field's width at the caret's height.
+  void caretMoved(const PixelRect &line, int caretX);
   /// Drops the composition, for text that changed under it.
   void reset();
 
  private:
-  static void onCommit(void *self, Ecore_IMF_Context *context, void *info);
-  static void onPreedit(void *self, Ecore_IMF_Context *context, void *info);
-  static void onDeleteSurrounding(void *self, Ecore_IMF_Context *context, void *info);
-  static Eina_Bool onSurrounding(void *self, Ecore_IMF_Context *context, char **text, int *cursor);
-  static void onPanelState(void *self, Ecore_IMF_Context *context, int state);
+  void start();
+  void stop();
+  void compositionEmptied();
 
-  Ecore_IMF_Context *context_{nullptr};
+  SDL_Window *const window_;
   ImeClient *client_{nullptr};
-  Ecore_IMF_Input_Panel_State panelState_{ECORE_IMF_INPUT_PANEL_STATE_HIDE};
+  ImeOptions options_{};
+  std::set<std::string, std::less<>> reported_;
+  std::shared_ptr<bool> emptiedComposition_;
+  bool active_{false};
+  bool panelShown_{false};
+  bool panelSeen_{false};
 };
 
 } // namespace rnwebos

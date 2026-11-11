@@ -3,6 +3,7 @@
 #include "HostConfig.h"
 #include "diagnostics/ErrorScreen.h"
 #include "fabric/SurfacePresenter.h"
+#include "input/KeyboardFocus.h"
 #include "input/RemotePresses.h"
 #include "modules/DeviceProfile.h"
 #include "modules/LaunchUrl.h"
@@ -90,6 +91,7 @@ class ReactHost final {
   std::shared_ptr<InstanceGate> instanceGate_;
   std::shared_ptr<TurboModuleProvider> modules_;
   std::unique_ptr<SurfacePresenter> presenter_;
+  std::unique_ptr<KeyboardFocus> keyboardFocus_;
   std::unique_ptr<RemotePresses> remotePresses_;
   std::unique_ptr<ErrorScreen> errorScreen_;
 #if RN_WEBOS_SIMULATOR

@@ -10,9 +10,9 @@
 namespace rnwebos {
 
 /// A text input's value and selection, edited as an Android EditText edits its
-/// own. Positions count Unicode code points, the unit of an Evas textblock
-/// cursor and of an input method's offsets; `maxLength` and every offset React
-/// Native sees count UTF-16 units, as a JavaScript string does.
+/// own. Positions count Unicode code points, the unit of an input method's
+/// offsets; `maxLength` and every offset React Native or SkParagraph sees
+/// count UTF-16 units, as a JavaScript string does.
 class EditBuffer {
  public:
   /// A span of the text, `start <= end`; a caret when they are equal.
@@ -34,6 +34,10 @@ class EditBuffer {
   bool hasSelection() const;
   /// The selection in UTF-16 units, as `onSelectionChange` reports it.
   Range selectionUtf16() const;
+  /// The UTF-16 offset of code point `position`, and the code point a UTF-16
+  /// offset falls in: both clamped to the text.
+  std::size_t utf16Offset(std::size_t position) const;
+  std::size_t positionAtUtf16(std::size_t offset) const;
 
   /// Replaces the whole value and puts the caret at its end.
   void setText(std::string_view utf8);
@@ -52,9 +56,8 @@ class EditBuffer {
   bool deleteBackward();
   /// Deletes the selection, or the code point after the caret.
   bool deleteForward();
-  /// Deletes `count` code points starting `offset` code points after the
-  /// caret, as an input method's delete-surrounding asks.
-  bool deleteAround(long offset, std::size_t count);
+  /// Deletes the whole text.
+  bool clear();
 
   /// The text an input method is still composing. It is part of the value,
   /// as Android's composing span is; any other edit ends it.
@@ -70,8 +73,6 @@ class EditBuffer {
 
  private:
   bool replace(Range range, std::u32string_view insertion, std::size_t maxLength);
-  std::size_t utf16Offset(std::size_t position) const;
-  std::size_t positionAtUtf16(std::size_t offset) const;
   bool erase(std::size_t start, std::size_t end);
 
   std::u32string text_;
