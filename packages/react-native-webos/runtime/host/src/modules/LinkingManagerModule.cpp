@@ -60,11 +60,13 @@ facebook::react::AsyncPromise<> LinkingManagerModule::openURL(facebook::jsi::Run
     return promise;
   }
   const folly::dynamic request = folly::dynamic::object("id", kBrowser)("params", folly::dynamic::object("target", target));
-  const bool asked = luna_->call(kLaunch, request, [promise, target](const folly::dynamic &reply) mutable {
+  auto answer = [promise, target](const folly::dynamic &reply) mutable {
     if (succeeded(reply)) return promise.resolve();
     promise.reject(facebook::react::Error("Cannot open " + target + ": " + refusal(reply)));
-  });
-  if (!asked) promise.reject(facebook::react::Error("Cannot open " + target + ": the TV's app manager cannot be reached"));
+  };
+  if (const bool asked = luna_->call(kLaunch, request, std::move(answer)); !asked) {
+    promise.reject(facebook::react::Error("Cannot open " + target + ": the TV's app manager cannot be reached"));
+  }
   return promise;
 }
 

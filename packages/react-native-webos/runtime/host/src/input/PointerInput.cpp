@@ -115,21 +115,18 @@ bool PointerInput::handleEvent(const SDL_Event &event) {
 }
 
 void PointerInput::hover(const Target &target, SkPoint point) {
+  using enum ViewEvents::Offset;
   const auto path = pathTo(target.view);
   for (auto left = hovered_.rbegin(); left != hovered_.rend(); ++left) {
     if (std::ranges::find(path, *left) != path.end()) continue;
     const auto *view = findView_(*left);
-    if (view == nullptr || !listensTo(*view, ViewEvents::Offset::PointerLeave, ViewEvents::Offset::PointerLeaveCapture)) {
-      continue;
-    }
+    if (view == nullptr || !listensTo(*view, PointerLeave, PointerLeaveCapture)) continue;
     if (const auto emitter = emitterOf(*view)) emitter->onPointerLeave(pointerEvent(*view, point, {}, pressed_ != 0));
   }
   for (const auto tag : path) {
     if (std::ranges::find(hovered_, tag) != hovered_.end()) continue;
     const auto *view = findView_(tag);
-    if (view == nullptr || !listensTo(*view, ViewEvents::Offset::PointerEnter, ViewEvents::Offset::PointerEnterCapture)) {
-      continue;
-    }
+    if (view == nullptr || !listensTo(*view, PointerEnter, PointerEnterCapture)) continue;
     if (const auto emitter = emitterOf(*view)) emitter->onPointerEnter(pointerEvent(*view, point, {}, pressed_ != 0));
   }
   hovered_ = path;

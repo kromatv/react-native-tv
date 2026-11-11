@@ -37,9 +37,7 @@ function read(fd: number, position: number, length: number): Buffer | null {
 
 function lowestLoadAddress(fd: number): bigint | null {
   const header = read(fd, 0, HEADER_BYTES);
-  if (header === null || header.readUInt32BE(0) !== ELF_MAGIC || header[5] !== LITTLE_ENDIAN) {
-    return null;
-  }
+  if (header?.readUInt32BE(0) !== ELF_MAGIC || header[5] !== LITTLE_ENDIAN) return null;
   const layout = LAYOUTS[header[4] ?? 0];
   if (layout === undefined) return null;
   const entrySize = header.readUInt16LE(layout.entrySizeAt);

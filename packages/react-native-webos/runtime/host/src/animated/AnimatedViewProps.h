@@ -15,7 +15,7 @@ namespace rnwebos {
 /// `RCTMountingManager synchronouslyUpdateViewOnUIThread` does. A view that is
 /// not mounted is skipped. Main thread only.
 void applyAnimatedProps(
-    MountingManager &mountingManager,
+    const MountingManager &mountingManager,
     const facebook::react::Scheduler &scheduler,
     const facebook::react::ContextContainer &contextContainer,
     facebook::react::SurfaceId surfaceId,

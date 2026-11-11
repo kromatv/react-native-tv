@@ -39,8 +39,10 @@ static void load(void) {
 RN_WEBOS_COMPAT unsigned long getauxval(unsigned long type) {
   pthread_once(&once, load);
   if (libc_getauxval != NULL) return libc_getauxval(type);
-  for (const ElfW(auxv_t) *entry = entries; entry->a_type != AT_NULL; entry++) {
+  const ElfW(auxv_t) *entry = entries;
+  while (entry->a_type != AT_NULL) {
     if (entry->a_type == type) return entry->a_un.a_val;
+    entry++;
   }
   errno = ENOENT;
   return 0;

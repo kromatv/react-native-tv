@@ -79,8 +79,7 @@ bool TextInputView::keyDown(const SDL_KeyboardEvent &key, bool repeat) {
     default:
       break;
   }
-  auto *focus = keyboard();
-  if (!typesText(key) || focus == nullptr || !focus->ime().isActive()) return false;
+  if (auto *focus = keyboard(); !typesText(key) || focus == nullptr || !focus->ime().isActive()) return false;
   typedWithKeys_ = true;
   return true;
 }

@@ -6,7 +6,7 @@
 namespace rnwebos {
 
 void applyAnimatedProps(
-    MountingManager &mountingManager,
+    const MountingManager &mountingManager,
     const facebook::react::Scheduler &scheduler,
     const facebook::react::ContextContainer &contextContainer,
     facebook::react::SurfaceId surfaceId,
