@@ -47,6 +47,9 @@ endfunction()
 
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../compat" "${CMAKE_BINARY_DIR}/compat")
 
+# OpenGL ES for Skia, and zlib for libcurl, which finds the same file itself.
+# What SDL needs of the TV (Wayland, xkbcommon, the Luna bus) it opens with
+# dlopen.
 add_library(rn_webos_platform INTERFACE)
-rn_webos_link_tv_libraries(rn_webos_platform INTERFACE EGL GLESv2)
+rn_webos_link_tv_libraries(rn_webos_platform INTERFACE EGL GLESv2 z)
 target_link_libraries(rn_webos_platform INTERFACE rn_webos_glibc_compat)
