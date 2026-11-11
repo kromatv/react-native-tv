@@ -1,6 +1,7 @@
 #include "PerfMonitor.h"
 
 #include "../logging/Log.h"
+#include "../render/Scene.h"
 #include "../threading/MainThread.h"
 #include "../threading/TaskQueueThread.h"
 #include "ControlLink.h"
@@ -28,7 +29,7 @@ namespace {
 
 using Clock = std::chrono::steady_clock;
 
-constexpr double kCheckIntervalSeconds = 0.25;
+constexpr auto kCheckInterval = std::chrono::milliseconds(250);
 constexpr auto kWindow = std::chrono::seconds(1);
 constexpr double kBytesPerMb = 1024.0 * 1024.0;
 
@@ -71,33 +72,36 @@ struct PerfMonitor::JsProbe {
 
 PerfMonitor::PerfMonitor(Sources sources)
     : sources_(std::move(sources)), probe_(std::make_shared<JsProbe>()) {
-  check_ = ecore_timer_add(kCheckIntervalSeconds, onCheck, this);
-  onCheck(this);
+  check();
 }
 
 PerfMonitor::~PerfMonitor() {
   stop();
-  if (check_ != nullptr) ecore_timer_del(check_);
+  MainLoop::get().removeTimer(check_);
 }
 
-Eina_Bool PerfMonitor::onCheck(void *data) {
-  auto &self = *static_cast<PerfMonitor *>(data);
-  const bool wanted = self.sources_.controlLink != nullptr && self.sources_.controlLink->perfRequested();
-  if (wanted && !self.frames_) self.start();
-  if (!wanted && self.frames_) self.stop();
-  if (self.frames_ && Clock::now() - self.windowStart_ >= kWindow) self.emit();
-  return ECORE_CALLBACK_RENEW;
+void PerfMonitor::check() {
+  check_ = MainLoop::get().addTimer(kCheckInterval, [this] { check(); });
+  const bool wanted = sources_.controlLink != nullptr && sources_.controlLink->perfRequested();
+  if (wanted && !frames_) start();
+  if (!wanted && frames_) stop();
+  if (frames_ && Clock::now() - windowStart_ >= kWindow) emit();
 }
 
 void PerfMonitor::start() {
   const auto now = Clock::now();
-  frames_ = std::make_unique<FrameStats>(ecore_animator_frametime_get() * 1000);
+  auto &loop = MainLoop::get();
+  frames_ = std::make_unique<FrameStats>(millis(loop.framePeriod()));
   frames_->woke(now);
-  animator_ = ecore_animator_add(onTick, this);
-  idleEnterer_ = ecore_idle_enterer_add(onIdleEnter, this);
-  idleExiter_ = ecore_idle_exiter_add(onIdleExit, this);
-  evas_event_callback_add(sources_.evas, EVAS_CALLBACK_RENDER_PRE, onRenderPre, this);
-  evas_event_callback_add(sources_.evas, EVAS_CALLBACK_RENDER_POST, onRenderPost, this);
+  frameCallback_ = loop.addFrameCallback([this](Clock::time_point frameTime) { frames_->tick(frameTime); });
+  loop.setWaitObserver([this](bool waiting) {
+    if (waiting) {
+      frames_->sleeping(Clock::now());
+    } else {
+      frames_->woke(Clock::now());
+    }
+  });
+  sources_.scene->setFrameObserver([this](const FrameTiming &timing) { frameDrawn(timing); });
   sources_.jsThread->setMeasured(true);
   setMainThreadWaitMeasured(true);
   setTransactionStatsEnabled(true);
@@ -112,16 +116,25 @@ void PerfMonitor::start() {
 
 void PerfMonitor::stop() {
   if (!frames_) return;
-  evas_event_callback_del_full(sources_.evas, EVAS_CALLBACK_RENDER_PRE, onRenderPre, this);
-  evas_event_callback_del_full(sources_.evas, EVAS_CALLBACK_RENDER_POST, onRenderPost, this);
-  if (animator_ != nullptr) ecore_animator_del(std::exchange(animator_, nullptr));
-  if (idleEnterer_ != nullptr) ecore_idle_enterer_del(std::exchange(idleEnterer_, nullptr));
-  if (idleExiter_ != nullptr) ecore_idle_exiter_del(std::exchange(idleExiter_, nullptr));
+  auto &loop = MainLoop::get();
+  sources_.scene->setFrameObserver(nullptr);
+  loop.setWaitObserver(nullptr);
+  loop.removeFrameCallback(std::exchange(frameCallback_, 0));
   sources_.jsThread->setMeasured(false);
   setMainThreadWaitMeasured(false);
   setTransactionStatsEnabled(false);
   frames_.reset();
   log(LogLevel::Debug, "Perf samples off");
+}
+
+// A frame is the scene's draw and its flush to the GPU. The swap after them
+// waits for the display where the display paces it, which is the loop resting.
+void PerfMonitor::frameDrawn(const FrameTiming &timing) {
+  const auto flushed = timing.started + timing.draw + timing.flush;
+  frames_->renderStarted(timing.started);
+  frames_->renderFinished(flushed);
+  frames_->sleeping(flushed);
+  frames_->woke(flushed + timing.present);
 }
 
 void PerfMonitor::emit() {
@@ -169,34 +182,6 @@ void PerfMonitor::probeJavaScript() {
         .collections = static_cast<std::int64_t>(heapValue(info, "hermes_numCollections")),
     };
   });
-}
-
-Eina_Bool PerfMonitor::onTick(void *data) {
-  auto &self = *static_cast<PerfMonitor *>(data);
-  if (self.frames_) self.frames_->tick(Clock::now());
-  return ECORE_CALLBACK_RENEW;
-}
-
-Eina_Bool PerfMonitor::onIdleEnter(void *data) {
-  auto &self = *static_cast<PerfMonitor *>(data);
-  if (self.frames_) self.frames_->sleeping(Clock::now());
-  return ECORE_CALLBACK_RENEW;
-}
-
-Eina_Bool PerfMonitor::onIdleExit(void *data) {
-  auto &self = *static_cast<PerfMonitor *>(data);
-  if (self.frames_) self.frames_->woke(Clock::now());
-  return ECORE_CALLBACK_RENEW;
-}
-
-void PerfMonitor::onRenderPre(void *data, Evas *, void *) {
-  auto &self = *static_cast<PerfMonitor *>(data);
-  if (self.frames_) self.frames_->renderStarted(Clock::now());
-}
-
-void PerfMonitor::onRenderPost(void *data, Evas *, void *) {
-  auto &self = *static_cast<PerfMonitor *>(data);
-  if (self.frames_) self.frames_->renderFinished(Clock::now());
 }
 
 } // namespace rnwebos

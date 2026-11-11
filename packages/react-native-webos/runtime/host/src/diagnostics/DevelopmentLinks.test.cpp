@@ -32,13 +32,13 @@ TEST_CASE("openDevelopmentLinks opens nothing without a log endpoint") {
   HostConfig config{};
   config.development = true;
 
-  CHECK(openDevelopmentLinks(config) == nullptr);
+  CHECK(openDevelopmentLinks(config, nullptr) == nullptr);
 }
 
 TEST_CASE("openDevelopmentLinks streams a release build's logs and opens no control link") {
   const LoopbackServer server;
 
-  const auto link = openDevelopmentLinks(configFor(server, false));
+  const auto link = openDevelopmentLinks(configFor(server, false), nullptr);
   log(LogLevel::Info, "streamed");
   const int peer = server.accept(5s);
   const auto hello = testing::readUntil(peer, "\n");
@@ -54,7 +54,7 @@ TEST_CASE("openDevelopmentLinks streams a release build's logs and opens no cont
 TEST_CASE("openDevelopmentLinks opens a development build's control link beside its log stream") {
   const LoopbackServer server;
 
-  const auto link = openDevelopmentLinks(configFor(server, true));
+  const auto link = openDevelopmentLinks(configFor(server, true), nullptr);
   const int peer = server.accept(5s);
   const auto hello = testing::readUntil(peer, "\n");
   setLogSink(nullptr);

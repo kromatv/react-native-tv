@@ -5,10 +5,11 @@
 
 namespace rnwebos {
 
-/// Adds up one window of the main loop's frames from the events EFL reports:
-/// animator ticks (the display's clock), canvas renders, and the loop waking
-/// and going idle. A frame counts as dropped when the loop missed display
-/// ticks and the canvas then rendered, so something was waiting to be drawn.
+/// Adds up one window of the main loop's frames from what the loop and the
+/// scene report: frame ticks (the display's clock), the scene's renders, and
+/// the loop waking and going to wait. A frame counts as dropped when the loop
+/// missed display ticks and the scene then rendered, so something was waiting
+/// to be drawn.
 class FrameStats final {
  public:
   using Clock = std::chrono::steady_clock;
