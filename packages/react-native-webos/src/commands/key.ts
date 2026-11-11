@@ -36,7 +36,7 @@ export const keyCommand: Command = {
     "rn-webos key VOLUMEUP         any of the TV's button names, in capitals, as written",
   ],
   async run(args) {
-    const { positionals, options } = splitActionArgs(args);
+    const { positionals, options } = splitActionArgs(args, OPTIONS);
     const flags = parseCommandArgs('key', options, OPTIONS);
     if (positionals.length === 0) {
       throw new UsageError(

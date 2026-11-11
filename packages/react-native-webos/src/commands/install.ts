@@ -43,7 +43,7 @@ export const installCommand: Command = {
     'rn-webos install build/app.ipk',
   ],
   async run(args, context) {
-    const { positionals, options } = splitActionArgs(args);
+    const { positionals, options } = splitActionArgs(args, OPTIONS);
     const flags = parseCommandArgs('install', options, OPTIONS);
     const [file, ...extra] = positionals;
     if (file === undefined || extra.length > 0) {

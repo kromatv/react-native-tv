@@ -55,7 +55,7 @@ export const connectCommand: Command = {
     'rn-webos connect 192.168.1.50 --passphrase A1B2C3 --name living-room',
   ],
   async run(args) {
-    const { positionals, options } = splitActionArgs(args);
+    const { positionals, options } = splitActionArgs(args, OPTIONS);
     const flags = parseCommandArgs('connect', options, OPTIONS);
     const [target, ...extra] = positionals;
     if (target === undefined || extra.length > 0) {

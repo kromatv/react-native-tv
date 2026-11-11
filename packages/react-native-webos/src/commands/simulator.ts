@@ -370,7 +370,7 @@ export const simulatorCommand: Command = {
   async run(args, context) {
     const [name, ...rest] = args;
     const action = findAction(name);
-    const { positionals, options } = splitActionArgs(rest);
+    const { positionals, options } = splitActionArgs(rest, OPTIONS);
     const flags = parseCommandArgs('simulator', options, OPTIONS);
     const instance = chooseInstance(flags.instance, process.env);
     requireLima();

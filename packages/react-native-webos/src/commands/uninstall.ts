@@ -23,7 +23,7 @@ export const uninstallCommand: Command = {
   options: OPTIONS,
   examples: ['rn-webos uninstall com.example.myapp --device 192.168.1.50'],
   async run(args) {
-    const { positionals, options } = splitActionArgs(args);
+    const { positionals, options } = splitActionArgs(args, OPTIONS);
     const flags = parseCommandArgs('uninstall', options, OPTIONS);
     const [appId, ...extra] = positionals;
     if (appId === undefined || extra.length > 0) {
