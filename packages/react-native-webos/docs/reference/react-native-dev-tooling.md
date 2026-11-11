@@ -125,8 +125,14 @@ fixing the code brought the app back. A `console.warn` showed the yellow box.
 
 Open: the inspector's buttons need focus, which webOS does not move between
 views yet, so Back is the only way to dismiss it; and a `Modal` open when an
-error arrives draws above the inspector, since modals sit on a higher Evas
-layer than any surface.
+error arrives draws above the inspector, since a modal is a higher layer of
+the scene than any surface (`render/Scene.h`).
+
+sim, 2026-11-11, on the Skia host: `console.error` showed the notification
+at the top of the screen, where react-native-tvos puts it on a TV
+(`RN/Libraries/LogBox/LogBoxNotificationContainer.js:84,120-121`), and an
+error thrown from a timer showed the inspector with its source frame,
+symbolicated to `alerts-screen.tsx:26:20`.
 
 ## 7. The loading banner
 
@@ -137,7 +143,14 @@ layer than any surface.
 | Android shows "Loading from host:port…" while it downloads a bundle | doc: `RA/devsupport/DevSupportManagerBase.kt:730-747`, `RN/ReactAndroid/src/main/res/devsupport/values/strings.xml:35` |
 | HMR shows "Refreshing..." on `update-start` and hides it on `update-done` | doc: `RN/Libraries/Utilities/HMRClient.js:216-243` |
 
-Host: `devsupport/LoadingBanner.cpp`, `devsupport/DevLoadingViewModule.cpp`.
+Host: `devsupport/LoadingBanner.cpp`, a layer of the scene above every
+surface and alert, and `devsupport/DevLoadingViewModule.cpp`.
+
+sim, 2026-11-11, on the Skia host: "Loading from host.lima.internal:8114…"
+showed across the top while the bundle came from `expo start`, went once it
+had run, and showed again after `r` in the dev server's terminal reloaded
+the app; "Fast Refresh disconnected. Reload app to reconnect." showed when
+the dev server stopped.
 
 ## 8. Reload and teardown
 
@@ -196,3 +209,39 @@ file outside `node_modules` (doc:
 from npm, `react-native-overrides/` sits in `node_modules` and never warns;
 the example loads it from the repository, so its Babel config passes
 `disableDeepImportWarnings`.
+
+## 11. Screenshots and perf samples
+
+A development build opens a second connection to its log endpoint, the control
+link (`diagnostics/ControlLink.cpp`), which answers `rn-webos screenshot` and
+turns `rn-webos perf` on and off. The wire format is `src/capture/capture-protocol.ts`
+and `src/perf/perf-sample.ts`.
+
+| Fact | Source |
+|---|---|
+| After `eglSwapBuffers` the color buffer's contents are undefined unless the surface's `EGL_SWAP_BEHAVIOR` is `EGL_BUFFER_PRESERVED`, and the implementation chooses the initial value | doc: [eglSwapBuffers](https://registry.khronos.org/EGL/sdk/docs/man/html/eglSwapBuffers.xhtml), [eglSurfaceAttrib](https://registry.khronos.org/EGL/sdk/docs/man/html/eglSurfaceAttrib.xhtml) |
+| A frame is `premultiplied BGRA`, top row first, `stride` bytes a row | doc: `src/capture/capture-protocol.ts:9-18` |
+| The log endpoint's host must be an IPv4 address: the host connects with `inet_pton`, with no name lookup | doc: `runtime/host/src/logging/TcpConnection.cpp:47` |
+| Expo ends a socket to `/inspector/debug` whose `Origin` is not the dev server's own or that does not come from this computer | doc: `node_modules/.bun/@expo+cli@58.1.19+71bd1474a840141b/node_modules/@expo/cli/build/src/start/server/metro/debugging/createDebugMiddleware.js:55-62` |
+
+Host: `diagnostics/ScreenCapture.cpp` draws the scene again into the window's
+back buffer and reads it with `HostWindow::readPixels`, since the buffer a
+swap left behind may hold anything; the next frame draws it once more to show
+it. When the driver refuses the read, or the scene has no window, it draws
+the scene on the CPU instead. `diagnostics/PerfMonitor.cpp` takes a frame's
+time from `Scene::setFrameObserver` (drawing and the flush to the GPU), the
+display's ticks from a main loop frame callback, and the main loop's load from
+`MainLoop::setWaitObserver`; the swap counts as rest, since it waits for the
+display where the display paces it.
+
+sim, 2026-11-11: `rn-webos screenshot --port 18114 --package org.rnwebos.example`
+saved the 1920x1080 window, read from the window's framebuffer on Mesa's
+llvmpipe, with an alert open, colors and rows in order. `rn-webos perf` printed
+a sample a second (`ticks` 51 to 58 with nothing to draw, `renderMax` 0.7 ms
+for the alert's redraws). A DevTools protocol client attached through the dev
+server's `/inspector/debug`, with the server's origin, got `42` for
+`Runtime.evaluate` of `6 * 7` from the app's Hermes.
+
+Open, for a TV: whether the TV's driver lets Skia read the window's
+framebuffer, how long its swap blocks, and so whether `renderAvg` and
+`mainBusy` leave out the right share of a frame.

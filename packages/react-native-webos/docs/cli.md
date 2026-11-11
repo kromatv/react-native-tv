@@ -543,7 +543,7 @@ With no target and several apps connected, it names them and asks for
 ### `rn-webos perf`
 
 Prints, once a second, where a development build's time goes: the frames the
-main loop drew and dropped, Evas render times, how busy the main loop and the
+main loop drew and dropped, their render times, how busy the main loop and the
 JavaScript thread were, Fabric's commits and mounts, the Hermes heap, the app
 process's memory and the CPU. At Ctrl+C, or after `--duration`, it prints the
 run's average, 95th percentile and worst of each, and how far the run's
@@ -590,11 +590,11 @@ as `--out` saves them (times in milliseconds):
 |---|---|
 | `app` | The package the sample came from (null for a build that names none) |
 | `t`, `window` | When the sample ended, since the app started, and how long it covers (about 1000) |
-| `frames` | Canvas renders that finished (`EVAS_CALLBACK_RENDER_POST`) |
-| `renderAvg`, `renderMax` | Time from `EVAS_CALLBACK_RENDER_PRE` to `RENDER_POST`, per frame |
-| `ticks`, `hz` | Ecore animator ticks while the main loop was free, and the display rate their median interval gives |
-| `dropped` | Display frames the main loop missed while the canvas had something to draw |
-| `mainBusy` | Time the main loop spent awake: input, mounting, animation, and rendering when the engine renders synchronously |
+| `frames` | Frames the scene drew and presented |
+| `renderAvg`, `renderMax` | Time to draw a frame with Skia and hand it to the GPU, per frame; the swap that follows is not in it |
+| `ticks`, `hz` | Frame ticks of the main loop while it was free, and the display rate their median interval gives |
+| `dropped` | Display frames the main loop missed while the scene had something to draw |
+| `mainBusy` | Time the main loop spent awake: input, mounting, animation and drawing, without its wait in the swap |
 | `jsBusy` | Time the JavaScript thread ran tasks |
 | `jsWait` | Time a worker, the JavaScript thread measuring text above all, waited for the main loop |
 | `jsLag` | How long the last task queued on the JavaScript thread waited before it ran |

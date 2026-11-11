@@ -28,8 +28,9 @@ ScreenCapture emptyCapture(PixelSize size) {
   };
 }
 
-// A swap leaves the back buffer undefined (EGL_BUFFER_DESTROYED), so the
-// frame is drawn again before it is read, then once more to be shown.
+// eglSwapBuffers leaves the back buffer undefined unless the surface preserves
+// it, so the frame is drawn again before it is read, then once more to be
+// shown (docs/reference/react-native-dev-tooling.md, section 11).
 std::optional<ScreenCapture> readWindow(Scene &scene, HostWindow &window) {
   SkBitmap frame;
   scene.drawInto(window.canvas());
