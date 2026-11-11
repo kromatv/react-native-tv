@@ -169,7 +169,8 @@ A real TV can also be reached over the internet: LG's webOS Cloud Test Lab in
 Seller Lounge shows an uploaded package running on a TV in Korea, and TV Labs
 rents sessions on LG TVs that `rn-webos` can install to through a tunnel
 ([reference](docs/reference/webos-tv-platform.md#14-a-real-tv-without-owning-one)).
-Neither has been tried with this package yet.
+The Cloud Test Lab is how this package first ran on a TV
+([what ran](docs/reference/hardware-verification.md)); TV Labs has not been tried.
 
 ## Examples
 
@@ -245,16 +246,19 @@ webOS, call by call, is in
 
 ## Status
 
-This is an alpha, and no TV has run it. What stands behind each part:
+This is an alpha. It has run on two TVs in LG's Cloud Test Lab, webOS 24 and
+webOS 25, and never on one in Developer Mode:
+[what ran, on which TV](docs/reference/hardware-verification.md).
+What stands behind each part:
 
 | Part | Evidence so far |
 |---|---|
-| The runtime: Hermes, Fabric, views, text, images, `TextInput`, remote keys, the pointer, Expo modules, react-native-svg | Runs in the simulator, the same source built for aarch64 Linux; 1008 C++ tests |
-| The TV executable | Cross-compiles on a Mac; its imports resolve on the firmware images of 14 releases, webOS 1.2 to 11.2 (`scripts/check-tv-binary.ts`). Never started on a TV |
-| The window, input and lifecycle on a TV | Written from SDL's webOS port and LG's and webOS OSE's sources; the simulator uses X11 instead |
-| Video | The player logic has tests against a fake of the TV's media service. Nothing has played on a TV |
+| The runtime: Hermes, Fabric, views, text, images, `TextInput`, remote keys, the pointer, Expo modules, react-native-svg | Runs in the simulator, the same source built for aarch64 Linux; 1008 C++ tests. The example's screens ran on a webOS 25 TV |
+| The TV executable | Cross-compiles on a Mac; its imports resolve on the firmware images of 14 releases, webOS 1.2 to 11.2 (`scripts/check-tv-binary.ts`). Starts on a webOS 25 TV |
+| The window, input and lifecycle on a TV | Written from SDL's webOS port and LG's and webOS OSE's sources; the simulator uses X11 instead. On a webOS 25 TV: the window, the remote with long presses, Back, relaunch, the pointer, the wheel and the on-screen keyboard |
+| Video | The player logic has tests against a fake of the TV's media service. On a webOS 25 TV: HLS and Matroska H.264 play, in a box and fullscreen, with audio and subtitle tracks. Pause, seek, HEVC, HDR and DRM were not tried there |
 | `connect`, `install`, `run`, `key`, `logs` | Tests against a fake TV. Never run against a real one |
-| Publishing to LG's store | Not tried. Seller Lounge's upload form has a Native file type, registered per chipset, for sellers with a contract with LG ([reference](docs/reference/webos-tv-platform.md#12-who-may-publish-a-native-app)) |
+| Publishing to LG's store | Not submitted. Seller Lounge's upload form took the package as a Native file, registered per chipset, and saved it as a draft; LG's guide reserves native files for sellers with a contract ([reference](docs/reference/webos-tv-platform.md#12-who-may-publish-a-native-app)) |
 
 Known gaps:
 

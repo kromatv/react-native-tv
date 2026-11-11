@@ -7,8 +7,9 @@ text input. The keyboard and SDL facts are in
 [webos-window-input.md](webos-window-input.md), sections 10 and 15.
 
 Tags: **D** documented by the source, **I** inferred, **S** verified in the
-simulator, **H** verified on hardware. Nothing here is **H**: no LG TV was at
-hand. Paths: `RN/` is react-native-tvos 0.88.0-0 in `node_modules`, `RA/` its
+simulator, **H** verified on hardware. No row here is **H** yet; what a webOS 25 TV showed
+of a field, its events and LG's keyboard is in
+[hardware-verification.md](hardware-verification.md). Paths: `RN/` is react-native-tvos 0.88.0-0 in `node_modules`, `RA/` its
 `ReactAndroid/src/main/java/com/facebook/react/`, `RC/` its
 `ReactCommon/react/renderer/`, `host/` this package's `runtime/host/src/`.
 

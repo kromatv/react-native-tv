@@ -7,6 +7,7 @@ and ends with what the facts mean for this package.
 | File | Read it before touching |
 |------|------------------------|
 | [webos-tv-platform.md](webos-tv-platform.md) | app types and store policy, `appinfo.json`, how a native app starts, lives and dies, the jail and its paths, the Luna bus, which TVs a build reaches, the screen |
+| [hardware-verification.md](hardware-verification.md) | claiming that something works on a TV: which TVs ran which build, what was pressed and what the screen showed |
 | [webos-ipk-format.md](webos-ipk-format.md) | `src/package/`: the `.ipk` container, its control file and data tree, what a TV's installer needs |
 | [webos-native-toolchain.md](webos-native-toolchain.md) | `runtime/cmake/toolchain/`, `runtime/compat/`, `src/sysroot/`: the sysroot, the ABI, the glibc floor, what is safe to link from the TV and what must be compiled in |
 | [webos-device-protocol.md](webos-device-protocol.md) | `src/webos/`: Developer Mode, the key server, SSH as `prisoner`, the Luna commands an install, a launch and a removal send |
@@ -41,9 +42,10 @@ describes that platform, not webOS.
 - **Unknowns stay visible.** "Not documented" is a finding; a guess written as a
   fact is a bug waiting to ship.
 
-No fact here is verified on hardware until a row says so: the port was made
-without an LG TV at hand, and each file lists what only a TV can settle under
-"Open questions".
+No fact here is verified on hardware until a row says so. The port was made
+without an LG TV at hand; what has run on one since is in
+[hardware-verification.md](hardware-verification.md), and each file lists what
+only a TV can settle under "Open questions".
 
 ## Keeping it true
 

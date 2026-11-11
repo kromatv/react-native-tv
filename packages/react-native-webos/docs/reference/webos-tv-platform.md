@@ -2,7 +2,9 @@
 
 What LG, webOS OSE and projects that ship on LG TVs document about the platform
 react-native-webos runs on: a native process packaged as an `.ipk`. Checked on
-2026-11-11. No TV was used: nothing here is verified on hardware.
+2026-11-11. What has run on a TV since is in
+[hardware-verification.md](hardware-verification.md); a row here is verified on
+hardware only where it says so.
 
 | Tag | Meaning |
 |---|---|
@@ -73,12 +75,19 @@ release (2018), which still carries the two native lifecycle versions TV apps us
 | A session is reserved: one IPK and one device, chosen by platform, country and SoC, in one-hour slots, three hours at most, five devices a day. "For Native files, only devices with the same chipset as the chipset you selected when uploading the file can be selected." | D | [seller-cloudlab] |
 | The session is a video of the TV (1280x720 at 10 frames a second by default, up to 30 below 600p) with Launch App, Re-install and Reboot. The page names no shell and no log. Release ends it: "the app will be deleted, and the device will be initialized". Testing "device operations, not apps" can suspend the access for three months. | D | [seller-cloudlab] |
 | On first use the Cloud Test Lab page shows "webOS Cloud Test Terms and Conditions" with an "I agree with the above" box. Its Reservation menu stays disabled until the seller agrees. | D | Seller Lounge, an app's webOS Cloud Test Lab menu, seen on 2026-11-11 |
+| The lab listed eight TVs on 2026-11-11, each with a 1920x1080 app resolution: webOS 23 on `k8hpp` (model `OLED65BFNA`; United States, United Kingdom), webOS 24 on `k24` (`KEY0000103F`, `KEY0000313F`; Korea, United States, United Kingdom), webOS 25 on `o24n` (`KEY0000002E`; United Kingdom, United States) and webOS 26 on `k26` (`KEY0000003E`; United Kingdom, no sound). A Native file is offered the TVs of its chipset only: one registered for `O22(webOS22)` was offered none. | D | Seller Lounge, Reservation, seen on 2026-11-11 |
+| The Cloud Test Lab terms are accepted once per app, and Start shows a disclaimer on personal data to accept. At the reserved hour the status goes from Reservation to Processing, and to Publish about 45 s later, when Start works. | D | Seller Lounge, My Test, seen on 2026-11-11 |
+| The session page (`main.lgcloudlab.com:3002`) is a 1280x720 canvas of the TV's video with a virtual remote. Each remote button sends one key press. A keyboard mode sends Linux key codes with a separate down and up, so a key can be held. The mouse moves the TV's cursor, and a press carries no position: it lands wherever the cursor is by then. The wheel, Launch App and Reboot are there too. | D | the lab's session page, used on 2026-11-11 |
+| A lab TV starts in its first-use wizard. Launch App answers "Please complete the initial setup before launching the app." until the wizard is done; the TV's own terms and the LG account sign-in can be skipped. | D | the same session |
+| The lab installs the app under `/media/developer/apps/usr/palm/applications/<id>`, the Developer Mode path. | D | `Paths.document` of the example on the lab's webOS 25 TV, 2026-11-11 |
+| A session takes another build of the same app: the file is replaced in Seller Lounge (Modify, File Re-Upload), then re-installed from the session. With the TV on its home screen that took 10 to 25 s, twelve times. Twice it did not install: once asked with the app on screen (nothing happened, and the lab then reported no change), once when the app was launched while the lab still showed "Reinstalling the app" (it stayed there until the TV was rebooted). | D | the same session |
 | Alpha Test publishes a test version to up to 100 TVs named by their wired MAC address, from webOS 3.0 on; "For the Native Type, it can be checked on the devices for each chipset". It is "only opened to sellers that have entered a separate commercial contract for the time being". | D | [seller-alpha] |
 | TV Labs, a company, rents sessions on real LG TVs. Its `tvlabs connect` opens a tunnel that maps local port 9922 to the TV's 9922 (SSH), 9991 to 9991 (the key server), 3000 and 3001 to the remote control service, and 9222 to the web inspector; the TV must be in Developer Mode, signed in to the developer's own account. `ares-install -d tvlabs` and `ares-launch` then work on it, and a build can also be dropped on a live session. | D-3p | [tvlabs-webos], [tvlabs-sideload] |
 | TV Labs lists a free trial on request ("No credit card required", two devices, developer tools). | D-3p | [tvlabs] |
 | webOS OSE, the open source edition, takes native apps officially: its tutorial builds a Wayland and EGL program with the OSE NDK, packages it with `ares-package` and installs it on the emulator or a board. Since 2.20.0 LG publishes ready images for the Raspberry Pi 4 (64-bit) and for the emulator (x86-64) on GitHub. OSE shares the app manager and the bus with TV (see the tags above), but its userland is 64-bit and it has none of the TV's services. | D-ose | [ose-native], [ose-2.20] |
 
-Of these, only Seller Lounge's upload form has been tried with this package (section 1.2). No session on a TV has run.
+Of these, the Cloud Test Lab has run this package: what its TVs showed is in
+[hardware-verification.md](hardware-verification.md). The others have not been tried.
 
 ## 2. appinfo.json for a native app
 

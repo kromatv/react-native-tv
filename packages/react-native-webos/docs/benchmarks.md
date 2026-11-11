@@ -1,8 +1,9 @@
 # Benchmarks
 
-What react-native-webos costs, as far as it can be measured without a TV.
-Every number here comes from the simulator, on the machine below, with the
-commands below. None is estimated, and none says how fast an LG TV is.
+What react-native-webos costs. Almost every number here comes from the
+simulator, on the machine below, with the commands below; the few from a TV
+are under [On a TV](#on-a-tv). None is estimated, and none says how fast an LG
+TV draws.
 
 ## What these numbers are good for
 
@@ -19,7 +20,7 @@ CPU, in a Linux VM. A TV draws on its own GPU, with its own processor. So:
 
 The same screen and the same commands run on a TV, where `rn-webos perf` reads
 the same counters. Those numbers go here, with the TV's model, year and webOS
-version, once a TV has run it.
+version, once a TV in Developer Mode has run it.
 
 ## Machine and build
 
@@ -56,6 +57,23 @@ label, the two times its text changed.
 | Start, in the simulator | |
 |---|---|
 | Launch to the bench screen's first frame, development build | 257 to 277 ms over 28 launches, read from the app's log every 5 ms |
+
+## On a TV
+
+The bench screen's release package on a TV of LG's Cloud Test Lab, on
+2026-11-11: webOS 25 (2025), chipset `o24n`, `webOS 10.2.0`, 1909 MiB of
+memory ([the record](reference/hardware-verification.md)). The lab shows the TV
+as a video at about 10 frames a second and gives no connection to the app, so
+there is no frame rate and no start time: only what the screen itself prints,
+the process's `VmRSS` and `VmHWM`.
+
+| Phase | Process memory | Peak |
+|---|---|---|
+| Still, the 1,000-row list on screen | 64.8 MB | 65.3 MB |
+| Focus moving one row every 50 ms, after 12 s at 200 ms and 13 s at 50 ms | 86.1 MB | 98.0 MB |
+
+The focus stood on row 318 at that point, where its timers put it: the list
+kept up.
 
 ## What changed, and by how much
 

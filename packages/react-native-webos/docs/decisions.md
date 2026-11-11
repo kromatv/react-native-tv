@@ -255,10 +255,12 @@ The CLI uses Node's APIs only. No source may use a Bun API, and a file that
 finds another through `import.meta.url` must keep the same depth under `src/`
 and `dist/`.
 
-## Nothing is verified on a TV yet
+## What a TV has verified is written down
 
 The port was made without an LG TV: every platform fact comes from
-documentation or source, and every behaviour was checked in the simulator
-only. Each reference file lists what a TV must settle, and a claim becomes
-"verified on hardware" only with the TV's model, year and webOS version beside
-it.
+documentation or source, and every behaviour was first checked in the
+simulator only. Each reference file lists what a TV must settle, and a claim
+becomes "verified on hardware" only with the TV's model, year and webOS version
+beside it. [reference/hardware-verification.md](reference/hardware-verification.md)
+is the record of what ran on which TV; the first run was on 2026-11-11, in
+LG's Cloud Test Lab.

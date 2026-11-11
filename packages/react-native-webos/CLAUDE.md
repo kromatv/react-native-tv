@@ -73,7 +73,8 @@ or `bun ../src/cli/main.ts` from `example/`.
   its logs to `rn-webos`.
 - A behaviour seen on hardware goes into the reference with the TV's model,
   year and webOS version. Nothing in the reference is verified on hardware
-  until a row says so.
+  until a row says so; `docs/reference/hardware-verification.md` records what
+  ran on which TV.
 
 ## Layout
 
