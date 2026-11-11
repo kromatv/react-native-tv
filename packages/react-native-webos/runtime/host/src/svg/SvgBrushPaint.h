@@ -10,8 +10,8 @@
 
 namespace rnwebos::svg {
 
-/// Whether a gradient fills or strokes with `paint`, which takes the bounds of
-/// what it paints.
+/// Whether a gradient or a pattern fills or strokes with `paint`, which takes
+/// the bounds of what it paints.
 bool paintsWithReference(const Paint &paint);
 
 /// The paint that fills a geometry spanning `bounds` in `context`, or none

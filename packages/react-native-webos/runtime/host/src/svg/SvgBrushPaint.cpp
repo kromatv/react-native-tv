@@ -1,6 +1,7 @@
 #include "SvgBrushPaint.h"
 
 #include "SvgGradientNode.h"
+#include "SvgPatternNode.h"
 
 #include "include/effects/SkDashPathEffect.h"
 
@@ -27,20 +28,27 @@ std::optional<SkPaint> solid(SkColor4f color, float opacity) {
   return paint;
 }
 
+std::optional<SkPaint> shaded(sk_sp<SkShader> shader, float opacity) {
+  if (!shader) return std::nullopt;
+  SkPaint paint;
+  paint.setAntiAlias(true);
+  paint.setShader(std::move(shader));
+  paint.setAlphaf(opacity);
+  return paint;
+}
+
 std::optional<SkPaint> referenced(
     const Brush &brush, float opacity, const RenderContext &context, const SkRect &bounds) {
-  if (context.definitions == nullptr || opacity <= 0) return std::nullopt;
+  if (opacity <= 0 || !context.canFollowReference()) return std::nullopt;
+  if (const auto *pattern = context.definitions->findAs<PatternNode>(brush.reference)) {
+    return shaded(pattern->shader(bounds, context), opacity);
+  }
   const auto *gradient = context.definitions->findAs<GradientNode>(brush.reference);
   if (gradient == nullptr) return std::nullopt;
   auto resolved = gradientPaint(gradient->definition, bounds, context.viewport);
   if (const auto *color = std::get_if<SkColor4f>(&resolved)) return solid(*color, opacity);
-  auto *shader = std::get_if<sk_sp<SkShader>>(&resolved);
-  if (shader == nullptr) return std::nullopt;
-  SkPaint paint;
-  paint.setAntiAlias(true);
-  paint.setShader(std::move(*shader));
-  paint.setAlphaf(std::min(opacity, 1.0F));
-  return paint;
+  if (auto *shader = std::get_if<sk_sp<SkShader>>(&resolved)) return shaded(std::move(*shader), opacity);
+  return std::nullopt;
 }
 
 std::optional<SkPaint> paintOf(const Brush &brush, float opacity, const RenderContext &context, const SkRect &bounds) {

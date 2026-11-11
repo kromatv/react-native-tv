@@ -4,6 +4,7 @@
 #include "SvgMaskNode.h"
 #include "SvgNodeProps.h"
 #include "SvgNodeView.h"
+#include "SvgPatternNode.h"
 #include "SvgUseNode.h"
 
 #include <react/renderer/components/rnsvg/Props.h>
@@ -49,9 +50,9 @@ void readMask(MaskNode &node, const react::RNSVGMaskProps &props) {
   node.alphaOnly = props.maskType == kAlphaMask;
 }
 
-void readSymbol(SymbolNode &node, const react::RNSVGSymbolProps &props) {
-  readGroupProps(node, props);
-  node.viewBox = {
+template <typename Props>
+SvgViewBox viewBoxOf(const Props &props) {
+  return {
       .minX = props.minX,
       .minY = props.minY,
       .width = props.vbWidth,
@@ -59,6 +60,23 @@ void readSymbol(SymbolNode &node, const react::RNSVGSymbolProps &props) {
       .align = props.align,
       .meetOrSlice = props.meetOrSlice,
   };
+}
+
+void readSymbol(SymbolNode &node, const react::RNSVGSymbolProps &props) {
+  readGroupProps(node, props);
+  node.viewBox = viewBoxOf(props);
+}
+
+void readPattern(PatternNode &node, const react::RNSVGPatternProps &props) {
+  readGroupProps(node, props);
+  node.x = lengthOr(props.x, kNone);
+  node.y = lengthOr(props.y, kNone);
+  node.width = lengthOr(props.width, kWhole);
+  node.height = lengthOr(props.height, kWhole);
+  node.tileInUserSpace = props.patternUnits == kUserSpaceOnUse;
+  node.contentInBoundingBox = props.patternContentUnits == kObjectBoundingBox;
+  node.transform = matrixFromProp(props.patternTransform);
+  node.viewBox = viewBoxOf(props);
 }
 
 void readUse(UseNode &node, const react::RNSVGUseProps &props) {
@@ -76,6 +94,7 @@ using SvgClipPathView = SvgNodeViewOf<ClipPathNode, react::RNSVGClipPathProps, r
 using SvgMaskView = SvgNodeViewOf<MaskNode, react::RNSVGMaskProps, readMask>;
 using SvgSymbolView = SvgNodeViewOf<SymbolNode, react::RNSVGSymbolProps, readSymbol>;
 using SvgUseView = SvgNodeViewOf<UseNode, react::RNSVGUseProps, readUse>;
+using SvgPatternView = SvgNodeViewOf<PatternNode, react::RNSVGPatternProps, readPattern>;
 
 } // namespace
 
@@ -85,5 +104,6 @@ RN_WEBOS_COMPONENT_VIEW("RNSVGClipPath", SvgClipPathView);
 RN_WEBOS_COMPONENT_VIEW("RNSVGMask", SvgMaskView);
 RN_WEBOS_COMPONENT_VIEW("RNSVGSymbol", SvgSymbolView);
 RN_WEBOS_COMPONENT_VIEW("RNSVGUse", SvgUseView);
+RN_WEBOS_COMPONENT_VIEW("RNSVGPattern", SvgPatternView);
 
 } // namespace rnwebos::svg

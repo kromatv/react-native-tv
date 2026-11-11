@@ -8,6 +8,7 @@ import Svg, {
   LinearGradient,
   Mask,
   Path,
+  Pattern,
   RadialGradient,
   Rect,
   Stop,
@@ -31,7 +32,7 @@ function Sample({ label, children }: { readonly label: string; readonly children
   );
 }
 
-/** What Evas VG could not draw: dashes, fill rules, clips, masks, `Use`, `Symbol` and text. */
+/** What Skia added to the port: dashes, fill rules, clips, masks, `Use`, `Symbol`, text and patterns. */
 export function SkiaSamples() {
   return (
     <View style={styles.row}>
@@ -145,6 +146,23 @@ export function SkiaSamples() {
         >
           end
         </Text>
+      </Sample>
+      <Sample label="pattern">
+        <Defs>
+          <Pattern id="dots" x={0} y={0} width={20} height={20} patternUnits="userSpaceOnUse">
+            <Circle cx={10} cy={10} r={6} fill="#ffd60a" />
+          </Pattern>
+        </Defs>
+        <Rect
+          x={10}
+          y={10}
+          width={80}
+          height={80}
+          rx={12}
+          fill="url(#dots)"
+          stroke="#ffffff"
+          strokeWidth={2}
+        />
       </Sample>
       <Sample label="focus, opacity">
         <Defs>
