@@ -149,7 +149,7 @@ void ScrollView::keepOffsetInContent() {
 
 void ScrollView::moveContent(Point offset) {
   contentOffset_ = offset;
-  invalidate();
+  childrenMoved();
 }
 
 void ScrollView::emitScroll(bool throttled) {

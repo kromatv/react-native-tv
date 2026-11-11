@@ -99,6 +99,8 @@ class ComponentView : public SceneLayer {
   /// How far the children sit from their layout position, in points: minus a
   /// scroll view's content offset.
   virtual facebook::react::Point childrenOffset() const;
+  /// Tells the view that `childrenOffset()` changed.
+  void childrenMoved();
   /// Clips content and children to the box even when `overflow` is visible.
   void setAlwaysClips(bool alwaysClips);
   /// Whether the view is drawn above every other view, at the screen's
@@ -116,7 +118,9 @@ class ComponentView : public SceneLayer {
   void place();
   void refreshBox();
   PixelPoint childrenShift() const;
-  SkRect paintBounds() const;
+  const SkRect &paintBounds() const;
+  SkRect placedBounds() const;
+  void paintBoundsChanged();
   bool hitTestLocal(SkPoint point, ComponentView *&hit, SkPoint *local);
 
   Scene &scene_;
@@ -130,6 +134,8 @@ class ComponentView : public SceneLayer {
   facebook::react::EventEmitter::Shared eventEmitter_;
   PixelPoint origin_;
   PixelSize size_;
+  mutable SkRect paintBounds_{};
+  mutable bool paintBoundsKnown_{false};
   float opacity_{1};
   bool alwaysClips_{false};
   bool isRoot_{false};

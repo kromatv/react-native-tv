@@ -12,14 +12,6 @@ namespace {
 
 using facebook::react::Float;
 
-// Children may draw past a box that does not clip them, by a transform Yoga
-// knows nothing of: a view is skipped only when it is this far off screen.
-constexpr float kCullSlack = 256;
-
-int overflowPixels(Float inset, Float scale) {
-  return toPixels(-std::min(Float{0}, inset), scale);
-}
-
 SkPoint point(PixelPoint pixels) {
   return {static_cast<float>(pixels.x), static_cast<float>(pixels.y)};
 }
@@ -85,6 +77,7 @@ void ComponentView::updateProps(const facebook::react::Props::Shared &props) {
   opacity_ = static_cast<float>(std::clamp(viewProps.opacity, Float{0}, Float{1}));
   refreshBox();
   transform_.update(viewProps, layoutMetrics_);
+  paintBoundsChanged();
   invalidate();
 }
 
@@ -123,6 +116,7 @@ void ComponentView::mountChild(ComponentView &child, std::size_t index) {
   }
   child.didMount();
   didChangeChildren();
+  paintBoundsChanged();
   invalidate();
 }
 
@@ -135,6 +129,7 @@ void ComponentView::unmountChild(ComponentView &child) {
   }
   child.parent_ = nullptr;
   didChangeChildren();
+  paintBoundsChanged();
   invalidate();
 }
 
@@ -150,6 +145,7 @@ void ComponentView::place() {
   origin_ = isOverlay() ? PixelPoint{} : PixelPoint{toPixels(frame.origin.x, scale), toPixels(frame.origin.y, scale)};
   size_ = {std::max(0, toPixels(frame.size.width, scale)), std::max(0, toPixels(frame.size.height, scale))};
   layoutContent();
+  paintBoundsChanged();
   invalidate();
 }
 
@@ -163,6 +159,7 @@ void ComponentView::setAlwaysClips(bool alwaysClips) {
   if (alwaysClips_ == alwaysClips) return;
   alwaysClips_ = alwaysClips;
   refreshBox();
+  paintBoundsChanged();
   invalidate();
 }
 
@@ -212,41 +209,57 @@ PixelPoint ComponentView::childrenShift() const {
   return {toPixels(offset.x, scale), toPixels(offset.y, scale)};
 }
 
-SkRect ComponentView::paintBounds() const {
-  const auto scale = pointScale();
+// What the view and its subtree paint, in the view's own pixels: its box with
+// its shadows and outline, and, unless it clips them, its children where they
+// are placed and transformed. Kept until something in the subtree changes.
+const SkRect &ComponentView::paintBounds() const {
+  if (paintBoundsKnown_) return paintBounds_;
   const auto box = box_.overflow();
-  auto bounds = SkRect::MakeWH(static_cast<float>(size_.width), static_cast<float>(size_.height));
-  if (box_.style().clips || children_.empty()) {
-    bounds.outset(0, 0);
-    return SkRect::MakeLTRB(
-        bounds.left() - static_cast<float>(box.left),
-        bounds.top() - static_cast<float>(box.top),
-        bounds.right() + static_cast<float>(box.right),
-        bounds.bottom() + static_cast<float>(box.bottom));
+  paintBounds_ = SkRect::MakeLTRB(
+      -static_cast<float>(box.left),
+      -static_cast<float>(box.top),
+      static_cast<float>(size_.width + box.right),
+      static_cast<float>(size_.height + box.bottom));
+  if (!box_.style().clips) {
+    const auto shift = point(childrenShift());
+    for (const auto *child : children_) {
+      if (!child->isOverlay()) paintBounds_.join(child->placedBounds().makeOffset(shift));
+    }
   }
-  const auto &inset = layoutMetrics_.overflowInset;
-  return SkRect::MakeLTRB(
-      bounds.left() - static_cast<float>(std::max(box.left, overflowPixels(inset.left, scale))) - kCullSlack,
-      bounds.top() - static_cast<float>(std::max(box.top, overflowPixels(inset.top, scale))) - kCullSlack,
-      bounds.right() + static_cast<float>(std::max(box.right, overflowPixels(inset.right, scale))) + kCullSlack,
-      bounds.bottom() + static_cast<float>(std::max(box.bottom, overflowPixels(inset.bottom, scale))) + kCullSlack);
+  paintBoundsKnown_ = true;
+  return paintBounds_;
+}
+
+SkRect ComponentView::placedBounds() const {
+  return transform_.mapRect(paintBounds(), pointScale())
+      .makeOffset(static_cast<float>(origin_.x), static_cast<float>(origin_.y));
+}
+
+void ComponentView::paintBoundsChanged() {
+  paintBoundsKnown_ = false;
+  for (auto *view = parent_; view != nullptr && view->paintBoundsKnown_ && !view->box_.style().clips; view = view->parent_) {
+    view->paintBoundsKnown_ = false;
+  }
+}
+
+void ComponentView::childrenMoved() {
+  paintBoundsChanged();
+  invalidate();
 }
 
 void ComponentView::draw(SkCanvas &canvas) {
   if (layoutMetrics_.displayType == facebook::react::DisplayType::None || opacity_ <= 0) return;
+  if (canvas.quickReject(placedBounds())) return;
   SkAutoCanvasRestore restore(&canvas, true);
   canvas.translate(static_cast<float>(origin_.x), static_cast<float>(origin_.y));
   transform_.concat(canvas, pointScale());
-  const auto bounds = paintBounds();
-  if (canvas.quickReject(bounds)) return;
   drawBackdrop(canvas, opacity_);
   float alpha = 1;
   if (opacity_ < 1) {
     if (children_.empty() && box_.layerCount() + contentLayers() <= 1) {
       alpha = opacity_;
     } else {
-      const bool bounded = box_.style().clips || children_.empty();
-      canvas.saveLayerAlphaf(bounded ? &bounds : nullptr, opacity_);
+      canvas.saveLayerAlphaf(&paintBounds(), opacity_);
     }
   }
   box_.drawBelowContent(canvas, size_, alpha);
@@ -266,7 +279,12 @@ void ComponentView::drawChildren(SkCanvas &canvas) {
   const auto shift = childrenShift();
   SkAutoCanvasRestore restore(&canvas, shift != PixelPoint{});
   if (shift != PixelPoint{}) canvas.translate(static_cast<float>(shift.x), static_cast<float>(shift.y));
-  for (auto *child : children_) drawChild(canvas, *child);
+  // A list's rows are hundreds of siblings, most of them off screen: one look
+  // at the clip sorts them out without a call into the canvas for each.
+  const auto visible = canvas.getLocalClipBounds();
+  for (auto *child : children_) {
+    if (SkRect::Intersects(visible, child->placedBounds())) drawChild(canvas, *child);
+  }
 }
 
 void ComponentView::drawChild(SkCanvas &canvas, ComponentView &child) {
