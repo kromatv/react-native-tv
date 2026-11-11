@@ -209,44 +209,6 @@ PixelPoint ComponentView::childrenShift() const {
   return {toPixels(offset.x, scale), toPixels(offset.y, scale)};
 }
 
-// What the view and its subtree paint, in the view's own pixels: its box with
-// its shadows and outline, and, unless it clips them, its children where they
-// are placed and transformed. Kept until something in the subtree changes.
-const SkRect &ComponentView::paintBounds() const {
-  if (paintBoundsKnown_) return paintBounds_;
-  const auto box = box_.overflow();
-  paintBounds_ = SkRect::MakeLTRB(
-      -static_cast<float>(box.left),
-      -static_cast<float>(box.top),
-      static_cast<float>(size_.width + box.right),
-      static_cast<float>(size_.height + box.bottom));
-  if (!box_.style().clips) {
-    const auto shift = point(childrenShift());
-    for (const auto *child : children_) {
-      if (!child->isOverlay()) paintBounds_.join(child->placedBounds().makeOffset(shift));
-    }
-  }
-  paintBoundsKnown_ = true;
-  return paintBounds_;
-}
-
-SkRect ComponentView::placedBounds() const {
-  return transform_.mapRect(paintBounds(), pointScale())
-      .makeOffset(static_cast<float>(origin_.x), static_cast<float>(origin_.y));
-}
-
-void ComponentView::paintBoundsChanged() {
-  paintBoundsKnown_ = false;
-  for (auto *view = parent_; view != nullptr && view->paintBoundsKnown_ && !view->box_.style().clips; view = view->parent_) {
-    view->paintBoundsKnown_ = false;
-  }
-}
-
-void ComponentView::childrenMoved() {
-  paintBoundsChanged();
-  invalidate();
-}
-
 void ComponentView::draw(SkCanvas &canvas) {
   if (layoutMetrics_.displayType == facebook::react::DisplayType::None || opacity_ <= 0) return;
   if (canvas.quickReject(placedBounds())) return;
