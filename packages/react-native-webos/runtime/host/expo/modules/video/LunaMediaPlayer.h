@@ -24,7 +24,8 @@ namespace rnwebos::expo {
 class LunaMediaPlayer final : public PlayerBackend {
  public:
   /// `bus` must outlive the player: the pipeline unloads a media when the
-  /// client that loaded it leaves the bus.
+  /// client that loaded it leaves the bus. Call `unload` before destroying a
+  /// player another one follows, so that its load waits for this media to go.
   LunaMediaPlayer(
       LunaConnection &bus,
       std::unique_ptr<VideoPlane> plane,
@@ -69,7 +70,7 @@ class LunaMediaPlayer final : public PlayerBackend {
   void confirmTrack(TrackKind kind, int index);
 
   LunaConnection &bus_;
-  const std::unique_ptr<VideoPlane> plane_;
+  const std::shared_ptr<VideoPlane> plane_;
   PlayerBackendListener &listener_;
   const std::string appId_;
   const int number_;

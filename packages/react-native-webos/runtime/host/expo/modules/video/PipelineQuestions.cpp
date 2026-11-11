@@ -50,9 +50,8 @@ std::vector<std::string> busNames(const std::string &appId, int processId) {
   return {std::format("com.webos.media.client.{}.{}", owner, processId)};
 }
 
-// Open question 2. LG's plugin sends `mediaTransportType` beside `option` for
-// an HLS URL and nothing for a file; nuvio puts it inside `option`; plx-native
-// sends none. This follows LG's plugin.
+// Open question 2. As LG's plugin: `mediaTransportType` beside `option` for an
+// HLS URL, nothing for a file. nuvio puts it inside `option`, plx-native sends none.
 folly::dynamic loadPayload(const MediaSource &source, const std::string &appId, const std::string &windowId, int player) {
   folly::dynamic option = folly::dynamic::object("appId", appId)("useSeekableRanges", true)(
       "bufferControl", folly::dynamic::object("userBufferCtrl", false));
@@ -99,9 +98,8 @@ double bufferedSeconds(double endTime) {
   return endTime;
 }
 
-// Inferred from the codes' meaning: a refused command, an unknown subtitle
-// file, a failed seek or rate change, and the two buffer levels leave the
-// media playing.
+// Inferred from what the codes mean: a refused command, an unknown subtitle
+// file, a failed seek or rate change and the two buffer levels.
 bool endsPlayback(int errorCode) {
   static constexpr int kSurvivable[] = {101, 210, 700, 701, 61441, 61442};
   return std::ranges::find(kSurvivable, errorCode) == std::end(kSurvivable);

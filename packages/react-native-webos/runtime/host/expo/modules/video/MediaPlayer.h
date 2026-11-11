@@ -88,7 +88,8 @@ class MediaPlayer final : public PlayerBackendListener {
   /// Whether the player can show a picture: false once it is released.
   bool hasDisplay() const;
 
-  /// Unloads the source for good; the player stays released.
+  /// Unloads the source for good; the player stays released. A player
+  /// destroyed without it leaves the unloading to its backend's destructor.
   void release();
 
   void backendLoaded(const LoadedMedia &media) override;

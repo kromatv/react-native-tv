@@ -26,6 +26,7 @@ Gate &gate() {
 struct Unload {
   std::unique_ptr<LunaConnection::Subscription> events;
   LunaEventSink sink;
+  std::shared_ptr<void> plane;
   MainLoop::Id timer{0};
   bool done{false};
 };
@@ -37,6 +38,7 @@ void finish(const std::shared_ptr<Unload> &unload) {
   MainLoop::get().post([unload] {
     *unload->sink = nullptr;
     unload->events.reset();
+    unload->plane.reset();
     auto &state = gate();
     if (--state.unloading > 0) return;
     auto waiting = std::exchange(state.waiting, {});
@@ -51,9 +53,11 @@ void unloadMedia(
     const std::string &mediaId,
     std::unique_ptr<LunaConnection::Subscription> events,
     LunaEventSink sink,
+    std::shared_ptr<void> plane,
     int player) {
   ++gate().unloading;
   auto unload = std::make_shared<Unload>();
+  unload->plane = std::move(plane);
   unload->events = std::move(events);
   unload->sink = sink ? std::move(sink) : std::make_shared<std::function<void(const folly::dynamic &)>>();
   *unload->sink = [unload, player](const folly::dynamic &message) {

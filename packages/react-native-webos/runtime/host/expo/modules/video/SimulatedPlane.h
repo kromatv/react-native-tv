@@ -27,10 +27,6 @@ class SimulatedPlane final : public VideoPlane, private SceneLayer {
   /// left and `subtitle`, when not empty, at its bottom.
   void setPicture(PixelSize frame, std::string caption, std::string subtitle);
 
-  bool isShown() const;
-  const PixelRect &source() const;
-  const PixelRect &destination() const;
-
  private:
   void draw(SkCanvas &canvas) override;
   void drawFrame(SkCanvas &canvas, const SkRect &target) const;

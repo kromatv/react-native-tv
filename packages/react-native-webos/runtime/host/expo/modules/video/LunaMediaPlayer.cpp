@@ -37,8 +37,11 @@ LunaMediaPlayer::LunaMediaPlayer(
     int number)
     : bus_(bus), plane_(std::move(plane)), listener_(listener), appId_(std::move(appId)), number_(number) {}
 
+// Sent without waiting for it to complete: an owner that unloads in time calls
+// unload() first, and the one left is the closing app, whose main loop is gone.
 LunaMediaPlayer::~LunaMediaPlayer() {
-  unload();
+  if (sink_) *sink_ = nullptr;
+  if (!mediaId_.empty()) bus_.call(std::string(kService) + "unload", media());
 }
 
 VideoPlane &LunaMediaPlayer::plane() {
@@ -108,7 +111,7 @@ void LunaMediaPlayer::onLoadReply(const folly::dynamic &reply, unsigned generati
   const auto *id = reply.isObject() ? reply.get_ptr("mediaId") : nullptr;
   const auto mediaId = id != nullptr && id->isString() ? id->getString() : std::string();
   if (generation != generation_) {
-    if (!mediaId.empty()) unloadMedia(bus_, mediaId, nullptr, nullptr, number_);
+    if (!mediaId.empty()) unloadMedia(bus_, mediaId, nullptr, nullptr, plane_, number_);
     return;
   }
   if (!answer.accepted || mediaId.empty()) {
@@ -142,7 +145,7 @@ void LunaMediaPlayer::unload() {
   seeking_ = false;
   if (mediaId_.empty()) return;
   playerLog(number_, "unload " + mediaId_);
-  unloadMedia(bus_, std::exchange(mediaId_, {}), std::move(events_), std::move(sink_), number_);
+  unloadMedia(bus_, std::exchange(mediaId_, {}), std::move(events_), std::move(sink_), plane_, number_);
 }
 
 void LunaMediaPlayer::play() {

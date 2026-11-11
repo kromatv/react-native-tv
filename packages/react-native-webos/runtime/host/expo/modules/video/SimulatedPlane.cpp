@@ -66,25 +66,12 @@ void SimulatedPlane::setPicture(PixelSize frame, std::string caption, std::strin
   invalidate();
 }
 
-bool SimulatedPlane::isShown() const {
-  return scene_ != nullptr;
-}
-
-const PixelRect &SimulatedPlane::source() const {
-  return source_;
-}
-
-const PixelRect &SimulatedPlane::destination() const {
-  return destination_;
-}
-
 void SimulatedPlane::invalidate() {
   if (scene_ != nullptr) scene_->invalidate();
 }
 
-// The decoded frame, in frame pixels: its outline, its diagonals and a circle,
-// which the source and destination rectangles crop and stretch as a TV's
-// plane would the picture.
+// The decoded frame's outline, diagonals and a circle, in frame pixels, so the
+// source and destination rectangles crop and stretch them as a plane would.
 void SimulatedPlane::drawFrame(SkCanvas &canvas, const SkRect &target) const {
   const auto frame = frame_.width > 0 && frame_.height > 0
                          ? SkRect::MakeWH(static_cast<float>(frame_.width), static_cast<float>(frame_.height))

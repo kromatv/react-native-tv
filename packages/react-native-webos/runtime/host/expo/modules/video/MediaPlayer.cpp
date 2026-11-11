@@ -12,9 +12,9 @@ namespace rnwebos::expo {
 MediaPlayer::MediaPlayer(std::weak_ptr<PlayerObserver> observer, int number, BackendFactory makeBackend)
     : observer_(std::move(observer)), number_(number), makeBackend_(std::move(makeBackend)) {}
 
-MediaPlayer::~MediaPlayer() {
-  release();
-}
+// Not released here: a player that reaches its end unreleased was dropped by
+// the closing main loop, and unloading through that loop would call back into it.
+MediaPlayer::~MediaPlayer() = default;
 
 void MediaPlayer::open(const std::string &uri, const SourceHeaders &headers) {
   if (released_) return;
@@ -184,6 +184,7 @@ void MediaPlayer::release() {
   progress_.cancel();
   phase_ = Phase::Idle;
   if (!backend_) return;
+  backend_->unload();
   backend_->plane().hide();
   backend_.reset();
   playerLog(number_, "released");

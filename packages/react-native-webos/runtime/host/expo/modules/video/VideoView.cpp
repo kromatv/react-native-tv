@@ -106,10 +106,8 @@ int VideoView::contentLayers() const {
   return 1;
 }
 
-// The hole follows the box through every transform and clip, since it is
-// drawn where the box is. The plane cannot: it gets the box's rectangle on
-// screen, checked here because an ancestor that scrolls or animates moves the
-// view without telling it, and no more than one frame draws per frame.
+// An ancestor that scrolls or animates moves the view without telling it: the
+// plane is placed again in the first frame drawn after the box moved on screen.
 void VideoView::drawContent(SkCanvas &canvas, float) {
   if (!shown_ || fullscreen_) return;
   const auto size = pixelSize();

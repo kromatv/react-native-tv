@@ -33,8 +33,7 @@ void MediaPlayer::backendLoaded(const LoadedMedia &media) {
 }
 
 // A state nobody asked for is the pipeline's own doing, as when the TV pauses
-// it: the player takes it over rather than ask again. One that only differs
-// from the newest request answers an older one, and the newest still follows.
+// it, and is taken over; one that answers an older request is only reported.
 void MediaPlayer::backendPlayingChanged(bool playing) {
   if (phase_ != Phase::Ready) return;
   if (awaitedPlaying_ == playing) {

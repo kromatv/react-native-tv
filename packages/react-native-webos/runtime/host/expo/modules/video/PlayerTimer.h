@@ -3,6 +3,7 @@
 #include "platform/MainLoop.h"
 
 #include <chrono>
+#include <memory>
 #include <utility>
 
 namespace rnwebos::expo {
@@ -21,22 +22,21 @@ class PlayerTimer final {
 
   void start(std::chrono::milliseconds delay, MainLoop::Task task) {
     cancel();
-    id_ = MainLoop::get().addTimer(delay, [this, task = std::move(task)] {
-      id_ = 0;
-      task();
+    armed_ = std::make_shared<bool>(true);
+    MainLoop::get().addTimer(delay, [armed = armed_, task = std::move(task)] {
+      if (std::exchange(*armed, false)) task();
     });
   }
 
+  // Disarmed rather than removed from the loop: a player can be destroyed by
+  // the closing main loop itself, which nothing may then call back into.
   void cancel() {
-    if (id_ != 0) MainLoop::get().removeTimer(std::exchange(id_, 0));
-  }
-
-  bool isPending() const {
-    return id_ != 0;
+    if (armed_) *armed_ = false;
+    armed_.reset();
   }
 
  private:
-  MainLoop::Id id_{0};
+  std::shared_ptr<bool> armed_;
 };
 
 } // namespace rnwebos::expo
