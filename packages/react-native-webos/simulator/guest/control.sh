@@ -6,10 +6,12 @@ set -euo pipefail
 # shellcheck source=SCRIPTDIR/instance.sh
 source "$(dirname "${BASH_SOURCE[0]}")/instance.sh"
 
-case "${1:-}" in
-  pause | resume | exit) command="$1" ;;
-  open-url) command="open-url ${2:?usage: control.sh open-url <url>}" ;;
-  relaunch) command="relaunch ${2:-}" ;;
+# The command and its argument may come as one word or as two.
+read -r name argument <<<"$*"
+case "$name" in
+  pause | resume | exit) command="$name" ;;
+  open-url) command="open-url ${argument:?usage: control.sh open-url <url>}" ;;
+  relaunch) command="relaunch $argument" ;;
   *)
     echo "usage: control.sh pause|resume|exit|open-url <url>|relaunch [<json>]" >&2
     exit 2
