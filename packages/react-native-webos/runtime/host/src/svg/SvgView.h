@@ -5,8 +5,8 @@
 
 namespace rnwebos::svg {
 
-/// `<Svg>`: draws the tree of its nodes straight onto the canvas, clipped to
-/// the view's box. User units are layout points, scaled to pixels after the
+/// `<Svg>`: draws the tree of its nodes onto the canvas, clipped to the
+/// view's box. User units are layout points, scaled to pixels after the
 /// viewBox transform.
 class SvgView : public ComponentView {
  public:
@@ -17,7 +17,6 @@ class SvgView : public ComponentView {
  protected:
   void drawContent(SkCanvas &canvas, float alpha) override;
   void drawChildren(SkCanvas &canvas) override;
-  int contentLayers() const override;
   void didChangeChildren() override;
   virtual void readProps(const facebook::react::Props &props) = 0;
 
@@ -35,8 +34,6 @@ class SvgView : public ComponentView {
   }
 
  private:
-  SkSize sizeInPoints() const;
-
   RootNode root_;
 };
 

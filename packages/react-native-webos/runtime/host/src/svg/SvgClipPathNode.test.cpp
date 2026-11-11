@@ -79,6 +79,7 @@ TEST_CASE("the clip rule makes overlapping outlines a hole or a union") {
   CHECK(evenOdd.at(20, 20) == kClear);
 
   rect.clipRule = kNonZero;
+  rect.invalidate();
   Raster nonZero(40, 40);
   nonZero.draw(root);
   checkColor(nonZero.at(20, 20), SK_ColorBLACK);

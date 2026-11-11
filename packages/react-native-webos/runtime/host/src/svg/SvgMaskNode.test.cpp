@@ -83,6 +83,7 @@ TEST_CASE("a mask's area is a share of the masked node's box, or user units") {
   mask.areaInUserSpace = true;
   mask.x = {.value = 30};
   mask.width = {.value = 10};
+  mask.invalidate();
   Raster inUserSpace(40, 40);
   inUserSpace.draw(root);
   CHECK(inUserSpace.at(25, 20) == kClear);

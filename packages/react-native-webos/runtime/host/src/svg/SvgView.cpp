@@ -33,21 +33,14 @@ void SvgView::updateProps(const facebook::react::Props::Shared &props) {
   root_.invalidate();
 }
 
-SkSize SvgView::sizeInPoints() const {
+void SvgView::drawContent(SkCanvas &canvas, float) {
   const auto &size = layoutMetrics().frame.size;
-  return {static_cast<float>(size.width), static_cast<float>(size.height)};
-}
-
-void SvgView::drawContent(SkCanvas &canvas, float alpha) {
-  root_.renderInto(canvas, sizeInPoints(), static_cast<float>(pointScale()), alpha);
+  root_.renderInto(
+      canvas, {static_cast<float>(size.width), static_cast<float>(size.height)}, static_cast<float>(pointScale()));
 }
 
 void SvgView::drawChildren(SkCanvas &) {
   // The children are the nodes `drawContent` draws, not views with a box each.
-}
-
-int SvgView::contentLayers() const {
-  return root_.paintLayers(sizeInPoints());
 }
 
 void SvgView::didChangeChildren() {

@@ -33,21 +33,30 @@ TEST_CASE("a group's opacity fades its children as one picture") {
   checkColor(raster.at(20, 20), SkColorSetARGB(128, 0, 0, 255));
 }
 
-TEST_CASE("an opacity on one paint needs no layer") {
+TEST_CASE("an opacity on one paint needs no layer, and one on several takes one") {
   RootNode root;
   GroupNode group;
   group.opacity = 0.5F;
-  RectNode rect;
-  rect.setGeometry(box(0, 0, 40, 40));
-  rect.paint = filled(SK_ColorRED);
-  rect.opacity = 0.5F;
-  group.setChildren({&rect});
+  PathNode first;
+  first.setGeometry({.data = "M0 0 H40 V40 Z"});
+  first.paint = filled(SK_ColorRED);
+  first.opacity = 0.5F;
+  group.setChildren({&first});
   root.setChildren({&group});
 
-  CHECK(root.paintLayers({40, 40}) == 1);
+  DrawProbe single;
+  root.renderInto(single, {40, 40}, 1);
+  CHECK(single.layers == 0);
   Raster raster(40, 40);
   raster.draw(root);
-  checkColor(raster.at(20, 20), SkColorSetARGB(64, 255, 0, 0));
+  checkColor(raster.at(30, 10), SkColorSetARGB(64, 255, 0, 0));
+
+  PathNode second;
+  second.setGeometry({.data = "M0 0 H40 V40 Z"});
+  group.setChildren({&first, &second});
+  DrawProbe both;
+  root.renderInto(both, {40, 40}, 1);
+  CHECK(both.layers == 1);
 }
 
 TEST_CASE("a hidden node and its subtree draw nothing") {

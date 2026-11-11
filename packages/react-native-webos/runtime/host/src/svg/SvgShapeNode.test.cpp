@@ -93,6 +93,7 @@ TEST_CASE("dashes leave gaps, and the dash offset shifts them") {
   checkColor(raster.at(25, 10), SK_ColorWHITE);
 
   line.paint.strokeDashoffset = 10;
+  line.invalidate();
   Raster shifted(40, 20);
   shifted.draw(root);
   CHECK(shifted.at(5, 10) == kClear);
@@ -130,6 +131,7 @@ TEST_CASE("the fill rule decides whether a path's inner loop is a hole") {
   checkColor(evenOdd.at(5, 5), SK_ColorRED);
 
   path.paint.fillRule = kNonZero;
+  path.invalidate();
   Raster nonZero(40, 40);
   nonZero.draw(root);
   checkColor(nonZero.at(20, 20), SK_ColorRED);

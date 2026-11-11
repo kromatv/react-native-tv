@@ -111,10 +111,12 @@ TEST_CASE("a shape builds its path once, until its geometry is forgotten") {
 
   root.renderInto(canvas, {20, 20}, 1);
   probe.paint.fillOpacity = 0.5F;
+  probe.invalidate();
   root.renderInto(canvas, {20, 20}, 1);
   CHECK(probe.built == 1);
 
   probe.forgetPath();
+  probe.invalidate();
   root.renderInto(canvas, {20, 20}, 1);
   CHECK(probe.built == 2);
 }

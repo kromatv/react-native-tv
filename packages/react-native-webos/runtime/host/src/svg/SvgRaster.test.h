@@ -44,6 +44,45 @@ class Raster {
   SkCanvas canvas_;
 };
 
+/// A canvas over a 200 x 200 buffer that counts what it is asked to draw.
+class DrawProbe final : public SkCanvas {
+ public:
+  DrawProbe() : SkCanvas(buffer()) {}
+
+  int paths{0};
+  int images{0};
+  int layers{0};
+
+ protected:
+  void onDrawPath(const SkPath &path, const SkPaint &paint) override {
+    ++paths;
+    SkCanvas::onDrawPath(path, paint);
+  }
+
+  void onDrawImageRect2(
+      const SkImage *image,
+      const SkRect &source,
+      const SkRect &destination,
+      const SkSamplingOptions &sampling,
+      const SkPaint *paint,
+      SrcRectConstraint constraint) override {
+    ++images;
+    SkCanvas::onDrawImageRect2(image, source, destination, sampling, paint, constraint);
+  }
+
+  SaveLayerStrategy getSaveLayerStrategy(const SaveLayerRec &layer) override {
+    ++layers;
+    return SkCanvas::getSaveLayerStrategy(layer);
+  }
+
+ private:
+  static SkBitmap buffer() {
+    SkBitmap pixels;
+    pixels.allocN32Pixels(200, 200);
+    return pixels;
+  }
+};
+
 /// Checks a pixel's color, each channel within `tolerance` of `expected`.
 inline void checkColor(SkColor actual, SkColor expected, int tolerance = 3) {
   CAPTURE(SkColorGetA(actual));

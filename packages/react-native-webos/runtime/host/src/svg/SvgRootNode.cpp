@@ -1,34 +1,75 @@
 #include "SvgRootNode.h"
 
+#include "include/core/SkColorSpace.h"
+#include "include/core/SkPictureRecorder.h"
+
+#include <cmath>
+
 namespace rnwebos::svg {
 
-RenderContext RootNode::rootContext(SkSize size, const Definitions &definitions) const {
+namespace {
+
+// A tree that changes every frame, as an animated one does, never gets this
+// far, so it is never drawn on the CPU and uploaded only to be thrown away.
+constexpr int kPlaysBeforeRaster = 3;
+// An image costs four bytes a pixel of GPU memory: a megabyte at this size.
+constexpr int kLargestRasterArea = 512 * 512;
+
+bool mapsPixelsOntoPixels(const SkMatrix &matrix) {
+  if (!matrix.isTranslate()) return false;
+  return matrix.getTranslateX() == std::round(matrix.getTranslateX()) &&
+      matrix.getTranslateY() == std::round(matrix.getTranslateY());
+}
+
+} // namespace
+
+sk_sp<SkPicture> RootNode::record(const Box &box) const {
+  const Definitions definitions(*this);
   RenderContext context{
       .paint = paint,
       .currentColor = color.value_or(SkColor4f{0, 0, 0, 1}),
-      .viewport = viewBox.present() ? SkSize::Make(viewBox.width, viewBox.height) : size,
+      .viewport = viewBox.present() ? SkSize::Make(viewBox.width, viewBox.height) : box.size,
       .definitions = &definitions,
   };
   inherit(context);
-  return context;
+  SkPictureRecorder recorder;
+  auto *canvas = recorder.beginRecording(SkRect::MakeWH(box.size.width() * box.scale, box.size.height() * box.scale));
+  canvas->scale(box.scale, box.scale);
+  canvas->concat(viewBoxTransform(viewBox, box.size.width(), box.size.height()));
+  draw(*canvas, context);
+  return recorder.finishRecordingAsPicture();
 }
 
-void RootNode::renderInto(SkCanvas &canvas, SkSize size, float scale, float alpha) const {
-  const Definitions definitions(*this);
-  auto context = rootContext(size, definitions);
-  context.alpha = alpha;
-  const SkAutoCanvasRestore restore(&canvas, true);
-  canvas.scale(scale, scale);
-  canvas.concat(viewBoxTransform(viewBox, size.width(), size.height()));
-  draw(canvas, context);
+sk_sp<SkImage> RootNode::raster(const SkCanvas &canvas) const {
+  if (!mapsPixelsOntoPixels(canvas.getTotalMatrix())) return nullptr;
+  if (raster_) return raster_;
+  if (++plays_ <= kPlaysBeforeRaster || recording_->approximateOpCount() == 0) return nullptr;
+  const auto pixels = recording_->cullRect().roundOut().size();
+  if (pixels.isEmpty() || pixels.area() > kLargestRasterArea) return nullptr;
+  raster_ = SkImages::DeferredFromPicture(
+      recording_, pixels, nullptr, nullptr, SkImages::BitDepth::kU8, SkColorSpace::MakeSRGB());
+  return raster_;
 }
 
-int RootNode::paintLayers(SkSize size) const {
-  const Definitions definitions(*this);
-  return contentPaintCount(rootContext(size, definitions));
+void RootNode::renderInto(SkCanvas &canvas, SkSize size, float scale) const {
+  const Box box{.size = size, .scale = scale};
+  if (!recording_ || box != recordedFor_) {
+    recording_ = record(box);
+    recordedFor_ = box;
+    raster_.reset();
+    plays_ = 0;
+  }
+  if (const auto image = raster(canvas)) {
+    canvas.drawImage(image, 0, 0);
+    return;
+  }
+  canvas.drawPicture(recording_);
 }
 
 void RootNode::changed() {
+  recording_.reset();
+  raster_.reset();
+  plays_ = 0;
   if (onChange) onChange();
 }
 
