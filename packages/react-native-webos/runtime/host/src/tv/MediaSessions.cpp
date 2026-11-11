@@ -64,7 +64,7 @@ std::shared_ptr<MediaSession> currentMediaSession() {
   return live.empty() ? nullptr : live.back();
 }
 
-void pauseMediaSessionsForBackground(bool mediaCategoryDeclared) {
+void pauseMediaSessionsForBackground() {
   int paused = 0;
   int kept = 0;
   for (const auto &session : snapshot().live) {
@@ -77,16 +77,7 @@ void pauseMediaSessionsForBackground(bool mediaCategoryDeclared) {
     }
   }
   if (paused > 0) log(LogLevel::Info, std::format("Background: paused {} player(s)", paused));
-  if (kept == 0) return;
-  if (mediaCategoryDeclared) {
-    log(LogLevel::Info, std::format("Background: {} player(s) stay active", kept));
-    return;
-  }
-  log(LogLevel::Warning,
-      std::format(
-          "Background: {} player(s) stay active, but the manifest has no media background category, so the TV "
-          "suspends the app; set supportsBackgroundPlayback in expo-video's config plugin",
-          kept));
+  if (kept > 0) log(LogLevel::Info, std::format("Background: {} player(s) stay active", kept));
 }
 
 } // namespace rnwebos

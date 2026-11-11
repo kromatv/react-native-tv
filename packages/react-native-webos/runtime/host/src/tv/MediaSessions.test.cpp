@@ -72,8 +72,7 @@ TEST_CASE("pauseMediaSessionsForBackground pauses every player that may not play
   addMediaSession(background);
   addMediaSession(idle);
 
-  pauseMediaSessionsForBackground(false);
-  pauseMediaSessionsForBackground(true);
+  pauseMediaSessionsForBackground();
 
   CHECK_FALSE(foreground->isPlaying());
   CHECK(background->isPlaying());
@@ -84,7 +83,7 @@ TEST_CASE("pauseMediaSessionsForBackground pauses the only player when it may no
   const auto player = std::make_shared<FakeSession>(true, false);
   addMediaSession(player);
 
-  pauseMediaSessionsForBackground(true);
+  pauseMediaSessionsForBackground();
 
   CHECK_FALSE(player->isPlaying());
 }
