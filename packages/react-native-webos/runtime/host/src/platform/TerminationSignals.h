@@ -8,11 +8,9 @@ namespace rnwebos {
 /// first in `main`: a thread started earlier does not inherit the block.
 void blockTerminationSignals();
 
-/// Calls `onTerminate` once, on a thread of its own, when SIGTERM or SIGINT
-/// arrives: SIGTERM is how the TV's app manager closes an app that is not
-/// registered or declares lifecycle interface 1, one second before SIGKILL
-/// (docs/reference/webos-tv-platform.md, section 3.3). A second signal ends
-/// the process at once. Needs `blockTerminationSignals` before it.
+/// Calls `onTerminate` once, on a thread of its own, at SIGTERM or SIGINT,
+/// and ends the process at a second one. SIGTERM is how the TV's app manager
+/// closes some apps, a second before SIGKILL (docs/reference/webos-tv-platform.md, section 3.3).
 void watchTerminationSignals(std::function<void()> onTerminate);
 
 } // namespace rnwebos

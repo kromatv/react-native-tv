@@ -10,10 +10,9 @@
 namespace rnwebos {
 
 /// `AccessibilityManager`, the module `AccessibilityInfo` asks for on every
-/// platform but Android. The screen reader is the TV's audio guidance, read
-/// from its settings and followed as `screenReaderChanged`
-/// (docs/reference/webos-tv-platform.md, section 4.3). webOS tells an app no
-/// other accessibility setting, so the rest read as off and announcements are dropped.
+/// platform but Android. The screen reader is the TV's audio guidance setting
+/// (docs/reference/webos-tv-platform.md, section 4.3); webOS tells an app no
+/// other, so the rest read as off and announcements are dropped.
 class AccessibilityManagerModule final
     : public facebook::react::NativeAccessibilityManagerCxxSpec<AccessibilityManagerModule> {
  public:

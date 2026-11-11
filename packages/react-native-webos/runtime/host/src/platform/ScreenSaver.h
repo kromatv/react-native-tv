@@ -8,12 +8,9 @@
 
 namespace rnwebos {
 
-/// The app's say over the TV's screen saver. The TV asks every registered
-/// client before it starts the saver, and this answers yes unless SDL's screen
-/// saver is disabled (`SDL_DisableScreenSaver`), as while expo-keep-awake is
-/// active. SDL answers these itself only when it registers the app, which the
-/// host does in its place (docs/reference/webos-window-input.md, section 15).
-/// Main thread only.
+/// Answers the TV when it asks whether the screen saver may start: yes, unless
+/// SDL's screen saver is disabled, as while expo-keep-awake is active
+/// (docs/reference/webos-window-input.md, section 15). Main thread only.
 class ScreenSaver final {
  public:
   /// Null when the bus is unavailable or refuses the subscription.
@@ -31,8 +28,7 @@ class ScreenSaver final {
   std::unique_ptr<LunaBus::Subscription> requests_;
 };
 
-/// What the TV is told for the request `request` of client `clientName`:
-/// nothing when the request carries no timestamp to answer.
+/// What the TV is told for `request`; nothing when it carries no timestamp to answer.
 std::optional<folly::dynamic> screenSaverAnswer(
     const folly::dynamic &request,
     const std::string &clientName,

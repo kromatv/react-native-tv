@@ -9,10 +9,9 @@
 namespace rnwebos {
 
 /// `LinkingManager`, which `Linking` asks for on every platform but Android.
-/// `getInitialURL` answers the deep link the TV launched the app with, and one
-/// it launches the running app with arrives as the `url` event. `openURL`
-/// hands an http or https URL to the TV's browser through the app manager
-/// (docs/reference/webos-tv-platform.md, section 4.3); nothing else can be opened.
+/// `getInitialURL` answers the deep link the TV launched the app with, and
+/// `openURL` hands an http or https URL to the TV's browser
+/// (docs/reference/webos-tv-platform.md, section 4.3).
 class LinkingManagerModule final : public facebook::react::NativeLinkingManagerCxxSpec<LinkingManagerModule> {
  public:
   LinkingManagerModule(std::shared_ptr<facebook::react::CallInvoker> jsInvoker, const ModuleContext &context);

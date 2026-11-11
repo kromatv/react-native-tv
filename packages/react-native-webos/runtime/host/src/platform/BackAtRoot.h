@@ -18,8 +18,8 @@ enum class BackAtRoot {
 
 inline constexpr BackAtRoot kBackAtRoot = BackAtRoot::ShowHome;
 
-/// Does what `behaviour` says. `exitApp` ends the app; ShowHome calls it too
-/// when the app manager cannot be asked or refuses to open Home.
+/// Does what `behaviour` says; ShowHome calls `exitApp` when the app manager
+/// cannot be asked or refuses to open Home.
 void leaveOnBackAtRoot(LunaBus &bus, BackAtRoot behaviour, std::function<void()> exitApp);
 
 } // namespace rnwebos

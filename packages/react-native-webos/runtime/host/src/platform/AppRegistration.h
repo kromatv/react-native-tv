@@ -8,12 +8,9 @@
 
 namespace rnwebos {
 
-/// The app's registration with the TV's app manager, which every native app
-/// owes it within three seconds of its start and which then carries the app's
-/// lifecycle: launched again while running, paused, asked to close
-/// (docs/reference/webos-tv-platform.md, section 3.3). The app manager keeps
-/// one registration per app, so SDL's own is turned off and this is the only
-/// one (docs/reference/webos-window-input.md, section 15). Main thread only.
+/// The app's one registration with the TV's app manager, owed within three
+/// seconds of its start, which then carries the app's lifecycle
+/// (docs/reference/webos-tv-platform.md, section 3.3). Main thread only.
 class AppRegistration final {
  public:
   struct Events {
@@ -21,7 +18,7 @@ class AppRegistration final {
     std::function<void(const folly::dynamic &parameters, const std::string &reason)> relaunch;
     /// The app manager keeps the app alive in the background.
     std::function<void()> pause;
-    /// The app must leave: the app manager kills it one second later.
+    /// The app must leave: the app manager may kill it one second later.
     std::function<void()> close;
   };
 

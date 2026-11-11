@@ -20,7 +20,10 @@ constexpr int kLifecycleInterface = 2;
 
 void ReactHost::registerApp(const LaunchParameters &launch) {
   launch_->setParameters(launch.parameters);
-  if (const auto url = deepLinkOf(launch.parameters)) launch_->setInitialUrl(*url);
+  if (const auto url = deepLinkOf(launch.parameters)) {
+    launch_->setInitialUrl(*url);
+    log(LogLevel::Info, "Launched with the deep link " + *url);
+  }
   auto &bus = LunaBus::get();
   const char *appId = std::getenv("APPID");
   if (!bus.isAvailable() || appId == nullptr || *appId == '\0') return;
