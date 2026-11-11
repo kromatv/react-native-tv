@@ -33,13 +33,14 @@ release (2018), which still carries the two native lifecycle versions TV apps us
 
 | Fact | Tag | Source |
 |---|---|---|
-| No public LG page states a store policy for native apps. The approval pages speak of an IPK, a UX scenario and a self checklist, never of an app type. The Seller Lounge FAQ does not contain the word native. | D | [lg-approval], [lg-eco], [seller-faq] |
+| LG's developer site states no store policy for native apps. The approval pages speak of an IPK, a UX scenario and a self checklist, never of an app type. The Seller Lounge FAQ does not contain the word native. | D | [lg-approval], [lg-eco], [seller-faq] |
+| Seller Lounge's upload form does take native packages: an uploaded IPK's File Type is "automatically configured", Web for a web app and otherwise the "Seller-registered File Type (Native/Native Game)". A file is uploaded for a chipset, and "If you do not have a separate standing contract with LGE, select web > All". So a native package is a contract matter, and one file is registered per chipset. | D | [seller-upload] |
 | Sellers are individuals or companies; LG QA runs a pretest, a function test and a content test; every update is approved again. | D | [lg-eco], [lg-approval] |
 | A developer who asked for the NDK in 2023 was told a partnership agreement was needed, then got this from Seller Lounge: "it seems that the NDK feature cannot be supported even when the deal proceeds". | D-3p | [forum-3365] |
 | LG staff, November 2026: "This forum is only for webOS TV web apps." | D | [forum-28525] |
 | Partnership is requested at Seller Lounge, 1:1 QA > Partnership > Business Partnership. The Partner Zone offers "partner exclusive APIs and resources". | D | [lg-contact], [lg-partner] |
 | flutter-webos sends its users to the Partner Zone for support, and LG keeps a `plugins-beta` repository for "authorized partners only". | D | [fw] `doc/getting-started.md` L5, [fw-org] |
-| Whether Seller Lounge takes a Flutter (so a native) IPK: not stated. A developer asked in January 2026; staff answered only the release date. | D | [forum-28079] |
+| Whether Seller Lounge takes a Flutter IPK without such a contract: not stated. A developer asked in January 2026; staff answered only the release date. | D | [forum-28079] |
 | webOS TV 27 makes `requiredACG` in `appinfo.json` "a mandatory item in the Seller Lounge eligibility check" for every app. | D | [lg-acg] |
 | Store apps install under `/media/cryptofs/apps/` and need valid DRM info to run; homebrew never goes there. | D-3p | [wb] `filesystem.md`, `vocabulary.md` |
 
@@ -60,6 +61,20 @@ release (2018), which still carries the two native lifecycle versions TV apps us
 | `/media/developer` was 984 MB on an 8 GB 2026 model; a 176 MB debug build failed with "There is no available space to install App". | D-3p | [fw-8] |
 | LG's simulator runs web apps only: "there is no official webOS simulator" for native ones. LG's NDK installer runs on x86-64 Linux only. | D | [fw-9], [fw-10] (answered in LG's repository by a maintainer) |
 | LG's webOS TV 26 Simulator 1.5.0 for macOS is an Electron app. It refuses an `appinfo.json` without `id`, `title`, `type`, `main`, `icon` or `version`, and starts an app by loading its `main` in a Chromium window (`webContents.loadURL("file://<main>")`). It starts no program of the app's and opens no port a TV has (SSH, the key server, the remote control service). LG's page lists it under Limitations: "Native apps are not supported (only web apps are supported)." Opened on the example's TV package on 2026-11-11, it reported a successful launch, made a page of `file://.../react-native-webos` with no element and no script, and stayed on its home screen. | D | [lg-sim-intro]; [lg-sim] `Contents/Resources/app.asar`, `.vite/build/main.js`, read on 2026-11-11 |
+
+### 1.4 A real TV without owning one
+
+| Fact | Tag | Source |
+|---|---|---|
+| LG runs a **webOS Cloud Test Lab** for sellers, in Seller Lounge under Applications: "App functions can be checked on real devices in each country. Devices are installed in Korea and use the same SW version as the production environment". The IPK is uploaded first (File Upload), and the app needs an English title and description. | D | [seller-main], [seller-cloudlab] |
+| A session is reserved: one IPK and one device, chosen by platform, country and SoC, in one-hour slots, three hours at most, five devices a day. "For Native files, only devices with the same chipset as the chipset you selected when uploading the file can be selected." | D | [seller-cloudlab] |
+| The session is a video of the TV (1280x720 at 10 frames a second by default, up to 30 below 600p) with Launch App, Re-install and Reboot. The page names no shell and no log. Release ends it: "the app will be deleted, and the device will be initialized". Testing "device operations, not apps" can suspend the access for three months. | D | [seller-cloudlab] |
+| Alpha Test publishes a test version to up to 100 TVs named by their wired MAC address, from webOS 3.0 on; "For the Native Type, it can be checked on the devices for each chipset". It is "only opened to sellers that have entered a separate commercial contract for the time being". | D | [seller-alpha] |
+| TV Labs, a company, rents sessions on real LG TVs. Its `tvlabs connect` opens a tunnel that maps local port 9922 to the TV's 9922 (SSH), 9991 to 9991 (the key server), 3000 and 3001 to the remote control service, and 9222 to the web inspector; the TV must be in Developer Mode, signed in to the developer's own account. `ares-install -d tvlabs` and `ares-launch` then work on it, and a build can also be dropped on a live session. | D-3p | [tvlabs-webos], [tvlabs-sideload] |
+| TV Labs lists a free trial on request ("No credit card required", two devices, developer tools). | D-3p | [tvlabs] |
+| webOS OSE, the open source edition, takes native apps officially: its tutorial builds a Wayland and EGL program with the OSE NDK, packages it with `ares-package` and installs it on the emulator or a board. Since 2.20.0 LG publishes ready images for the Raspberry Pi 4 (64-bit) and for the emulator (x86-64) on GitHub. OSE shares the app manager and the bus with TV (see the tags above), but its userland is 64-bit and it has none of the TV's services. | D-ose | [ose-native], [ose-2.20] |
+
+None of these has been tried with this package.
 
 ## 2. appinfo.json for a native app
 
@@ -486,6 +501,15 @@ from shallow clones at the commits below.
 [forum-28146]: https://forum.webostv.developer.lge.com/t/how-to-implement-deep-linking-in-webos-tv-app-so-content-from-lg-home-search-opens-and-plays-movie-automatically/28146
 [lg-sim]: https://webostv.developer.lge.com/develop/tools/simulator-installation
 [lg-sim-intro]: https://webostv.developer.lge.com/develop/tools/simulator-introduction
+[seller-main]: https://seller.lgappstv.com/seller/main/Main.lge
+[seller-cloudlab]: https://seller.lgappstv.com/seller/support/userGuide/RetrieveUserGuide.lge?pstgSeq=49
+[seller-upload]: https://seller.lgappstv.com/seller/support/userGuide/RetrieveUserGuide.lge?pstgSeq=20
+[seller-alpha]: https://seller.lgappstv.com/seller/support/userGuide/RetrieveUserGuide.lge?pstgSeq=23
+[tvlabs]: https://tvlabs.ai/
+[tvlabs-webos]: https://docs.tvlabs.ai/platform/platforms/webos
+[tvlabs-sideload]: https://docs.tvlabs.ai/platform/guides/sideloading
+[ose-native]: https://www.webosose.org/docs/tutorials/native-apps/developing-downloadable-native-apps/
+[ose-2.20]: https://www.webosose.org/blog/2023/02/17/webos-ose-2-20-0-release/
 [fw]: https://github.com/lg-flutter-webos/flutter-webos/tree/950398131830e9bd5dc91e588c3db8f5c42322be
 [fw-org]: https://github.com/lg-flutter-webos
 [fw-8]: https://github.com/lg-flutter-webos/flutter-webos/issues/8

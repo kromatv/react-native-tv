@@ -165,6 +165,12 @@ npx rn-webos simulator run --gui
 runs the app on a virtual TV on the Mac and opens its live screen and a remote
 in the browser. See [the simulator](simulator/README.md).
 
+A real TV can also be reached over the internet: LG's webOS Cloud Test Lab in
+Seller Lounge shows an uploaded package running on a TV in Korea, and TV Labs
+rents sessions on LG TVs that `rn-webos` can install to through a tunnel
+([reference](docs/reference/webos-tv-platform.md#14-a-real-tv-without-owning-one)).
+Neither has been tried with this package yet.
+
 ## Examples
 
 The [example app](example/) has a screen for each.
@@ -248,7 +254,7 @@ This is an alpha, and no TV has run it. What stands behind each part:
 | The window, input and lifecycle on a TV | Written from SDL's webOS port and LG's and webOS OSE's sources; the simulator uses X11 instead |
 | Video | The player logic has tests against a fake of the TV's media service. Nothing has played on a TV |
 | `connect`, `install`, `run`, `key`, `logs` | Tests against a fake TV. Never run against a real one |
-| Publishing to LG's store | Unknown. LG documents web apps only; whether Seller Lounge accepts a native package is not stated anywhere ([reference](docs/reference/webos-tv-platform.md#12-who-may-publish-a-native-app)) |
+| Publishing to LG's store | Not tried. Seller Lounge's upload form has a Native file type, registered per chipset, for sellers with a contract with LG ([reference](docs/reference/webos-tv-platform.md#12-who-may-publish-a-native-app)) |
 
 Known gaps:
 
