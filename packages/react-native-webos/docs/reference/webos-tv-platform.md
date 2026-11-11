@@ -59,6 +59,7 @@ release (2018), which still carries the two native lifecycle versions TV apps us
 | SAM refuses a developer-path app whose id starts with `com.palm.`, `com.webos.` or `com.lge.`, or whose `trustLevel` is `trusted`. | D-ose | [sam1] `application_description.cpp` L160-163, L188-191, L421-422 |
 | `/media/developer` was 984 MB on an 8 GB 2026 model; a 176 MB debug build failed with "There is no available space to install App". | D-3p | [fw-8] |
 | LG's simulator runs web apps only: "there is no official webOS simulator" for native ones. LG's NDK installer runs on x86-64 Linux only. | D | [fw-9], [fw-10] (answered in LG's repository by a maintainer) |
+| LG's webOS TV 26 Simulator 1.5.0 for macOS is an Electron app. It refuses an `appinfo.json` without `id`, `title`, `type`, `main`, `icon` or `version`, and starts an app by loading its `main` in a Chromium window (`webContents.loadURL("file://<main>")`). It starts no program of the app's and opens no port a TV has (SSH, the key server, the remote control service). LG's page lists it under Limitations: "Native apps are not supported (only web apps are supported)." | D | [lg-sim-intro]; [lg-sim] `Contents/Resources/app.asar`, `.vite/build/main.js`, read on 2026-11-11 |
 
 ## 2. appinfo.json for a native app
 
@@ -483,6 +484,8 @@ from shallow clones at the commits below.
 [forum-28525]: https://forum.webostv.developer.lge.com/t/28525
 [forum-24869]: https://forum.webostv.developer.lge.com/t/how-to-implement-deep-linking-and-add-content-to-lg-webos-tv/24869
 [forum-28146]: https://forum.webostv.developer.lge.com/t/how-to-implement-deep-linking-in-webos-tv-app-so-content-from-lg-home-search-opens-and-plays-movie-automatically/28146
+[lg-sim]: https://webostv.developer.lge.com/develop/tools/simulator-installation
+[lg-sim-intro]: https://webostv.developer.lge.com/develop/tools/simulator-introduction
 [fw]: https://github.com/lg-flutter-webos/flutter-webos/tree/950398131830e9bd5dc91e588c3db8f5c42322be
 [fw-org]: https://github.com/lg-flutter-webos
 [fw-8]: https://github.com/lg-flutter-webos/flutter-webos/issues/8
