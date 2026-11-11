@@ -6,6 +6,12 @@ iOS's `RCTHost`/`RCTInstance`) and from the out-of-tree platforms that ship
 today (react-native-windows, react-native-macos). It ends with what this means
 for `runtime/host/src`.
 
+This file came with the port from react-native-tizen. An observation dated
+before 2026-11-11 was made with that package, in its simulator or on a Samsung
+TV, and only the names were changed here: it holds for webOS as far as the
+code is shared. What ran on an LG TV is in
+[hardware-verification.md](hardware-verification.md).
+
 ## How to read this page
 
 | Tag | Meaning |
@@ -51,10 +57,10 @@ are abbreviated:
 | Calls into JS | `callFunctionOnModule` goes through the buffered executor and needs the module registered with `RN$registerCallableModule`. `RCTDeviceEventEmitter`, `RCTNativeAppEventEmitter` and `HMRClient` are registered by `setUpBatchedBridge.js`. | doc: `ReactInstance.cpp:345-395`, `RN/Libraries/Core/setUpBatchedBridge.js:20-40` | Device events through `RCTDeviceEventEmitter.emit`. |
 | Surface start | `UIManager::startSurface` runs `RN$AppRegistry.runApplication` through the runtime executor it was given, and throws `Global was not installed` if the bundle has not run. | doc: `RC/renderer/uimanager/UIManager.cpp:235-262`, `RC/renderer/uimanager/AppRegistryBinding.cpp:27-31` | A buffered executor, so a surface can start before the bundle arrives. |
 
-Verified on a 2024 Samsung The Frame (LS03D), webOS 9.0, armv7, 2026-11-03,
+Verified on a 2024 Samsung The Frame (LS03D), Tizen 9.0, armv7, 2026-11-03,
 with KROMA's frame HUD, which counts `requestAnimationFrame` callbacks: before
 timers waited for a frame it read 5000 to 9000 FPS on every screen; after, 56
-to 60, the animator ticking at 60 Hz (`rn-webos perf`, `hz`).
+to 60, the animator ticking at 60 Hz (`rn-tizen perf`, `hz`).
 
 ### Errors
 

@@ -26,8 +26,9 @@ and ends with what the facts mean for this package.
 `react-native-platform-contract.md`, `react-native-dev-tooling.md`,
 `expo-modules-contract.md`, `expo-cli-integration.md` and `intl.md` came with
 the port from react-native-tizen: what they say about React Native, Expo,
-Hermes and ICU holds here, and a row that names Tizen, EFL or a Samsung TV
-describes that platform, not webOS.
+Hermes and ICU holds here, a row that names Tizen, EFL or a Samsung TV
+describes that platform, and an observation dated before 2026-11-11 was made
+with react-native-tizen, with only the names changed.
 
 ## How a fact is written
 

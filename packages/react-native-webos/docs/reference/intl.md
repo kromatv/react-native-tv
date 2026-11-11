@@ -6,6 +6,12 @@ touching `runtime/cmake/Icu.cmake`, `runtime/cmake/Hermes.cmake`,
 `runtime/host/src/intl/`, `src/runtime/icu-*.ts`, `src/metro/intl-locale-data.ts`
 or `react-native-overrides/intl/`.
 
+This file came with the port from react-native-tizen. An observation dated
+before 2026-11-11 was made with that package, in its simulator or on a Samsung
+TV, and only the names were changed here: it holds for webOS as far as the
+code is shared. What ran on an LG TV is in
+[hardware-verification.md](hardware-verification.md).
+
 Tags: **D** documented, **S** read in source, **I** inferred (reason given),
 **O** observed on the build machine or in the simulator (when), **H** verified
 on a TV. Hermes is `hermes-v260318099.0.4`, ICU 78.3, FormatJS as pinned in
@@ -47,10 +53,10 @@ on a TV. Hermes is `hermes-v260318099.0.4`, ICU 78.3, FormatJS as pinned in
 
 | Fact | Tag | Source |
 |---|---|---|
-| webOS 9.0 ships `libicuuc.so.74`, webOS 10.0 `libicuuc.so.76`. | O | rootstraps, `usr/lib/libicuuc.so.*` |
+| Tizen 9.0 ships `libicuuc.so.74`, Tizen 10.0 `libicuuc.so.76`. | O | rootstraps, `usr/lib/libicuuc.so.*` |
 | Samsung builds ICU without symbol renaming: `u_strToUpper` and `icu::TimeZone::createDefault()` carry no version, so the two releases differ by soname and ABI, not by symbol name. | O | `llvm-nm -D` on both rootstraps' `libicuuc.so` and `libicui18n.so`, 2026-11-03 |
 | Loading whichever `libicuuc.so.*` a TV has would serve a C caller across both years, but not Hermes, whose C++ calls ICU requires to be recompiled per release. | I | the two rows above and [icu-design] |
-| Which `LANG` and `TZ` a TV gives an app process, and whether `/etc/localtime` names the zone, is not documented. | I | not found in Samsung's or webOS's docs, 2026-11-03 |
+| Which `LANG` and `TZ` a TV gives an app process, and whether `/etc/localtime` names the zone, is not documented. | I | not found in Samsung's or Tizen's docs, 2026-11-03 |
 | The language of the TV's menus is `settings.localeInfo.locales.UI` of the settings service, a BCP 47 tag such as `en-GB`; the same object has `FMT`, the locale of formats, and a `timezone` that LG's example leaves empty. | D | `webos-tv-platform.md`, section 4.3 |
 | React Native's `I18nManager` reads the locale once, when its module loads, and has no listener for a change of it. | S | `Libraries/ReactNative/I18nManager.js:15-29` of React Native 0.88 |
 | flutter-webos ships ICU data in the package's `res/`. | D | [ft-package](https://github.com/flutter-webos/flutter-webos/blob/master/lib/build_targets/package.dart) |

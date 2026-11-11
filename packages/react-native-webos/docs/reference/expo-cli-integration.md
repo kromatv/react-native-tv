@@ -4,6 +4,12 @@ What `npx expo install` and `npx expo start` do with a package that ships a
 config plugin and a dev tools plugin, as `@kromatv/react-native-webos` does, and
 how they load the app's Metro config. Checked on 2026-11-03 and 2026-11-04.
 
+This file came with the port from react-native-tizen. An observation dated
+before 2026-11-11 was made with that package, in its simulator or on a Samsung
+TV, and only the names were changed here: it holds for webOS as far as the
+code is shared. What ran on an LG TV is in
+[hardware-verification.md](hardware-verification.md).
+
 | Tag | Meaning |
 |---|---|
 | **S** | Read in source: `@expo/cli` 58.1.18, `@expo/config-plugins` 58.0.11, `@expo/metro-config` 58.0.20, `@expo/require-utils` 58.0.5, `metro-config` 0.87.1 and 0.87.2, and `expo-modules-autolinking` 58.0.16 as installed in this repository, under `build/` (`src/` for `metro-config`). A fresh `create-expo-app` (SDK 58) installed `@expo/cli` 58.1.19 and autolinking 58.0.17; the files compared below are unchanged there |
@@ -49,9 +55,9 @@ how they load the app's Metro config. Checked on 2026-11-03 and 2026-11-04.
 |---|---|---|
 | `GET /.expo/.virtual-metro-entry.bundle?platform=webos&dev=true&minify=false` on `expo start` returned a 4.7 MB development bundle for the example, through `withWebOS`'s resolver. `/main.bundle` failed with `UnableToResolveError`, the server root being the workspace root, so the virtual entry, which Expo resolves to the app's `main`, is the URL to use. | O | |
 | The simulator's runtime fetched that bundle from the Mac's dev server (`http://192.168.5.2:<port>`, Lima's `host.lima.internal`), then stopped at `TurboModuleRegistry.getEnforcing(...): 'DevSettings' could not be found`: a development bundle needs React Native's dev support modules, which the runtime did not serve then. | O | simulator, 2026-11-03 |
-| From a fresh app's `expo start`, shift+m, Run on TV built, signed and installed the development build on GQ75LS03DAUXZG (webOS 9.0), whose runtime fetched the bundle from `http://192.168.1.124:8095` over the LAN and stopped at the same `DevSettings`. | O | TV, 2026-11-03 |
+| From a fresh app's `expo start`, shift+m, Run on TV built, signed and installed the development build on GQ75LS03DAUXZG (Tizen 9.0), whose runtime fetched the bundle from `http://192.168.1.124:8095` over the LAN and stopped at the same `DevSettings`. | O | TV, 2026-11-03 |
 | With the development runtime serving them ([react-native-dev-tooling.md](react-native-dev-tooling.md)), shift+m, Run in simulator in the example's `expo start` loaded the bundle from `http://192.168.1.124:8090`, joined `/message`, printed the app's `console.log` in Expo's terminal, and an edit reached the screen through Fast Refresh with focus and state kept. | O | simulator, 2026-11-03 |
-| `rn-webos run --dev-server http://localhost:8090` on GQ75LS03DAUXZG (The Frame, 2024, webOS 9.0) wrote `http://192.168.1.124:8090/...` into `bundleUrl`; the app joined `/message`, and an edit re-ran its effects without running `main` again. | O | TV, 2026-11-03 |
+| `rn-tizen run --dev-server http://localhost:8090` on GQ75LS03DAUXZG (The Frame, 2024, Tizen 9.0) wrote `http://192.168.1.124:8090/...` into `bundleUrl`; the app joined `/message`, and an edit re-ran its effects without running `main` again. | O | TV, 2026-11-03 |
 
 ## 4. What Expo does not do for webOS
 
@@ -107,7 +113,7 @@ how they load the app's Metro config. Checked on 2026-11-03 and 2026-11-04.
 | A usage line is `› Press <key bold> <│ dim> <text>`, and `› shift+a │ ...` for a shifted key; the full list adds `shift+a` (select an Android device or emulator) and `shift+i`. `shift+a` and `shift+i` ask for a device first. | S | `src/start/interface/commandsTable.js:100-116, 145-190, 255-270`; `src/start/interface/startInterface.js:170-205` |
 | Right after Metro starts, Expo sets `EXPO_DEV_SERVER_ORIGIN` to `http://localhost:<port>` (`https` with `--https`) in its own process. expo-modules-core declares it in its published `ExpoProcessEnv` type ("Used in `@expo/metro-runtime`"). Expo also sets `RCT_METRO_PORT` to the port it picked. | S | `src/start/server/metro/MetroBundlerDevServer.js:977-978`; `expo-modules-core` `build/ts-declarations/global.d.ts:13-14`; `src/utils/port.js:224-226` |
 | In a standalone npm app (`/tmp`, packed tarball): `npx expo start` printed `› Press t │ open on webOS TV` after `› Press ? │ show all commands`; `?` printed both lines after Expo's list; `t` and `T` typed into the open shift+m menu opened nothing; shift+t listed the TV used last, named from the scan, and the simulator; `2` opened the app in the simulator from the dev server, with Expo bundling `index.js` for `webos` in its own terminal; an edit of a component module kept the app's state, an edit of the entry file reloaded it; `r` reloaded it; the plugin's page and `/api/jobs` still answered. | O | simulator, 2026-11-04 |
-| In the same app, `t` opened the app on GQ75LS03DAUXZG (The Frame, 2024, webOS 9.0), the TV used last: Expo's terminal showed the build, install and launch, then the TV's `console.log`; an edit that renamed a log line went from `tick 20` to `tock 25`, the new code with the state kept; `r` restarted the count at 0. | O | TV, 2026-11-04 |
+| In the same app, `t` opened the app on GQ75LS03DAUXZG (The Frame, 2024, Tizen 9.0), the TV used last: Expo's terminal showed the build, install and launch, then the TV's `console.log`; an edit that renamed a log line went from `tick 20` to `tock 25`, the new code with the state kept; `r` restarted the count at 0. | O | TV, 2026-11-04 |
 | In a standalone Bun app (Bun 1.4.2, no config file), `bunx expo start` printed the same line; `t` and `T` typed into the shift+m menu opened nothing; shift+t, then `2`, opened the app in the simulator; an edit kept its state and `r` reloaded it. | O | simulator, 2026-11-04 |
 | `simulator run --dev-server` wrote `webos/build/bundle` without claiming `webos/`, so the next TV build refused it as the app's own. It claims the directory first now. | O | simulator, 2026-11-04 |
 

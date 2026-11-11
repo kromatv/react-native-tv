@@ -7,6 +7,12 @@ Android host, Metro and Expo's CLI.
 The host side lives in `runtime/host/devsupport/` and is compiled into the
 development runtime only ([decisions.md](../decisions.md)).
 
+This file came with the port from react-native-tizen. An observation dated
+before 2026-11-11 was made with that package, in its simulator or on a Samsung
+TV, and only the names were changed here: it holds for webOS as far as the
+code is shared. What ran on an LG TV is in
+[hardware-verification.md](hardware-verification.md).
+
 ## How to read this page
 
 | Tag | Meaning |
@@ -190,7 +196,7 @@ hashes the app, the TV's model and its firmware build (inf: two identical TVs
 on the same firmware running the same app replace each other in the proxy).
 
 Verified in the simulator and on a Samsung GQ75LS03DAUXZG (The Frame 2024,
-armv7, webOS 9.0), 2026-11-03: the app is listed in `/json/list` with
+armv7, Tizen 9.0), 2026-11-03: the app is listed in `/json/list` with
 `nativePageReloads`; `j` printed "Launching DevTools..." and opened React
 Native DevTools on it; a breakpoint in the example's uptime interval paused
 the runtime and DevTools put "Paused in debugger" on the TV; evaluation on the
