@@ -23,6 +23,7 @@ vi.mock('../bundle/bundle-app.ts', () => ({
 vi.mock('../runtime/icu-data.ts', () => ({ ensureIcuData: vi.fn() }));
 vi.mock('../runtime/ca-bundle.ts', () => ({ ensureCaBundle: vi.fn() }));
 vi.mock('../package/app-config-file.ts', () => ({ writeAppConfig: vi.fn(async () => {}) }));
+vi.mock('../package/strip-executable.ts', () => ({ stripExecutable: vi.fn() }));
 vi.mock('./runtime-steps.ts', () => ({ runtimeSteps: vi.fn() }));
 vi.mock('../metro/metro-platforms.ts', () => ({ webosMetroIssue: vi.fn(() => null) }));
 vi.mock('../dependencies/react-native-copies.ts', () => ({
