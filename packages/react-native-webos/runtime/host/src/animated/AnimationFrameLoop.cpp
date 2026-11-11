@@ -9,24 +9,14 @@
 
 namespace rnwebos {
 
-namespace {
-
-using WeakLoop = std::weak_ptr<AnimationFrameLoop>;
-
-void deleteAnimator(Ecore_Animator *animator) {
-  const std::unique_ptr<WeakLoop> loop(static_cast<WeakLoop *>(ecore_animator_del(animator)));
-}
-
-} // namespace
-
 AnimationFrameLoop::AnimationFrameLoop() = default;
 
 AnimationFrameLoop::~AnimationFrameLoop() {
-  if (animator_ == nullptr) return;
+  if (frameCallback_ == 0) return;
   if (isMainThread()) {
-    deleteAnimator(animator_);
+    MainLoop::get().removeFrameCallback(frameCallback_);
   } else {
-    runOnMainThread([animator = animator_] { deleteAnimator(animator); });
+    runOnMainThread([id = frameCallback_] { MainLoop::get().removeFrameCallback(id); });
   }
 }
 
@@ -54,15 +44,17 @@ void AnimationFrameLoop::stop() {
 
 void AnimationFrameLoop::startOnMainThread(std::function<void()> onFrame) {
   onFrame_ = std::move(onFrame);
-  if (animator_ != nullptr) return;
-  animator_ = ecore_animator_add(tick, std::make_unique<WeakLoop>(weak_from_this()).release());
+  if (frameCallback_ != 0) return;
+  frameCallback_ = MainLoop::get().addFrameCallback([weak = weak_from_this()](MainLoop::Clock::time_point) {
+    if (auto self = weak.lock()) self->tick();
+  });
   frames_ = 0;
   startedAt_ = std::chrono::steady_clock::now();
 }
 
 void AnimationFrameLoop::stopOnMainThread() {
-  if (animator_ != nullptr) {
-    deleteAnimator(std::exchange(animator_, nullptr));
+  if (frameCallback_ != 0) {
+    MainLoop::get().removeFrameCallback(std::exchange(frameCallback_, 0));
     const auto elapsed =
         std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - startedAt_).count();
     log(LogLevel::Debug, std::format("Native animated: {} frames in {} ms on the main loop", frames_, elapsed));
@@ -70,21 +62,19 @@ void AnimationFrameLoop::stopOnMainThread() {
   if (!ticking_) onFrame_ = nullptr;
 }
 
-Eina_Bool AnimationFrameLoop::tick(void *data) {
-  auto self = static_cast<WeakLoop *>(data)->lock();
-  if (!self || self->animator_ == nullptr) return ECORE_CALLBACK_RENEW;
-  const auto owner = self->owner_.lock();
-  if (!owner || !self->onFrame_) {
-    self->stopOnMainThread();
-    return ECORE_CALLBACK_RENEW;
+void AnimationFrameLoop::tick() {
+  if (frameCallback_ == 0) return;
+  const auto owner = owner_.lock();
+  if (!owner || !onFrame_) {
+    stopOnMainThread();
+    return;
   }
-  self->ticking_ = true;
-  ++self->frames_;
-  auto onFrame = self->onFrame_;
+  ticking_ = true;
+  ++frames_;
+  auto onFrame = onFrame_;
   onFrame();
-  self->ticking_ = false;
-  if (self->animator_ == nullptr) self->onFrame_ = nullptr;
-  return ECORE_CALLBACK_RENEW;
+  ticking_ = false;
+  if (frameCallback_ == 0) onFrame_ = nullptr;
 }
 
 } // namespace rnwebos

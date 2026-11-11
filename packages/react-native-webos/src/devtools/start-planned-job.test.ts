@@ -31,13 +31,13 @@ afterEach(() => {
 
 describe('openPlan', () => {
   it('runs Run on TV or Run in simulator against the dev server, ending at launch', () => {
-    expect(openPlan('10.0.0.7:26101', 'http://localhost:8081')).toEqual({
+    expect(openPlan('10.0.0.7', 'http://localhost:8081')).toEqual({
       kind: 'run-tv',
-      title: 'Run on TV 10.0.0.7:26101',
+      title: 'Run on TV 10.0.0.7',
       args: [
         'run',
         '--device',
-        '10.0.0.7:26101',
+        '10.0.0.7',
         '--dev-server',
         'http://localhost:8081',
         '--no-logs',
@@ -69,7 +69,7 @@ describe('startPlannedJob', () => {
     };
     await writeJob(dir, running);
 
-    await startPlannedJob(dir, openPlan('10.0.0.7:26101', 'http://localhost:8081'), '/app');
+    await startPlannedJob(dir, openPlan('10.0.0.7', 'http://localhost:8081'), '/app');
 
     expect(startJob).toHaveBeenCalledWith(
       dir,

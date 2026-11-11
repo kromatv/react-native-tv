@@ -1,15 +1,18 @@
+import type { IncomingMessage } from 'node:http';
 import { afterEach, describe, expect, it } from 'vitest';
 import { type WebSocket, WebSocketServer } from 'ws';
 import { openTvConnection } from './tv-socket.ts';
 
 const servers: WebSocketServer[] = [];
 
-function listen(onConnection: (socket: WebSocket) => void): Promise<string> {
+function listen(
+  onConnection: (socket: WebSocket, request: IncomingMessage) => void,
+): Promise<string> {
   return new Promise((resolve, reject) => {
     const started = new WebSocketServer({ host: '127.0.0.1', port: 0 }, () => {
       const address = started.address();
       if (address === null || typeof address === 'string') reject(new Error('no TCP port'));
-      else resolve(`ws://127.0.0.1:${address.port}/api/v2/channels/samsung.remote.control`);
+      else resolve(`ws://127.0.0.1:${address.port}`);
     });
     started.on('connection', onConnection);
     servers.push(started);
@@ -40,13 +43,13 @@ describe('openTvConnection', () => {
     const received: string[] = [];
     const url = await listen((socket) => {
       socket.on('message', (data) => received.push(String(data)));
-      socket.send('{"event":"ms.channel.connect"}');
+      socket.send('{"type":"hello","payload":{}}');
     });
 
     const message = await new Promise<string>((resolve) => {
       const connection = openTvConnection(url, {
         onMessage: (text) => {
-          connection.send('{"method":"ms.remote.control"}');
+          connection.send('{"id":"hello","type":"hello"}');
           resolve(text);
         },
         onClosed: ignore,
@@ -54,18 +57,18 @@ describe('openTvConnection', () => {
     });
     await new Promise((resolve) => setTimeout(resolve, 50));
 
-    expect(message).toBe('{"event":"ms.channel.connect"}');
-    expect(received).toEqual(['{"method":"ms.remote.control"}']);
+    expect(message).toBe('{"type":"hello","payload":{}}');
+    expect(received).toEqual(['{"id":"hello","type":"hello"}']);
   });
 
   it('reads a message the TV sends as a binary frame as text', async () => {
-    const url = await listen((socket) => socket.send(Buffer.from('{"event":"ms.error"}')));
+    const url = await listen((socket) => socket.send(Buffer.from('{"type":"error"}')));
 
     const message = await new Promise<string>((resolve) => {
       openTvConnection(url, { onMessage: resolve, onClosed: ignore });
     });
 
-    expect(message).toBe('{"event":"ms.error"}');
+    expect(message).toBe('{"type":"error"}');
   });
 
   it('reports the reason the TV closed with, else its code', async () => {
@@ -81,6 +84,17 @@ describe('openTvConnection', () => {
     const reason = await closeReason('ws://127.0.0.1:1/');
 
     expect(reason).toMatch(/ECONNREFUSED|closed with code/);
+  });
+
+  it('says when the socket opens, and sends no Origin header for the TV to refuse', async () => {
+    const origins: (string | undefined)[] = [];
+    const url = await listen((_socket, request) => origins.push(request.headers.origin));
+
+    await new Promise<void>((resolve) => {
+      openTvConnection(url, { onOpen: resolve, onMessage: ignore, onClosed: ignore });
+    });
+
+    expect(origins).toEqual([undefined]);
   });
 
   it('closes on request, with nothing left to send', async () => {

@@ -1,30 +1,22 @@
 #include "ReactHost.h"
 
-#include "HostWindow.h"
-#include "tv/ScreenSize.h"
-#include "views/ModalHostView.h"
+#include "platform/MainLoop.h"
+
+#include <chrono>
 
 namespace rnwebos {
 
 void ReactHost::createWindow() {
-  window_ = createHostWindow(config_.appKey, device_.screenWidth, device_.screenHeight);
-  const auto size = fitWindowToScreen(window_, config_.uhd, {device_.screenWidth, device_.screenHeight});
+  window_ = std::make_unique<HostWindow>(config_.appKey, PixelSize{device_.screenWidth, device_.screenHeight});
+  const auto size = window_->size();
   device_.screenWidth = size.width;
   device_.screenHeight = size.height;
-  keyboardFocus_ = std::make_unique<KeyboardFocus>(evas_object_evas_get(window_));
-  textMeasurer_ = std::make_shared<EvasTextMeasurer>();
-  overlays_.errorScreen = std::make_unique<ErrorScreen>(evas_object_evas_get(window_));
-  overlays_.alertDialog = std::make_unique<AlertDialog>(evas_object_evas_get(window_));
-}
-
-void ReactHost::routeInput() {
-  remoteInput_ = std::make_unique<RemoteInput>(
-      window_,
-      [this](const RemoteEvent &event) { onRemoteEvent(event); },
-      [this](const Ecore_Event_Key &key, bool isDown) {
-        return !overlays_.errorScreen->isShown() && !overlays_.alertDialog->isShown() &&
-               keyboardFocus_->handleKey(key, isDown);
-      });
+  if (const auto rate = window_->refreshRate(); rate > 0) {
+    MainLoop::get().setFramePeriod(std::chrono::nanoseconds(static_cast<std::int64_t>(1e9 / rate)));
+  }
+  scene_ = std::make_unique<Scene>(*window_);
+  textMeasurer_ = std::make_shared<SkiaTextMeasurer>();
+  errorScreen_ = std::make_unique<ErrorScreen>(*scene_);
 }
 
 void ReactHost::startSurface() {
@@ -39,17 +31,42 @@ void ReactHost::emitDeviceEvent(const std::string &eventName, folly::dynamic pay
       "RCTDeviceEventEmitter", "emit", folly::dynamic::array(eventName, std::move(payload)));
 }
 
+void ReactHost::handleEvent(const SDL_Event &event) {
+  switch (event.type) {
+    case SDL_EVENT_KEY_DOWN:
+      remotePresses_->keyDown(event.key);
+      return;
+    case SDL_EVENT_KEY_UP:
+      remotePresses_->keyUp(event.key);
+      return;
+    case SDL_EVENT_QUIT:
+    case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
+      exit();
+      return;
+    case SDL_EVENT_DID_ENTER_BACKGROUND:
+      pause();
+      return;
+    case SDL_EVENT_DID_ENTER_FOREGROUND:
+      resume();
+      return;
+    case SDL_EVENT_WINDOW_FOCUS_LOST:
+      remotePresses_->releaseAll();
+      return;
+    case SDL_EVENT_WINDOW_EXPOSED:
+      scene_->invalidate();
+      return;
+    default:
+      return;
+  }
+}
+
 void ReactHost::onRemoteEvent(const RemoteEvent &event) {
-  if (overlays_.errorScreen->isShown()) {
+  if (errorScreen_->isShown()) {
     if (event.isBack) exit();
     return;
   }
-  if (overlays_.alertDialog->isShown()) {
-    overlays_.alertDialog->handle(event);
-    return;
-  }
   if (event.isBack) {
-    if (!ModalHostView::requestCloseTopmost(evas_object_evas_get(window_))) emitDeviceEvent("hardwareBackPress", nullptr);
+    emitDeviceEvent("hardwareBackPress", nullptr);
     return;
   }
   emitDeviceEvent(

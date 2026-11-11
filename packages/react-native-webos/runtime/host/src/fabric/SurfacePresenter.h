@@ -8,15 +8,13 @@
 #include <react/renderer/scheduler/SurfaceHandler.h>
 #include <react/utils/ContextContainer.h>
 
-#include <Evas.h>
-
 #include <map>
 #include <memory>
 #include <string>
 
 namespace rnwebos {
 
-/// Runs one React Native surface with Fabric and mounts it on an Evas canvas.
+/// Runs one React Native surface with Fabric and mounts it in a scene.
 /// Fabric commits on the JavaScript thread; each finished transaction is
 /// mounted on the main loop. Create, use and destroy it on the main thread.
 class SurfacePresenter final : public facebook::react::SchedulerDelegate {
@@ -28,7 +26,7 @@ class SurfacePresenter final : public facebook::react::SchedulerDelegate {
     facebook::react::RuntimeExecutor bridgelessBindingsExecutor;
   };
 
-  SurfacePresenter(Evas *evas, Dependencies dependencies);
+  SurfacePresenter(Scene &scene, Dependencies dependencies);
   ~SurfacePresenter() override;
 
   SurfacePresenter(const SurfacePresenter &) = delete;

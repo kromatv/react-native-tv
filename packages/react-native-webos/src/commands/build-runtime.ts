@@ -8,12 +8,9 @@ import {
   type OptionSpecs,
 } from '../cli/command.ts';
 import { Reporter } from '../cli/reporter.ts';
-import { chooseTarget, TARGET_OPTIONS } from '../cli/target-options.ts';
 import { runtimeSteps } from '../pipeline/runtime-steps.ts';
-import { locateWebOSSdk } from '../webos/webos-sdk.ts';
 
 const OPTIONS = {
-  ...TARGET_OPTIONS,
   release: {
     type: 'boolean',
     description: 'Compile the runtime release builds get, with no dev server tooling',
@@ -22,29 +19,22 @@ const OPTIONS = {
   ...COMMON_OPTIONS,
 } as const satisfies OptionSpecs;
 
-/** `rn-webos build-runtime`: compiles `libreact-native-webos.so` for an app. */
+/** `rn-webos build-runtime`: compiles the `react-native-webos` executable for an app. */
 export const buildRuntimeCommand: Command = {
   name: 'build-runtime',
-  summary: "Compile the native runtime against the app's react-native and Expo",
+  summary: "Compile the TV runtime against the app's react-native and Expo",
   options: OPTIONS,
   examples: [
     'rn-webos build-runtime',
     'rn-webos build-runtime --release',
-    'rn-webos build-runtime --arch aarch64 --verbose',
+    'rn-webos build-runtime --verbose',
   ],
   async run(args, context) {
     const values = parseCommandArgs('build-runtime', args, OPTIONS);
     const reporter = new Reporter({ verbose: values.verbose ?? false });
     const app = loadAppProject(resolve(context.cwd, values.project ?? '.'));
-    const target = chooseTarget({
-      command: 'build-runtime',
-      arch: values.arch,
-      platform: values.platform,
-      configPlatform: app.config.platform,
-    });
-    reporter.field('Target', `${target.arch}, webOS ${target.platformVersion}`);
     const flavour = values.release === true ? 'release' : 'development';
-    const library = await runtimeSteps(reporter, locateWebOSSdk(), app, target, flavour);
-    reporter.field('Runtime', library);
+    const executable = await runtimeSteps(reporter, app, flavour);
+    reporter.field('Runtime', executable);
   },
 };

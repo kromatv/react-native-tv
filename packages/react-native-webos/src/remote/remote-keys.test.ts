@@ -1,30 +1,32 @@
 import { describe, expect, it } from 'vitest';
-import { remoteKeyCode } from './remote-keys.ts';
+import { remoteButton } from './remote-keys.ts';
 
-describe('remoteKeyCode', () => {
+describe('remoteButton', () => {
   it("takes the simulator's key names in any case", () => {
-    expect(
-      ['Down', 'enter', 'OK', 'Back', 'PlayPause', 'FastForward', 'Blue'].map(remoteKeyCode),
-    ).toEqual([
-      'KEY_DOWN',
-      'KEY_ENTER',
-      'KEY_ENTER',
-      'KEY_RETURN',
-      'KEY_PLAY_BACK',
-      'KEY_FF',
-      'KEY_CYAN',
+    expect(['Down', 'enter', 'OK', 'Back', 'FastForward', 'Blue'].map(remoteButton)).toEqual([
+      'DOWN',
+      'ENTER',
+      'ENTER',
+      'BACK',
+      'FASTFORWARD',
+      'BLUE',
     ]);
   });
 
   it('takes digits', () => {
-    expect(remoteKeyCode('1')).toBe('KEY_1');
+    expect(remoteButton('1')).toBe('1');
   });
 
-  it('passes a KEY_ code through as written', () => {
-    expect(remoteKeyCode('KEY_CH_LIST')).toBe('KEY_CH_LIST');
+  it('passes a button name in capitals through as written', () => {
+    expect(remoteButton('VOLUMEUP')).toBe('VOLUMEUP');
+    expect(remoteButton('3D_MODE')).toBe('3D_MODE');
+  });
+
+  it('says an LG TV has no play/pause toggle', () => {
+    expect(() => remoteButton('PlayPause')).toThrow('no play/pause button');
   });
 
   it('refuses an unknown name and suggests the closest', () => {
-    expect(() => remoteKeyCode('Dwon')).toThrow('Unknown key Dwon. Did you mean down?');
+    expect(() => remoteButton('Dwon')).toThrow('Unknown key Dwon. Did you mean down?');
   });
 });

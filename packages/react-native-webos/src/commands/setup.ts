@@ -1,28 +1,22 @@
 import { COMMON_OPTIONS, parseCommandArgs, type Command } from '../cli/command.ts';
 import { Reporter } from '../cli/reporter.ts';
-import { chooseTarget, TARGET_OPTIONS } from '../cli/target-options.ts';
-import { setupTarget } from '../sysroot/setup-target.ts';
-import { locateWebOSSdk } from '../webos/webos-sdk.ts';
+import { ensureWebOSSdk } from '../sysroot/webos-sdk.ts';
 
-const OPTIONS = { ...TARGET_OPTIONS, ...COMMON_OPTIONS };
-
-/** `rn-webos setup`: makes a webOS target buildable. */
+/** `rn-webos setup`: fetches the SDK a TV build compiles against. */
 export const setupCommand: Command = {
   name: 'setup',
-  summary: 'Prepare a webOS target for native builds (package does this on its own)',
-  options: OPTIONS,
-  examples: ['rn-webos setup', 'rn-webos setup --arch aarch64 --platform 9.0'],
+  summary: 'Download the SDK TV builds compile against (package does this on its own)',
+  options: COMMON_OPTIONS,
+  examples: ['rn-webos setup'],
   async run(args) {
-    const values = parseCommandArgs('setup', args, OPTIONS);
+    const values = parseCommandArgs('setup', args, COMMON_OPTIONS);
     const reporter = new Reporter({ verbose: values.verbose ?? false });
-    const target = chooseTarget({ command: 'setup', arch: values.arch, platform: values.platform });
-    const sdk = locateWebOSSdk();
-    const sysroot = await reporter.step(
-      `webOS ${target.platformVersion} for ${target.arch}`,
-      (task) => setupTarget(task, sdk, target),
-      (mirrored) =>
-        mirrored.reused ? 'already set up' : `${mirrored.patchedLibraries} libraries patched`,
+    const sdk = await reporter.step(
+      'webOS SDK',
+      (task) => ensureWebOSSdk(task),
+      (found) =>
+        found.reused ? `${found.version}, already set up` : `${found.version}, extracted`,
     );
-    reporter.field('Sysroot', sysroot.path);
+    reporter.field('SDK', sdk.path);
   },
 };

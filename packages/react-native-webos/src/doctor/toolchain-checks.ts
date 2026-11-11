@@ -1,4 +1,7 @@
 import { installHint } from '../cli/install-hints.ts';
+import { missingLlvmTools } from '../runtime/llvm-dir.ts';
+import { SDK_PIN } from '../sysroot/sdk-pin.ts';
+import { installedWebOSSdk } from '../sysroot/webos-sdk.ts';
 import type { Task } from '../task.ts';
 import {
   checking,
@@ -11,20 +14,31 @@ import {
 import { findLlvmTools, findProgram } from './find-program.ts';
 
 const MINIMUM_CMAKE = '3.24';
-const MINIMUM_DOTNET = '6.0';
 
 async function versionOf(task: Task, command: readonly string[]): Promise<string> {
   const output = await task.run(command);
   return parseVersion(output) ?? output.trim().split('\n')[0] ?? 'unknown';
 }
 
+/** The SDK a TV build compiles against, which the first build downloads; a warning until then. */
+export function checkSdk(): Promise<CheckResult> {
+  return checking('webOS SDK', async () => {
+    const sdk = await installedWebOSSdk();
+    if (sdk !== null) return passed('webOS SDK', `${sdk.version} at ${sdk.path}`);
+    return failed(
+      'webOS SDK',
+      `${SDK_PIN.version} not downloaded yet`,
+      'The first build downloads it; rn-webos setup does it ahead of time.',
+      'warn',
+    );
+  });
+}
+
 /** Homebrew's (or `WEBOS_LLVM_DIR`'s) clang and lld, which cross-compile for webOS. */
 export function checkLlvm(task: Task): Promise<CheckResult> {
   return checking('LLVM', async () => {
     const tools = findLlvmTools();
-    const missing = Object.entries(tools)
-      .filter(([, path]) => path === null)
-      .map(([name]) => name);
+    const missing = missingLlvmTools();
     if (missing.length > 0 || tools.clang === null) {
       return failed(
         'LLVM',
@@ -50,15 +64,6 @@ export function checkNinja(task: Task): Promise<CheckResult> {
   return checking('Ninja', async () =>
     passed('Ninja', await versionOf(task, ['ninja', '--version'])),
   );
-}
-
-/** The .NET SDK the shell is built with. */
-export function checkDotnet(task: Task): Promise<CheckResult> {
-  return checking('.NET SDK', async () => {
-    const version = await versionOf(task, ['dotnet', '--version']);
-    if (isAtLeastVersion(version, MINIMUM_DOTNET)) return passed('.NET SDK', version);
-    return failed('.NET SDK', `${version} is older than ${MINIMUM_DOTNET}`, installHint('dotnet'));
-  });
 }
 
 /** Node.js, which runs Expo's CLI for the bundle. */

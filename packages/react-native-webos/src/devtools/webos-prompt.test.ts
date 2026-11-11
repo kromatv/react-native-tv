@@ -3,7 +3,7 @@ import { FakeStdin } from './expo-stdin.fixtures.ts';
 import { promptWebOSTarget } from './webos-prompt.ts';
 
 const TARGETS = [
-  { target: '10.0.0.7:26101', label: '10.0.0.7  The Frame  (used last)' },
+  { target: '10.0.0.7', label: '10.0.0.7  living-room  (used last)' },
   { target: 'simulator', label: 'webOS simulator' },
 ];
 
@@ -22,7 +22,7 @@ describe('promptWebOSTarget', () => {
     const { stdin, answer, printed } = prompted();
 
     expect(printed()).toBe(
-      '› Select a webOS TV or the simulator\n  1  10.0.0.7  The Frame  (used last)\n  2  webOS simulator\n  Esc  cancel\n',
+      '› Select a webOS TV or the simulator\n  1  10.0.0.7  living-room  (used last)\n  2  webOS simulator\n  Esc  cancel\n',
     );
     stdin.press('9');
     stdin.press('a');
@@ -50,7 +50,7 @@ describe('promptWebOSTarget', () => {
     stdin.startExpo();
     stdin.press('1');
 
-    expect(await answer).toBe('10.0.0.7:26101');
+    expect(await answer).toBe('10.0.0.7');
     expect(stdin.listeners('data').filter((each) => each === stdin.handleKeypress)).toHaveLength(1);
   });
 });

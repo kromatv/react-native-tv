@@ -1,116 +1,128 @@
-import { mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { FixableError } from '../errors.ts';
-import {
-  capabilityPayload,
-  fakeTv,
-  TV_CAPABILITIES,
-  type FakeTv,
-  type ServiceHandler,
-} from '../sdb/fake-tv.fixtures.ts';
-import { SdbConnectError } from '../sdb/sdb-connection.ts';
-import { connectFailure, listDevices, probeDevice, resolveDevice } from './devices.ts';
+import { useFakeTvs, useTemporaryState } from './connected-tv.fixtures.ts';
+import { listDevices, probeDevice, resolveDevice } from './devices.ts';
 import { readKnownDevices, rememberDevice } from './known-devices.ts';
+import { SshConnectError } from './ssh-session.ts';
+import { connectFailure } from './tv-session.ts';
 
-const tvs: FakeTv[] = [];
-let state = '';
-let previous: string | undefined;
-
-const capability: ServiceHandler = (stream) => {
-  stream.write(capabilityPayload(TV_CAPABILITIES));
-  stream.close();
-};
-
-async function tv(handshake?: 'reset'): Promise<FakeTv> {
-  const started = await fakeTv({ services: { 'capability:': capability }, handshake });
-  tvs.push(started);
-  return started;
-}
-
-beforeEach(() => {
-  previous = process.env.XDG_STATE_HOME;
-  state = mkdtempSync(join(tmpdir(), 'rn-webos-state-'));
-  process.env.XDG_STATE_HOME = state;
-});
-
-afterEach(async () => {
-  if (previous === undefined) delete process.env.XDG_STATE_HOME;
-  else process.env.XDG_STATE_HOME = previous;
-  rmSync(state, { recursive: true, force: true });
-  await Promise.all(tvs.splice(0).map((started) => started.close()));
-});
+useTemporaryState();
+const connect = useFakeTvs();
 
 describe('probeDevice', () => {
-  it('names the TV by the model in its banner and reads its CPU and platform', async () => {
-    const started = await tv();
+  it('logs in and reads the model, the webOS release and the firmware', async () => {
+    const { tv } = await connect({ name: 'lounge' });
 
-    const device = await probeDevice({ host: '127.0.0.1', port: started.port });
+    const device = await probeDevice({ name: 'lounge', host: '127.0.0.1', port: tv.port });
 
-    expect(device).toMatchObject({
-      serial: `127.0.0.1:${started.port}`,
-      name: 'GQ75LS03DAUXZG',
-      capabilities: { cpuArch: 'armv7', platformVersion: '9.0' },
+    expect(device).toEqual({
+      address: { host: '127.0.0.1', port: tv.port },
+      name: 'lounge',
+      info: { modelName: 'OLED65C25LB', sdkVersion: '11.2.0', firmwareVersion: '43.21.74' },
     });
   });
 
-  it('explains a TV that resets the connection as one held by another host', async () => {
-    const started = await tv('reset');
+  it('still answers for a TV that does not tell what it is', async () => {
+    const { tv } = await connect({
+      luna: {
+        'com.webos.service.tv.systemproperty/getSystemInfo': () => [
+          { returnValue: false, errorText: 'Denied method call' },
+        ],
+      },
+    });
 
-    const probing = probeDevice({ host: '127.0.0.1', port: started.port }, 2000);
+    const device = await probeDevice({ name: 'tv1', host: '127.0.0.1', port: tv.port });
 
-    await expect(probing).rejects.toBeInstanceOf(FixableError);
-    await expect(probing).rejects.toThrow('refused the connection');
+    expect(device.info).toEqual({ modelName: '', sdkVersion: '', firmwareVersion: '' });
+  });
+
+  it('explains a TV that refuses the key, and one whose SSH port is closed', async () => {
+    const refusing = await connect({ acceptKey: false });
+    const gone = await connect();
+    await gone.tv.close();
+
+    await expect(
+      probeDevice({ name: 'a', host: '127.0.0.1', port: refusing.tv.port }),
+    ).rejects.toMatchObject({
+      message: `127.0.0.1:${refusing.tv.port} refused the key rn-webos has for it`,
+      hint: expect.stringContaining(`rn-webos connect 127.0.0.1:${refusing.tv.port}`),
+    });
+    await expect(
+      probeDevice({ name: 'b', host: '127.0.0.1', port: gone.tv.port }),
+    ).rejects.toThrow('Developer Mode is off');
   });
 });
 
 describe('connectFailure', () => {
   it('keeps an error that is not a connection failure', () => {
     const error = new Error('disk full');
+    const address = { host: '192.168.1.50', port: 9922 };
 
-    expect(connectFailure('x', error)).toBe(error);
-    expect(connectFailure('x', 'text').message).toBe('text');
-    expect(connectFailure('x', new SdbConnectError('silent', 'quiet')).message).toContain(
-      'never answered',
+    expect(connectFailure(address, error)).toBe(error);
+    expect(connectFailure(address, 'text').message).toBe('text');
+    expect(connectFailure(address, new SshConnectError('silent', 'quiet'))).toBeInstanceOf(
+      FixableError,
+    );
+    expect(connectFailure(address, new SshConnectError('unreachable', 'x')).message).toBe(
+      'No TV answers at 192.168.1.50',
     );
   });
 });
 
 describe('resolveDevice', () => {
-  it('remembers a TV reached by address, and finds it again without one', async () => {
-    const started = await tv();
+  it('finds a connected TV by address or by name, and puts it first', async () => {
+    const first = await connect({ name: 'lounge' });
+    const second = await connect({ name: 'office' });
 
-    await resolveDevice(`127.0.0.1:${started.port}`);
-    const again = await resolveDevice(undefined);
+    const byName = await resolveDevice('lounge');
+    const byAddress = await resolveDevice(`127.0.0.1:${second.tv.port}`);
 
-    expect(await readKnownDevices()).toEqual([{ host: '127.0.0.1', port: started.port }]);
-    expect(again.serial).toBe(`127.0.0.1:${started.port}`);
+    expect(byName.address.port).toBe(first.tv.port);
+    expect(byAddress.name).toBe('office');
+    expect((await readKnownDevices()).map((tv) => tv.name)).toEqual(['office', 'lounge']);
   });
 
-  it('refuses what is not an address, and asks for one when no TV answers', async () => {
-    await expect(resolveDevice('living-room')).rejects.toThrow('is not a TV address');
+  it('takes the only connected TV that answers when none is named', async () => {
+    const answering = await connect({ name: 'lounge' });
+    await rememberDevice({ name: 'gone', host: '127.0.0.1', port: 9 });
+
+    expect((await resolveDevice(undefined)).address.port).toBe(answering.tv.port);
+  });
+
+  it('says how to connect a TV it does not know', async () => {
+    await connect({ name: 'lounge' });
+
+    await expect(resolveDevice('192.168.1.77')).rejects.toMatchObject({
+      message: 'rn-webos is not connected to the TV at 192.168.1.77',
+      hint: expect.stringContaining('rn-webos connect 192.168.1.77'),
+    });
+    await expect(resolveDevice('kitchen')).rejects.toMatchObject({
+      message: 'No connected TV is named kitchen',
+      hint: 'Pass its IP address, or one of: lounge',
+    });
+  });
+
+  it('asks for a TV when none is connected, and which one when several answer', async () => {
     await expect(resolveDevice(undefined)).rejects.toThrow('No TV is connected');
-  });
 
-  it('asks which TV when several answer', async () => {
-    const first = await tv();
-    const second = await tv();
-    await rememberDevice({ host: '127.0.0.1', port: first.port });
-    await rememberDevice({ host: '127.0.0.1', port: second.port });
+    await connect({ name: 'lounge' });
+    await connect({ name: 'office' });
 
-    await expect(resolveDevice(undefined)).rejects.toThrow('2 TVs are connected');
+    await expect(resolveDevice(undefined)).rejects.toMatchObject({
+      message: '2 TVs are connected',
+      hint: 'Pick one with --device: office, lounge',
+    });
   });
 });
 
 describe('listDevices', () => {
-  it('reports a remembered TV that does not answer as offline', async () => {
-    const started = await tv();
-    await started.close();
-    await rememberDevice({ host: '127.0.0.1', port: started.port });
+  it('reports a remembered TV that does not answer as offline, with why', async () => {
+    const { tv } = await connect({ name: 'lounge' });
+    await tv.close();
 
     const [status] = await listDevices();
 
-    expect(status?.state).toBe('offline');
+    expect(status).toMatchObject({ state: 'offline', known: { name: 'lounge' } });
+    expect(status?.state === 'offline' && status.reason).toContain('Developer Mode is off');
   });
 });

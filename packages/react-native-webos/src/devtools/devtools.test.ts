@@ -40,10 +40,10 @@ describe('planCommand', () => {
       CommandInputError,
     );
 
-    await rememberDevice({ host: '192.168.1.60', port: 26101 });
+    await rememberDevice({ name: 'lounge', host: '192.168.1.60', port: 9922 });
 
     expect((await planCommand('run-tv', { device: '' }, DEV_SERVER)).args).toContain(
-      '192.168.1.60:26101',
+      '192.168.1.60',
     );
   });
 
@@ -55,11 +55,13 @@ describe('planCommand', () => {
       DEV_SERVER,
     ]);
     expect((await planCommand('find-tvs', {}, DEV_SERVER)).args).toEqual(['devices']);
-    expect((await planCommand('create-certificate', { name: 'ci' }, DEV_SERVER)).args).toEqual([
-      'certificate',
-      'create-author',
-      'ci',
-    ]);
+    expect(
+      (await planCommand('connect-tv', { device: ' 192.168.1.50 ', passphrase: 'A1b2C3' }, DEV_SERVER))
+        .args,
+    ).toEqual(['connect', '192.168.1.50', '--passphrase', 'A1b2C3']);
+    await expect(
+      planCommand('connect-tv', { device: '192.168.1.50', passphrase: '' }, DEV_SERVER),
+    ).rejects.toThrow('enter the passphrase');
     await expect(planCommand('find-tvs', { extra: 1 }, DEV_SERVER)).rejects.toThrow();
     await expect(planCommand('nope', {}, DEV_SERVER)).rejects.toThrow('Unknown command nope');
   });

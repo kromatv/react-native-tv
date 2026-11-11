@@ -1,94 +1,74 @@
-import { resolve } from 'node:path';
+import { basename, resolve } from 'node:path';
 import { COMMON_OPTIONS, parseCommandArgs, UsageError, type Command } from '../cli/command.ts';
+import { DEVICE_PLACEHOLDER } from '../cli/device-option.ts';
 import { Reporter } from '../cli/reporter.ts';
+import { FixableError } from '../errors.ts';
 import { splitActionArgs } from '../simulator/action-args.ts';
-import { deployPackage, openPackage } from '../webos/deploy-package.ts';
+import { launchOn } from '../webos/app-control.ts';
+import { addressText } from '../webos/device-address.ts';
 import { resolveDevice } from '../webos/devices.ts';
-import { resolveSigning } from '../webos/signing-identity.ts';
+import { installOn } from '../webos/install-app.ts';
+import { onDevice } from '../webos/tv-session.ts';
 
 const OPTIONS = {
   device: {
     type: 'string',
     short: 'd',
-    placeholder: '<ip>',
-    description: 'The TV to install on (default: the only one reached before that answers)',
-  },
-  profile: {
-    type: 'string',
-    placeholder: '<name>',
-    description: 'The webOS Studio signing profile (default: the active one)',
-  },
-  author: {
-    type: 'string',
-    placeholder: '<file.p12>',
-    description:
-      "The author certificate, instead of the profile's (password in RN_WEBOS_AUTHOR_PASSWORD)",
-  },
-  distributor: {
-    type: 'string',
-    placeholder: '<file.p12>',
-    description:
-      "The distributor certificate, instead of the profile's (password in RN_WEBOS_DISTRIBUTOR_PASSWORD)",
-  },
-  'keep-signature': {
-    type: 'boolean',
-    description: 'Install the package as it is signed, instead of signing it for this TV',
+    placeholder: DEVICE_PLACEHOLDER,
+    description: 'The TV to install on (default: the only connected one that answers)',
   },
   launch: { type: 'boolean', description: 'Launch the app once it is installed' },
   ...COMMON_OPTIONS,
 } as const;
 
-/** `rn-webos install <file>`: signs any `.tpk` or `.wgt` for a TV, installs it, and can launch it. */
+// LG's packager, and this one, name a package <app id>_<version>_<architecture>.ipk.
+const PACKAGE_FILE = /^([a-z0-9.+-]+)_\d+\.\d+\.\d+_[a-z0-9_]+\.ipk$/;
+
+function appIdOf(installed: string | null, file: string): string {
+  const id = installed ?? PACKAGE_FILE.exec(basename(file))?.[1];
+  if (id !== undefined) return id;
+  throw new FixableError(
+    'The package is installed, but the TV did not say which app it holds',
+    'Launch it from the TV, or name the file <app id>_<version>_<architecture>.ipk.',
+  );
+}
+
+/** `rn-webos install <file>`: installs any `.ipk` on a TV, and can launch it. */
 export const installCommand: Command = {
   name: 'install',
-  summary: 'Sign a .tpk or .wgt for a TV, install it and optionally launch it',
+  summary: 'Install an .ipk on a TV and optionally launch it',
   options: OPTIONS,
   examples: [
-    'rn-webos install app.wgt --device 192.168.1.50 --launch',
-    'rn-webos install build/app.tpk --profile Store',
+    'rn-webos install com.example.myapp_1.0.0_arm.ipk --device 192.168.1.50 --launch',
+    'rn-webos install build/app.ipk',
   ],
   async run(args, context) {
     const { positionals, options } = splitActionArgs(args);
     const flags = parseCommandArgs('install', options, OPTIONS);
     const [file, ...extra] = positionals;
     if (file === undefined || extra.length > 0) {
-      throw new UsageError('install needs one package, e.g. `rn-webos install app.wgt`', 'install');
+      throw new UsageError('install needs one package, e.g. `rn-webos install app.ipk`', 'install');
     }
+    const path = resolve(context.cwd, file);
     const reporter = new Reporter({ verbose: flags.verbose ?? false });
-    const opened = await reporter.step(
-      'Package',
-      () => openPackage(resolve(context.cwd, file)),
-      ({ info }) => `${info.appId}, ${info.kind}`,
-    );
-    const signing =
-      flags['keep-signature'] === true
-        ? null
-        : await reporter.step(
-            'Certificates',
-            () =>
-              resolveSigning({
-                profile: flags.profile,
-                author: flags.author,
-                distributor: flags.distributor,
-              }),
-            (resolved) => resolved.name,
-          );
     const device = await reporter.step(
       'TV',
       () => resolveDevice(flags.device),
-      (tv) => tv.name || tv.serial,
+      (tv) => tv.name,
     );
-    await reporter.step(
-      flags.launch === true ? 'Install and launch' : 'Install',
-      (task) =>
-        deployPackage({
-          package: opened,
-          device,
-          signing,
-          launch: flags.launch === true,
-          progress: task.progress,
-        }),
-      () => device.serial,
-    );
+    await onDevice(device, async (session) => {
+      const installed = await reporter.step(
+        'Install',
+        (task) => installOn(session, device, path, task.progress),
+        () => addressText(device.address),
+      );
+      if (flags.launch !== true) return;
+      const appId = appIdOf(installed, path);
+      await reporter.step(
+        'Launch',
+        () => launchOn(session, device, appId),
+        () => appId,
+      );
+    });
   },
 };

@@ -1,10 +1,9 @@
 #pragma once
 
+#include "../platform/MainLoop.h"
 #include "RemoteKeyMap.h"
 
-#include <Ecore.h>
-#include <Ecore_Input.h>
-
+#include <cstdint>
 #include <functional>
 #include <string_view>
 #include <unordered_map>
@@ -21,17 +20,17 @@ struct RemoteEvent {
 };
 
 /// Turns key downs and ups into RemoteEvents, and tracks the keys held down
-/// (docs/reference/webos-input.md, section 12). It never reports the TV's
-/// repeats of a held key. Every key goes to the key filter first, when there
-/// is one: a key the filter uses, down or up, is never a RemoteEvent, and a
-/// release it uses ends the press it would have finished. Main thread only: a
-/// hold starts on an Ecore timer.
+/// (docs/reference/webos-window-input.md, section 15). It never reports the
+/// TV's repeats of a held key. Every key goes to the key filter first, when
+/// there is one: a key the filter uses, down or up, is never a RemoteEvent,
+/// and a release it uses ends the press it would have finished. Main thread
+/// only: a hold starts on a main loop timer.
 class RemotePresses final {
  public:
   using EventHandler = std::function<void(const RemoteEvent &event)>;
   /// Offered every key first, down (`isDown`) and up; true when it used the
   /// key. A focused text field reads keys this way.
-  using KeyFilter = std::function<bool(const Ecore_Event_Key &key, bool isDown)>;
+  using KeyFilter = std::function<bool(const SDL_KeyboardEvent &key, bool isDown)>;
 
   explicit RemotePresses(EventHandler onEvent, KeyFilter keyFilter = {});
   ~RemotePresses();
@@ -40,30 +39,28 @@ class RemotePresses final {
   RemotePresses &operator=(const RemotePresses &) = delete;
 
   /// True when the filter or a remote key used it.
-  bool keyDown(const Ecore_Event_Key &key);
+  bool keyDown(const SDL_KeyboardEvent &key);
   /// True when the filter used it or it released a key held down here.
-  bool keyUp(const Ecore_Event_Key &key);
+  bool keyUp(const SDL_KeyboardEvent &key);
   /// Forgets every key held down, ending any hold, for when the app may never
   /// see their releases.
   void releaseAll();
 
  private:
   struct Press {
-    RemotePresses *owner;
     RemoteKey key;
-    unsigned int lastSeen;
-    Ecore_Timer *holdTimer;
+    std::uint64_t lastSeenMs;
+    MainLoop::Id holdTimer;
     bool isHeld;
   };
 
-  static Eina_Bool onHoldStarted(void *press);
-
-  void track(const Ecore_Event_Key &key, const RemoteKey &remoteKey);
+  void track(std::uint32_t code, const SDL_KeyboardEvent &key, const RemoteKey &remoteKey);
   void finish(Press &press, bool released);
+  void holdStarted(std::uint32_t code);
 
   EventHandler onEvent_;
   KeyFilter keyFilter_;
-  std::unordered_map<unsigned int, Press> presses_;
+  std::unordered_map<std::uint32_t, Press> presses_;
 };
 
 } // namespace rnwebos

@@ -33,21 +33,9 @@
       "types": "./dist/metro/with-webos.d.ts",
       "default": "./dist/metro/with-webos.js"
     },
-    "./voice": {
-      "types": "./dist/api/voice.d.ts",
-      "default": "./dist/api/voice.js"
-    },
-    "./preview": {
-      "types": "./dist/api/preview.d.ts",
-      "default": "./dist/api/preview.js"
-    },
     "./webos": {
       "types": "./dist/webos/index.d.ts",
       "default": "./dist/webos/index.js"
-    },
-    "./preview-json": {
-      "types": "./dist/api/preview-json.d.ts",
-      "default": "./dist/api/preview-json.js"
     },
     "./app.plugin.js": "./app.plugin.js",
     "./package.json": "./package.json"
@@ -55,7 +43,6 @@
   "files": [
     "dist",
     "runtime",
-    "shell",
     "simulator",
     "react-native-overrides",
     "docs",
@@ -73,9 +60,9 @@
     "node": ">=22.13.0"
   },
   "scripts": {
-    "build": "rm -rf dist && tsc -p tsconfig.build.json && tsc -p src/api/tsconfig.build.json",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
     "prepare": "bun run build",
-    "typecheck": "tsc -p tsconfig.json && tsc -p src/api && tsc -p example/tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json && tsc -p example/tsconfig.json",
     "test": "vitest run",
     "test:runtime": "bun scripts/test-runtime.ts",
     "lint": "oxlint --ignore-path .gitignore --deny-warnings .",
@@ -88,11 +75,13 @@
     "@formatjs/intl-numberformat": "10.0.2",
     "@formatjs/intl-pluralrules": "7.0.2",
     "@formatjs/intl-relativetimeformat": "13.0.1",
+    "ssh2": "1.17.0",
     "ws": "8.22.1",
     "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",
+    "@types/ssh2": "^1.15.6",
     "@types/ws": "^8.18.2",
     "@vitest/coverage-istanbul": "5.0.5",
     "eslint-plugin-react-hooks": "7.1.1",

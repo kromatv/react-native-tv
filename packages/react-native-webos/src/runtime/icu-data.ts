@@ -13,8 +13,24 @@ import {
   writeIcuCommonData,
 } from './icu-common-data.ts';
 
-const TRIM_VERSION = 2;
-const LOCALE_TREES = new Set(['', 'coll', 'curr', 'zone']);
+const TRIM_VERSION = 3;
+const BREAK_TREE = 'brkitr';
+const LOCALE_TREES = new Set(['', 'coll', 'curr', 'zone', BREAK_TREE]);
+const ROOT_BREAK_RULES = ['char.brk', 'word.brk', 'line.brk'];
+// ICU breaks words, and for some of these lines, by dictionary in the
+// languages written without spaces; `brkitr/root.res` names the file per script
+// (docs/reference/skia-rendering.md, section 5).
+const DICTIONARIES: Readonly<Record<string, string>> = {
+  ja: 'cjdict.dict',
+  zh: 'cjdict.dict',
+  th: 'thaidict.dict',
+  lo: 'laodict.dict',
+  km: 'khmerdict.dict',
+  my: 'burmesedict.dict',
+};
+const BREAK_DATA = /\.(?:brk|dict)$/;
+const BREAK_RULES_SUFFIX = '.brk';
+const NAME_CHARACTER = /[A-Za-z_]/;
 const DROPPED_EXTENSIONS = ['.cnv', '.spp', '.cfu'];
 const DROPPED_ITEMS = new Set([
   'unames.icu',
@@ -38,19 +54,66 @@ function keepsLocale(locale: string, languages: ReadonlySet<string>): boolean {
   return locale === 'root' || languages.has(locale.split('_')[0] ?? '');
 }
 
+function isLocaleItem(file: string, languages: ReadonlySet<string>): boolean {
+  const locale = NOT_LOCALES.has(file) ? null : LOCALE_ITEM.exec(file);
+  return locale?.[1] !== undefined && locale[1] !== 'root' && keepsLocale(locale[1], languages);
+}
+
+function namedBreakRules(resource: Uint8Array): string[] {
+  const text = Buffer.from(resource.buffer, resource.byteOffset, resource.byteLength).toString(
+    'utf16le',
+  );
+  const names: string[] = [];
+  let end = text.indexOf(BREAK_RULES_SUFFIX);
+  while (end !== -1) {
+    let start = end;
+    while (start > 0 && NAME_CHARACTER.test(text.charAt(start - 1))) start -= 1;
+    if (start < end) names.push(text.slice(start, end + BREAK_RULES_SUFFIX.length));
+    end = text.indexOf(BREAK_RULES_SUFFIX, end + 1);
+  }
+  return names;
+}
+
+/**
+ * The break rules and dictionaries, by file name, that text in `languages` is
+ * laid out with: the grapheme, word and line rules of the root locale, the
+ * rules each language's own `brkitr` item names, and each language's
+ * dictionary.
+ */
+export function breakDataFiles(data: IcuCommonData, languages: ReadonlySet<string>): Set<string> {
+  const files = new Set(ROOT_BREAK_RULES);
+  for (const language of languages) {
+    const dictionary = DICTIONARIES[language];
+    if (dictionary !== undefined) files.add(dictionary);
+  }
+  for (const item of data.items) {
+    if (!item.name.startsWith(`${BREAK_TREE}/`)) continue;
+    if (!isLocaleItem(item.name.slice(BREAK_TREE.length + 1), languages)) continue;
+    for (const named of namedBreakRules(item.bytes)) files.add(named);
+  }
+  return files;
+}
+
 /**
  * Whether ICU data trimmed to `languages` keeps the item `name`: the shared
  * tables, the normalization and collation data, root, and the main,
- * collation, currency and time-zone-name data of each language and its
- * regional variants (a date format's number symbols read the currency data).
- * Display names, units, spelled-out numbers, transliteration, break iteration
- * and legacy charsets are what Hermes never asks ICU for.
+ * collation, currency, time-zone-name and break iteration data of each
+ * language and its regional variants (a date format's number symbols read the
+ * currency data, Skia's text layout the break rules), with the break rules and
+ * dictionaries in `breakData` only. Display names, units, spelled-out numbers,
+ * transliteration and legacy charsets are what neither Hermes nor Skia asks
+ * ICU for.
  */
-export function keepsIcuItem(name: string, languages: ReadonlySet<string>): boolean {
+export function keepsIcuItem(
+  name: string,
+  languages: ReadonlySet<string>,
+  breakData: ReadonlySet<string> = new Set(),
+): boolean {
   const slash = name.lastIndexOf('/');
   const tree = slash < 0 ? '' : name.slice(0, slash);
   const file = name.slice(slash + 1);
   if (!LOCALE_TREES.has(tree)) return false;
+  if (tree === BREAK_TREE && BREAK_DATA.test(file)) return breakData.has(file);
   if (DROPPED_ITEMS.has(file) || DROPPED_EXTENSIONS.some((extension) => file.endsWith(extension))) {
     return false;
   }
@@ -61,8 +124,9 @@ export function keepsIcuItem(name: string, languages: ReadonlySet<string>): bool
 /** `data` with only the items {@link keepsIcuItem} keeps, each tree's index listing only them. */
 export function trimIcuData(data: IcuCommonData, languages: readonly string[]): IcuCommonData {
   const kept = new Set(languages);
+  const breakData = breakDataFiles(data, kept);
   const items = data.items
-    .filter((item) => keepsIcuItem(item.name, kept))
+    .filter((item) => keepsIcuItem(item.name, kept, breakData))
     .map((item) =>
       item.name.endsWith('res_index.res')
         ? {

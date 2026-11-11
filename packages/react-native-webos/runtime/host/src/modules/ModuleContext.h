@@ -14,7 +14,6 @@ namespace rnwebos {
 struct AlertRequest;
 struct ErrorReport;
 class LaunchUrl;
-class TvState;
 
 /// What the platform's TurboModules need from the host, handed to each as it
 /// is created. Every function may be called from any thread, and does nothing
@@ -28,7 +27,6 @@ struct ModuleContext {
   std::function<void(const ErrorReport &report)> reportFatalError;
   std::shared_ptr<const LaunchUrl> launchUrl;
   std::function<void(AlertRequest request)> showAlert;
-  std::shared_ptr<TvState> tv;
 };
 
 } // namespace rnwebos

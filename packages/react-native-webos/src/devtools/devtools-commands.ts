@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { WEBOS_PLUGIN } from '../config/webos-settings.ts';
+import { addressText } from '../webos/device-address.ts';
 import { readKnownDevices } from '../webos/known-devices.ts';
 
 /** A dev tools command turned into the `rn-webos` arguments its job runs. */
@@ -15,8 +16,11 @@ export interface JobPlan {
 
 const emptyArgs = z.object({}).strict();
 const deviceArgs = z.object({ device: z.string().max(64) }).strict();
-const nameArgs = z
-  .object({ name: z.string().regex(/^[A-Za-z0-9_.-]{1,64}$/, 'letters, digits, . _ -') })
+const connectArgs = z
+  .object({
+    device: z.string().trim().min(1, "enter the TV's IP address").max(64),
+    passphrase: z.string().trim().min(1, 'enter the passphrase the Developer Mode app shows').max(64),
+  })
   .strict();
 
 /** A command's arguments that cannot run, told to the user as they are. */
@@ -33,7 +37,7 @@ async function lastDevice(): Promise<string> {
   const [last] = await readKnownDevices();
   if (last === undefined)
     throw new CommandInputError('No TV was used before: enter its IP address.');
-  return `${last.host}:${last.port}`;
+  return addressText(last);
 }
 
 /** What each command of `expo-module.config.json` runs, given Expo's arguments and its dev server. */
@@ -73,12 +77,12 @@ export async function planCommand(
       bundles: false,
     };
   }
-  if (command === 'create-certificate') {
-    const { name } = nameArgs.parse(args);
+  if (command === 'connect-tv') {
+    const { device, passphrase } = connectArgs.parse(args);
     return {
       kind: command,
-      title: `Create certificate ${name}`,
-      args: ['certificate', 'create-author', name],
+      title: `Connect TV ${device}`,
+      args: ['connect', device, '--passphrase', passphrase],
       exclusive: false,
       bundles: false,
     };

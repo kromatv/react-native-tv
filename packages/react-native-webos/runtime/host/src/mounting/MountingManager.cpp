@@ -23,7 +23,7 @@ const char *componentNameOf(const facebook::react::ShadowViewMutation &mutation)
 
 } // namespace
 
-MountingManager::MountingManager(Evas *evas) : evas_(evas) {}
+MountingManager::MountingManager(Scene &scene) : scene_(scene) {}
 
 ComponentView *MountingManager::findView(facebook::react::Tag tag) const {
   auto found = views_.find(tag);
@@ -45,9 +45,9 @@ void MountingManager::dispatchCommand(facebook::react::Tag tag, const std::strin
   view->handleCommand(name, args);
 }
 
-void MountingManager::startSurface(facebook::react::SurfaceId surfaceId) {
-  auto root = std::make_unique<ComponentView>(evas_, surfaceId);
-  root->mountAsRoot();
+void MountingManager::startSurface(facebook::react::SurfaceId surfaceId, int order) {
+  auto root = std::make_unique<ComponentView>(scene_, surfaceId);
+  root->mountAsRoot(order);
   views_[surfaceId] = std::move(root);
 }
 
@@ -85,7 +85,7 @@ void MountingManager::performTransaction(const facebook::react::MountingCoordina
 }
 
 void MountingManager::create(const facebook::react::ShadowView &shadowView) {
-  auto view = createComponentView(evas_, shadowView);
+  auto view = createComponentView(scene_, shadowView);
   view->updateProps(shadowView.props);
   view->updateEventEmitter(shadowView.eventEmitter);
   view->updateState(shadowView.state);

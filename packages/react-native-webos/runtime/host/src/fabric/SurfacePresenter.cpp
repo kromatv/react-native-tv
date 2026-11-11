@@ -31,8 +31,8 @@ facebook::react::SchedulerToolbox makeToolbox(const SurfacePresenter::Dependenci
 
 } // namespace
 
-SurfacePresenter::SurfacePresenter(Evas *evas, Dependencies dependencies)
-    : mountingManager_(evas),
+SurfacePresenter::SurfacePresenter(Scene &scene, Dependencies dependencies)
+    : mountingManager_(scene),
       contextContainer_(dependencies.contextContainer),
       scheduler_(std::make_unique<facebook::react::Scheduler>(makeToolbox(dependencies), nullptr, this)),
       lastSurfaceId_(kSurfaceId),
@@ -57,7 +57,7 @@ std::unique_ptr<facebook::react::SurfaceHandler> SurfacePresenter::runSurface(
     facebook::react::SurfaceId surfaceId,
     facebook::react::Size size) {
   using namespace facebook::react;
-  mountingManager_.startSurface(surfaceId);
+  mountingManager_.startSurface(surfaceId, surfaceId == kSurfaceId ? Scene::kSurfaceOrder : Scene::kSurfaceOrder + 1);
   auto surface = std::make_unique<SurfaceHandler>(appKey, surfaceId);
   surface->setContextContainer(contextContainer_);
   surface->setProps(folly::dynamic::object());

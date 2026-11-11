@@ -16,6 +16,3 @@ export const DEPENDENCIES_FILE = fromPackage('../runtime/dependencies.json');
 
 /** The licences of what a package carries, copied into every package's `res/`. */
 export const NOTICES_FILE = fromPackage('../THIRD_PARTY_NOTICES.md');
-
-/** The .NET shell project a webOS package is generated from. */
-export const SHELL_DIR = fromPackage('../shell');

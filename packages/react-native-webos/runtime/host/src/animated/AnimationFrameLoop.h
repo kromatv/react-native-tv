@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Ecore.h>
+#include "../platform/MainLoop.h"
 
 #include <chrono>
 #include <functional>
@@ -10,11 +10,10 @@ namespace rnwebos {
 
 /// The frame clock React Native's C++ animated driver asks its platform for
 /// (`NativeAnimatedNodesManager`'s start and stop callbacks): runs a callback
-/// on every frame of the EFL main loop from an Ecore animator, as iOS runs it
-/// from a CADisplayLink. `start` and `stop` may be called from any thread; the
-/// callback runs on the main thread, and never once the owner given to
-/// `follow` has died, so a frame queued during teardown cannot reach a
-/// destroyed driver.
+/// on every frame of the main loop, as iOS runs it from a CADisplayLink.
+/// `start` and `stop` may be called from any thread; the callback runs on the
+/// main thread, and never once the owner given to `follow` has died, so a
+/// frame queued during teardown cannot reach a destroyed driver.
 class AnimationFrameLoop final : public std::enable_shared_from_this<AnimationFrameLoop> {
  public:
   AnimationFrameLoop();
@@ -31,12 +30,12 @@ class AnimationFrameLoop final : public std::enable_shared_from_this<AnimationFr
   void stop();
 
  private:
-  static Eina_Bool tick(void *data);
+  void tick();
   void startOnMainThread(std::function<void()> onFrame);
   void stopOnMainThread();
 
   std::weak_ptr<const void> owner_;
-  Ecore_Animator *animator_{nullptr};
+  MainLoop::Id frameCallback_{0};
   std::function<void()> onFrame_;
   bool ticking_{false};
   int frames_{0};

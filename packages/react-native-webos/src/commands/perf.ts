@@ -1,6 +1,6 @@
 import { resolve } from 'node:path';
 import { COMMON_OPTIONS, parseCommandArgs, PROJECT_OPTIONS, type Command } from '../cli/command.ts';
-import { deviceAddress } from '../cli/device-option.ts';
+import { DEVICE_PLACEHOLDER, deviceHost } from '../cli/device-option.ts';
 import { parsePort } from '../cli/log-options.ts';
 import { PACKAGE_OPTIONS, targetPackage } from '../cli/package-option.ts';
 import { Reporter } from '../cli/reporter.ts';
@@ -11,7 +11,7 @@ const OPTIONS = {
   device: {
     type: 'string',
     short: 'd',
-    placeholder: '<ip>',
+    placeholder: DEVICE_PLACEHOLDER,
     description: 'Only read the app on this TV (default: any that connects)',
   },
   port: {
@@ -53,7 +53,7 @@ export const perfCommand: Command = {
     await watchPerf(reporter, {
       ...parsePerfFlags(flags, 'perf', context.cwd),
       port: parsePort(flags.port, '--port', 'perf'),
-      device: flags.device === undefined ? null : deviceAddress(flags.device, 'perf'),
+      device: flags.device === undefined ? null : await deviceHost(flags.device, 'perf'),
       app: targetPackage(flags.package, resolve(context.cwd, flags.project ?? '.'), 'perf'),
       inUseHint: IN_USE_HINT,
     });

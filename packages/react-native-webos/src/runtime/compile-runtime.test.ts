@@ -13,23 +13,22 @@ vi.mock('./cmake.ts', async (importOriginal) => ({
   ...(await importOriginal<typeof import('./cmake.ts')>()),
   buildCMakeProject: vi.fn(),
 }));
+vi.mock('./llvm-dir.ts', () => ({ locateLlvmDir: () => '/llvm/bin' }));
 vi.mock('../codegen/react-native-specs.ts', () => ({
   generateReactNativeSpecs: vi.fn(async () => ({ includeDir: '', sources: [] })),
 }));
 
-const SDK = { root: '/webos-studio', sdb: '/sdb', webosCli: '/webos', packageManager: '/pm' };
-const TARGET = { arch: 'armv7l', platformVersion: '9.0' } as const;
+const SDK = { path: '/cache/sdk', version: '2026.08-webos', reused: true };
 let dir: string;
 
 function inputs() {
   const app = fakeApp(dir);
   return {
     sdk: SDK,
-    target: TARGET,
     flavour: 'development' as const,
     packages: app.packages,
     hermes: { version: '0.1', importFile: '/hermes/Import.cmake', hermesc: '/hermes/hermesc' },
-    dirs: runtimeBuildDirs(app.packages.reactNative, TARGET, 'development'),
+    dirs: runtimeBuildDirs(app.packages.reactNative, 'development'),
     nativeLibrariesFile: '/libraries.json',
   };
 }
@@ -46,19 +45,23 @@ afterEach(() => {
 });
 
 describe('compileRuntime', () => {
-  it("builds the runtime target against the app's packages and returns the library", async () => {
+  it("builds the runtime target against the app's packages and returns the executable", async () => {
     const build = inputs();
     vi.mocked(buildCMakeProject).mockImplementation(async () => {
-      mkdirSync(dirname(build.dirs.library), { recursive: true });
-      writeFileSync(build.dirs.library, '');
+      mkdirSync(dirname(build.dirs.executable), { recursive: true });
+      writeFileSync(build.dirs.executable, '');
     });
 
-    expect(await compileRuntime(recordingTask(), build)).toBe(build.dirs.library);
+    expect(await compileRuntime(recordingTask(), build)).toBe(build.dirs.executable);
     expect(buildCMakeProject).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
         targets: ['react-native-webos'],
-        definitions: expect.objectContaining({ RN_WEBOS_LIBRARIES_FILE: '/libraries.json' }),
+        definitions: expect.objectContaining({
+          RN_WEBOS_LIBRARIES_FILE: '/libraries.json',
+          WEBOS_SDK_DIR: '/cache/sdk',
+          WEBOS_LLVM_DIR: '/llvm/bin',
+        }),
       }),
     );
   });
@@ -66,8 +69,8 @@ describe('compileRuntime', () => {
   it('compiles the dev server tooling into the development runtime only', async () => {
     const build = inputs();
     vi.mocked(buildCMakeProject).mockImplementation(async () => {
-      mkdirSync(dirname(build.dirs.library), { recursive: true });
-      writeFileSync(build.dirs.library, '');
+      mkdirSync(dirname(build.dirs.executable), { recursive: true });
+      writeFileSync(build.dirs.executable, '');
     });
 
     await compileRuntime(recordingTask(), build);
@@ -79,7 +82,7 @@ describe('compileRuntime', () => {
     expect(flavours).toEqual(['ON', 'OFF']);
   });
 
-  it('says to look at the build output when the library is missing after it', async () => {
+  it('says to look at the build output when the executable is missing after it', async () => {
     await expect(compileRuntime(recordingTask(), inputs())).rejects.toBeInstanceOf(FixableError);
   });
 });

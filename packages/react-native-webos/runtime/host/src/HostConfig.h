@@ -26,13 +26,8 @@ struct HostConfig {
   std::optional<LogEndpoint> logEndpoint;
   bool development;
   std::string resourceDir;
-  /// `expo.webos.resolution` is `4k`.
-  bool uhd;
-  /// expo-video's `supportsBackgroundPlayback`: the manifest declares the `media` background category.
+  /// expo-video's `supportsBackgroundPlayback`: players may keep playing while the app is hidden.
   bool backgroundMedia;
-  /// `expo.webos.voice` is set.
-  bool voice;
-  std::optional<std::string> voiceSearchUrl;
 };
 
 /// `react-native-webos.json` is missing, too large, or has a bad field, which the message names.

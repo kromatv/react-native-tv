@@ -1,7 +1,6 @@
 #include "Log.h"
 
-#include <dlog.h>
-
+#include <cstdio>
 #include <exception>
 #include <format>
 #include <mutex>
@@ -27,21 +26,6 @@ std::shared_ptr<LogSink> currentSink() {
   return installed.sink;
 }
 
-log_priority dlogPriority(LogLevel level) {
-  using enum LogLevel;
-  switch (level) {
-    case Debug:
-      return DLOG_DEBUG;
-    case Info:
-      return DLOG_INFO;
-    case Warning:
-      return DLOG_WARN;
-    case Error:
-      return DLOG_ERROR;
-  }
-  return DLOG_INFO;
-}
-
 } // namespace
 
 std::string_view logLevelName(LogLevel level) {
@@ -60,8 +44,8 @@ std::string_view logLevelName(LogLevel level) {
 }
 
 void log(LogLevel level, std::string_view message) {
-  const std::string line(message);
-  dlog_print(dlogPriority(level), "ReactNative", "%s", line.c_str());
+  const auto line = std::format("[{}] {}\n", logLevelName(level), message);
+  std::fwrite(line.data(), 1, line.size(), stderr);
   if (auto sink = currentSink()) {
     sink->write(level, message);
   }

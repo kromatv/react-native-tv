@@ -1,38 +1,52 @@
-import { SDB_PORT } from '../sdb/sdb-connection.ts';
+import { SSAP_PORTS, type SsapPorts } from '../remote/ssap-client.ts';
+import { DEVELOPER_SSH_PORT } from '../webos/device-address.ts';
+import { KEY_SERVER_PORT } from '../webos/key-server.ts';
 import { arpHosts } from './arp.ts';
 import { compareHosts, localSubnets, prefixOf, subnetHosts } from './lan.ts';
 import { mapPool } from './map-pool.ts';
-import { fetchApiDevice, SAMSUNG_API_PORT } from './samsung-api.ts';
-import { ssdpSearch, type SsdpReply } from './ssdp.ts';
+import { SECOND_SCREEN_SEARCH_TARGET, ssdpSearch, type SsdpReply } from './ssdp.ts';
 import { tcpOpen } from './tcp-probe.ts';
-import { fetchDeviceDescription } from './upnp.ts';
+import { fetchTvIdentity } from './tv-identity.ts';
+import { fetchDeviceDescription, isLgTv } from './upnp.ts';
 
-/** A Samsung TV found on the network, and what it said about itself. */
+/** An LG TV found on the network, and what it said about itself. */
 export interface FoundTv {
   readonly host: string;
+  /** The name its owner gave it, `[LG] webOS TV <model>` by default; empty when unknown. */
   readonly name: string;
   readonly model: string;
-  /** Null when the TV's REST API did not answer, so Developer mode is unknown. */
-  readonly developerMode: boolean | null;
-  readonly developerIp: string | null;
-  readonly sdbPort: number;
+  /** The id the TV keeps when its address changes; null when it gave none. */
+  readonly id: string | null;
+  /** The webOS release, such as `11.2.0`; null when its remote control service did not answer. */
+  readonly webosVersion: string | null;
+  /** Whether its Developer Mode SSH port is open. */
+  readonly developerMode: boolean;
+  /** Whether its key server answers, so `rn-webos connect` can fetch the key now. */
+  readonly keyServer: boolean;
+  readonly sshPort: number;
 }
 
 export interface ScanOptions {
   /** Probe these addresses only, instead of the local networks. */
   readonly hosts?: readonly string[];
   readonly onProgress?: (done: number, total: number) => void;
-  /** The ports a TV answers on, Samsung's REST API and sdb unless a test says otherwise. */
+  /** The ports a TV answers on, LG's unless a test says otherwise. */
   readonly ports?: ScanPorts;
   readonly ssdpWindowMs?: number;
 }
 
-interface ScanPorts {
-  readonly api: number;
-  readonly sdb: number;
+/** The ports that tell an LG TV and its Developer Mode: remote control, SSH and the key server. */
+export interface ScanPorts {
+  readonly remote: SsapPorts;
+  readonly ssh: number;
+  readonly keyServer: number;
 }
 
-const DEFAULT_PORTS: ScanPorts = { api: SAMSUNG_API_PORT, sdb: SDB_PORT };
+const DEFAULT_PORTS: ScanPorts = {
+  remote: SSAP_PORTS,
+  ssh: DEVELOPER_SSH_PORT,
+  keyServer: KEY_SERVER_PORT,
+};
 
 const CONNECT_TIMEOUT_MS = 500;
 const CONCURRENCY = 64;
@@ -47,67 +61,56 @@ export async function sweepTargets(): Promise<string[]> {
   return [...new Set([...recent, ...rest])];
 }
 
+async function anyOpen(host: string, ports: readonly number[]): Promise<boolean> {
+  const [port, ...rest] = ports;
+  if (port === undefined) return false;
+  return (await tcpOpen(host, port, CONNECT_TIMEOUT_MS)) || anyOpen(host, rest);
+}
+
 async function identify(
   host: string,
   reply: SsdpReply | undefined,
   ports: ScanPorts,
 ): Promise<FoundTv | null> {
-  if (await tcpOpen(host, ports.api, CONNECT_TIMEOUT_MS)) {
-    const device = await fetchApiDevice(host, ports.api);
-    if (device !== null) {
-      return {
-        host,
-        name: device.name,
-        model: device.modelName,
-        developerMode: device.developerMode,
-        developerIp: device.developerIp,
-        sdbPort: ports.sdb,
-      };
-    }
-  }
-  const description = reply === undefined ? null : await fetchDeviceDescription(reply.location);
-  if (description?.manufacturer.startsWith('Samsung') === true) {
-    return {
-      host,
-      name: description.friendlyName,
-      model: description.modelName,
-      developerMode: null,
-      developerIp: null,
-      sdbPort: ports.sdb,
-    };
-  }
-  if (await tcpOpen(host, ports.sdb, CONNECT_TIMEOUT_MS)) {
-    return {
-      host,
-      name: '',
-      model: '',
-      developerMode: true,
-      developerIp: null,
-      sdbPort: ports.sdb,
-    };
-  }
-  return null;
+  const [described, identity, developerMode, keyServer] = await Promise.all([
+    reply === undefined ? null : fetchDeviceDescription(reply.location),
+    fetchTvIdentity(host, ports.remote),
+    tcpOpen(host, ports.ssh, CONNECT_TIMEOUT_MS),
+    tcpOpen(host, ports.keyServer, CONNECT_TIMEOUT_MS),
+  ]);
+  const description = described !== null && isLgTv(described) ? described : null;
+  if (description === null && identity === null && !developerMode) return null;
+  return {
+    host,
+    name: description?.friendlyName ?? '',
+    model: description?.modelNumber || identity?.model || '',
+    id: identity?.uuid ?? (description?.udn || reply?.uuid) ?? null,
+    webosVersion: identity?.releaseVersion ?? null,
+    developerMode,
+    keyServer,
+    sshPort: ports.ssh,
+  };
 }
 
 /**
- * Finds the Samsung TVs on the local networks: an SSDP search for DIAL, then
- * every host of each `/24`, asked on Samsung's REST API port, its UPnP
- * description, or the sdb port.
+ * Finds the LG TVs on the local networks: an SSDP search for their remote
+ * control service, then every host of each `/24`, tried on the remote control
+ * ports and the Developer Mode SSH port, for networks that drop multicast.
  */
 export async function scanForTvs(options: ScanOptions = {}): Promise<FoundTv[]> {
   const ports = options.ports ?? DEFAULT_PORTS;
   const searching = ssdpSearch(options.ssdpWindowMs ?? SSDP_WINDOW_MS);
   const targets = options.hosts === undefined ? await sweepTargets() : [...options.hosts];
+  const sweptPorts = [ports.remote.secure, ports.remote.plain, ports.ssh];
   let done = 0;
   const swept = await mapPool(targets, CONCURRENCY, async (host) => {
-    const open = await tcpOpen(host, ports.api, CONNECT_TIMEOUT_MS);
-    const sdb = open ? false : await tcpOpen(host, ports.sdb, CONNECT_TIMEOUT_MS);
+    const open = await anyOpen(host, sweptPorts);
     options.onProgress?.(++done, targets.length);
-    return open || sdb ? host : null;
+    return open ? host : null;
   });
   const replies = new Map(
     (await searching)
-      .filter((reply) => reply.server.includes('Samsung'))
+      .filter((reply) => reply.target === SECOND_SCREEN_SEARCH_TARGET)
       .map((reply) => [reply.host, reply]),
   );
   const candidates = new Set([...swept.filter((host) => host !== null), ...replies.keys()]);

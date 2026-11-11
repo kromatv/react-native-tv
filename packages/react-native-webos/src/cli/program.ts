@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { z } from 'zod';
 import { buildRuntimeCommand } from '../commands/build-runtime.ts';
 import { bundleCommand } from '../commands/bundle.ts';
-import { certificateCommand } from '../commands/certificate.ts';
+import { connectCommand } from '../commands/connect.ts';
 import { devicesCommand } from '../commands/devices.ts';
 import { doctorCommand } from '../commands/doctor.ts';
 import { initCommand } from '../commands/init.ts';
@@ -28,7 +28,7 @@ const COMMANDS: readonly Command[] = [
   initCommand,
   doctorCommand,
   devicesCommand,
-  certificateCommand,
+  connectCommand,
   setupCommand,
   buildRuntimeCommand,
   bundleCommand,

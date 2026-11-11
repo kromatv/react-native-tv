@@ -2,10 +2,7 @@
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
     "noEmit": true,
-    "types": [],
-    "paths": {
-      "@kromatv/react-native-webos/*": ["../src/api/*.ts"]
-    }
+    "types": []
   },
   "include": ["main.ts", "src"]
 }

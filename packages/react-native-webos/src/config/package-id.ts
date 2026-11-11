@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { packageIdSchema } from './webos-config.ts';
+import { appIdSchema } from './app-id.ts';
 
 const FALLBACK_PACKAGE_ID = 'com.anonymous.app';
 
@@ -8,27 +8,23 @@ const expoIdsSchema = z.looseObject({
   android: z.looseObject({ package: z.string().optional() }).optional(),
 });
 
-/** Expo's sanitizing of a suggested package name: illegal characters and empty segments dropped. */
 function sanitized(value: string): string {
-  const legal =
-    value
-      .replaceAll(/[^\w.]/g, '')
-      .replaceAll(/\.+/g, '.')
-      .replaceAll(/^\.|\.$/g, '') || 'app';
-  const segments = legal.split('.');
-  const padded = segments.length < 2 ? ['com', ...segments] : segments;
-  return padded.map((segment) => (/^[A-Za-z]/.test(segment) ? segment : `x${segment}`)).join('.');
+  return value
+    .toLowerCase()
+    .replaceAll(/[^a-z0-9.-]/g, '')
+    .replaceAll(/\.+/g, '.')
+    .replaceAll(/^\.|\.$/g, '');
 }
 
-/** Why `id` cannot be a webOS package id, or null when it can. */
+/** Why `id` cannot be a webOS app id, or null when it can. */
 export function packageIdIssue(id: string): string | null {
-  const parsed = packageIdSchema.safeParse(id);
-  return parsed.success ? null : (parsed.error.issues[0]?.message ?? 'not a package id');
+  const parsed = appIdSchema.safeParse(id);
+  return parsed.success ? null : (parsed.error.issues[0]?.message ?? 'not an app id');
 }
 
 /**
- * The package id `rn-webos init` offers for an Expo config: its Android
- * package when webOS takes it, else `com.anonymous.<slug>`, as `expo prebuild`
+ * The app id `rn-webos init` offers for an Expo config: its Android package
+ * when webOS takes it, else `com.anonymous.<slug>`, as `expo prebuild`
  * suggests for an owner it does not know.
  */
 export function suggestedPackageId(expo: unknown): string {

@@ -1,14 +1,11 @@
 #include "ReactHost.h"
 
 #include "HostFeatureFlags.h"
-#include "diagnostics/CrashReporter.h"
-#include "diagnostics/DevelopmentLinks.h"
 #include "logging/Log.h"
 #include "modules/AppStateModule.h"
+#include "platform/MainLoop.h"
 #include "threading/MainThread.h"
 #include "tv/MediaSessions.h"
-
-#include <app.h>
 
 #include <chrono>
 #include <format>
@@ -30,27 +27,24 @@ ReactHost::ReactHost(const std::string &resourceDir)
 
 void ReactHost::start() {
   openMainThreadSync();
-  diagnostics_.controlLink = openDevelopmentLinks(config_);
-  installCrashReporter();
   log(LogLevel::Info,
       "Starting " + config_.appKey + " on " + device_.modelName + " (webOS " + device_.platformVersion + ")");
   overrideFeatureFlagsOnce();
-  tv_.state = std::make_shared<TvState>(config_.voice, config_.voiceSearchUrl);
   createWindow();
   startDevSupport();
   createInstance();
-  startPerfMonitor();
   loadBundle();
-  routeInput();
+  remotePresses_ = std::make_unique<RemotePresses>([this](const RemoteEvent &event) { onRemoteEvent(event); });
+  MainLoop::get().setEventHandler([this](const SDL_Event &event) { handleEvent(event); });
   startSurface();
-  tv_.voice = std::make_unique<VoiceController>(VoiceController::Dependencies{
-      .state = tv_.state,
-      .rootView = [this] { return presenter_ ? presenter_->rootView() : nullptr; },
-      .emitDeviceEvent = [this](const std::string &event, folly::dynamic payload) {
-        emitDeviceEvent(event, std::move(payload));
-      },
+#if RN_WEBOS_SIMULATOR
+  simulatorControl_ = SimulatorControl::open({
+      .pause = [this] { pause(); },
+      .resume = [this] { resume(); },
+      .exit = [this] { exit(); },
       .openUrl = [this](const std::string &url) { openUrl(url); },
   });
+#endif
 }
 
 ReactHost::~ReactHost() {
@@ -63,42 +57,30 @@ ReactHost::~ReactHost() {
 
 void ReactHost::stop() {
   lifetime_.reset();
-  diagnostics_.perfMonitor.reset();
-  remoteInput_.reset();
+#if RN_WEBOS_SIMULATOR
+  simulatorControl_.reset();
+#endif
+  MainLoop::get().setEventHandler(nullptr);
+  remotePresses_.reset();
   closeMainThreadSync();
   if (instanceGate_ != nullptr) instanceGate_->close();
   stopReactNative();
   devSupport_.reset();
-  keyboardFocus_.reset();
   textMeasurer_.reset();
-  overlays_.alertDialog.reset();
-  overlays_.errorScreen.reset();
-  if (window_ != nullptr) evas_object_del(std::exchange(window_, nullptr));
-}
-
-void ReactHost::startPerfMonitor() {
-  if (diagnostics_.controlLink == nullptr) return;
-  diagnostics_.perfMonitor = std::make_unique<PerfMonitor>(PerfMonitor::Sources{
-      .evas = evas_object_evas_get(window_),
-      .controlLink = diagnostics_.controlLink.get(),
-      .jsThread = jsThread_,
-      .runtimeExecutor = instance_->getBufferedRuntimeExecutor(),
-  });
+  errorScreen_.reset();
+  scene_.reset();
+  window_.reset();
 }
 
 void ReactHost::reload() {
   log(LogLevel::Info, "Reloading " + config_.appKey);
-  diagnostics_.perfMonitor.reset();
-  remoteInput_->releaseAll();
+  remotePresses_->releaseAll();
   closeMainThreadSync();
   instanceGate_->close();
   stopReactNative();
   openMainThreadSync();
-  auto *evas = evas_object_evas_get(window_);
-  overlays_.errorScreen = std::make_unique<ErrorScreen>(evas);
-  overlays_.alertDialog = std::make_unique<AlertDialog>(evas);
+  errorScreen_ = std::make_unique<ErrorScreen>(*scene_);
   createInstance();
-  startPerfMonitor();
   loadBundle();
   startSurface();
 }
@@ -118,9 +100,8 @@ void ReactHost::stopReactNative() {
 }
 
 void ReactHost::exit() {
-  evas_object_hide(window_);
   log(LogLevel::Info, "Leaving the app");
-  ui_app_exit();
+  MainLoop::get().quit();
 }
 
 void ReactHost::setActive(bool isActive) {
@@ -129,13 +110,14 @@ void ReactHost::setActive(bool isActive) {
 }
 
 void ReactHost::pause() {
-  remoteInput_->releaseAll();
+  remotePresses_->releaseAll();
   pauseMediaSessionsForBackground(config_.backgroundMedia);
   setActive(false);
 }
 
 void ReactHost::resume() {
   setActive(true);
+  scene_->invalidate();
 }
 
 void ReactHost::setInitialUrl(const std::string &url) {
@@ -144,14 +126,6 @@ void ReactHost::setInitialUrl(const std::string &url) {
 
 void ReactHost::openUrl(const std::string &url) {
   emitDeviceEvent("url", folly::dynamic::object("url", url));
-}
-
-TvState &ReactHost::tv() {
-  return *tv_.state;
-}
-
-VoiceController &ReactHost::voice() {
-  return *tv_.voice;
 }
 
 } // namespace rnwebos

@@ -1,34 +1,24 @@
-import type { X509Certificate } from 'node:crypto';
 import { statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import type { AppProject } from '../app/app-project.ts';
 import { claimWebOSDir } from '../app/webos-dir.ts';
 import { bundleApp, type AppBundle } from '../bundle/bundle-app.ts';
 import { formatSize } from '../cli/format.ts';
-import { ensureIcuData } from '../runtime/icu-data.ts';
 import type { Reporter } from '../cli/reporter.ts';
-import { devBuildHost, devServerBundleStep } from '../package/dev-server-bundle.ts';
-import { buildDotnetProject } from '../package/dotnet-build.ts';
 import { singleReactNativeIssue } from '../dependencies/react-native-copies.ts';
 import { webosMetroIssue } from '../metro/metro-platforms.ts';
-import { checkPackagedRuntime } from '../package/packaged-runtime.ts';
-import { featureNotes } from '../package/feature-notes.ts';
+import { devBuildHost, devServerBundleStep } from '../package/dev-server-bundle.ts';
+import { writeIpk } from '../package/ipk.ts';
 import type { LogEndpoint } from '../package/runtime-config.ts';
-import { writeWebOSProject } from '../package/webos-project.ts';
-import type { PlatformProfile } from '../webos/platform-profiles.ts';
-import { signPackage } from '../signing/sign-package.ts';
-import { resolveSigning, type SigningRequest } from '../webos/signing-identity.ts';
-import type { WebOSSdk } from '../webos/webos-sdk.ts';
-import type { WebOSTarget } from '../webos/target.ts';
+import { stageAppDir } from '../package/stage-app.ts';
+import { ensureCaBundle } from '../runtime/ca-bundle.ts';
+import { ensureIcuData } from '../runtime/icu-data.ts';
 import { runtimeSteps } from './runtime-steps.ts';
 
 interface PackageRequest {
-  readonly sdk: WebOSSdk;
   readonly app: AppProject;
-  readonly target: WebOSTarget;
-  readonly shell: PlatformProfile;
+  /** Where a development build streams its logs; null makes a release build. */
   readonly log: LogEndpoint | null;
-  readonly signing: SigningRequest;
   /** The `expo start` origin a development build loads its bundle from. */
   readonly devServer?: string;
 }
@@ -64,14 +54,10 @@ function icuDataStep(reporter: Reporter, app: AppProject): Promise<string> {
   );
 }
 
-function until(date: string): string {
-  return new Date(date).toISOString().slice(0, 10);
-}
-
-/** A built package and the distributor certificate that signed it. */
+/** A built package and the app it installs. */
 export interface BuiltPackage {
-  readonly tpk: string;
-  readonly distributor: X509Certificate;
+  readonly ipk: string;
+  readonly appId: string;
 }
 
 /**
@@ -98,30 +84,21 @@ export async function appSetupSteps(reporter: Reporter, app: AppProject): Promis
 }
 
 /**
- * Builds a signed `.tpk` from scratch or incrementally: the native runtime, the
- * bytecode bundle, the generated `webos/` project, then .NET and signing.
- * Fails fast, before any compiling, when the app loads more than one
- * react-native, Metro cannot bundle for webOS, or there is nothing to sign with.
+ * Builds an `.ipk` from scratch or incrementally: the native runtime, the
+ * bytecode bundle, the ICU data and the CA bundle, the app directory in the
+ * app's `webos/`, then the package beside it. Fails fast, before any
+ * compiling, when the app loads more than one react-native or Metro cannot
+ * bundle for webOS.
  */
 export async function packageSteps(
   reporter: Reporter,
   request: PackageRequest,
 ): Promise<BuiltPackage> {
-  const { sdk, app, target, shell } = request;
+  const { app } = request;
   claimWebOSDir(app.webosDir);
   await appSetupSteps(reporter, app);
-  const signing = await reporter.step(
-    'Certificates',
-    () =>
-      resolveSigning({
-        ...request.signing,
-        profile: request.signing.profile ?? app.config.profile,
-      }),
-    (resolved) => `${resolved.name}, distributor until ${until(resolved.distributor.validTo)}`,
-  );
-  for (const note of featureNotes(app.config.features, request.log === null)) reporter.note(note);
   const flavour = request.log === null ? 'release' : 'development';
-  const runtimeLibrary = await runtimeSteps(reporter, sdk, app, target, flavour);
+  const runtime = await runtimeSteps(reporter, app, flavour);
   const bundle =
     request.devServer === undefined
       ? await bundleStep(reporter, app)
@@ -129,25 +106,20 @@ export async function packageSteps(
           devBuildHost(request.log),
         );
   const icuData = await icuDataStep(reporter, app);
-  const projectDir = await reporter.step(
-    'webOS project',
-    () =>
-      writeWebOSProject({ app, profile: shell, runtimeLibrary, bundle, log: request.log, icuData }),
+  const caBundle = await reporter.step(
+    'CA certificates',
+    (task) => ensureCaBundle(task),
+    (file) => formatSize(statSync(file).size),
+  );
+  const appDir = await reporter.step(
+    'App directory',
+    () => stageAppDir({ app, runtime, bundle, log: request.log, icuData, caBundle }),
     (dir) => relative(process.cwd(), dir) || '.',
   );
-  const tpk = await reporter.step(
-    '.NET build',
-    async (task) => {
-      const built = await buildDotnetProject(task, projectDir, app.config, shell);
-      await checkPackagedRuntime(built, runtimeLibrary, flavour);
-      return built;
-    },
-    () => `${shell.targetFramework}, ${flavour} runtime`,
+  const written = await reporter.step(
+    'Package',
+    () => writeIpk({ appDir, outDir: app.webosDir }),
+    (ipk) => `${flavour} runtime, installs ${formatSize(ipk.installedSize)}`,
   );
-  await reporter.step(
-    'Signing',
-    () => signPackage(tpk, signing.identity),
-    () => signing.name,
-  );
-  return { tpk, distributor: signing.distributor };
+  return { ipk: written.file, appId: written.appId };
 }

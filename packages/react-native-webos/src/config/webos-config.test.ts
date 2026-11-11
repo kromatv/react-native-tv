@@ -1,127 +1,149 @@
 import { describe, expect, it } from 'vitest';
 import { FixableError } from '../errors.ts';
-import { resolveWebOSConfig } from './webos-config.ts';
-import { EXPO_WEBOS_DEPRECATION, WEBOS_PLUGIN } from './webos-settings.ts';
+import { resolveWebOSConfig, RUNTIME_PERMISSIONS } from './webos-config.ts';
+import { WEBOS_PLUGIN } from './webos-settings.ts';
 
-const expo = (webos: unknown, extra: Record<string, unknown> = {}) => ({
+const expo = (props: unknown, extra: Record<string, unknown> = {}) => ({
   name: 'My App',
   version: '2.1.0',
-  webos,
+  plugins: [[WEBOS_PLUGIN, props]],
   ...extra,
 });
 
+const WHERE = `plugins["${WEBOS_PLUGIN}"]`;
+
 describe('resolveWebOSConfig', () => {
-  it('fills the label, version and privileges from the Expo config', () => {
+  it('fills the title, version and permissions from the Expo config', () => {
     expect(resolveWebOSConfig(expo({ package: 'org.example.app' }))).toEqual({
       packageId: 'org.example.app',
-      label: 'My App',
+      title: 'My App',
       version: '2.1.0',
-      profile: undefined,
-      privileges: ['http://webos.org/privilege/internet'],
-      platform: undefined,
+      vendor: undefined,
       icon: undefined,
+      iconColor: undefined,
+      splash: undefined,
+      permissions: [...RUNTIME_PERMISSIONS],
       locales: ['en'],
-      features: {
-        voice: null,
-        preview: null,
-        resolution: '1080p',
-        backgroundMedia: false,
-        pictureInPicture: false,
-      },
-      deprecation: EXPO_WEBOS_DEPRECATION,
     });
   });
 
-  it('lets expo.webos override every Expo-wide field', () => {
+  it("lets the plugin's props override every Expo-wide field", () => {
     const config = resolveWebOSConfig(
       expo(
-        { package: 'org.example.app', label: 'TV App', version: '3.0.1', icon: './tv.png' },
+        {
+          package: 'org.example.app',
+          title: 'TV App',
+          version: '3.0.1',
+          icon: './tv.png',
+          vendor: 'Example',
+          iconColor: '#202020',
+          splash: './splash.png',
+        },
         { icon: './icon.png' },
       ),
     );
 
-    expect(config).toMatchObject({ label: 'TV App', version: '3.0.1', icon: './tv.png' });
+    expect(config).toMatchObject({
+      title: 'TV App',
+      version: '3.0.1',
+      icon: './tv.png',
+      vendor: 'Example',
+      iconColor: '#202020',
+      splash: './splash.png',
+    });
   });
 
-  it('takes the Expo icon when expo.webos has none', () => {
+  it('takes the Expo icon when the plugin has none, and refuses one that is not a PNG', () => {
     expect(resolveWebOSConfig(expo({ package: 'a.b' }, { icon: './icon.png' })).icon).toBe(
       './icon.png',
     );
+    expect(() => resolveWebOSConfig(expo({ package: 'a.b' }, { icon: './icon.jpg' }))).toThrow(
+      `expo.icon: ./icon.jpg: expected the path of a PNG; set ${WHERE}.icon`,
+    );
   });
 
-  it('expands a short privilege name and keeps a full one', () => {
+  it("adds the app's ACG groups to the runtime's own, once each", () => {
     const config = resolveWebOSConfig(
-      expo({
-        package: 'a.b',
-        privileges: ['internet', 'http://developer.samsung.com/privilege/network.public'],
-      }),
+      expo({ package: 'a.b', permissions: ['network.query', 'settings.query'] }),
     );
 
-    expect(config.privileges).toEqual([
-      'http://webos.org/privilege/internet',
-      'http://developer.samsung.com/privilege/network.public',
-    ]);
+    expect(config.permissions).toEqual([...RUNTIME_PERMISSIONS, 'network.query']);
   });
 
   it('refuses an app without webOS settings, naming the plugin to add', () => {
     expect(() => resolveWebOSConfig({ name: 'My App' })).toThrow(`add ["${WEBOS_PLUGIN}"`);
+    expect(() => resolveWebOSConfig({ name: 'My App', plugins: [WEBOS_PLUGIN] })).toThrow(
+      `add ["${WEBOS_PLUGIN}"`,
+    );
   });
 
-  it("reads the config plugin's props, with no deprecation", () => {
-    const config = resolveWebOSConfig({
+  it('finds the plugin among the others, and under another name the app gives it', () => {
+    const listed = resolveWebOSConfig({
       name: 'My App',
-      plugins: ['expo-video', [WEBOS_PLUGIN, { package: 'org.example.app', label: 'TV' }]],
+      plugins: ['expo-video', [WEBOS_PLUGIN, { package: 'org.example.app', title: 'TV' }]],
     });
-
-    expect(config).toMatchObject({ packageId: 'org.example.app', label: 'TV', deprecation: null });
-  });
-
-  it('names a bad prop after the plugin', () => {
-    const plugins = [[WEBOS_PLUGIN, { package: 'my-app' }]];
-
-    expect(() => resolveWebOSConfig({ name: 'My App', plugins })).toThrow(
-      `plugins["${WEBOS_PLUGIN}"].package:`,
-    );
-  });
-
-  it('refuses settings in both the plugin and expo.webos', () => {
-    const plugins = [[WEBOS_PLUGIN, { package: 'a.b' }]];
-
-    expect(() => resolveWebOSConfig(expo({ package: 'a.b' }, { plugins }))).toThrow(
-      'remove expo.webos',
-    );
-  });
-
-  it('reads expo.webos when the plugin is listed without props, as expo install adds it', () => {
-    const config = resolveWebOSConfig(expo({ package: 'a.b' }, { plugins: [WEBOS_PLUGIN] }));
-
-    expect(config.deprecation).toBe(EXPO_WEBOS_DEPRECATION);
-  });
-
-  it('finds the plugin under another name the app gives it', () => {
     const plugins = [['../app.plugin.js', { package: 'a.b' }]];
 
+    expect(listed).toMatchObject({ packageId: 'org.example.app', title: 'TV' });
     expect(
       resolveWebOSConfig({ name: 'x', plugins }, (name) => name === '../app.plugin.js').packageId,
     ).toBe('a.b');
   });
 
-  it('names the field of a package id webOS would refuse', () => {
-    expect(() => resolveWebOSConfig(expo({ package: 'my-app' }))).toThrow(/^expo\.webos\.package:/);
+  it.each([
+    ['My_App', 'lowercase letters'],
+    ['.app', 'lowercase letters'],
+    ['a', 'lowercase letters'],
+    ['com.webos.app.mine', 'LG keeps those'],
+    ['com.lge.mine', 'LG keeps those'],
+    ['com.palmdts.mine', 'LG keeps those'],
+  ])('refuses the app id %s, naming the prop', (id, reason) => {
+    const refusal = () => resolveWebOSConfig(expo({ package: id }));
+
+    expect(refusal).toThrow(`${WHERE}.package:`);
+    expect(refusal).toThrow(reason);
+  });
+
+  it('takes the ids LG takes', () => {
+    for (const id of ['com.example.my-app', 'a1', '3d.viewer', 'org.example.app2']) {
+      expect(resolveWebOSConfig(expo({ package: id })).packageId).toBe(id);
+    }
   });
 
   it('refuses an unknown key, so a typo does not pass silently', () => {
-    expect(() => resolveWebOSConfig(expo({ package: 'a.b', lable: 'x' }))).toThrow(FixableError);
+    expect(() => resolveWebOSConfig(expo({ package: 'a.b', titel: 'x' }))).toThrow(FixableError);
   });
 
-  it('refuses an Expo version webOS cannot read unless expo.webos.version replaces it', () => {
+  it("refuses an Expo version webOS cannot read unless the plugin's version replaces it", () => {
     expect(() => resolveWebOSConfig(expo({ package: 'a.b' }, { version: '1.0.0-beta' }))).toThrow(
-      'set expo.webos.version',
+      `set ${WHERE}.version`,
+    );
+    expect(() => resolveWebOSConfig(expo({ package: 'a.b', version: '1.02.0' }))).toThrow(
+      `${WHERE}.version:`,
     );
     expect(
       resolveWebOSConfig(expo({ package: 'a.b', version: '1.0.0' }, { version: '1.0.0-beta' }))
         .version,
     ).toBe('1.0.0');
+    expect(
+      resolveWebOSConfig({ name: 'x', plugins: [[WEBOS_PLUGIN, { package: 'a.b' }]] }),
+    ).toMatchObject({
+      version: '1.0.0',
+    });
+  });
+
+  it("refuses a title over LG's 20 characters, from the plugin or from expo.name", () => {
+    const long = 'A Title Of Twenty-One';
+
+    expect(() => resolveWebOSConfig(expo({ package: 'a.b', title: long }))).toThrow(
+      `${WHERE}.title: expected 20 characters or fewer`,
+    );
+    expect(() => resolveWebOSConfig(expo({ package: 'a.b' }, { name: long }))).toThrow(
+      `set ${WHERE}.title`,
+    );
+    expect(resolveWebOSConfig(expo({ package: 'a.b', title: 'Short' }, { name: long })).title).toBe(
+      'Short',
+    );
   });
 
   it('reads the locales Intl formats in', () => {
@@ -133,11 +155,7 @@ describe('resolveWebOSConfig', () => {
 
   it('refuses a locale that is not a language tag', () => {
     expect(() => resolveWebOSConfig(expo({ package: 'a.b', locales: ['fr_FR'] }))).toThrow(
-      /^expo\.webos\.locales\.0:/,
+      `${WHERE}.locales.0:`,
     );
-  });
-
-  it('reads the platform a package targets', () => {
-    expect(resolveWebOSConfig(expo({ package: 'a.b', platform: '9.0' })).platform).toBe('9.0');
   });
 });

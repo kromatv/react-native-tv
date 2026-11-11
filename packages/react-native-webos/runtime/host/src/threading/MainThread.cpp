@@ -1,8 +1,7 @@
 #include "MainThread.h"
 
 #include "../logging/Log.h"
-
-#include <Ecore.h>
+#include "../platform/MainLoop.h"
 
 #include <algorithm>
 #include <atomic>
@@ -49,10 +48,9 @@ SyncGate &gate() {
   return shared;
 }
 
-void runQueuedTask(void *data) {
-  const std::unique_ptr<std::function<void()>> task(static_cast<std::function<void()> *>(data));
+void runQueuedTask(const std::function<void()> &task) {
   try {
-    (*task)();
+    task();
   } catch (const std::exception &error) {
     logUncaughtException("the main loop", error);
   } catch (...) {
@@ -106,12 +104,7 @@ bool awaitJob(SyncGate &shared, SyncJob &job) {
 } // namespace
 
 void runOnMainThread(std::function<void()> task) {
-  auto owned = std::make_unique<std::function<void()>>(std::move(task));
-  if (isMainThread()) {
-    ecore_job_add(runQueuedTask, owned.release());
-    return;
-  }
-  ecore_main_loop_thread_safe_call_async(runQueuedTask, owned.release());
+  MainLoop::get().post([task = std::move(task)] { runQueuedTask(task); });
 }
 
 bool runOnMainThreadSync(const std::function<void()> &task) {
@@ -171,7 +164,7 @@ void openMainThreadSync() {
 }
 
 bool isMainThread() {
-  return eina_main_loop_is() == EINA_TRUE;
+  return MainLoop::get().isMainThread();
 }
 
 void setMainThreadWaitMeasured(bool measured) {

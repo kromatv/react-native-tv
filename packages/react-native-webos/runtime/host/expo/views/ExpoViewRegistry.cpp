@@ -5,6 +5,10 @@
 #include "fabric/ComponentDescriptorRegistry.h"
 #include "mounting/ComponentViewRegistry.h"
 
+// expo-modules-core calls the global isnan without including the header that
+// declares it.
+#include <math.h>
+
 #include <ExpoViewComponentDescriptor.h>
 
 #include <folly/Indestructible.h>
@@ -54,8 +58,8 @@ bool registerExpoView(ExpoViewType type) {
       .flavor = flavor,
       .constructor = &createDescriptor,
   });
-  registerComponentView(componentName, [shared](Evas *evas, facebook::react::Tag tag) -> std::unique_ptr<ComponentView> {
-    auto view = shared->create(evas, tag);
+  registerComponentView(componentName, [shared](Scene &scene, facebook::react::Tag tag) -> std::unique_ptr<ComponentView> {
+    auto view = shared->create(scene, tag);
     view->bindType(shared);
     return view;
   });

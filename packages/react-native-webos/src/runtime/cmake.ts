@@ -5,8 +5,7 @@ import { join } from 'node:path';
 import { TOOLCHAIN_FILE } from '../package-paths.ts';
 import { stampAt } from '../stamp.ts';
 import type { Task } from '../task.ts';
-import type { WebOSSdk } from '../webos/webos-sdk.ts';
-import { rootstrapFor, type WebOSTarget } from '../webos/target.ts';
+import type { WebOSSdk } from '../sysroot/webos-sdk.ts';
 import { ninjaProgress } from './ninja-progress.ts';
 
 interface CMakeProject {
@@ -27,17 +26,13 @@ export function sourcesKey(...paths: readonly string[]): string {
     .slice(0, 12);
 }
 
-/** The definitions that cross-compile a project for one webOS target. */
-export function webosDefinitions(sdk: WebOSSdk, target: WebOSTarget): Record<string, string> {
-  const rootstrap = rootstrapFor(target);
+/** The definitions that cross-compile a project for a webOS TV, with the clang in `llvmDir`. */
+export function webosDefinitions(sdk: WebOSSdk, llvmDir: string): Record<string, string> {
   return {
     CMAKE_TOOLCHAIN_FILE: TOOLCHAIN_FILE,
     CMAKE_BUILD_TYPE: 'Release',
-    WEBOS_ARCH: target.arch,
-    WEBOS_PLATFORM_VERSION: target.platformVersion,
-    WEBOS_ROOTSTRAP_VERSION: rootstrap.platformVersion,
-    WEBOS_ROOTSTRAP_PROFILE: rootstrap.profile,
-    WEBOS_SDK_DIR: sdk.root,
+    WEBOS_SDK_DIR: sdk.path,
+    WEBOS_LLVM_DIR: llvmDir,
   };
 }
 

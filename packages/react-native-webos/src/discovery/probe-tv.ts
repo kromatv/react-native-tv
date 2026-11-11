@@ -1,57 +1,32 @@
-import { networkInterfaces } from 'node:os';
-import type { DeviceCapabilities } from '../sdb/capabilities.ts';
-import { SdbConnectError } from '../sdb/sdb-connection.ts';
-import { openSdbDevice } from '../sdb/sdb-device.ts';
+import type { DeviceInfo } from '../webos/device-info.ts';
+import { probeDevice } from '../webos/devices.ts';
+import { readKnownDevices } from '../webos/known-devices.ts';
 import type { FoundTv } from './scan-tvs.ts';
 
-/** Whether sdb reaches a TV, and what it reports when it does. */
-export type SdbState =
-  | {
-      readonly state: 'ready';
-      readonly capabilities: DeviceCapabilities | null;
-      readonly model: string | null;
-      readonly duid: string | null;
-    }
-  | { readonly state: 'refused' | 'closed' | 'silent'; readonly reason: string };
+/** Whether `rn-webos` can log in to a TV: it can, it was never connected, or why it cannot. */
+export type ConnectionState =
+  | { readonly state: 'ready'; readonly name: string; readonly info: DeviceInfo }
+  | { readonly state: 'unknown' }
+  | { readonly state: 'failed'; readonly name: string; readonly reason: string };
 
-/** A found TV, probed over sdb, with whether Developer mode names this computer. */
+/** A found TV, with whether `rn-webos` gets in over SSH. */
 export interface TvProbe extends FoundTv {
-  readonly hostPcIsThisComputer: boolean | null;
-  readonly sdb: SdbState;
+  readonly connection: ConnectionState;
 }
 
-const PROBE_TIMEOUT_MS = 4000;
-
-function localAddresses(): Set<string> {
-  return new Set(
-    Object.values(networkInterfaces())
-      .flat()
-      .flatMap((entry) => (entry?.family === 'IPv4' ? [entry.address] : [])),
+/** Logs in to a TV `rn-webos` was connected to before, reads what it reports, and closes. */
+export async function probeTv(tv: FoundTv): Promise<TvProbe> {
+  const known = (await readKnownDevices()).find(
+    (each) => each.host === tv.host && each.port === tv.sshPort,
   );
-}
-
-async function probeSdb(host: string, port: number): Promise<SdbState> {
+  if (known === undefined) return { ...tv, connection: { state: 'unknown' } };
   try {
-    const device = await openSdbDevice({ host, port }, PROBE_TIMEOUT_MS);
-    try {
-      const duid = await device.duid().catch(() => null);
-      return { state: 'ready', capabilities: device.capabilities, model: device.model, duid };
-    } finally {
-      device.close();
-    }
+    const { name, info } = await probeDevice(known);
+    const model = tv.model === '' ? info.modelName : tv.model;
+    const webosVersion = tv.webosVersion ?? (info.sdkVersion === '' ? null : info.sdkVersion);
+    return { ...tv, model, webosVersion, connection: { state: 'ready', name, info } };
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
-    if (!(error instanceof SdbConnectError)) return { state: 'refused', reason };
-    if (error.reason === 'unreachable') return { state: 'closed', reason };
-    return { state: error.reason, reason };
+    return { ...tv, connection: { state: 'failed', name: known.name, reason } };
   }
-}
-
-/** Connects to a TV's sdb daemon, reads its capabilities and DUID, and closes. */
-export async function probeTv(tv: FoundTv): Promise<TvProbe> {
-  const sdb = await probeSdb(tv.host, tv.sdbPort);
-  const hostPcIsThisComputer =
-    tv.developerIp === null ? null : localAddresses().has(tv.developerIp);
-  const model = tv.model === '' && sdb.state === 'ready' ? (sdb.model ?? '') : tv.model;
-  return { ...tv, model, hostPcIsThisComputer, sdb };
 }

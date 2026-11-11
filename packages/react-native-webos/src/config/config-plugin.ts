@@ -1,5 +1,5 @@
 import { webosSettingsIssues } from './webos-config.ts';
-import { WEBOS_PLUGIN } from './webos-settings.ts';
+import { PLUGIN_WHERE, WEBOS_PLUGIN } from './webos-settings.ts';
 
 /**
  * The config plugin `app.plugin.js` exports. Its props are the app's webOS
@@ -8,7 +8,7 @@ import { WEBOS_PLUGIN } from './webos-settings.ts';
  */
 export default function withReactNativeWebOS<Config>(config: Config, props?: unknown): Config {
   if (props === undefined) return config;
-  const issues = webosSettingsIssues(props, `plugins["${WEBOS_PLUGIN}"]`);
+  const issues = webosSettingsIssues(props, PLUGIN_WHERE);
   if (issues !== null) throw new Error(`Invalid ${WEBOS_PLUGIN} props:\n${issues}`);
   return config;
 }

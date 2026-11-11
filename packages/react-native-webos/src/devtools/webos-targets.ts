@@ -1,10 +1,9 @@
 import { scanForTvs, type FoundTv } from '../discovery/scan-tvs.ts';
-import type { SdbAddress } from '../sdb/sdb-connection.ts';
-import { deviceSerial } from '../webos/device-address.ts';
-import { readKnownDevices } from '../webos/known-devices.ts';
+import { addressText } from '../webos/device-address.ts';
+import { readKnownDevices, type KnownDevice } from '../webos/known-devices.ts';
 import { CommandInputError } from './devtools-commands.ts';
 
-/** Where the app opens: `simulator`, or a TV's `host:port`. */
+/** Where the app opens: `simulator`, or what `--device` takes for a TV. */
 export const SIMULATOR = 'simulator';
 
 /** One entry of the list `shift+t` shows. */
@@ -15,7 +14,7 @@ export interface WebOSTarget {
 
 /** How TVs are found, replaced in tests. */
 export interface TvFinder {
-  readonly knownDevices: () => Promise<readonly SdbAddress[]>;
+  readonly knownDevices: () => Promise<readonly KnownDevice[]>;
   readonly scan: () => Promise<readonly FoundTv[]>;
   readonly searching: () => void;
 }
@@ -27,55 +26,36 @@ const defaultFinder: TvFinder = {
 };
 
 function inDeveloperMode(found: readonly FoundTv[]): FoundTv[] {
-  return found.filter((tv) => tv.developerMode !== false);
+  return found.filter((tv) => tv.developerMode);
 }
 
 /**
- * The TV `t` opens on: the one used last, else the only TV in Developer mode
- * on the network, else an error that says what to do.
+ * The TV `t` opens on: the one connected last, else an error that says what
+ * to do, naming the TVs in Developer Mode the network shows.
  */
 export async function lastOrOnlyTv(overrides: Partial<TvFinder> = {}): Promise<string> {
   const finder = { ...defaultFinder, ...overrides };
   const [last] = await finder.knownDevices();
-  if (last !== undefined) return deviceSerial(last);
+  if (last !== undefined) return addressText(last);
   finder.searching();
   const usable = inDeveloperMode(await finder.scan());
-  const [tv] = usable;
-  if (usable.length === 1 && tv !== undefined) {
-    return deviceSerial({ host: tv.host, port: tv.sdbPort });
-  }
   if (usable.length === 0) {
     throw new CommandInputError(
-      'No TV in Developer mode answered on this network: on the TV, open Apps and type 12345 on the remote, or press shift+t for the simulator.',
+      "No TV in Developer Mode answered on this network: turn Dev Mode Status on in the TV's Developer Mode app, or press shift+t for the simulator.",
     );
   }
   const hosts = usable.map((each) => each.host).join(', ');
   throw new CommandInputError(
-    `${usable.length} TVs answered (${hosts}): press shift+t to pick one.`,
+    `rn-webos is not connected to a TV yet. In Developer Mode on this network: ${hosts}. Turn Key Server on there and run: rn-webos connect <tv ip>`,
   );
 }
 
-/** What `shift+t` offers: the TVs used before, those on the network, then the simulator. */
+/** What `shift+t` offers: the TVs connected before, the last one used first, then the simulator. */
 export async function webosTargets(overrides: Partial<TvFinder> = {}): Promise<WebOSTarget[]> {
   const finder = { ...defaultFinder, ...overrides };
-  const known = await finder.knownDevices();
-  finder.searching();
-  const found = inDeveloperMode(await finder.scan());
-  const named = new Map(
-    found.map((tv) => [tv.host, [tv.name, tv.model].filter(Boolean).join(' ')]),
-  );
-  const seen = new Set<string>();
-  const tvs: WebOSTarget[] = [];
-  const add = (address: SdbAddress, note: string) => {
-    if (seen.has(address.host)) return;
-    seen.add(address.host);
-    const name = named.get(address.host) ?? '';
-    tvs.push({
-      target: deviceSerial(address),
-      label: [address.host, name, note].filter(Boolean).join('  '),
-    });
-  };
-  known.forEach((address, index) => add(address, index === 0 ? '(used last)' : ''));
-  for (const tv of found) add({ host: tv.host, port: tv.sdbPort }, '');
+  const tvs = (await finder.knownDevices()).map((tv, index) => ({
+    target: addressText(tv),
+    label: [tv.host, tv.name, index === 0 ? '(used last)' : ''].filter(Boolean).join('  '),
+  }));
   return [...tvs, { target: SIMULATOR, label: 'webOS simulator' }];
 }

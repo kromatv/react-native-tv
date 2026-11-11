@@ -5,22 +5,18 @@ import { COMMON_OPTIONS, parseCommandArgs, PROJECT_OPTIONS, type Command } from 
 import { formatPath } from '../cli/format.ts';
 import { packageRunner } from '../dependencies/package-manager.ts';
 import { Reporter } from '../cli/reporter.ts';
-import { readExpoConfig } from '../app/expo-config.ts';
 import { addWebOSPlugin, type PluginSetup } from '../config/add-webos-plugin.ts';
 import { packageIdIssue, suggestedPackageId } from '../config/package-id.ts';
-import { isWebOSPluginEntry } from '../config/plugin-entry.ts';
-import { resolveWebOSConfig } from '../config/webos-config.ts';
 import { WEBOS_PLUGIN } from '../config/webos-settings.ts';
 import { FixableError } from '../errors.ts';
 import { setUpMetroConfig, type MetroSetup } from '../metro/set-up-metro-config.ts';
-import { DEFAULT_TARGET, rootstrapFor } from '../webos/target.ts';
 import { installReactNative } from './init-react-native.ts';
 
 const OPTIONS = {
   package: {
     type: 'string',
     placeholder: '<id>',
-    description: "The app's webOS package id, such as com.example.myapp (asked when left out)",
+    description: "The app's webOS id, such as com.example.myapp (asked when left out)",
   },
   'no-install': {
     type: 'boolean',
@@ -34,13 +30,13 @@ function checkedPackageId(id: string): string {
   const issue = packageIdIssue(id);
   if (issue === null) return id;
   throw new FixableError(
-    `${id} is not a webOS package id: ${issue}`,
+    `${id} is not a webOS app id: ${issue}`,
     'Pass --package com.example.myapp.',
   );
 }
 
 async function askPackageId(reporter: Reporter, suggestion: string): Promise<string> {
-  const answer = await ask('webOS package id', suggestion);
+  const answer = await ask('webOS app id', suggestion);
   const issue = packageIdIssue(answer);
   if (issue === null) return answer;
   reporter.line(reporter.paint('yellow', `${answer}: ${issue}`));
@@ -52,7 +48,7 @@ function choosePackageId(reporter: Reporter, given: string | undefined) {
     if (given !== undefined) return checkedPackageId(given);
     const suggestion = suggestedPackageId(expo);
     if (canAsk()) return askPackageId(reporter, suggestion);
-    reporter.note(`Package id ${suggestion}; pass --package to choose another.`);
+    reporter.note(`App id ${suggestion}; pass --package to choose another.`);
     return suggestion;
   };
 }
@@ -66,7 +62,6 @@ function reportPlugin(reporter: Reporter, setup: PluginSetup, cwd: string): void
   }
   const done = {
     added: `added the ${WEBOS_PLUGIN} config plugin`,
-    moved: `moved expo.webos into the props of the ${WEBOS_PLUGIN} config plugin`,
     present: `lists the ${WEBOS_PLUGIN} config plugin already`,
   }[setup.kind];
   reporter.field('App config', `${file} ${done}`);
@@ -85,25 +80,6 @@ function reportMetro(reporter: Reporter, setup: MetroSetup, cwd: string): void {
     present: 'uses withWebOS already',
   }[setup.kind];
   reporter.field('Metro config', `${file} ${done}`);
-}
-
-function appFloor(root: string): string {
-  try {
-    const config = resolveWebOSConfig(readExpoConfig(root), (name) =>
-      isWebOSPluginEntry(root, name),
-    );
-    return config.platform ?? DEFAULT_TARGET.platformVersion;
-  } catch {
-    return DEFAULT_TARGET.platformVersion;
-  }
-}
-
-function reportRootstrap(reporter: Reporter, root: string): void {
-  const floor = appFloor(root);
-  const { sdkPackage } = rootstrapFor({ ...DEFAULT_TARGET, platformVersion: floor });
-  reporter.note(
-    `Builds for webOS ${floor}, the app's floor, need ${sdkPackage} from webOS Studio's Package Manager: ${packageRunner(root)} rn-webos doctor checks it.`,
-  );
 }
 
 /**
@@ -134,7 +110,9 @@ export const initCommand: Command = {
     reportMetro(reporter, setUpMetroConfig(root), context.cwd);
     await installReactNative(reporter, root, context.cwd, values['no-install'] ?? false);
     reporter.line();
-    reportRootstrap(reporter, root);
+    reporter.note(
+      `The first build downloads the SDK it compiles against, once: ${packageRunner(root)} rn-webos doctor checks the rest of the toolchain.`,
+    );
     reporter.note(
       `Next: ${packageRunner(root)} expo start, then press t to open the app on the TV used last, or shift+t to pick a TV or the simulator.`,
     );

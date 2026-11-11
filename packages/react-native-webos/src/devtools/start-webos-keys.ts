@@ -30,7 +30,7 @@ export function addWebOSKeys(terminal: ExpoTerminal): void {
   };
   const io: OpenIo = { write, dir: terminal.dir };
   const finder: Partial<TvFinder> = {
-    searching: () => say(write, 'Looking for Samsung TVs on the network...'),
+    searching: () => say(write, 'Looking for LG TVs on the network...'),
     ...terminal.finder,
   };
   const paint = painter(colorsEnabled(output, env));

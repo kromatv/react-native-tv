@@ -9,6 +9,7 @@ RUNTIME_DIR="$PACKAGE_DIR/runtime"
 WORK_DIR="${RN_WEBOS_SIMULATOR_HOME:-$HOME/rn-webos-simulator}"
 SOURCE_DIR="$WORK_DIR/src"
 BUILD_DIR="$WORK_DIR/build"
+SKIA_DIR="$BUILD_DIR/skia"
 HERMES_HOST_BUILD_DIR="$BUILD_DIR/hermes-host"
 HERMES_HOST_LOCK="$BUILD_DIR/hermes-host.lock"
 # The one build from before each set of native libraries had its own, which
@@ -42,7 +43,7 @@ runtime_lock() {
 
 launcher_in() {
   local runtime="$1"
-  echo "$runtime/simulator/launcher/rn-webos-simulator"
+  echo "$runtime/host/react-native-webos"
 }
 
 instance_runtime_key() {
@@ -57,9 +58,10 @@ instance_runtime_dir() {
 
 # The command line run.sh starts an instance's app with: systemd-coredump keeps
 # it with each core, and it is what tells one instance's crashes from another's.
+# The app takes its directories from the environment and ignores the argument.
 app_command_line() {
   local instance_dir="$1"
-  echo "$(launcher_in "$(instance_runtime_dir "$instance_dir")") $instance_dir/app $instance_dir/control"
+  echo "$(launcher_in "$(instance_runtime_dir "$instance_dir")") $instance_dir"
 }
 
 start_daemon() {

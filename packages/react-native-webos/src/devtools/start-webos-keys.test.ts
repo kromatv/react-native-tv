@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { SdbAddress } from '../sdb/sdb-connection.ts';
+import type { KnownDevice } from '../webos/known-devices.ts';
 import { FakeStdin } from './expo-stdin.fixtures.ts';
 import { addWebOSKeys, startWebOSKeys, type ExpoTerminal } from './start-webos-keys.ts';
 
@@ -65,9 +65,9 @@ describe('addWebOSKeys', () => {
 
     stdin.press('t');
 
-    await expect.poll(shown.text).toContain('No TV in Developer mode answered');
+    await expect.poll(shown.text).toContain('No TV in Developer Mode answered');
     expect(shown.text()).toContain('› Press t │ open on webOS TV\n');
-    expect(shown.text()).toContain('› Looking for Samsung TVs on the network...\n');
+    expect(shown.text()).toContain('› Looking for LG TVs on the network...\n');
   });
 
   it('lists the targets on shift+t, and opens nothing when cancelled', async () => {
@@ -86,7 +86,7 @@ describe('addWebOSKeys', () => {
   });
 
   it('says it is busy when t comes again before the last one finished', async () => {
-    let answer: (devices: SdbAddress[]) => void = () => undefined;
+    let answer: (devices: KnownDevice[]) => void = () => undefined;
     const stdin = new FakeStdin();
     const shown = terminal(stdin, {
       finder: {
@@ -104,7 +104,7 @@ describe('addWebOSKeys', () => {
     stdin.press('t');
     answer([]);
 
-    await expect.poll(shown.text).toContain('No TV in Developer mode answered');
+    await expect.poll(shown.text).toContain('No TV in Developer Mode answered');
     expect(shown.text()).toContain('› Already opening on webOS: wait for it to finish\n');
   });
 });

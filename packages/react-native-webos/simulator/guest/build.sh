@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Builds libreact-native-webos.so and the launcher for the simulator from the
-# package's runtime/, into the build of one set of native libraries. The first
+# Builds the react-native-webos executable for the simulator from the
+# package's runtime/, into the build of one set of native libraries. Skia is
+# built once, beside the runtime builds, and shared by all of them. The first
 # run also builds Hermes' compiler for this VM. One build of a directory runs
 # at a time; another waits for it, while other directories build alongside.
 #
@@ -71,6 +72,8 @@ configure_runtime() {
     -DEXPO_MODULES_CORE_DIR="${EXPO_MODULES_CORE_DIR:-}"
     -DEXPO_MODULES_JSI_DIR="${EXPO_MODULES_JSI_DIR:-}"
     -DRN_WEBOS_LIBRARIES_FILE="${RN_WEBOS_LIBRARIES_FILE:-}"
+    -DRN_WEBOS_SKIA_ROOT="$SKIA_DIR"
+    -DRN_WEBOS_UNPORTED="${RN_WEBOS_UNPORTED:-}"
   )
   local stamp="$RUNTIME_BUILD_DIR/.rn-webos-simulator-configure"
   # Checkouts share a build directory per key: without the source tree in the
@@ -111,7 +114,7 @@ fi
 # Every runtime build compiles the same sources from its own directory: hashed
 # relative to it, one directory's objects serve the next.
 export CCACHE_BASEDIR="$RUNTIME_BUILD_DIR" CCACHE_NOHASHDIR=1
-cmake --build "$RUNTIME_BUILD_DIR" --target react-native-webos rn-webos-simulator
+cmake --build "$RUNTIME_BUILD_DIR" --target react-native-webos
 touch "$RUNTIME_BUILD_DIR/$RUNTIME_USED_FILE"
 exec {build_lock}>&-
 prune_runtimes "$RUNTIME_CAP" "$RECENT_MINUTES" | sed 's/^/Removed the unused simulator runtime /'

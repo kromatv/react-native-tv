@@ -4,8 +4,8 @@
 
 namespace rnwebos {
 
-/// A player the TV can drive without JavaScript: Samsung's voice commands, and
-/// the app leaving the foreground. Every method may be called from any thread.
+/// A player the host can drive without JavaScript, as when the app leaves the
+/// foreground. Every method may be called from any thread.
 class MediaSession {
  public:
   virtual ~MediaSession();
@@ -28,14 +28,14 @@ void addMediaSession(const std::shared_ptr<MediaSession> &session);
 /// Marks `session` as the one the user last played.
 void markMediaSessionActive(const MediaSession *session);
 
-/// The session a voice command is for: the one playing, else the one last
+/// The session a command from outside the app is for: the one playing, else the one last
 /// played, else the one created last.
 std::shared_ptr<MediaSession> currentMediaSession();
 
 /// Pauses every playing session that may not stay active in the background, as
 /// expo-video does on Android when the app is backgrounded, and logs the ones
-/// that keep playing. `mediaCategoryDeclared` is whether the manifest lets the
-/// app play while hidden.
+/// that keep playing. `mediaCategoryDeclared` is whether the app declared that
+/// it plays while hidden.
 void pauseMediaSessionsForBackground(bool mediaCategoryDeclared);
 
 } // namespace rnwebos

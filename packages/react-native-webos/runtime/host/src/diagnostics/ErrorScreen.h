@@ -1,7 +1,10 @@
 #pragma once
 
-#include <Evas.h>
+#include "../render/Scene.h"
 
+#include "modules/skparagraph/include/Paragraph.h"
+
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -17,22 +20,22 @@ struct ErrorReport {
 
 /// The red screen a development build shows over the app when JavaScript dies,
 /// drawn natively so it works even when React never rendered. Main thread only.
-class ErrorScreen final {
+class ErrorScreen final : public SceneLayer {
  public:
-  explicit ErrorScreen(Evas *evas);
-  ~ErrorScreen();
+  explicit ErrorScreen(Scene &scene);
+  ~ErrorScreen() override;
 
   ErrorScreen(const ErrorScreen &) = delete;
   ErrorScreen &operator=(const ErrorScreen &) = delete;
 
-  void show(const ErrorReport &report, int screenWidth, int screenHeight);
+  void show(const ErrorReport &report);
   bool isShown() const;
 
+  void draw(SkCanvas &canvas) override;
+
  private:
-  Evas *const evas_;
-  Evas_Object *background_{nullptr};
-  Evas_Object *text_{nullptr};
-  Evas_Textblock_Style *style_{nullptr};
+  Scene &scene_;
+  std::unique_ptr<skia::textlayout::Paragraph> text_;
 };
 
 } // namespace rnwebos

@@ -1,88 +1,34 @@
 import { COMMON_OPTIONS, parseCommandArgs, type Command } from '../cli/command.ts';
 import { Reporter } from '../cli/reporter.ts';
 import { probeTv, type TvProbe } from '../discovery/probe-tv.ts';
-import { scanForTvs, type FoundTv } from '../discovery/scan-tvs.ts';
-import { FixableError } from '../errors.ts';
-import { SDB_PORT, type SdbAddress } from '../sdb/sdb-connection.ts';
-import { parseDeviceAddress } from '../webos/device-address.ts';
-import { connectDevice } from '../webos/devices.ts';
-import { readKnownDevices, rememberDevices } from '../webos/known-devices.ts';
+import { scanForTvs } from '../discovery/scan-tvs.ts';
+import { readKnownDevices } from '../webos/known-devices.ts';
+import { printTv, unseenTv } from './devices-report.ts';
 
 const OPTIONS = {
-  connect: {
-    type: 'string',
-    placeholder: '<ip>',
-    description: 'Connect to the TV at this address first, and remember it',
-  },
   'no-scan': {
     type: 'boolean',
-    description: 'Only probe the TVs reached before, without scanning the network',
+    description: 'Only probe the TVs connected before, without scanning the network',
   },
   ...COMMON_OPTIONS,
 } as const;
 
-function unknownTv({ host, port }: SdbAddress): FoundTv {
-  return { host, name: '', model: '', developerMode: null, developerIp: null, sdbPort: port };
+const plural = (count: number) => `${count} LG ${count === 1 ? 'TV' : 'TVs'}`;
+
+/** A TV the scan missed still has Developer Mode on when `rn-webos` logs in to it. */
+function withLogin(tv: TvProbe): TvProbe {
+  return tv.connection.state === 'ready' ? { ...tv, developerMode: true } : tv;
 }
 
-function developerMode(tv: TvProbe): string {
-  if (tv.developerMode === null) return 'unknown: the TV did not answer on port 8001';
-  if (!tv.developerMode) return 'off: on the TV, open Apps and type 12345 on the remote';
-  if (tv.developerIp === null) return 'on, no host PC set';
-  const who = tv.hostPcIsThisComputer === true ? 'this computer' : 'not this computer';
-  return `on, host PC ${tv.developerIp} (${who})`;
-}
-
-function sdb(tv: TvProbe): string {
-  const { sdb: state } = tv;
-  if (state.state === 'ready') {
-    const capabilities = state.capabilities;
-    return capabilities === null
-      ? 'ready'
-      : `ready: ${capabilities.cpuArch}, webOS ${capabilities.platformVersion}`;
-  }
-  if (state.state === 'refused')
-    return 'busy: another computer or webOS Studio holds its sdb connection';
-  if (state.state === 'closed')
-    return `closed: port ${SDB_PORT} opens once Developer mode is on and the TV restarted`;
-  return 'accepted the connection but never answered';
-}
-
-function print(reporter: Reporter, tv: TvProbe): void {
-  const title = [tv.name, tv.model].filter((part) => part !== '').join('  ');
-  reporter.line(`${reporter.paint('bold', tv.host)}  ${title}`);
-  reporter.field('Developer mode', developerMode(tv));
-  reporter.field('sdb', sdb(tv));
-  if (tv.sdb.state === 'ready' && tv.sdb.duid !== null) reporter.field('DUID', tv.sdb.duid);
-}
-
-/** `rn-webos devices`: finds the Samsung TVs on the network and the ones reached before, and probes each. */
+/** `rn-webos devices`: finds the LG TVs on the network and the ones connected before, and probes each. */
 export const devicesCommand: Command = {
   name: 'devices',
-  summary: 'Find Samsung TVs on the network and check Developer mode, sdb and the DUID of each',
+  summary: 'Find LG TVs on the network and check Developer Mode, the key server and the login',
   options: OPTIONS,
-  examples: [
-    'rn-webos devices',
-    'rn-webos devices --connect 192.168.1.50',
-    'rn-webos devices --no-scan',
-  ],
+  examples: ['rn-webos devices', 'rn-webos devices --no-scan'],
   async run(args) {
     const values = parseCommandArgs('devices', args, OPTIONS);
     const reporter = new Reporter({ verbose: values.verbose ?? false });
-    if (values.connect !== undefined) {
-      const address = parseDeviceAddress(values.connect);
-      if (address === null) {
-        throw new FixableError(
-          `${values.connect} is not a TV address`,
-          'Pass an IP address, such as 192.168.1.50.',
-        );
-      }
-      await reporter.step(
-        `Connect to ${values.connect}`,
-        () => connectDevice(address),
-        (tv) => tv.name || tv.serial,
-      );
-    }
     const found =
       values['no-scan'] === true
         ? []
@@ -90,27 +36,27 @@ export const devicesCommand: Command = {
             'Scan',
             (task) =>
               scanForTvs({ onProgress: (done, total) => task.progress(`${done}/${total} hosts`) }),
-            (tvs) => `${tvs.length} Samsung ${tvs.length === 1 ? 'TV' : 'TVs'}`,
+            (tvs) => plural(tvs.length),
           );
     const hosts = new Set(found.map((tv) => tv.host));
-    const known = (await readKnownDevices()).filter((address) => !hosts.has(address.host));
-    const candidates = [...found, ...known.map(unknownTv)];
+    const known = (await readKnownDevices()).filter((tv) => !hosts.has(tv.host));
+    const candidates = [...found, ...known.map((tv) => unseenTv(tv.host, tv.port))];
     if (candidates.length === 0) {
-      reporter.line('No Samsung TV found.');
-      reporter.note('Connect one by address with: rn-webos devices --connect <tv ip>');
+      reporter.line('No LG TV found.');
+      reporter.note(
+        'Is the TV on, and on this network? Connect one by address with: rn-webos connect <tv ip>',
+      );
       return;
     }
     const probes = await reporter.step(
       'Probe',
-      () => Promise.all(candidates.map(probeTv)),
+      async () => (await Promise.all(candidates.map(probeTv))).map(withLogin),
       (tvs) =>
-        `${tvs.filter((tv) => tv.sdb.state === 'ready').length} of ${tvs.length} ready for sdb`,
+        `${tvs.filter((tv) => tv.connection.state === 'ready').length} of ${tvs.length} connected`,
     );
     for (const tv of probes) {
       reporter.line();
-      print(reporter, tv);
+      printTv(reporter, tv);
     }
-    const ready = probes.filter((tv) => tv.sdb.state === 'ready');
-    await rememberDevices(ready.map((tv) => ({ host: tv.host, port: tv.sdbPort })));
   },
 };

@@ -8,7 +8,7 @@ import { WEBOS_PLUGIN, webosPluginProps } from './webos-settings.ts';
 
 /** What `addWebOSPlugin` did to the app's config. */
 export type PluginSetup =
-  | { readonly kind: 'added' | 'moved' | 'present'; readonly file: string }
+  | { readonly kind: 'added' | 'present'; readonly file: string }
   | { readonly kind: 'dynamic'; readonly file: string; readonly entry: string };
 
 type JsonObject = Record<string, unknown>;
@@ -49,13 +49,6 @@ function webosEntryIndex(root: string, plugins: readonly unknown[]): number {
   });
 }
 
-async function propsFor(expo: JsonObject, choose: ChoosePackageId): Promise<JsonObject> {
-  if (expo.webos === undefined) return { package: await choose(expo) };
-  const legacy = jsonObjectSchema.safeParse(expo.webos);
-  if (!legacy.success) throw new FixableError('expo.webos is not an object', 'Fix app.json.');
-  return legacy.data;
-}
-
 async function dynamicSetup(
   root: string,
   file: string,
@@ -65,15 +58,14 @@ async function dynamicSetup(
   if (webosPluginProps(expo.plugins, (name) => isWebOSPluginEntry(root, name)) !== undefined) {
     return { kind: 'present', file };
   }
-  const entry = JSON.stringify([WEBOS_PLUGIN, await propsFor(expo, choose)]);
+  const entry = JSON.stringify([WEBOS_PLUGIN, { package: await choose(expo) }]);
   return { kind: 'dynamic', file, entry };
 }
 
 /**
- * Lists this package's config plugin in the app's `app.json`, with the
- * package id `choose` gives when it has none. A plugin already listed with
- * props is left as it is, and `expo.webos` of earlier releases moves into its
- * props. An `app.config.*` file, which Expo evaluates, is the user's to change.
+ * Lists this package's config plugin in the app's `app.json`, with the app id
+ * `choose` gives. A plugin already listed with props is left as it is. An
+ * `app.config.*` file, which Expo evaluates, is the user's to change.
  */
 export async function addWebOSPlugin(root: string, choose: ChoosePackageId): Promise<PluginSetup> {
   const dynamic = DYNAMIC_CONFIGS.find((name) => existsSync(join(root, name)));
@@ -87,14 +79,13 @@ export async function addWebOSPlugin(root: string, choose: ChoosePackageId): Pro
     throw new FixableError(`expo.plugins in ${file} is not a list`, 'Fix app.json.');
   const at = webosEntryIndex(root, plugins.data);
   if (at !== -1 && typeof plugins.data[at] !== 'string') return { kind: 'present', file };
-  const { webos, ...rest } = expo;
-  const entry = [at === -1 ? WEBOS_PLUGIN : plugins.data[at], await propsFor(expo, choose)];
+  const entry = [at === -1 ? WEBOS_PLUGIN : plugins.data[at], { package: await choose(expo) }];
   const listed =
     at === -1
       ? [...plugins.data, entry]
       : plugins.data.map((old, index) => (index === at ? entry : old));
-  const config = { ...rest, plugins: listed };
+  const config = { ...expo, plugins: listed };
   const next = expo === json ? config : { ...json, expo: config };
   writeFileSync(file, `${JSON.stringify(next, null, indentOf(file))}\n`);
-  return { kind: webos === undefined ? 'added' : 'moved', file };
+  return { kind: 'added', file };
 }

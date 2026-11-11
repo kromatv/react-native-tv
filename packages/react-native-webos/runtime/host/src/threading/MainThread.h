@@ -5,10 +5,10 @@
 
 namespace rnwebos {
 
-/// Runs `task` on the EFL main loop, the only thread allowed to touch Evas.
-/// From the main thread itself it queues an Ecore job, so a caller never
-/// re-enters: the task runs once the callback that queued it has returned.
-/// What `task` throws is logged: an exception must not unwind through Ecore.
+/// Runs `task` on the main loop, the only thread allowed to touch the window,
+/// the scene and the views. From the main thread itself it is queued too, so a
+/// caller never re-enters: the task runs once the callback that queued it has
+/// returned. What `task` throws is logged.
 void runOnMainThread(std::function<void()> task);
 
 /// Runs `task` on the main loop and waits for it, rethrowing what it throws;

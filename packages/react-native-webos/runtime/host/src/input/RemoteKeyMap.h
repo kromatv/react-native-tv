@@ -1,7 +1,8 @@
 #pragma once
 
+#include <SDL3/SDL_events.h>
+
 #include <optional>
-#include <span>
 #include <string_view>
 
 namespace rnwebos {
@@ -20,13 +21,14 @@ struct RemoteKey {
   }
 };
 
-/// Maps an EFL key symbol (`Ecore_Event_Key::key`: `Up`, `Return`, `XF86Back`,
-/// `XF86AudioNext`...) to the event a react-native-tvos app expects; nullopt for
-/// a key apps do not see. Table in docs/reference/webos-input.md, section 12.
-std::optional<RemoteKey> remoteKeyFor(std::string_view keySymbol);
+/// Maps a key SDL reports to the event a react-native-tvos app expects;
+/// nullopt for a key apps do not see. A remote key SDL has no scancode for is
+/// matched on `raw`, the Linux key code webOS sent. Table in
+/// docs/reference/webos-window-input.md, section 15.
+std::optional<RemoteKey> remoteKeyFor(SDL_Scancode scancode, Uint16 raw);
 
-/// The keys a Samsung TV delivers to an app only once it grabs them: Back, the
-/// media keys, the chapter, guide, Tools, caption, info and color keys.
-std::span<const std::string_view> grabbedKeyNames();
+/// The scancode `rn-webos simulator key <name>` presses for a remote key name
+/// (`Back`, `Red`, `PlayPause`...), or SDL_SCANCODE_UNKNOWN.
+SDL_Scancode scancodeForKeyName(std::string_view name);
 
 } // namespace rnwebos

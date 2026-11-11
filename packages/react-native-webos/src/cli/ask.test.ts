@@ -28,6 +28,15 @@ describe('ask', () => {
   });
 });
 
+describe('ask without a default', () => {
+  it('shows the question alone', async () => {
+    const given = answering('A1b2C3\n');
+
+    expect(await ask('Passphrase', '', given.input, given.output)).toBe('A1b2C3');
+    expect(given.shown()).toBe('Passphrase ');
+  });
+});
+
 describe('canAsk', () => {
   it('asks only when both ends are a terminal', () => {
     expect(canAsk({ isTTY: true }, { isTTY: true })).toBe(true);

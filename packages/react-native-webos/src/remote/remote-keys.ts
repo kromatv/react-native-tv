@@ -2,47 +2,50 @@ import { UsageError } from '../cli/command.ts';
 import { closestMatch } from '../cli/suggest.ts';
 
 const DIGITS = Object.fromEntries(
-  Array.from({ length: 10 }, (_, digit) => [String(digit), `KEY_${digit}`]),
+  Array.from({ length: 10 }, (_, digit) => [String(digit), String(digit)]),
 );
 
-const REMOTE_KEYS: Readonly<Record<string, string>> = {
-  left: 'KEY_LEFT',
-  right: 'KEY_RIGHT',
-  up: 'KEY_UP',
-  down: 'KEY_DOWN',
-  enter: 'KEY_ENTER',
-  ok: 'KEY_ENTER',
-  select: 'KEY_ENTER',
-  return: 'KEY_ENTER',
-  back: 'KEY_RETURN',
-  exit: 'KEY_EXIT',
-  info: 'KEY_INFO',
-  play: 'KEY_PLAY',
-  pause: 'KEY_PAUSE',
-  playpause: 'KEY_PLAY_BACK',
-  stop: 'KEY_STOP',
-  rewind: 'KEY_REWIND',
-  fastforward: 'KEY_FF',
-  red: 'KEY_RED',
-  green: 'KEY_GREEN',
-  yellow: 'KEY_YELLOW',
-  blue: 'KEY_CYAN',
+const REMOTE_BUTTONS: Readonly<Record<string, string>> = {
+  left: 'LEFT',
+  right: 'RIGHT',
+  up: 'UP',
+  down: 'DOWN',
+  enter: 'ENTER',
+  ok: 'ENTER',
+  select: 'ENTER',
+  return: 'ENTER',
+  back: 'BACK',
+  exit: 'EXIT',
+  info: 'INFO',
+  play: 'PLAY',
+  pause: 'PAUSE',
+  stop: 'STOP',
+  rewind: 'REWIND',
+  fastforward: 'FASTFORWARD',
+  red: 'RED',
+  green: 'GREEN',
+  yellow: 'YELLOW',
+  blue: 'BLUE',
   ...DIGITS,
 };
 
-const RAW_KEY = /^KEY_[A-Z0-9_]+$/;
+const RAW_BUTTON = /^[A-Z0-9_]{2,32}$/;
 
 /** The key names `rn-webos key` takes, as `--help` lists them. */
-export const REMOTE_KEY_NAMES = Object.keys(REMOTE_KEYS);
+export const REMOTE_KEY_NAMES = Object.keys(REMOTE_BUTTONS);
 
 /**
- * The network remote's `KEY_*` code for a key name, in any case: the
- * simulator's names, digits, or a `KEY_*` code passed as written.
+ * The button name a TV's pointer input socket takes for a key name, in any
+ * case: the simulator's names, digits, or a button name in capitals, such as
+ * `VOLUMEUP`, passed as written.
  */
-export function remoteKeyCode(name: string): string {
-  if (RAW_KEY.test(name)) return name;
-  const code = REMOTE_KEYS[name.toLowerCase()];
-  if (code !== undefined) return code;
+export function remoteButton(name: string): string {
+  const button = REMOTE_BUTTONS[name.toLowerCase()];
+  if (button !== undefined) return button;
+  if (name.toLowerCase() === 'playpause') {
+    throw new UsageError('An LG TV has no play/pause button to press: send play or pause', 'key');
+  }
+  if (RAW_BUTTON.test(name)) return name;
   const suggestion = closestMatch(name.toLowerCase(), REMOTE_KEY_NAMES);
   const hint = suggestion === null ? '' : `. Did you mean ${suggestion}?`;
   throw new UsageError(`Unknown key ${name}${hint}`, 'key');

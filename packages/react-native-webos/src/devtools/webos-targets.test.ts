@@ -2,13 +2,15 @@ import { describe, expect, it, vi } from 'vitest';
 import type { FoundTv } from '../discovery/scan-tvs.ts';
 import { lastOrOnlyTv, webosTargets } from './webos-targets.ts';
 
-const tv = (host: string, developerMode: boolean | null = true): FoundTv => ({
+const tv = (host: string, developerMode = true): FoundTv => ({
   host,
-  name: 'Living room',
-  model: 'QE55',
+  name: '[LG] webOS TV OLED65C25LB',
+  model: 'OLED65C25LB',
+  id: null,
+  webosVersion: '11.2.0',
   developerMode,
-  developerIp: null,
-  sdbPort: 26101,
+  keyServer: false,
+  sshPort: 9922,
 });
 
 const none = { knownDevices: async () => [], scan: async () => [] };
@@ -16,48 +18,44 @@ const none = { knownDevices: async () => [], scan: async () => [] };
 describe('lastOrOnlyTv', () => {
   it('takes the TV used last without scanning', async () => {
     const scan = vi.fn(async () => []);
+    const knownDevices = async () => [{ name: 'lounge', host: '10.0.0.7', port: 9922 }];
 
-    expect(
-      await lastOrOnlyTv({ knownDevices: async () => [{ host: '10.0.0.7', port: 26101 }], scan }),
-    ).toBe('10.0.0.7:26101');
+    expect(await lastOrOnlyTv({ knownDevices, scan })).toBe('10.0.0.7');
     expect(scan).not.toHaveBeenCalled();
   });
 
-  it('else scans, and takes the only TV not known to be out of Developer mode', async () => {
+  it('else scans, and names the TVs in Developer Mode to connect first', async () => {
     const searching = vi.fn();
 
-    const target = await lastOrOnlyTv({
+    const opening = lastOrOnlyTv({
       ...none,
-      scan: async () => [tv('10.0.0.3', false), tv('10.0.0.4', null)],
+      scan: async () => [tv('10.0.0.3', false), tv('10.0.0.4')],
       searching,
     });
 
-    expect(target).toBe('10.0.0.4:26101');
+    await expect(opening).rejects.toThrow(
+      'rn-webos is not connected to a TV yet. In Developer Mode on this network: 10.0.0.4. Turn Key Server on there and run: rn-webos connect <tv ip>',
+    );
     expect(searching).toHaveBeenCalledOnce();
   });
 
-  it('says what to do when the network has no TV, or several', async () => {
-    await expect(lastOrOnlyTv(none)).rejects.toThrow('No TV in Developer mode answered');
-    await expect(
-      lastOrOnlyTv({ ...none, scan: async () => [tv('10.0.0.3'), tv('10.0.0.4')] }),
-    ).rejects.toThrow('2 TVs answered (10.0.0.3, 10.0.0.4): press shift+t to pick one.');
+  it('says what to do when the network has no TV in Developer Mode', async () => {
+    await expect(lastOrOnlyTv(none)).rejects.toThrow('No TV in Developer Mode answered');
   });
 });
 
 describe('webosTargets', () => {
-  it('lists the TVs used before, then those found, each once, then the simulator', async () => {
+  it('lists the TVs connected before, the last one used first, then the simulator', async () => {
     const targets = await webosTargets({
       knownDevices: async () => [
-        { host: '10.0.0.7', port: 26101 },
-        { host: '10.0.0.8', port: 26101 },
+        { name: 'lounge', host: '10.0.0.7', port: 9922 },
+        { name: 'OLED65C25LB', host: '10.0.0.8', port: 9923 },
       ],
-      scan: async () => [tv('10.0.0.7'), tv('10.0.0.9'), tv('10.0.0.5', false)],
     });
 
     expect(targets).toEqual([
-      { target: '10.0.0.7:26101', label: '10.0.0.7  Living room QE55  (used last)' },
-      { target: '10.0.0.8:26101', label: '10.0.0.8' },
-      { target: '10.0.0.9:26101', label: '10.0.0.9  Living room QE55' },
+      { target: '10.0.0.7', label: '10.0.0.7  lounge  (used last)' },
+      { target: '10.0.0.8:9923', label: '10.0.0.8  OLED65C25LB' },
       { target: 'simulator', label: 'webOS simulator' },
     ]);
   });

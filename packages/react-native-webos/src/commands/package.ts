@@ -1,4 +1,5 @@
 import { statSync } from 'node:fs';
+import { isIPv4 } from 'node:net';
 import {
   COMMON_OPTIONS,
   ENTRY_OPTIONS,
@@ -10,7 +11,7 @@ import {
 import { DEV_OPTION } from '../cli/log-options.ts';
 import { formatPath, formatSize } from '../cli/format.ts';
 import { packageSteps } from '../pipeline/package-steps.ts';
-import { BUILD_OPTIONS, findDevice, openBuild, settleBuild } from './build-options.ts';
+import { BUILD_OPTIONS, openBuild, settleBuild } from './build-options.ts';
 
 const OPTIONS = {
   ...BUILD_OPTIONS,
@@ -20,41 +21,41 @@ const OPTIONS = {
   ...COMMON_OPTIONS,
 };
 
-/** `rn-webos package`: builds a signed `.tpk` of the app. */
+function deviceHost(device: string | undefined): string | null {
+  if (device === undefined) return null;
+  if (isIPv4(device)) return device;
+  throw new UsageError(`--device must be the TV's IP address, got ${device}`, 'package');
+}
+
+/** `rn-webos package`: builds an `.ipk` of the app. */
 export const packageCommand: Command = {
   name: 'package',
-  summary: 'Build a signed .tpk of the app, native runtime included',
+  summary: 'Build an .ipk of the app, native runtime included',
   options: OPTIONS,
-  examples: [
-    'rn-webos package',
-    'rn-webos package --profile Store',
-    'rn-webos package --dev --device 192.168.1.50',
-  ],
+  examples: ['rn-webos package', 'rn-webos package --dev --device 192.168.1.50'],
   async run(args, context) {
     const flags = parseCommandArgs('package', args, OPTIONS);
-    const logFlag = flags['log-host'] ?? flags['log-port'];
-    if (flags.dev !== true && logFlag !== undefined) {
+    const devFlag = flags['log-host'] ?? flags['log-port'] ?? flags['dev-server'];
+    if (flags.dev !== true && devFlag !== undefined) {
       throw new UsageError(
-        '--log-host and --log-port set up a development build: add --dev',
+        '--log-host, --log-port and --dev-server set up a development build: add --dev',
         'package',
       );
     }
-    const base = openBuild(flags, context);
-    const device = flags.device === undefined ? null : await findDevice(base, flags.device);
+    const host = deviceHost(flags.device);
     const release = { ...flags, release: flags.dev !== true };
-    const build = settleBuild('package', release, base, device, context.cwd);
+    const build = settleBuild('package', release, openBuild(flags, context), host, context.cwd);
     const { reporter } = build;
-    const { tpk } = await packageSteps(reporter, {
-      ...build,
-      signing: { profile: flags.profile, author: flags.author, distributor: flags.distributor },
+    const { ipk } = await packageSteps(reporter, {
+      app: build.app,
+      log: build.log,
       devServer: flags['dev-server'],
     });
     reporter.line();
-    const size = formatSize(statSync(tpk).size);
+    const size = formatSize(statSync(ipk).size);
     reporter.line(
-      `${reporter.paint(['green', 'bold'], 'Package')} ${formatPath(tpk, context.cwd)} ${reporter.paint('gray', size)}`,
+      `${reporter.paint(['green', 'bold'], 'Package')} ${formatPath(ipk, context.cwd)} ${reporter.paint('gray', size)}`,
     );
-    const target = device === null ? '<tv ip>' : device.serial;
-    reporter.note(`Install and launch it with: rn-webos run --device ${target}`);
+    reporter.note(`Install and launch it with: rn-webos run --device ${host ?? '<tv ip>'}`);
   },
 };

@@ -7,13 +7,13 @@ import { generateReactNativeSpecs } from '../codegen/react-native-specs.ts';
 import { RUNTIME_DIR } from '../package-paths.ts';
 import { stampAt } from '../stamp.ts';
 import type { Task } from '../task.ts';
-import type { WebOSSdk } from '../webos/webos-sdk.ts';
-import type { WebOSTarget } from '../webos/target.ts';
+import type { WebOSSdk } from '../sysroot/webos-sdk.ts';
 import { buildCMakeProject, sourcesKey, webosDefinitions } from './cmake.ts';
 import type { HermesHostCompilers } from './hermes-host.ts';
+import { locateLlvmDir } from './llvm-dir.ts';
 
-/** The native library the .NET shell loads. */
-export const RUNTIME_LIBRARY = 'libreact-native-webos.so';
+/** The executable a package's `appinfo.json` names as `main`: Hermes, React Native, the host, Skia and SDL in one file. */
+export const RUNTIME_EXECUTABLE = 'react-native-webos';
 
 /**
  * Which runtime a package gets: a development build's talks to a dev server, a
@@ -26,21 +26,20 @@ interface RuntimeBuildDirs {
   readonly codegen: string;
   readonly nativeLibraries: string;
   readonly cmake: string;
-  readonly library: string;
+  readonly executable: string;
 }
 
 /**
- * The build directories of the runtime for an app's react-native, a target and
- * a flavour, one set per runtime sources and react-native on disk, since a
- * CMake build directory belongs to one source tree.
+ * The build directories of the TV runtime for an app's react-native and a
+ * flavour, one set per runtime sources and react-native on disk, since a CMake
+ * build directory belongs to one source tree.
  */
 export function runtimeBuildDirs(
   reactNative: ResolvedPackage,
-  target: WebOSTarget,
   flavour: RuntimeFlavour,
   runtimeDir: string = RUNTIME_DIR,
 ): RuntimeBuildDirs {
-  const key = `${reactNative.name}-${reactNative.version}-${target.arch}-webos${target.platformVersion}-${flavour}-${sourcesKey(runtimeDir, reactNative.dir)}`;
+  const key = `${reactNative.name}-${reactNative.version}-${flavour}-${sourcesKey(runtimeDir, reactNative.dir)}`;
   const root = join(cacheDir(), 'runtime', key);
   const cmake = join(root, 'build');
   return {
@@ -48,7 +47,7 @@ export function runtimeBuildDirs(
     codegen: join(root, 'codegen'),
     nativeLibraries: join(root, 'libraries'),
     cmake,
-    library: join(cmake, 'host', RUNTIME_LIBRARY),
+    executable: join(cmake, 'host', RUNTIME_EXECUTABLE),
   };
 }
 
@@ -67,7 +66,6 @@ export async function ensureCodegen(reactNative: ResolvedPackage, dir: string): 
 
 interface RuntimeInputs {
   readonly sdk: WebOSSdk;
-  readonly target: WebOSTarget;
   readonly flavour: RuntimeFlavour;
   readonly packages: AppPackages;
   readonly hermes: HermesHostCompilers;
@@ -76,9 +74,9 @@ interface RuntimeInputs {
 }
 
 /**
- * Compiles `libreact-native-webos.so` against the app's own react-native and
- * expo-modules-core, with the app's native libraries, in the given flavour.
- * Incremental: an unchanged build only checks timestamps.
+ * Compiles the `react-native-webos` executable against the app's own
+ * react-native and expo-modules-core, with the app's native libraries, in the
+ * given flavour. Incremental: an unchanged build only checks timestamps.
  */
 export async function compileRuntime(task: Task, inputs: RuntimeInputs): Promise<string> {
   const { packages, dirs } = inputs;
@@ -86,7 +84,7 @@ export async function compileRuntime(task: Task, inputs: RuntimeInputs): Promise
     source: RUNTIME_DIR,
     build: dirs.cmake,
     definitions: {
-      ...webosDefinitions(inputs.sdk, inputs.target),
+      ...webosDefinitions(inputs.sdk, locateLlvmDir()),
       REACT_NATIVE_DIR: packages.reactNative.dir,
       RN_WEBOS_CODEGEN_DIR: dirs.codegen,
       RN_WEBOS_HERMES_HOST_COMPILERS: inputs.hermes.importFile,
@@ -95,13 +93,13 @@ export async function compileRuntime(task: Task, inputs: RuntimeInputs): Promise
       RN_WEBOS_LIBRARIES_FILE: inputs.nativeLibrariesFile,
       RN_WEBOS_DEVELOPMENT: inputs.flavour === 'development' ? 'ON' : 'OFF',
     },
-    targets: ['react-native-webos'],
+    targets: [RUNTIME_EXECUTABLE],
   });
-  if (!existsSync(dirs.library)) {
+  if (!existsSync(dirs.executable)) {
     throw new FixableError(
-      `The runtime build produced no ${dirs.library}`,
+      `The runtime build produced no ${dirs.executable}`,
       'Run again with --verbose to see what CMake and Ninja printed.',
     );
   }
-  return dirs.library;
+  return dirs.executable;
 }

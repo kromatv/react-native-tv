@@ -2,83 +2,104 @@ import { describe, expect, it } from 'vitest';
 import { parseArpTable } from './arp.ts';
 import { compareHosts, localSubnets, prefixOf, subnetHosts } from './lan.ts';
 import { mapPool } from './map-pool.ts';
-import { parseApiDevice } from './samsung-api.ts';
 import { parseSsdpReply, searchRequest } from './ssdp.ts';
-import { parseDeviceDescription } from './upnp.ts';
+import { isLgTv, parseDeviceDescription } from './upnp.ts';
+import { webosVersionName } from './webos-version.ts';
+
+const SECOND_SCREEN = 'urn:lge-com:service:webos-second-screen:1';
+const UUID = '6f2c1c1e-8b0a-4c57-9d0e-2a7b3a4f5e61';
 
 describe('ssdp', () => {
-  it('writes the M-SEARCH of UPnP Device Architecture 1.1', () => {
-    expect(searchRequest('urn:dial-multiscreen-org:service:dial:1').toString()).toBe(
-      'M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:1900\r\nMAN: "ssdp:discover"\r\nMX: 2\r\nST: urn:dial-multiscreen-org:service:dial:1\r\n\r\n',
+  it('writes the M-SEARCH of UPnP Device Architecture 1.1 for LG\'s remote control service', () => {
+    expect(searchRequest(SECOND_SCREEN).toString()).toBe(
+      `M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:1900\r\nMAN: "ssdp:discover"\r\nMX: 2\r\nST: ${SECOND_SCREEN}\r\n\r\n`,
     );
   });
 
-  it('reads where a Samsung TV keeps its description', () => {
+  it('reads the answer of an LG TV: where its description is, its UUID and what it answered for', () => {
     const reply = [
       'HTTP/1.1 200 OK',
-      'LOCATION: http://192.168.1.107:7678/nservice/',
-      'SERVER: Samsung-Linux/4.1, UPnP/1.0, Samsung_UPnP_SDK/1.0',
-      'ST: urn:dial-multiscreen-org:service:dial:1',
+      'LOCATION: http://192.168.1.50:1702/',
+      'CACHE-CONTROL: max-age=1800',
+      'EXT:',
+      `USN: uuid:${UUID}::${SECOND_SCREEN}`,
+      `ST: ${SECOND_SCREEN}`,
+      'DATE: Sun, 17 Jan 2016 13:52:40 GMT',
+      'SERVER: WebOS/4.1.0 UPnP/1.0',
       '',
     ].join('\r\n');
 
-    expect(parseSsdpReply(reply, '192.168.1.107')).toEqual({
-      host: '192.168.1.107',
-      location: 'http://192.168.1.107:7678/nservice/',
-      server: 'Samsung-Linux/4.1, UPnP/1.0, Samsung_UPnP_SDK/1.0',
+    expect(parseSsdpReply(reply, '192.168.1.50')).toEqual({
+      host: '192.168.1.50',
+      location: 'http://192.168.1.50:1702/',
+      server: 'WebOS/4.1.0 UPnP/1.0',
+      target: SECOND_SCREEN,
+      uuid: UUID,
     });
+  });
+
+  it('refuses a LOCATION that is not HTTP, and reads no UUID from a USN without one', () => {
     expect(parseSsdpReply('HTTP/1.1 200 OK\r\nLOCATION: file:///etc/passwd\r\n', 'x')).toBeNull();
+    expect(
+      parseSsdpReply('HTTP/1.1 200 OK\r\nLOCATION: http://x/\r\nUSN: upnp:rootdevice\r\n', 'x'),
+    ).toMatchObject({ uuid: null, target: '' });
   });
 });
 
 describe('upnp', () => {
-  it('reads the name its owner gave the TV, unescaped', () => {
-    const xml =
-      '<root><device><friendlyName>75&quot; The Frame</friendlyName><manufacturer>Samsung</manufacturer><modelName>GQ75LS03DAUXZG</modelName></device></root>';
+  const description = `<root xmlns="urn:schemas-upnp-org:device-1-0" xmlns:dlna="urn:schemas-dlna-org:device-1-0">
+  <specVersion><major>1</major><minor>0</minor></specVersion>
+  <device>
+    <deviceType>urn:schemas-upnp-org:device:Basic:1</deviceType>
+    <friendlyName>[LG] webOS TV OLED65B4PUA</friendlyName>
+    <manufacturer>LG Electronics</manufacturer>
+    <manufacturerURL>http://www.lge.com</manufacturerURL>
+    <modelDescription/>
+    <modelName>LG Smart TV</modelName>
+    <modelURL>http://www.lge.com</modelURL>
+    <modelNumber>OLED65B4PUA</modelNumber>
+    <serialNumber/>
+    <UDN>uuid:${UUID}</UDN>
+    <serviceList>
+      <service>
+        <serviceType>${SECOND_SCREEN}</serviceType>
+        <serviceId>urn:lge-com:serviceId:webos-second-screen-3000-3001</serviceId>
+      </service>
+    </serviceList>
+  </device>
+</root>`;
 
-    expect(parseDeviceDescription(xml)).toEqual({
-      friendlyName: '75" The Frame',
-      manufacturer: 'Samsung',
-      modelName: 'GQ75LS03DAUXZG',
+  it('reads the name, the model number and the UUID of an LG TV', () => {
+    const device = parseDeviceDescription(description);
+
+    expect(device).toEqual({
+      friendlyName: '[LG] webOS TV OLED65B4PUA',
+      manufacturer: 'LG Electronics',
+      modelNumber: 'OLED65B4PUA',
+      udn: UUID,
+      secondScreen: true,
     });
+    expect(isLgTv(device)).toBe(true);
+  });
+
+  it('unescapes the name its owner typed, and tells another device from a TV', () => {
+    const renderer =
+      '<root><device><friendlyName>Tom&apos;s TV</friendlyName><manufacturer>LG Electronics</manufacturer></device></root>';
+
+    const device = parseDeviceDescription(renderer);
+
+    expect(device.friendlyName).toBe("Tom's TV");
+    expect(isLgTv(device)).toBe(false);
+    expect(isLgTv({ ...parseDeviceDescription(description), manufacturer: 'Acme' })).toBe(false);
   });
 });
 
-describe('parseApiDevice', () => {
-  it('reads a TV in Developer mode and the host PC it names', () => {
-    const device = {
-      OS: 'webOS',
-      name: '75&quot; The Frame',
-      model: '24_PTM_FTV_T09',
-      modelName: 'GQ75LS03DAUXZG',
-      developerMode: '1',
-      developerIP: '192.168.1.124',
-    };
-
-    expect(parseApiDevice({ device })).toEqual({
-      name: '75" The Frame',
-      modelName: 'GQ75LS03DAUXZG',
-      developerMode: true,
-      developerIp: '192.168.1.124',
-    });
-  });
-
-  it('leaves out a soundbar, which answers the same API', () => {
-    const device = {
-      OS: 'webOS',
-      name: 'Soundbar',
-      model: '25_MT8532_AISPK',
-      ModelNumber: 'HW-QS700F',
-      developerMode: '0',
-    };
-
-    expect(parseApiDevice({ device })).toBeNull();
-  });
-
-  it('reads no host PC from an empty or zero address', () => {
-    const device = { OS: 'webOS', developerMode: '0', developerIP: '0.0.0.0' };
-
-    expect(parseApiDevice({ device })?.developerIp).toBeNull();
+describe('webosVersionName', () => {
+  it('names the releases LG markets by year, and leaves the others as they are', () => {
+    expect(webosVersionName('11.2.0')).toBe('webOS 26 (11.2.0)');
+    expect(webosVersionName('7.3.0')).toBe('webOS 22 (7.3.0)');
+    expect(webosVersionName('4.4.2')).toBe('webOS 4.4.2');
+    expect(webosVersionName('12.0.0')).toBe('webOS 12.0.0');
   });
 });
 

@@ -57,21 +57,6 @@ std::optional<LogEndpoint> optionalLogEndpoint(const folly::dynamic &config) {
   return LogEndpoint{.host = requireString(*value, "host"), .port = static_cast<std::uint16_t>(port->getInt())};
 }
 
-std::optional<std::string> voiceSearchUrl(const folly::dynamic &config) {
-  auto voice = config.get_ptr("voice");
-  if (voice == nullptr || voice->isNull()) return std::nullopt;
-  if (!voice->isObject()) throw HostConfigError(std::string(kConfigFile) + ": `voice` must be an object");
-  return optionalString(*voice, "searchUrl");
-}
-
-bool isUhd(const folly::dynamic &config) {
-  const auto resolution = optionalString(config, "resolution").value_or("1080p");
-  if (resolution != "1080p" && resolution != "4k") {
-    throw HostConfigError(std::string(kConfigFile) + ": `resolution` must be 1080p or 4k");
-  }
-  return resolution == "4k";
-}
-
 } // namespace
 
 HostConfig loadHostConfig(const std::string &resourceDir) {
@@ -85,10 +70,7 @@ HostConfig loadHostConfig(const std::string &resourceDir) {
       .logEndpoint = optionalLogEndpoint(config),
       .development = optionalBool(config, "development"),
       .resourceDir = resourceDir,
-      .uhd = isUhd(config),
       .backgroundMedia = optionalBool(config, "backgroundMedia"),
-      .voice = config.get_ptr("voice") != nullptr && config.get_ptr("voice")->isObject(),
-      .voiceSearchUrl = voiceSearchUrl(config),
   };
 }
 

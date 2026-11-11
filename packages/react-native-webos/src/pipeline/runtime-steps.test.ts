@@ -7,10 +7,10 @@ import { Reporter } from '../cli/reporter.ts';
 import { capturedOutput } from '../fakes.fixtures.ts';
 import { prepareNativeLibraries } from '../libraries/prepare-native-libraries.ts';
 import { compileRuntime, ensureCodegen } from '../runtime/build-runtime.ts';
-import { setupTarget } from '../sysroot/setup-target.ts';
+import { ensureWebOSSdk } from '../sysroot/webos-sdk.ts';
 import { runtimeSteps } from './runtime-steps.ts';
 
-vi.mock('../sysroot/setup-target.ts', () => ({ setupTarget: vi.fn() }));
+vi.mock('../sysroot/webos-sdk.ts', () => ({ ensureWebOSSdk: vi.fn() }));
 vi.mock('../runtime/hermes-host.ts', () => ({
   hermesHostCompilers: () => ({ built: true }),
   ensureHermesHostCompilers: vi.fn(async () => ({
@@ -29,7 +29,7 @@ vi.mock('../libraries/prepare-native-libraries.ts', async (importOriginal) => ({
   prepareNativeLibraries: vi.fn(),
 }));
 
-const SDK = { root: '/webos-studio', sdb: '/sdb', webosCli: '/webos', packageManager: '/pm' };
+const SDK = { path: '/cache/sdk/2026.08-webos', version: '2026.08-webos', reused: false };
 let dir: string;
 let out: ReturnType<typeof capturedOutput>;
 
@@ -37,20 +37,16 @@ beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), 'rn-webos-runtime-steps-'));
   vi.stubEnv('RN_WEBOS_CACHE_DIR', dir);
   out = capturedOutput();
-  const library = join(dir, 'libreact-native-webos.so');
-  writeFileSync(library, 'elf');
-  vi.mocked(setupTarget).mockResolvedValue({
-    path: '/sysroot',
-    reused: false,
-    patchedLibraries: 3,
-  });
+  const executable = join(dir, 'react-native-webos');
+  writeFileSync(executable, 'elf');
+  vi.mocked(ensureWebOSSdk).mockResolvedValue(SDK);
   vi.mocked(ensureCodegen).mockResolvedValue(true);
   vi.mocked(prepareNativeLibraries).mockResolvedValue({
     file: '/libraries.json',
     libraries: [],
     warnings: ['maps: its codegenConfig is not one React Native reads; skipped'],
   });
-  vi.mocked(compileRuntime).mockResolvedValue(library);
+  vi.mocked(compileRuntime).mockResolvedValue(executable);
 });
 
 afterEach(() => {
@@ -60,24 +56,34 @@ afterEach(() => {
 });
 
 describe('runtimeSteps', () => {
-  it('prepares the toolchain, codegen and libraries, then compiles the runtime', async () => {
+  it('prepares the SDK, codegen and libraries, then compiles the runtime', async () => {
     const reporter = new Reporter({ verbose: false, out, env: { NO_COLOR: '1' } });
 
-    const library = await runtimeSteps(
-      reporter,
-      SDK,
-      fakeApp(dir),
-      { arch: 'armv7l', platformVersion: '9.0' },
-      'development',
-    );
+    const executable = await runtimeSteps(reporter, fakeApp(dir), 'development');
 
-    expect(library).toBe(join(dir, 'libreact-native-webos.so'));
+    expect(executable).toBe(join(dir, 'react-native-webos'));
     expect(compileRuntime).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ sdk: SDK, nativeLibrariesFile: '/libraries.json' }),
+      expect.objectContaining({
+        sdk: SDK,
+        flavour: 'development',
+        nativeLibrariesFile: '/libraries.json',
+      }),
     );
-    expect(out.text()).toContain('sysroot mirrored, 3 libraries patched');
+    expect(out.text()).toContain('SDK 2026.08-webos extracted');
     expect(out.text()).toContain('react-native 0.88.0');
     expect(out.text()).toContain('maps: its codegenConfig');
+  });
+
+  it('says so when the SDK was already in the cache', async () => {
+    vi.mocked(ensureWebOSSdk).mockResolvedValue({ ...SDK, reused: true });
+
+    await runtimeSteps(
+      new Reporter({ verbose: false, out, env: { NO_COLOR: '1' } }),
+      fakeApp(dir),
+      'release',
+    );
+
+    expect(out.text()).toMatch(/Toolchain\s+cached/);
   });
 });

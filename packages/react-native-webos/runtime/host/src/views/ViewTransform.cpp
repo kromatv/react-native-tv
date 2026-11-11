@@ -1,9 +1,8 @@
 #include "ViewTransform.h"
 
-#include "RenderSync.h"
 #include "TransformMath.h"
 
-#include <array>
+#include <cmath>
 
 namespace rnwebos {
 
@@ -18,46 +17,48 @@ bool ViewTransform::update(const facebook::react::ViewProps &props, const facebo
   }
   if (matrix == matrix_) return false;
   matrix_ = matrix;
+  isIdentity_ = matrix_ == Transform::Identity();
   isTranslation_ = isTranslationOnly(matrix_);
   return true;
 }
 
-PixelPoint ViewTransform::translation(Float scale) const {
-  if (!isTranslation_) return {};
-  return {.x = toPixels(matrix_.matrix[12], scale), .y = toPixels(matrix_.matrix[13], scale)};
+bool ViewTransform::isIdentity() const {
+  return isIdentity_;
 }
 
-void ViewTransform::apply(Evas_Object *root, const PixelRect &box, const PixelRect &bounds, Float scale) const {
-  if (isTranslation_ || scale <= 0) {
-    if (evas_object_map_enable_get(root)) {
-      waitForRenderThread(root);
-      evas_object_map_enable_set(root, EINA_FALSE);
-    }
+SkM44 ViewTransform::pixelMatrix(Float scale) const {
+  const auto s = static_cast<float>(scale);
+  return SkM44::Scale(s, s, s) * SkM44::ColMajor(matrix_.matrix.data()) * SkM44::Scale(1 / s, 1 / s, 1 / s);
+}
+
+void ViewTransform::concat(SkCanvas &canvas, Float scale) const {
+  if (isIdentity_ || scale <= 0) return;
+  if (isTranslation_) {
+    canvas.translate(std::round(matrix_.matrix[12] * scale), std::round(matrix_.matrix[13] * scale));
     return;
   }
-  const std::array<std::array<Evas_Coord, 2>, 4> corners{{
-      {bounds.x, bounds.y},
-      {bounds.x + bounds.width, bounds.y},
-      {bounds.x + bounds.width, bounds.y + bounds.height},
-      {bounds.x, bounds.y + bounds.height},
-  }};
-  auto *map = evas_map_new(4);
-  for (int i = 0; i < 4; ++i) {
-    const auto mapped = mapPoint({.x = corners[i][0], .y = corners[i][1]}, box, scale);
-    evas_map_point_coord_set(map, i, mapped.x, mapped.y, 0);
-    evas_map_point_image_uv_set(map, i, corners[i][0] - bounds.x, corners[i][1] - bounds.y);
-    evas_map_point_color_set(map, i, 255, 255, 255, 255);
-  }
-  evas_map_smooth_set(map, EINA_TRUE);
-  evas_map_alpha_set(map, EINA_TRUE);
-  evas_object_map_set(root, map);
-  evas_object_map_enable_set(root, EINA_TRUE);
-  evas_map_free(map);
+  canvas.concat(pixelMatrix(scale));
 }
 
-PixelPoint ViewTransform::mapPoint(PixelPoint point, const PixelRect &box, Float scale) const {
-  if (isTranslation_ || scale <= 0) return point;
-  return transformedPoint(matrix_, point, box, scale);
+SkPoint ViewTransform::mapPoint(SkPoint local, Float scale) const {
+  if (isIdentity_ || scale <= 0) return local;
+  if (isTranslation_) {
+    return {local.x() + std::round(matrix_.matrix[12] * scale), local.y() + std::round(matrix_.matrix[13] * scale)};
+  }
+  const auto mapped = pixelMatrix(scale).map(local.x(), local.y(), 0, 1);
+  const auto w = std::abs(mapped.w) > 1e-6f ? mapped.w : 1;
+  return {mapped.x / w, mapped.y / w};
+}
+
+bool ViewTransform::invertPoint(SkPoint outer, Float scale, SkPoint &local) const {
+  if (isIdentity_ || scale <= 0) {
+    local = outer;
+    return true;
+  }
+  SkMatrix inverse;
+  if (!pixelMatrix(scale).asM33().invert(&inverse)) return false;
+  local = inverse.mapPoint(outer);
+  return true;
 }
 
 } // namespace rnwebos

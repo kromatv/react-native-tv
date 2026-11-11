@@ -8,7 +8,7 @@ export function canAsk(
   return input.isTTY === true && output.isTTY === true;
 }
 
-/** Asks `question` on the terminal; an empty answer takes `fallback`. */
+/** Asks `question` on the terminal; an empty answer takes `fallback`, which is shown unless empty. */
 export async function ask(
   question: string,
   fallback: string,
@@ -17,7 +17,8 @@ export async function ask(
 ): Promise<string> {
   const prompt = createInterface({ input, output });
   try {
-    const answer = (await prompt.question(`${question} (${fallback}) `)).trim();
+    const shown = fallback === '' ? '' : ` (${fallback})`;
+    const answer = (await prompt.question(`${question}${shown} `)).trim();
     return answer === '' ? fallback : answer;
   } finally {
     prompt.close();

@@ -1,83 +1,58 @@
 import { FixableError } from '../errors.ts';
-import type { DeviceCapabilities } from '../sdb/capabilities.ts';
-import { SdbConnectError, type ConnectFailure, type SdbAddress } from '../sdb/sdb-connection.ts';
-import { openSdbDevice } from '../sdb/sdb-device.ts';
-import { deviceSerial, parseDeviceAddress } from './device-address.ts';
-import { readKnownDevices, rememberDevice } from './known-devices.ts';
+import { addressText, parseDeviceAddress, type TvAddress } from './device-address.ts';
+import { NO_DEVICE_INFO, readDeviceInfo, type DeviceInfo } from './device-info.ts';
+import { readKnownDevices, rememberDevice, type KnownDevice } from './known-devices.ts';
+import { DEVELOPER_MODE_HINT, openTvSession } from './tv-session.ts';
 
-/** A TV that answered, with what it reported about itself. */
+/** A TV that answered over SSH, with what it reported about itself. */
 export interface Device {
-  readonly address: SdbAddress;
-  readonly serial: string;
+  readonly address: TvAddress;
+  /** The name it was connected under. */
   readonly name: string;
-  readonly capabilities: DeviceCapabilities;
+  readonly info: DeviceInfo;
 }
 
 /** A remembered TV, probed: online with its details, or why it did not answer. */
 export type DeviceStatus =
-  | { readonly serial: string; readonly state: 'online'; readonly device: Device }
-  | { readonly serial: string; readonly state: 'offline'; readonly reason: string };
+  | { readonly known: KnownDevice; readonly state: 'online'; readonly device: Device }
+  | {
+      readonly known: KnownDevice;
+      readonly state: 'offline';
+      readonly reason: string;
+      /** What to do about it, when `rn-webos` knows. */
+      readonly hint: string | null;
+    };
 
-export const DEVELOPER_MODE_HINT =
-  "On the TV, open Apps, type 12345 on the remote, turn Developer mode on with this computer's IP address, and restart the TV.";
+const PROBE_TIMEOUT_MS = 8000;
+/** What to do on a TV before `rn-webos` can reach it. */
+export const CONNECT_HINT = `${DEVELOPER_MODE_HINT} Then turn Key Server on there and run: rn-webos connect <tv ip>`;
 
-const ONE_CONNECTION_HINT =
-  "The TV takes one sdb connection at a time, and another host kept it for the two seconds rn-webos waited: another rn-webos on this TV, or webOS Studio's sdb or Device Manager (`sdb disconnect <tv ip>` frees it). If none is connected, check that Developer mode names this computer's IP.";
-const PROBE_TIMEOUT_MS = 5000;
-
-const CONNECT_FAILURES: Record<ConnectFailure, (serial: string) => FixableError> = {
-  unreachable: (serial) => new FixableError(`No TV answers at ${serial}`, DEVELOPER_MODE_HINT),
-  refused: (serial) => new FixableError(`${serial} refused the connection`, ONE_CONNECTION_HINT),
-  silent: (serial) =>
-    new FixableError(`${serial} accepted the connection but never answered`, DEVELOPER_MODE_HINT),
-};
-
-/** The {@link FixableError} for a TV that could not be reached, or `error` itself. */
-export function connectFailure(serial: string, error: unknown): Error {
-  if (error instanceof SdbConnectError) return CONNECT_FAILURES[error.reason](serial);
-  return error instanceof Error ? error : new Error(String(error));
-}
-
-/** Connects to the TV at `address` and reads what it reports. */
+/** Logs in to a remembered TV and reads what it reports. */
 export async function probeDevice(
-  address: SdbAddress,
+  known: KnownDevice,
   timeoutMs = PROBE_TIMEOUT_MS,
 ): Promise<Device> {
-  const serial = deviceSerial(address);
-  const tv = await openSdbDevice(address, timeoutMs).catch((error: unknown) => {
-    throw connectFailure(serial, error);
-  });
-  tv.close();
-  if (tv.capabilities === null) {
-    throw new FixableError(
-      `${serial} did not report its CPU and platform`,
-      'Check the TV is on and in Developer mode, then try again.',
-    );
+  const address = { host: known.host, port: known.port };
+  const session = await openTvSession(address, timeoutMs);
+  try {
+    const info = await readDeviceInfo(session).catch(() => NO_DEVICE_INFO);
+    return { address, name: known.name, info };
+  } finally {
+    session.close();
   }
-  return { address, serial, name: tv.model ?? '', capabilities: tv.capabilities };
-}
-
-/** Probes a TV and remembers it, so later commands find it without `--device`. */
-export async function connectDevice(address: SdbAddress): Promise<Device> {
-  const device = await probeDevice(address);
-  await rememberDevice(address);
-  return device;
 }
 
 /** Every remembered TV, probed at once. */
 export async function listDevices(): Promise<DeviceStatus[]> {
   const known = await readKnownDevices();
   return Promise.all(
-    known.map(async (address): Promise<DeviceStatus> => {
-      const serial = deviceSerial(address);
+    known.map(async (tv): Promise<DeviceStatus> => {
       try {
-        return { serial, state: 'online', device: await probeDevice(address) };
+        return { known: tv, state: 'online', device: await probeDevice(tv) };
       } catch (error) {
-        return {
-          serial,
-          state: 'offline',
-          reason: error instanceof Error ? error.message : String(error),
-        };
+        const reason = error instanceof Error ? error.message : String(error);
+        const hint = error instanceof FixableError ? error.hint : null;
+        return { known: tv, state: 'offline', reason, hint };
       }
     }),
   );
@@ -89,34 +64,45 @@ async function onlyDevice(): Promise<Device> {
   const [first] = online;
   if (first === undefined) {
     const known =
-      statuses.length === 0 ? '' : ` None of the ${statuses.length} TVs reached before answered.`;
-    throw new FixableError(
-      'No TV is connected',
-      `Pass the TV's address with --device <ip>.${known} ${DEVELOPER_MODE_HINT}`,
-    );
+      statuses.length === 0 ? '' : `None of the ${statuses.length} TVs connected before answers. `;
+    throw new FixableError('No TV is connected', `${known}${CONNECT_HINT}`);
   }
   if (online.length > 1) {
-    const serials = online.map((device) => device.serial).join(', ');
-    throw new FixableError(
-      `${online.length} TVs are connected`,
-      `Pick one with --device: ${serials}`,
-    );
+    const names = online.map((device) => device.name).join(', ');
+    throw new FixableError(`${online.length} TVs are connected`, `Pick one with --device: ${names}`);
   }
   return first;
 }
 
-/**
- * The TV a command targets: the one at `address`, remembered for next time,
- * or, with no address, the only remembered TV that answers.
- */
-export async function resolveDevice(address: string | undefined): Promise<Device> {
-  if (address === undefined) return onlyDevice();
-  const parsed = parseDeviceAddress(address);
-  if (parsed === null) {
+function findKnown(known: readonly KnownDevice[], target: string): KnownDevice {
+  const address = parseDeviceAddress(target);
+  const typedPort = target.includes(':');
+  const found =
+    address === null
+      ? known.find((tv) => tv.name === target)
+      : known.find((tv) => tv.host === address.host && (!typedPort || tv.port === address.port));
+  if (found !== undefined) return found;
+  if (address !== null) {
     throw new FixableError(
-      `${address} is not a TV address`,
-      'Pass an IP address, such as --device 192.168.1.50.',
+      `rn-webos is not connected to the TV at ${addressText(address)}`,
+      `Turn Key Server on in the TV's Developer Mode app, then run: rn-webos connect ${addressText(address)}`,
     );
   }
-  return connectDevice(parsed);
+  const names = known.map((tv) => tv.name).join(', ');
+  throw new FixableError(
+    `No connected TV is named ${target}`,
+    names === '' ? CONNECT_HINT : `Pass its IP address, or one of: ${names}`,
+  );
+}
+
+/**
+ * The TV a command targets: the connected one with this address or name, put
+ * first for next time, or, with neither, the only connected TV that answers.
+ */
+export async function resolveDevice(target: string | undefined): Promise<Device> {
+  if (target === undefined) return onlyDevice();
+  const known = findKnown(await readKnownDevices(), target.trim());
+  const device = await probeDevice(known);
+  await rememberDevice(known);
+  return device;
 }

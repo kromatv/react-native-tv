@@ -100,16 +100,7 @@ void ReactHost::createInstance() {
           .isActive = isActive_,
           .reportFatalError = [weakHost = weakHost_](const ErrorReport &report) { reportFatalError(weakHost, report); },
           .launchUrl = launchUrl_,
-          .showAlert =
-              [weakHost = weakHost_](AlertRequest request) {
-                runOnMainThread([weakHost, request = std::move(request)]() mutable {
-                  if (auto host = weakHost.lock()) {
-                    (*host)->overlays_.alertDialog->show(
-                        std::move(request), (*host)->device_.screenWidth, (*host)->device_.screenHeight);
-                  }
-                });
-              },
-          .tv = tv_.state,
+          .showAlert = nullptr,
       },
       instance_->createJSCallInvoker());
 
@@ -117,7 +108,7 @@ void ReactHost::createInstance() {
   contextContainer->insert(RuntimeSchedulerKey, std::weak_ptr<RuntimeScheduler>(instance_->getRuntimeScheduler()));
   contextContainer->insert(TextMeasurer::contextKey, std::shared_ptr<const TextMeasurer>(textMeasurer_));
   presenter_ = std::make_unique<SurfacePresenter>(
-      evas_object_evas_get(window_),
+      *scene_,
       SurfacePresenter::Dependencies{
           .contextContainer = contextContainer,
           .runtimeScheduler = instance_->getRuntimeScheduler(),
@@ -168,7 +159,7 @@ void ReactHost::showFatalError(const ErrorReport &report) {
     exit();
     return;
   }
-  overlays_.errorScreen->show(report, device_.screenWidth, device_.screenHeight);
+  errorScreen_->show(report);
 }
 
 } // namespace rnwebos

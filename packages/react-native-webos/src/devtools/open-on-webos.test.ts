@@ -49,18 +49,18 @@ afterEach(() => {
 
 describe('openOnWebOS', () => {
   it('runs Run on TV against the dev server, then follows it', async () => {
-    const printed = await open(async () => '10.0.0.7:26101');
+    const printed = await open(async () => '10.0.0.7');
 
     expect(startPlannedJob).toHaveBeenCalledWith(
       '/jobs',
       expect.objectContaining({
         kind: 'run-tv',
-        args: ['run', '--device', '10.0.0.7:26101', '--dev-server', ORIGIN, '--no-logs'],
+        args: ['run', '--device', '10.0.0.7', '--dev-server', ORIGIN, '--no-logs'],
       }),
       '/app',
     );
     expect(followJob).toHaveBeenCalledWith('/jobs', 'job-1', expect.anything());
-    expect(printed).toBe('› Opening on TV 10.0.0.7:26101...\n');
+    expect(printed).toBe('› Opening on TV 10.0.0.7...\n');
   });
 
   it('opens the simulator, and says how to try again when the run fails', async () => {

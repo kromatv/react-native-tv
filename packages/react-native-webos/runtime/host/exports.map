@@ -1,6 +1,0 @@
-{
-  global:
-    rn_webos_*;
-  local:
-    *;
-};

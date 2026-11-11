@@ -13,28 +13,23 @@ import {
   type RuntimeFlavour,
 } from '../runtime/build-runtime.ts';
 import { ensureHermesHostCompilers, hermesHostCompilers } from '../runtime/hermes-host.ts';
-import { setupTarget } from '../sysroot/setup-target.ts';
-import type { WebOSSdk } from '../webos/webos-sdk.ts';
-import type { WebOSTarget } from '../webos/target.ts';
+import { ensureWebOSSdk } from '../sysroot/webos-sdk.ts';
 
 /**
- * Prepares the target, the Hermes host compilers, React Native's codegen and
- * the app's native libraries, then compiles the native runtime of `flavour`.
- * Every step is skipped or incremental when its inputs did not change.
- * Returns the library's path.
+ * Prepares the SDK, the Hermes host compilers, React Native's codegen and the
+ * app's native libraries, then compiles the TV runtime of `flavour`. Every
+ * step is skipped or incremental when its inputs did not change. Returns the
+ * executable's path.
  */
 export async function runtimeSteps(
   reporter: Reporter,
-  sdk: WebOSSdk,
   app: AppProject,
-  target: WebOSTarget,
   flavour: RuntimeFlavour,
 ): Promise<string> {
-  await reporter.step(
+  const sdk = await reporter.step(
     'Toolchain',
-    (task) => setupTarget(task, sdk, target),
-    (sysroot) =>
-      sysroot.reused ? 'cached' : `sysroot mirrored, ${sysroot.patchedLibraries} libraries patched`,
+    (task) => ensureWebOSSdk(task),
+    (found) => (found.reused ? 'cached' : `SDK ${found.version} extracted`),
   );
   const cachedHermes = hermesHostCompilers();
   const hermes = await reporter.step(
@@ -42,7 +37,7 @@ export async function runtimeSteps(
     (task) => ensureHermesHostCompilers(task),
     (built) => (cachedHermes.built ? 'cached' : `hermes ${built.version}`),
   );
-  const dirs = runtimeBuildDirs(app.packages.reactNative, target, flavour);
+  const dirs = runtimeBuildDirs(app.packages.reactNative, flavour);
   await reporter.step(
     'React Native codegen',
     () => ensureCodegen(app.packages.reactNative, dirs.codegen),
@@ -60,13 +55,12 @@ export async function runtimeSteps(
     (task) =>
       compileRuntime(task, {
         sdk,
-        target,
         flavour,
         packages: app.packages,
         hermes,
         dirs,
         nativeLibrariesFile: nativeLibraries.file,
       }),
-    (library) => `${flavour}, ${formatSize(statSync(library).size)}`,
+    (executable) => `${flavour}, ${formatSize(statSync(executable).size)}`,
   );
 }

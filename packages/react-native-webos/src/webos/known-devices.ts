@@ -1,25 +1,42 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { z } from 'zod';
-import type { SdbAddress } from '../sdb/sdb-connection.ts';
 import { stateDir } from '../state-dir.ts';
+import { parseDeviceAddress, type TvAddress } from './device-address.ts';
 
 const MAX_DEVICES = 32;
 const MAX_FILE_BYTES = 64 * 1024;
+const NAME = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$/;
+
+/** A TV `rn-webos connect` set up: the name it goes by and where it answers. */
+export interface KnownDevice extends TvAddress {
+  readonly name: string;
+}
 
 const knownDevicesSchema = z.object({
   devices: z
-    .array(z.object({ host: z.ipv4(), port: z.number().int().min(1).max(65535) }))
+    .array(
+      z.object({
+        name: z.string().regex(NAME),
+        host: z.ipv4(),
+        port: z.number().int().min(1).max(65535),
+      }),
+    )
     .max(MAX_DEVICES),
 });
 
-/** Where `rn-webos` remembers the TVs it reached, as sdb's server would. */
+/** Whether `name` can name a TV: letters, digits, `.`, `_` and `-`, and not an address. */
+export function isDeviceName(name: string): boolean {
+  return NAME.test(name) && parseDeviceAddress(name) === null;
+}
+
+/** Where `rn-webos` remembers the TVs it was connected to. */
 export function knownDevicesPath(env: NodeJS.ProcessEnv = process.env): string {
   return join(stateDir(env), 'devices.json');
 }
 
-/** The TVs reached before, most recent first. A missing or unreadable file is none. */
-export async function readKnownDevices(path = knownDevicesPath()): Promise<SdbAddress[]> {
+/** The TVs connected before, most recent first. A missing or unreadable file is none. */
+export async function readKnownDevices(path = knownDevicesPath()): Promise<KnownDevice[]> {
   let text: string;
   try {
     text = await readFile(path, 'utf8');
@@ -37,25 +54,17 @@ export async function readKnownDevices(path = knownDevicesPath()): Promise<SdbAd
   return parsed.success ? parsed.data.devices : [];
 }
 
-const sameAddress = (left: SdbAddress, right: SdbAddress) =>
+export const sameAddress = (left: TvAddress, right: TvAddress) =>
   left.host === right.host && left.port === right.port;
 
-/** Puts TVs first in the list of those reached, in the order given. */
-export async function rememberDevices(
-  addresses: readonly SdbAddress[],
+/** Puts a TV first in the list of those connected, under the name given. */
+export async function rememberDevice(
+  device: KnownDevice,
   path = knownDevicesPath(),
 ): Promise<void> {
-  if (addresses.length === 0) return;
-  const others = (await readKnownDevices(path)).filter(
-    (known) => !addresses.some((address) => sameAddress(address, known)),
-  );
-  const fresh = addresses.map(({ host, port }) => ({ host, port }));
-  const devices = [...fresh, ...others].slice(0, MAX_DEVICES);
+  const others = (await readKnownDevices(path)).filter((known) => !sameAddress(device, known));
+  const { name, host, port } = device;
+  const devices = [{ name, host, port }, ...others].slice(0, MAX_DEVICES);
   await mkdir(dirname(path), { recursive: true });
   await writeFile(path, `${JSON.stringify({ devices }, null, 2)}\n`);
-}
-
-/** Puts a TV first in the list of those reached. */
-export function rememberDevice(address: SdbAddress, path = knownDevicesPath()): Promise<void> {
-  return rememberDevices([address], path);
 }

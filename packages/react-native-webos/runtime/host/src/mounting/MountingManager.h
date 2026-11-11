@@ -5,8 +5,6 @@
 #include <react/renderer/mounting/MountingCoordinator.h>
 #include <react/renderer/mounting/ShadowViewMutation.h>
 
-#include <Evas.h>
-
 #include <memory>
 #include <optional>
 #include <string>
@@ -14,18 +12,19 @@
 
 namespace rnwebos {
 
-/// Turns Fabric's mutation lists into ComponentViews on one Evas canvas. Main
-/// thread only.
+/// Turns Fabric's mutation lists into ComponentViews in one scene. Main thread
+/// only.
 class MountingManager final {
  public:
-  explicit MountingManager(Evas *evas);
+  explicit MountingManager(Scene &scene);
 
   MountingManager(const MountingManager &) = delete;
   MountingManager &operator=(const MountingManager &) = delete;
 
   /// Creates the surface's root view. Fabric mounts into it but never creates it:
   /// that is the platform's job, as on iOS and Android.
-  void startSurface(facebook::react::SurfaceId surfaceId);
+  /// `order` is the scene layer the surface draws at.
+  void startSurface(facebook::react::SurfaceId surfaceId, int order);
   void stopSurface(facebook::react::SurfaceId surfaceId);
 
   /// Pulls whatever the coordinator has ready and applies it; a no-op when there is nothing new.
@@ -45,7 +44,7 @@ class MountingManager final {
   void create(const facebook::react::ShadowView &shadowView);
   void update(const facebook::react::ShadowView &oldView, const facebook::react::ShadowView &newView);
 
-  Evas *const evas_;
+  Scene &scene_;
   std::unordered_map<facebook::react::Tag, std::unique_ptr<ComponentView>> views_;
   std::unordered_map<facebook::react::Tag, facebook::react::ComponentHandle> handles_;
 };

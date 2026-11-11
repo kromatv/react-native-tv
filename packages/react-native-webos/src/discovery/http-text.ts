@@ -1,5 +1,3 @@
-import type { ZodType } from 'zod';
-
 const TIMEOUT_MS = 1500;
 const DEFAULT_MAX_BYTES = 64 * 1024;
 
@@ -21,18 +19,6 @@ export async function fetchText(url: string, maxBytes = DEFAULT_MAX_BYTES): Prom
   try {
     const response = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) });
     return response.ok ? await readBounded(response, maxBytes) : null;
-  } catch {
-    return null;
-  }
-}
-
-/** As {@link fetchText}, parsed as JSON and held to `schema`: anything on the network can answer. */
-export async function fetchJson<T>(url: string, schema: ZodType<T>): Promise<T | null> {
-  const text = await fetchText(url);
-  if (text === null) return null;
-  try {
-    const parsed = schema.safeParse(JSON.parse(text));
-    return parsed.success ? parsed.data : null;
   } catch {
     return null;
   }

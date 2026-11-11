@@ -2,83 +2,48 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeApp } from '../app/app.fixtures.ts';
 import { loadAppProject } from '../app/app-project.ts';
 import { captureProcessOutput } from '../fakes.fixtures.ts';
-import { listenForLogs, type LogServer } from '../logs/log-server.ts';
 import { bundleStep, packageSteps, appSetupSteps } from '../pipeline/package-steps.ts';
 import { runtimeSteps } from '../pipeline/runtime-steps.ts';
-import { testSigner } from '../signing/signing.fixtures.ts';
-import { setupTarget } from '../sysroot/setup-target.ts';
-import { resolveDevice } from '../webos/devices.ts';
-import { installOn, launchOn, onDevice } from '../webos/install-app.ts';
+import { ensureWebOSSdk } from '../sysroot/webos-sdk.ts';
 import { buildRuntimeCommand } from './build-runtime.ts';
 import { bundleCommand } from './bundle.ts';
 import { packageCommand } from './package.ts';
-import { runCommand } from './run.ts';
 import { setupCommand } from './setup.ts';
 
 const ROOT = '/work/app';
-const SDK = { root: '/webos-studio', packageManager: '/pm' };
-const [DISTRIBUTOR] = testSigner('Distributor').chain;
-const TV = {
-  address: { host: '192.168.1.50', port: 26101 },
-  serial: '192.168.1.50:26101',
-  name: 'Living room',
-  capabilities: { cpuArch: 'armv7', platformVersion: '9.0', profile: 'tv', toolPath: null },
-};
+const SDK = { path: '/cache/sdk/2026.08-webos', version: '2026.08-webos', reused: true };
 
 vi.mock('../app/app-project.ts', () => ({ loadAppProject: vi.fn() }));
-vi.mock('../webos/webos-sdk.ts', () => ({ locateWebOSSdk: () => SDK }));
-vi.mock('../webos/devices.ts', () => ({ resolveDevice: vi.fn() }));
-const CONNECTION = { address: { host: '192.168.1.50', port: 26101 } };
-vi.mock('../webos/install-app.ts', () => ({
-  onDevice: vi.fn(async (_device: unknown, work: (tv: unknown) => Promise<unknown>) =>
-    work(CONNECTION),
-  ),
-  installOn: vi.fn(),
-  launchOn: vi.fn(),
-}));
 vi.mock('../pipeline/package-steps.ts', () => ({
   bundleStep: vi.fn(),
   packageSteps: vi.fn(),
   appSetupSteps: vi.fn(),
 }));
 vi.mock('../pipeline/runtime-steps.ts', () => ({ runtimeSteps: vi.fn() }));
-vi.mock('../sysroot/setup-target.ts', () => ({ setupTarget: vi.fn() }));
-vi.mock('../logs/log-server.ts', () => ({ listenForLogs: vi.fn() }));
-vi.mock('../cli/log-level-option.ts', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../cli/log-level-option.ts')>()),
-  untilInterrupted: vi.fn(async () => undefined),
-}));
+vi.mock('../sysroot/webos-sdk.ts', () => ({ ensureWebOSSdk: vi.fn() }));
 
 const context = { cwd: ROOT };
 let output: ReturnType<typeof captureProcessOutput>;
-let server: LogServer;
 
-beforeEach(async () => {
+beforeEach(() => {
   output = captureProcessOutput();
   vi.mocked(loadAppProject).mockReturnValue(fakeApp(ROOT));
-  vi.mocked(resolveDevice).mockResolvedValue(TV);
-  if (DISTRIBUTOR === undefined) throw new Error('the test signer has no certificate');
   vi.mocked(packageSteps).mockResolvedValue({
-    tpk: import.meta.filename,
-    distributor: DISTRIBUTOR,
+    ipk: import.meta.filename,
+    appId: 'org.example.demo',
   });
   vi.mocked(bundleStep).mockResolvedValue({
     javascript: `${ROOT}/webos/build/bundle/index.webos.js`,
     bytecode: import.meta.filename,
     assetsDir: `${ROOT}/webos/build/bundle/assets`,
   });
-  vi.mocked(runtimeSteps).mockResolvedValue('/cache/runtime/libreact-native-webos.so');
-  vi.mocked(setupTarget).mockResolvedValue({
-    path: '/cache/sysroot',
-    reused: true,
-    patchedLibraries: 0,
-  });
-  server = { port: 8099, capture: vi.fn(), close: vi.fn(async () => undefined) };
-  vi.mocked(listenForLogs).mockResolvedValue(server);
+  vi.mocked(runtimeSteps).mockResolvedValue('/cache/runtime/build/host/react-native-webos');
+  vi.mocked(ensureWebOSSdk).mockResolvedValue(SDK);
 });
 
 afterEach(() => {
   vi.clearAllMocks();
+  vi.restoreAllMocks();
 });
 
 describe('rn-webos bundle', () => {
@@ -102,110 +67,86 @@ describe('rn-webos bundle', () => {
 });
 
 describe('rn-webos package', () => {
-  it('builds for the store by default, at the 6.0 floor, for the TV it was given', async () => {
+  it('builds a release package by default', async () => {
     await packageCommand.run(['--device', '192.168.1.50'], context);
 
-    expect(resolveDevice).toHaveBeenCalledWith('192.168.1.50');
-    expect(packageSteps).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.objectContaining({ log: null, target: { arch: 'armv7l', platformVersion: '6.0' } }),
-    );
-    expect(output.stdout()).toContain('rn-webos run --device 192.168.1.50:26101');
+    expect(packageSteps).toHaveBeenCalledWith(expect.anything(), {
+      app: fakeApp(ROOT),
+      log: null,
+      devServer: undefined,
+    });
+    expect(output.stdout()).toContain('release');
+    expect(output.stdout()).toContain('rn-webos run --device 192.168.1.50');
   });
 
   it('builds a development package streaming its logs with --dev', async () => {
     await packageCommand.run(['--dev', '--log-host', '10.0.0.2', '--log-port', '9000'], context);
 
-    expect(resolveDevice).not.toHaveBeenCalled();
     expect(packageSteps).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ log: { host: '10.0.0.2', port: 9000 } }),
     );
+    expect(output.stdout()).toContain('development, logs to 10.0.0.2:9000');
     expect(output.stdout()).toContain('rn-webos run --device <tv ip>');
   });
 
-  it('refuses log options without --dev', async () => {
-    await expect(packageCommand.run(['--log-port', '9000'], context)).rejects.toThrow(
-      '--log-host and --log-port set up a development build: add --dev',
+  it('hands the dev server of a development build to the pipeline', async () => {
+    await packageCommand.run(
+      ['--dev', '--log-host', '10.0.0.2', '--dev-server', 'http://localhost:8081'],
+      context,
+    );
+
+    expect(packageSteps).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ devServer: 'http://localhost:8081' }),
     );
   });
-});
 
-describe('rn-webos run', () => {
-  it('packages, installs and launches the app, then prints its logs until Ctrl+C', async () => {
-    await runCommand.run(['--log-host', '10.0.0.2'], context);
-
-    expect(listenForLogs).toHaveBeenCalledWith(8099, expect.anything(), {
-      peer: '192.168.1.50',
-      app: 'org.example.demo',
-    });
-    expect(onDevice).toHaveBeenCalledOnce();
-    expect(installOn).toHaveBeenCalledWith(CONNECTION, expect.anything(), TV, {
-      file: import.meta.filename,
-      installId: 'org.example.demo',
-      duids: [],
-    });
-    expect(launchOn).toHaveBeenCalledWith(CONNECTION, TV, 'org.example.demo');
-    expect(server.close).toHaveBeenCalled();
+  it('refuses the options of a development build without --dev', async () => {
+    for (const flag of [
+      ['--log-port', '9000'],
+      ['--dev-server', 'http://localhost:8081'],
+    ]) {
+      await expect(packageCommand.run(flag, context)).rejects.toThrow(
+        '--log-host, --log-port and --dev-server set up a development build: add --dev',
+      );
+    }
   });
 
-  it('listens for nothing with --no-logs or --release', async () => {
-    await runCommand.run(['--no-logs', '--log-host', '10.0.0.2'], context);
-    await runCommand.run(['--release'], context);
-
-    expect(listenForLogs).not.toHaveBeenCalled();
-    expect(launchOn).toHaveBeenCalledTimes(2);
-  });
-
-  it('closes the log server when the build fails', async () => {
-    vi.mocked(packageSteps).mockRejectedValueOnce(new Error('dotnet failed'));
-
-    await expect(runCommand.run(['--log-host', '10.0.0.2'], context)).rejects.toThrow(
-      'dotnet failed',
+  it("refuses a --device that is not the TV's IP address", async () => {
+    await expect(packageCommand.run(['--device', 'living-room'], context)).rejects.toThrow(
+      "--device must be the TV's IP address, got living-room",
     );
-    expect(server.close).toHaveBeenCalled();
+  });
+
+  it('no longer takes the options of a signed, per-CPU Tizen build', async () => {
+    for (const flag of ['--arch', '--platform', '--profile', '--author', '--distributor']) {
+      await expect(packageCommand.run([flag, 'x'], context)).rejects.toThrow();
+    }
   });
 });
 
 describe('rn-webos build-runtime', () => {
-  it("builds for the app's platform unless told otherwise", async () => {
-    vi.mocked(loadAppProject).mockReturnValue(fakeApp(ROOT, { platform: '8.0' }));
+  it('builds the development runtime, the one run packages', async () => {
+    await buildRuntimeCommand.run([], context);
 
-    await buildRuntimeCommand.run(['--arch', 'aarch64'], context);
-
-    expect(runtimeSteps).toHaveBeenCalledWith(
-      expect.anything(),
-      SDK,
-      expect.anything(),
-      { arch: 'aarch64', platformVersion: '8.0' },
-      'development',
-    );
-    expect(output.stdout()).toContain('/cache/runtime/libreact-native-webos.so');
+    expect(runtimeSteps).toHaveBeenCalledWith(expect.anything(), fakeApp(ROOT), 'development');
+    expect(output.stdout()).toContain('/cache/runtime/build/host/react-native-webos');
   });
 
   it('builds the release runtime when asked', async () => {
-    vi.mocked(loadAppProject).mockReturnValue(fakeApp(ROOT, { platform: '8.0' }));
-
     await buildRuntimeCommand.run(['--release'], context);
 
-    expect(runtimeSteps).toHaveBeenCalledWith(
-      expect.anything(),
-      SDK,
-      expect.anything(),
-      expect.anything(),
-      'release',
-    );
+    expect(runtimeSteps).toHaveBeenCalledWith(expect.anything(), expect.anything(), 'release');
   });
 });
 
 describe('rn-webos setup', () => {
-  it('prepares the target the flags name', async () => {
-    await setupCommand.run(['--arch', 'aarch64', '--platform', '9.0'], context);
+  it('fetches the SDK and says where it is', async () => {
+    await setupCommand.run([], context);
 
-    expect(setupTarget).toHaveBeenCalledWith(expect.anything(), SDK, {
-      arch: 'aarch64',
-      platformVersion: '9.0',
-    });
-    expect(output.stdout()).toContain('already set up');
+    expect(ensureWebOSSdk).toHaveBeenCalledOnce();
+    expect(output.stdout()).toContain('2026.08-webos, already set up');
+    expect(output.stdout()).toContain('/cache/sdk/2026.08-webos');
   });
 });

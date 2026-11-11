@@ -4,7 +4,7 @@ import { cacheDir } from '../cache-dir.ts';
 import { captureScreen } from '../capture/capture-screen.ts';
 import { encodePng } from '../capture/png.ts';
 import { COMMON_OPTIONS, parseCommandArgs, PROJECT_OPTIONS, type Command } from '../cli/command.ts';
-import { deviceAddress } from '../cli/device-option.ts';
+import { DEVICE_PLACEHOLDER, deviceHost } from '../cli/device-option.ts';
 import { parsePort } from '../cli/log-options.ts';
 import { PACKAGE_OPTIONS, targetPackage } from '../cli/package-option.ts';
 import { Reporter } from '../cli/reporter.ts';
@@ -13,7 +13,7 @@ const OPTIONS = {
   device: {
     type: 'string',
     short: 'd',
-    placeholder: '<ip>',
+    placeholder: DEVICE_PLACEHOLDER,
     description: 'The TV whose app to capture (default: the only one connected)',
   },
   out: {
@@ -49,7 +49,7 @@ export const screenshotCommand: Command = {
     const flags = parseCommandArgs('screenshot', args, OPTIONS);
     const reporter = new Reporter({ verbose: flags.verbose ?? false });
     const port = parsePort(flags.port, '--port', 'screenshot');
-    const device = flags.device === undefined ? null : deviceAddress(flags.device, 'screenshot');
+    const device = flags.device === undefined ? null : await deviceHost(flags.device, 'screenshot');
     const path = flags.out === undefined ? defaultPath(device) : resolve(context.cwd, flags.out);
     const app = targetPackage(
       flags.package,

@@ -58,27 +58,14 @@ describe('buildCMakeProject', () => {
 });
 
 describe('webosDefinitions', () => {
-  it('cross-compiles through the toolchain file for the target', () => {
-    const sdk = { root: '/webos-studio', sdb: '', webosCli: '', packageManager: '' };
+  it('cross-compiles through the toolchain file, against the SDK, with the clang it is given', () => {
+    const sdk = { path: '/cache/sdk/2026.08-webos', version: '2026.08-webos', reused: true };
 
-    expect(webosDefinitions(sdk, { arch: 'aarch64', platformVersion: '8.0' })).toEqual({
+    expect(webosDefinitions(sdk, '/opt/homebrew/opt/llvm/bin')).toEqual({
       CMAKE_TOOLCHAIN_FILE: TOOLCHAIN_FILE,
       CMAKE_BUILD_TYPE: 'Release',
-      WEBOS_ARCH: 'aarch64',
-      WEBOS_PLATFORM_VERSION: '8.0',
-      WEBOS_ROOTSTRAP_VERSION: '8.0',
-      WEBOS_ROOTSTRAP_PROFILE: 'webos',
-      WEBOS_SDK_DIR: '/webos-studio',
-    });
-  });
-
-  it('names the rootstrap a floor older than the webos profile is linked against', () => {
-    const sdk = { root: '/webos-studio', sdb: '', webosCli: '', packageManager: '' };
-
-    expect(webosDefinitions(sdk, { arch: 'armv7l', platformVersion: '6.0' })).toMatchObject({
-      WEBOS_PLATFORM_VERSION: '6.0',
-      WEBOS_ROOTSTRAP_VERSION: '6.0',
-      WEBOS_ROOTSTRAP_PROFILE: 'iot-headed',
+      WEBOS_SDK_DIR: '/cache/sdk/2026.08-webos',
+      WEBOS_LLVM_DIR: '/opt/homebrew/opt/llvm/bin',
     });
   });
 });

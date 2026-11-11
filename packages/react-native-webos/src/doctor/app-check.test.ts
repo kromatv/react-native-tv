@@ -5,9 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { appDir } from '../app/app-dir.fixtures.ts';
 import { fakeApp } from '../app/app.fixtures.ts';
 import * as appProject from '../app/app-project.ts';
-import { openBuild } from '../commands/build-options.ts';
-import { EXPO_WEBOS_DEPRECATION } from '../config/webos-settings.ts';
-import { appFloor, checkApp } from './app-check.ts';
+import { checkApp } from './app-check.ts';
 
 const dirs: string[] = [];
 
@@ -17,39 +15,15 @@ afterEach(() => {
   for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
 });
 
-function legacyApp(): string {
+function configuredApp(): string {
   const dir = appDir({
-    name: 'Legacy',
+    name: 'Configured',
     version: '1.2.0',
-    webos: { package: 'org.example.legacy' },
+    plugins: [['@kromatv/react-native-webos', { package: 'org.example.configured' }]],
   });
   dirs.push(dir);
   return dir;
 }
-
-describe('an app configured under expo.webos', () => {
-  it('warns in the doctor', async () => {
-    expect(await checkApp(legacyApp())).toMatchObject({
-      status: 'warn',
-      detail: 'org.example.legacy 1.2.0',
-      fix: EXPO_WEBOS_DEPRECATION,
-    });
-  });
-
-  it('warns before a build', () => {
-    let printed = '';
-    vi.spyOn(process.stdout, 'write').mockImplementation((chunk) => {
-      printed += String(chunk);
-      return true;
-    });
-
-    const dir = legacyApp();
-    vi.stubEnv('WEBOS_SDK_DIR', dir);
-
-    expect(() => openBuild({}, { cwd: dir })).toThrow('webOS Studio not found');
-    expect(printed).toContain(EXPO_WEBOS_DEPRECATION);
-  });
-});
 
 describe('checkApp', () => {
   it('skips a directory with no Expo config', async () => {
@@ -62,18 +36,21 @@ describe('checkApp', () => {
     });
   });
 
-  it('passes with the package id, version and react-native of an app configured through the plugin', async () => {
-    const dir = legacyApp();
-    const app = fakeApp(dir);
-    vi.spyOn(appProject, 'loadAppProject').mockReturnValue({
-      ...app,
-      config: { ...app.config, deprecation: null },
-    });
-
-    expect(await checkApp(dir)).toEqual({
+  it('passes with the app id, version and react-native of an app configured through the plugin', async () => {
+    expect(await checkApp(configuredApp())).toEqual({
       title: 'App',
       status: 'ok',
-      detail: 'org.example.demo 1.0.0, react-native 0.88.0',
+      detail: expect.stringMatching(/^org\.example\.configured 1\.2\.0, react-native-tvos /),
+    });
+  });
+
+  it('fails with what is wrong in the config, and where to fix it', async () => {
+    const dir = appDir({ name: 'Unconfigured' });
+    dirs.push(dir);
+
+    expect(await checkApp(dir)).toMatchObject({
+      status: 'fail',
+      detail: expect.stringContaining('The app has no webOS settings'),
     });
   });
 });
@@ -101,25 +78,5 @@ describe('an app that loads two react-natives', () => {
       detail: expect.stringContaining('The app loads 2 copies of react-native'),
       fix: expect.stringContaining('rn-webos init'),
     });
-  });
-});
-
-describe('appFloor', () => {
-  it('reads the floor an app sets, and none for a directory that is not an app or does not load', () => {
-    const floor = appDir({
-      name: 'Floor',
-      webos: { package: 'org.example.floor', platform: '8.0' },
-    });
-    const plain = appDir({ name: 'Plain', webos: { package: 'org.example.plain' } });
-    const empty = mkdtempSync(join(tmpdir(), 'rn-webos-no-app-'));
-    dirs.push(floor, plain, empty);
-    vi.spyOn(appProject, 'loadAppProject').mockImplementationOnce(() => {
-      throw new Error('broken config');
-    });
-
-    expect(appFloor(floor)).toBeUndefined();
-    expect(appFloor(floor)).toBe('8.0');
-    expect(appFloor(plain)).toBeUndefined();
-    expect(appFloor(empty)).toBeUndefined();
   });
 });

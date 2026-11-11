@@ -19,9 +19,7 @@ void ReactHost::startDevSupport() {
       *config_.bundleUrl,
       device_,
       DevSupport::Host{
-          .evas = evas_object_evas_get(window_),
-          .screenWidth = device_.screenWidth,
-          .screenHeight = device_.screenHeight,
+          .scene = scene_.get(),
           .reload = [this] { reload(); },
           .showLogBox = [this](bool shown) { showLogBox(shown); },
       });

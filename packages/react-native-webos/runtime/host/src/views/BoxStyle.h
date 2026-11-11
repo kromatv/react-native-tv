@@ -1,7 +1,6 @@
 #pragma once
 
-#include "NinePatch.h"
-#include "PatternedRing.h"
+#include "BoxGeometry.h"
 
 #include <react/renderer/components/view/ViewProps.h>
 #include <react/renderer/core/LayoutMetrics.h>
@@ -9,6 +8,9 @@
 #include <vector>
 
 namespace rnwebos {
+
+/// How a border is stroked: CSS `border-style` as React Native has it.
+enum class StrokePattern { Solid, Dashed, Dotted };
 
 /// One drop shadow, in pixels: a CSS `boxShadow` entry, or the iOS
 /// `shadowColor`/`shadowOffset`/`shadowOpacity`/`shadowRadius` props as one.

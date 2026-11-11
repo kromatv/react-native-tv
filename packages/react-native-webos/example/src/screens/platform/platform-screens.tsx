@@ -1,14 +1,9 @@
-import { SmartHubPreview } from '@kromatv/react-native-webos/preview';
 import { useEffect, useState } from 'react';
 import { Alert, BackHandler, StyleSheet, Text, View, useTVEventHandler } from 'react-native';
 import { BackgroundScreen } from './background-screen.tsx';
-import { PreviewScreen } from './preview-screen.tsx';
 import { ScreenSizeScreen } from './screen-size-screen.tsx';
-import { VoiceScreen } from './voice-screen.tsx';
 
 const SCREENS = [
-  { title: 'Voice', Screen: VoiceScreen },
-  { title: 'Smart Hub preview', Screen: PreviewScreen },
   { title: 'Background audio', Screen: BackgroundScreen },
   { title: 'Screen and 4K', Screen: ScreenSizeScreen },
 ] as const;
@@ -16,10 +11,6 @@ const SCREENS = [
 function useExitOnBack() {
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (SmartHubPreview.launchedFromTile) {
-        console.log('[platform:back] launched from a tile: exiting with no popup');
-        return false;
-      }
       Alert.alert('Leave the example?', undefined, [
         { text: 'Stay', style: 'cancel' },
         { text: 'Leave', onPress: () => BackHandler.exitApp() },

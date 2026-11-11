@@ -16,10 +16,9 @@ find simulator -name '*.sh' -print0 | xargs -0 shellcheck -x
 ```
 
 CI runs the other five on Linux and macOS. On aarch64 Linux it compiles the
-runtime and the simulator's launcher (`bun scripts/compile-simulator-runtime.ts`)
-and runs `test:runtime`. That proves the C++ compiles and its tests pass: a
-change in `runtime/` or `shell/` is still checked in the simulator or on a TV,
-and the pull request says which.
+runtime (`bun scripts/compile-simulator-runtime.ts`) and runs `test:runtime`.
+That proves the C++ compiles and its tests pass: a change in `runtime/` is
+still checked in the simulator or on a TV, and the pull request says which.
 
 ## Writing
 
@@ -37,11 +36,11 @@ and the pull request says which.
 
 The default is no comment. Name things so the code says what it does.
 
-- A doc comment (`/** */` in TypeScript, `///` in C++ and C#) goes on exported
+- A doc comment (`/** */` in TypeScript, `///` in C++) goes on exported
   API only, when the signature does not show its contract. One or two sentences.
   No `@param`, `@returns` or `@type`.
-- A why-comment is for a constraint the code cannot express: a rule of webOS, EFL,
-  Hermes, React Native, Expo or Samsung's store, or a workaround for a vendor bug.
+- A why-comment is for a constraint the code cannot express: a rule of webOS, Skia,
+  SDL, Hermes, React Native, Expo or LG's store, or a workaround for a vendor bug.
   Name the platform and what breaks without it, in one or two lines.
 - Never narrate your work, restate a line, add a section banner, write a file
   header essay, leave commented-out code or a TODO without an owner, or justify a
@@ -67,8 +66,8 @@ The default is no comment. Name things so the code says what it does.
 
 ## Platform code: reference first
 
-Never implement a platform behaviour from memory: a key name, a manifest field, an
-Evas rule, an event payload. Follow the
+Never implement a platform behaviour from memory: a key code, an appinfo field, a
+Skia rule, an event payload. Follow the
 [`reference-first`](.claude/skills/reference-first/SKILL.md) skill:
 
 1. Read the file in [`docs/reference/`](docs/reference/README.md) for the area
@@ -83,5 +82,5 @@ on. Change one only by changing that file in the same change.
 
 ## Never commit
 
-Signing material (`.p12`, certificate profiles, their passwords), a generated
-`webos/` project, build output or anything under `node_modules/`.
+A TV's Developer Mode key or passphrase, a generated `webos/` project, build
+output or anything under `node_modules/`.

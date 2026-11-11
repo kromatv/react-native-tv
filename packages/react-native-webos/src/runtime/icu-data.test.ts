@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { installedLocales } from './icu-common-data.ts';
 import { commonDataHeader, resIndex } from './icu-data.fixtures.ts';
-import { icuDataFileName, icuLanguages, keepsIcuItem, trimIcuData } from './icu-data.ts';
+import {
+  breakDataFiles,
+  icuDataFileName,
+  icuLanguages,
+  keepsIcuItem,
+  trimIcuData,
+} from './icu-data.ts';
 
 const french = new Set(['fr']);
 
@@ -41,11 +47,13 @@ describe('keepsIcuItem', () => {
     expect(shared.every((name) => keepsIcuItem(name, french))).toBe(true);
   });
 
-  it('drops the data Hermes never asks for', () => {
+  it('drops the data neither Hermes nor Skia asks for', () => {
     const unused = [
       'lang/fr.res',
       'unit/fr.res',
-      'brkitr/word.brk',
+      'brkitr/sent.brk',
+      'brkitr/cjdict.dict',
+      'brkitr/de.res',
       'translit/root.res',
       'ibm-37_P100-1995.cnv',
       'unames.icu',
@@ -56,7 +64,104 @@ describe('keepsIcuItem', () => {
   });
 });
 
+const utf16 = (text: string) => new Uint8Array(Buffer.from(text, 'utf16le'));
+
+function breakData(languages: readonly string[]): string[] {
+  const data = {
+    header: commonDataHeader(),
+    packageName: 'icudt78l',
+    items: [
+      { name: 'brkitr/el.res', bytes: utf16('\0sent_el.brk\0') },
+      { name: 'brkitr/ja.res', bytes: utf16('\0line_cj.brk\0line_loose_cj.brk\0') },
+      { name: 'brkitr/root.res', bytes: utf16('\0sent.brk\0title.brk\0cjdict.dict\0') },
+      { name: 'ja.res', bytes: utf16('\0not_break_data.brk\0') },
+    ],
+  };
+  return [...breakDataFiles(data, new Set(languages))].sort((left, right) =>
+    left < right ? -1 : 1,
+  );
+}
+
+describe('breakDataFiles', () => {
+  it('is the grapheme, word and line rules of the root locale for a language with none of its own', () => {
+    expect(breakData(['fr'])).toEqual(['char.brk', 'line.brk', 'word.brk']);
+  });
+
+  it("adds the rules a language's own item names, and its dictionary", () => {
+    expect(breakData(['ja'])).toEqual([
+      'char.brk',
+      'cjdict.dict',
+      'line.brk',
+      'line_cj.brk',
+      'line_loose_cj.brk',
+      'word.brk',
+    ]);
+    expect(breakData(['el', 'th'])).toEqual([
+      'char.brk',
+      'line.brk',
+      'sent_el.brk',
+      'thaidict.dict',
+      'word.brk',
+    ]);
+  });
+});
+
+describe('keepsIcuItem, in the break iteration tree', () => {
+  const files = new Set(['char.brk', 'word.brk', 'line.brk']);
+
+  it('keeps root, the index, the language and the break data it is given', () => {
+    const kept = [
+      'brkitr/root.res',
+      'brkitr/res_index.res',
+      'brkitr/fr.res',
+      'brkitr/char.brk',
+      'brkitr/line.brk',
+    ];
+
+    expect(kept.every((name) => keepsIcuItem(name, french, files))).toBe(true);
+  });
+
+  it('drops the other rules and every dictionary a language does not need', () => {
+    const dropped = [
+      'brkitr/sent.brk',
+      'brkitr/line_cj.brk',
+      'brkitr/cjdict.dict',
+      'brkitr/ja.res',
+    ];
+
+    expect(dropped.some((name) => keepsIcuItem(name, french, files))).toBe(false);
+  });
+});
+
 describe('trimIcuData', () => {
+  it('keeps the break rules text is laid out with', () => {
+    const data = {
+      header: commonDataHeader(),
+      packageName: 'icudt78l',
+      items: [
+        { name: 'brkitr/char.brk', bytes: new Uint8Array(4) },
+        { name: 'brkitr/cjdict.dict', bytes: new Uint8Array(4) },
+        { name: 'brkitr/line.brk', bytes: new Uint8Array(4) },
+        { name: 'brkitr/res_index.res', bytes: resIndex(['fr', 'ja']) },
+        { name: 'brkitr/root.res', bytes: new Uint8Array(4) },
+        { name: 'brkitr/sent.brk', bytes: new Uint8Array(4) },
+        { name: 'brkitr/word.brk', bytes: new Uint8Array(4) },
+      ],
+    };
+
+    const trimmed = trimIcuData(data, ['fr']);
+    const index = trimmed.items.find((item) => item.name === 'brkitr/res_index.res');
+
+    expect(trimmed.items.map((item) => item.name)).toEqual([
+      'brkitr/char.brk',
+      'brkitr/line.brk',
+      'brkitr/res_index.res',
+      'brkitr/root.res',
+      'brkitr/word.brk',
+    ]);
+    expect(installedLocales(index?.bytes ?? new Uint8Array())).toEqual(['fr']);
+  });
+
   it('keeps the chosen languages and lists only them in each index', () => {
     const data = {
       header: commonDataHeader(),

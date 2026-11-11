@@ -17,7 +17,7 @@ std::unordered_map<facebook::react::Tag, ExpoView *> &mountedViews() {
 
 } // namespace
 
-ExpoView::ExpoView(Evas *evas, facebook::react::Tag tag) : ComponentView(evas, tag) {
+ExpoView::ExpoView(Scene &scene, facebook::react::Tag tag) : ComponentView(scene, tag) {
   mountedViews().insert_or_assign(tag, this);
 }
 

@@ -8,6 +8,6 @@
     "declaration": true,
     "rewriteRelativeImportExtensions": true
   },
-  "exclude": ["src/api", "src/**/*.test.ts", "src/**/*.fixtures.ts"],
+  "exclude": ["src/**/*.test.ts", "src/**/*.fixtures.ts"],
   "include": ["src"]
 }

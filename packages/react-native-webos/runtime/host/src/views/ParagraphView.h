@@ -1,40 +1,35 @@
 #pragma once
 
+#include "../text/ParagraphLayout.h"
 #include "ComponentView.h"
 
 #include <react/renderer/components/text/ParagraphShadowNode.h>
 
 #include <memory>
-#include <optional>
-#include <string>
 
 namespace rnwebos {
 
-/// A `<Text>`: an Evas textblock filled from the paragraph's attributed string
-/// at the surface's scale, laid out inside the view's padding.
+/// A `<Text>`: the paragraph's attributed string laid out by SkParagraph at
+/// the surface's scale, inside the view's padding. The layout is made when the
+/// view is first drawn, so text that never comes on screen costs nothing.
 class ParagraphView final : public ComponentView {
  public:
-  ParagraphView(Evas *evas, facebook::react::Tag tag);
-  ~ParagraphView() override;
+  using ComponentView::ComponentView;
 
   void updateState(const facebook::react::State::Shared &state) override;
-  void updateLayout(const facebook::react::LayoutMetrics &layoutMetrics) override;
 
  protected:
-  void layoutMembers() override;
+  void drawContent(SkCanvas &canvas, float alpha) override;
+  int contentLayers() const override;
+  void layoutContent() override;
 
  private:
-  void applyContent();
+  PixelRect contentRect() const;
 
-  Evas_Object *textblock_;
-  Evas_Textblock_Style *style_;
   std::shared_ptr<const facebook::react::ParagraphShadowNode::ConcreteState> paragraph_;
-  std::string markup_;
-  std::optional<int> tightLineShift_;
-  Evas_Coord firstLineTop_{-1};
-  facebook::react::Float contentScale_{0};
-  Evas_Coord clampedWidth_{-1};
-  bool clamped_{false};
+  ParagraphLayout layout_;
+  PixelRect laidOutIn_;
+  facebook::react::Float laidOutScale_{0};
 };
 
 } // namespace rnwebos

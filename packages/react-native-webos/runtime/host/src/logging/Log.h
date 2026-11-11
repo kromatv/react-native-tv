@@ -8,15 +8,15 @@ namespace rnwebos {
 
 enum class LogLevel { Debug, Info, Warning, Error };
 
-/// Somewhere log lines go besides the TV's own dlog, which retail sets do not
-/// let a developer read.
+/// Somewhere log lines go besides the process's standard error, which nobody
+/// reads on a TV.
 class LogSink {
  public:
   virtual ~LogSink() = default;
   virtual void write(LogLevel level, std::string_view message) = 0;
 };
 
-/// Logs to dlog under the `ReactNative` tag and to the installed sink, if any.
+/// Logs to standard error and to the installed sink, if any.
 /// Safe from any thread.
 void log(LogLevel level, std::string_view message);
 

@@ -3,8 +3,6 @@
 #include <folly/dynamic.h>
 #include <react/renderer/core/ReactPrimitives.h>
 
-#include <Evas.h>
-
 #include <functional>
 #include <map>
 #include <memory>
@@ -12,6 +10,10 @@
 #include <string>
 #include <string_view>
 #include <vector>
+
+namespace rnwebos {
+class Scene;
+} // namespace rnwebos
 
 namespace rnwebos::expo {
 
@@ -35,7 +37,7 @@ struct ExpoViewType {
   std::map<std::string, ExpoPropSetter, std::less<>> props;
   std::vector<std::string> events;
   std::map<std::string, ExpoViewFunction, std::less<>> functions;
-  std::function<std::unique_ptr<ExpoView>(Evas *evas, facebook::react::Tag tag)> create;
+  std::function<std::unique_ptr<ExpoView>(Scene &scene, facebook::react::Tag tag)> create;
 };
 
 /// The component name expo-modules-core gives a view:

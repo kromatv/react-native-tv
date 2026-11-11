@@ -1,26 +1,21 @@
 #pragma once
 
 #include "HostConfig.h"
-#include "diagnostics/ControlLink.h"
 #include "diagnostics/ErrorScreen.h"
-#include "diagnostics/PerfMonitor.h"
 #include "fabric/SurfacePresenter.h"
-#include "input/KeyboardFocus.h"
-#include "input/RemoteInput.h"
+#include "input/RemotePresses.h"
 #include "modules/DeviceProfile.h"
 #include "modules/LaunchUrl.h"
 #include "modules/TurboModuleProvider.h"
-#include "modules/dialog/AlertDialog.h"
-#include "text/EvasTextMeasurer.h"
+#include "platform/HostWindow.h"
+#include "platform/SimulatorControl.h"
+#include "render/Scene.h"
+#include "text/SkiaTextMeasurer.h"
 #include "threading/InstanceGate.h"
 #include "threading/TaskQueueThread.h"
-#include "tv/TvState.h"
-#include "tv/VoiceController.h"
 
 #include <react/runtime/ReactInstance.h>
 #include <react/runtime/TimerManager.h>
-
-#include <Evas.h>
 
 #include <atomic>
 #include <memory>
@@ -45,21 +40,18 @@ class ReactHost final {
   void pause();
   void resume();
 
-  /// Records how the app was launched: the launching app control's URI, which
-  /// `Linking.getInitialURL` answers.
+  /// Records how the app was launched: the deep link in its launch parameters,
+  /// which `Linking.getInitialURL` answers.
   void setInitialUrl(const std::string &url);
 
   /// Delivers a URI the app is opened with while it runs, as a `url` event.
   void openUrl(const std::string &url);
 
-  /// Hides the window at once, then asks the app framework to terminate.
+  /// Ends the main loop, which closes the app.
   void exit();
 
-  /// What the shell and JavaScript share about the TV's services.
-  TvState &tv();
-
-  /// Answers Samsung's voice service; main thread only.
-  VoiceController &voice();
+  /// Takes one event of the window: a key, a lifecycle change, a close request.
+  void handleEvent(const SDL_Event &event);
 
  private:
   void start();
@@ -70,13 +62,11 @@ class ReactHost final {
   /// which fetches the bundle again: what `r` in the dev server's terminal and
   /// `DevSettings.reload()` do.
   void reload();
-  void startPerfMonitor();
   void startDevSupport();
   void devSupportInstanceStarted();
   facebook::react::jsinspector_modern::HostTarget *inspectorTarget();
   void showLogBox(bool shown);
   void loadBundle();
-  void routeInput();
   void startSurface();
   void emitDeviceEvent(const std::string &eventName, folly::dynamic payload);
   void onRemoteEvent(const RemoteEvent &event);
@@ -85,40 +75,26 @@ class ReactHost final {
   void setActive(bool isActive);
   void stopReactNative();
 
-  struct Diagnostics {
-    std::unique_ptr<ControlLink> controlLink;
-    std::unique_ptr<PerfMonitor> perfMonitor;
-  };
-
-  struct TvServices {
-    std::shared_ptr<TvState> state;
-    std::unique_ptr<VoiceController> voice;
-  };
-
-  struct Overlays {
-    std::unique_ptr<ErrorScreen> errorScreen;
-    std::unique_ptr<AlertDialog> alertDialog;
-  };
-
   const HostConfig config_;
   DeviceProfile device_{readDeviceProfile()};
   std::shared_ptr<std::atomic<bool>> isActive_{std::make_shared<std::atomic<bool>>(true)};
   std::shared_ptr<LaunchUrl> launchUrl_{std::make_shared<LaunchUrl>()};
   std::shared_ptr<ReactHost *> lifetime_;
   const std::weak_ptr<ReactHost *> weakHost_;
-  Evas_Object *window_{nullptr};
-  std::shared_ptr<EvasTextMeasurer> textMeasurer_;
+  std::unique_ptr<HostWindow> window_;
+  std::unique_ptr<Scene> scene_;
+  std::shared_ptr<SkiaTextMeasurer> textMeasurer_;
   std::shared_ptr<TaskQueueThread> jsThread_;
   std::shared_ptr<facebook::react::TimerManager> timerManager_;
   std::unique_ptr<facebook::react::ReactInstance> instance_;
   std::shared_ptr<InstanceGate> instanceGate_;
   std::shared_ptr<TurboModuleProvider> modules_;
   std::unique_ptr<SurfacePresenter> presenter_;
-  std::unique_ptr<KeyboardFocus> keyboardFocus_;
-  std::unique_ptr<RemoteInput> remoteInput_;
-  Overlays overlays_;
-  Diagnostics diagnostics_;
-  TvServices tv_;
+  std::unique_ptr<RemotePresses> remotePresses_;
+  std::unique_ptr<ErrorScreen> errorScreen_;
+#if RN_WEBOS_SIMULATOR
+  std::unique_ptr<SimulatorControl> simulatorControl_;
+#endif
   std::shared_ptr<DevSupport> devSupport_;
 };
 

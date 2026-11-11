@@ -1,38 +1,41 @@
 #pragma once
 
-#include "PixelGeometry.h"
-
 #include <react/renderer/components/view/ViewProps.h>
 #include <react/renderer/core/LayoutMetrics.h>
 #include <react/renderer/graphics/Transform.h>
 
-#include <Evas.h>
+#include "include/core/SkCanvas.h"
+#include "include/core/SkM44.h"
 
 namespace rnwebos {
 
 /// A view's `transform` around its `transformOrigin` (the center by default,
-/// as on iOS and Android). A plain translation moves the view; anything else
-/// maps its smart object with four points (efl-rendering.md section 3), which
-/// renders the subtree into a surface the size of the object's geometry.
+/// as on iOS and Android), as the matrix Skia draws the view's subtree through.
 class ViewTransform final {
  public:
   /// Returns true when the transform changed.
   bool update(const facebook::react::ViewProps &props, const facebook::react::LayoutMetrics &metrics);
 
-  /// The offset a translation-only transform moves the view by, else zero.
-  PixelPoint translation(facebook::react::Float scale) const;
+  bool isIdentity() const;
 
-  /// Maps `root` so that its `bounds` show transformed around `box`, the
-  /// view's untransformed box; removes any map when none is needed.
-  void apply(Evas_Object *root, const PixelRect &box, const PixelRect &bounds, facebook::react::Float scale) const;
+  /// Transforms `canvas`, whose origin is the view's top-left corner, in
+  /// pixels at `scale` pixels per point. A plain translation moves by whole
+  /// pixels, so what it carries stays sharp.
+  void concat(SkCanvas &canvas, facebook::react::Float scale) const;
 
-  /// Where `point`, in window pixels, shows once `apply` mapped the view whose
-  /// untransformed box is `box`. A translation is already in `box`, so it
-  /// leaves the point where it is.
-  PixelPoint mapPoint(PixelPoint point, const PixelRect &box, facebook::react::Float scale) const;
+  /// Where the point `local`, in the view's own pixels, shows in the pixels
+  /// the view is placed in.
+  SkPoint mapPoint(SkPoint local, facebook::react::Float scale) const;
+
+  /// The point of the view's own pixels that shows at `outer`, or nothing
+  /// when the transform flattens the view.
+  bool invertPoint(SkPoint outer, facebook::react::Float scale, SkPoint &local) const;
 
  private:
+  SkM44 pixelMatrix(facebook::react::Float scale) const;
+
   facebook::react::Transform matrix_;
+  bool isIdentity_{true};
   bool isTranslation_{true};
 };
 

@@ -64,21 +64,6 @@ describe('addWebOSPlugin', () => {
     });
   });
 
-  it('moves expo.webos of earlier releases into the props, without asking', async () => {
-    const dir = app(
-      '{ "expo": { "name": "TV", "webos": { "package": "org.old.tv", "label": "Old" } } }',
-    );
-
-    expect(await addWebOSPlugin(dir, choose)).toMatchObject({ kind: 'moved' });
-    expect(readAppJson(dir)).toEqual({
-      expo: {
-        name: 'TV',
-        plugins: [['@kromatv/react-native-webos', { package: 'org.old.tv', label: 'Old' }]],
-      },
-    });
-    expect(choose).not.toHaveBeenCalled();
-  });
-
   it('writes an app.json when there is none, and edits one without the expo key', async () => {
     const none = app();
     const bare = app('{ "name": "Bare" }');
@@ -115,9 +100,6 @@ describe('addWebOSPlugin', () => {
     await expect(addWebOSPlugin(app('[1, 2]'), choose)).rejects.toThrow('is not a JSON object');
     await expect(addWebOSPlugin(app('{ "expo": { "plugins": 3 } }'), choose)).rejects.toThrow(
       'is not a list',
-    );
-    await expect(addWebOSPlugin(app('{ "expo": { "webos": 3 } }'), choose)).rejects.toThrow(
-      'expo.webos is not an object',
     );
     await expect(addWebOSPlugin(app(' '.repeat(1024 * 1024 + 1)), choose)).rejects.toThrow(
       'is too large',

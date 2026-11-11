@@ -3,7 +3,7 @@
 # so only a simulator build has them.
 #
 #   rn_webos_add_host_tests(<target> SOURCES <test sources> HOST <object library>
-#     ROOTS <React Native libraries> WEBOS_LIBRARIES <webOS native API libraries>
+#     ROOTS <React Native libraries>
 #     INSTRUMENT <other targets compiling sources of runtime/>)
 
 if(NOT RN_WEBOS_SIMULATOR)
@@ -22,7 +22,7 @@ FetchContent_MakeAvailable(doctest)
 enable_testing()
 
 function(rn_webos_add_host_tests target)
-  cmake_parse_arguments(PARSE_ARGV 1 _tests "" "HOST" "SOURCES;ROOTS;WEBOS_LIBRARIES;INSTRUMENT")
+  cmake_parse_arguments(PARSE_ARGV 1 _tests "" "HOST" "SOURCES;ROOTS;INSTRUMENT")
 
   set(_host_archive ${_tests_HOST}_archive)
   add_library(${_host_archive} STATIC EXCLUDE_FROM_ALL $<TARGET_OBJECTS:${_tests_HOST}>)
@@ -34,7 +34,6 @@ function(rn_webos_add_host_tests target)
 
   add_executable(${target} EXCLUDE_FROM_ALL ${_tests_SOURCES})
   target_link_libraries(${target} PRIVATE ${_host_archive} ${_react_native_archive} doctest::doctest_with_main)
-  target_link_webos_libraries(${target} ${_tests_WEBOS_LIBRARIES})
   target_compile_reactnative_options(${target} PRIVATE)
   target_compile_options(${target} PRIVATE -Wno-error)
   target_link_options(${target} PRIVATE "-Wl,--gc-sections")

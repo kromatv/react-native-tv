@@ -6,12 +6,12 @@ describe('withReactNativeWebOS', () => {
     const config = { name: 'My App' };
 
     expect(withReactNativeWebOS(config)).toBe(config);
-    expect(withReactNativeWebOS(config, { package: 'org.example.app', voice: true })).toBe(config);
+    expect(withReactNativeWebOS(config, { package: 'org.example.app', title: 'TV' })).toBe(config);
   });
 
   it('throws every bad prop at once, named after the plugin', () => {
-    expect(() => withReactNativeWebOS({}, { package: 'my-app', resolution: '8k' })).toThrow(
-      /package:[\s\S]*resolution:/,
+    expect(() => withReactNativeWebOS({}, { package: 'My_App', version: '1.0' })).toThrow(
+      /package:[\s\S]*version:/,
     );
   });
 });

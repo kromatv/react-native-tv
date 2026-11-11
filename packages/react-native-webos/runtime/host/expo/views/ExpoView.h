@@ -17,7 +17,7 @@ namespace rnwebos::expo {
 /// events to the JavaScript props named after them. Main thread only.
 class ExpoView : public ComponentView {
  public:
-  ExpoView(Evas *evas, facebook::react::Tag tag);
+  ExpoView(Scene &scene, facebook::react::Tag tag);
   ~ExpoView() override;
 
   /// The mounted Expo view with `tag`, or null.

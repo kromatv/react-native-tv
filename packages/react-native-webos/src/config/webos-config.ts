@@ -1,57 +1,56 @@
 import { z } from 'zod';
 import { FixableError } from '../errors.ts';
 import { DEFAULT_INTL_LOCALES } from '../metro/intl-locale-data.ts';
-import { platformVersionSchema } from '../webos/target.ts';
-import { findWebOSSettings, WEBOS_PLUGIN, type PluginMatcher } from './webos-settings.ts';
+import { appIdSchema, appVersionSchema } from './app-id.ts';
 import {
-  featurePrivileges,
-  previewConfigSchema,
-  resolutionSchema,
-  resolveTvFeatures,
-  voiceConfigSchema,
-  type TvFeatures,
-} from './tv-features.ts';
+  MISSING_SETTINGS,
+  PLUGIN_WHERE,
+  WEBOS_PLUGIN,
+  webosPluginProps,
+  type PluginMatcher,
+} from './webos-settings.ts';
 
-const PRIVILEGE_PREFIX = 'http://webos.org/privilege/';
-const DEFAULT_PRIVILEGES = [`${PRIVILEGE_PREFIX}internet`];
 const CONFIG_HINT = 'Fix app.json. Every field is described in the CLI docs, under Configuration.';
 
-/** A webOS package id: reverse-DNS, letters, digits and underscores, under 50 characters. */
-export const packageIdSchema = z
-  .string()
-  .max(50)
-  .regex(
-    /^[A-Za-z]\w*(\.[A-Za-z]\w*)+$/,
-    'expected a reverse-DNS id such as org.example.myapp, with letters, digits and underscores',
-  );
+/** LG's limit on `title` in `appinfo.json`. */
+export const MAX_TITLE_LENGTH = 20;
 
-const webosVersionSchema = z
+/**
+ * The ACG groups of the Luna calls the runtime itself makes, the five LG's
+ * Flutter tool always declares. webOS TV 26 Re:New refuses a call outside the
+ * groups an app declares.
+ */
+export const RUNTIME_PERMISSIONS = [
+  'lunabus.query',
+  'application.launcher',
+  'settings.query',
+  'systemconfig.query',
+  'tts.operation',
+] as const;
+
+const titleSchema = z
   .string()
-  .regex(/^\d{1,3}\.\d{1,3}\.\d{1,5}$/, 'expected a version such as 1.0.0');
+  .min(1)
+  .max(MAX_TITLE_LENGTH, `expected ${MAX_TITLE_LENGTH} characters or fewer`);
 
 const localeSchema = z
   .string()
   .regex(/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/, 'expected a BCP 47 language tag such as fr or pt-BR');
 
-const privilegeSchema = z
-  .string()
-  .min(1)
-  .transform((name) => (name.includes('://') ? name : `${PRIVILEGE_PREFIX}${name}`));
+const pngPathSchema = z.string().regex(/\.png$/i, 'expected the path of a PNG');
 
-/** The webOS settings: the config plugin's props, or `expo.webos` in earlier releases. */
+/** The webOS settings: the config plugin's props. */
 export const webosSettingsSchema = z
   .object({
-    package: packageIdSchema,
-    label: z.string().min(1).max(100).optional(),
-    version: webosVersionSchema.optional(),
-    profile: z.string().min(1).optional(),
-    privileges: z.array(privilegeSchema).optional(),
-    platform: platformVersionSchema.optional(),
-    icon: z.string().min(1).optional(),
+    package: appIdSchema,
+    title: titleSchema.optional(),
+    version: appVersionSchema.optional(),
+    vendor: z.string().min(1).optional(),
+    icon: pngPathSchema.optional(),
+    iconColor: z.string().min(1).optional(),
+    splash: pngPathSchema.optional(),
+    permissions: z.array(z.string().min(1)).optional(),
     locales: z.array(localeSchema).min(1).optional(),
-    voice: voiceConfigSchema.optional(),
-    preview: previewConfigSchema.optional(),
-    resolution: resolutionSchema.optional(),
   })
   .strict();
 
@@ -60,24 +59,24 @@ const expoConfigSchema = z.object({
   version: z.string().optional(),
   icon: z.string().optional(),
   plugins: z.unknown().optional(),
-  webos: z.unknown().optional(),
 });
 
 /** Everything a webOS package is built from, defaults applied. */
 export interface WebOSAppConfig {
+  /** The app id: `id` in `appinfo.json`, and the package's name. */
   readonly packageId: string;
-  readonly label: string;
+  readonly title: string;
   readonly version: string;
-  readonly profile: string | undefined;
-  readonly privileges: readonly string[];
-  readonly platform: string | undefined;
+  readonly vendor: string | undefined;
+  /** A PNG the two launcher icons are scaled from, relative to the app. */
   readonly icon: string | undefined;
+  readonly iconColor: string | undefined;
+  /** A 1920x1080 PNG shown while the app loads, relative to the app. */
+  readonly splash: string | undefined;
+  /** The ACG groups `appinfo.json` declares in `requiredACG`. */
+  readonly permissions: readonly string[];
   /** The locales `Intl` formats in, besides the root locale ICU always keeps. */
   readonly locales: readonly string[];
-  /** Voice, the Smart Hub preview, the UI resolution and background audio. */
-  readonly features: TvFeatures;
-  /** What to warn the user about the way the settings are written, if anything. */
-  readonly deprecation: string | null;
 }
 
 function formatIssues(error: z.ZodError, root: string): string {
@@ -99,10 +98,17 @@ export function webosSettingsIssues(settings: unknown, where: string): string | 
   return parsed.success ? null : formatIssues(parsed.error, where);
 }
 
+function checked<Value>(schema: z.ZodType<Value>, value: Value, field: string, prop: string) {
+  const parsed = schema.safeParse(value);
+  if (parsed.success) return parsed.data;
+  const reason = parsed.error.issues[0]?.message ?? 'not valid';
+  throw configError(`${field}: ${String(value)}: ${reason}; set ${PLUGIN_WHERE}.${prop}`);
+}
+
 /**
- * Validates an Expo config and resolves its webOS config against the Expo-wide
- * fields: the config plugin's props, else `expo.webos`. A {@link FixableError}
- * names every bad field.
+ * Validates an Expo config and resolves its webOS config, the config plugin's
+ * props, against the Expo-wide fields. A {@link FixableError} names every bad
+ * field.
  */
 export function resolveWebOSConfig(
   expo: unknown,
@@ -110,34 +116,23 @@ export function resolveWebOSConfig(
 ): WebOSAppConfig {
   const base = expoConfigSchema.safeParse(expo);
   if (!base.success) throw configError(formatIssues(base.error, 'expo'));
-  const found = findWebOSSettings(base.data.plugins, base.data.webos, isWebOSPlugin);
-  if ('error' in found) throw configError(found.error);
-  const webos = webosSettingsSchema.safeParse(found.settings);
-  if (!webos.success) throw configError(formatIssues(webos.error, found.where));
+  const props = webosPluginProps(base.data.plugins, isWebOSPlugin);
+  if (props === undefined) throw configError(MISSING_SETTINGS);
+  const webos = webosSettingsSchema.safeParse(props);
+  if (!webos.success) throw configError(formatIssues(webos.error, PLUGIN_WHERE));
 
-  const version = webos.data.version ?? base.data.version ?? '1.0.0';
-  const versionCheck = webosVersionSchema.safeParse(version);
-  if (!versionCheck.success) {
-    throw configError(
-      `expo.version: ${version} is not a webOS version (x.y.z); set ${found.where}.version`,
-    );
-  }
-  const features = resolveTvFeatures(webos.data, base.data.plugins);
+  const icon = webos.data.icon ?? base.data.icon;
   return {
     packageId: webos.data.package,
-    label: webos.data.label ?? base.data.name,
-    version,
-    profile: webos.data.profile,
-    privileges: [
-      ...new Set([
-        ...(webos.data.privileges ?? DEFAULT_PRIVILEGES),
-        ...featurePrivileges(features),
-      ]),
-    ],
-    platform: webos.data.platform,
-    icon: webos.data.icon ?? base.data.icon,
+    title: webos.data.title ?? checked(titleSchema, base.data.name, 'expo.name', 'title'),
+    version:
+      webos.data.version ??
+      checked(appVersionSchema, base.data.version ?? '1.0.0', 'expo.version', 'version'),
+    vendor: webos.data.vendor,
+    icon: icon === undefined ? undefined : checked(pngPathSchema, icon, 'expo.icon', 'icon'),
+    iconColor: webos.data.iconColor,
+    splash: webos.data.splash,
+    permissions: [...new Set([...RUNTIME_PERMISSIONS, ...(webos.data.permissions ?? [])])],
     locales: [...new Set(webos.data.locales ?? DEFAULT_INTL_LOCALES)],
-    features,
-    deprecation: found.deprecation,
   };
 }

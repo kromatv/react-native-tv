@@ -11,7 +11,7 @@
 
 namespace rnwebos::expo {
 
-/// Describes an Expo view, `View`, an ExpoView constructed from (Evas *, Tag),
+/// Describes an Expo view, `View`, an ExpoView constructed from (Scene &, Tag),
 /// in the shape of Expo's `View` DSL:
 ///
 ///   RN_WEBOS_EXPO_VIEW(ViewDefinition<ImageView>("ExpoImage")
@@ -25,7 +25,7 @@ class ViewDefinition {
   explicit ViewDefinition(std::string moduleName, std::string viewName = {}) {
     type_.moduleName = std::move(moduleName);
     type_.viewName = std::move(viewName);
-    type_.create = [](Evas *evas, facebook::react::Tag tag) { return std::make_unique<View>(evas, tag); };
+    type_.create = [](Scene &scene, facebook::react::Tag tag) { return std::make_unique<View>(scene, tag); };
   }
 
   template <typename Setter>

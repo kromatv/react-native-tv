@@ -11,14 +11,8 @@
         "../app.plugin.js",
         {
           "package": "org.rnwebos.example",
-          "label": "RN webOS Example",
-          "locales": ["en", "fr"],
-          "voice": {
-            "searchUrl": "rnwebos-example://search?q={query}"
-          },
-          "preview": {
-            "refreshMinutes": 10
-          }
+          "title": "RN webOS Example",
+          "locales": ["en", "fr"]
         }
       ],
       [

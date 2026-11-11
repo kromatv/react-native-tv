@@ -1,56 +1,35 @@
-import { basename } from 'node:path';
-import { DEVELOPER_MODE_HINT, listDevices } from '../webos/devices.ts';
-import { FixableError } from '../errors.ts';
-import { resolveSigning } from '../webos/signing-identity.ts';
-import { locateGccToolchain, locateRootstrap, type WebOSSdk } from '../webos/webos-sdk.ts';
-import { rootstrapFor, type WebOSTarget } from '../webos/target.ts';
+import { webosVersionName } from '../discovery/webos-version.ts';
+import { addressText } from '../webos/device-address.ts';
+import { CONNECT_HINT, listDevices, type Device } from '../webos/devices.ts';
 import { checking, failed, passed, type CheckResult } from './check-result.ts';
 
-const CONNECT_HINT = `${DEVELOPER_MODE_HINT} Then: rn-webos devices --connect <tv ip>`;
-
-/** The GCC runtime webOS Studio ships for the target's CPU. */
-export function checkGcc(sdk: WebOSSdk, target: WebOSTarget): Promise<CheckResult> {
-  return checking('GCC runtime', () =>
-    passed('GCC runtime', basename(locateGccToolchain(sdk, target.arch))),
-  );
+function describe(device: Device): string {
+  const { modelName, sdkVersion } = device.info;
+  const details = [
+    modelName === device.name ? '' : modelName,
+    sdkVersion === '' ? '' : webosVersionName(sdkVersion),
+  ].filter((part) => part !== '');
+  const about = details.length === 0 ? '' : ` (${details.join(', ')})`;
+  return `${device.name} at ${addressText(device.address)}${about}`;
 }
 
-/** The rootstrap for the target's platform and CPU. */
-export function checkRootstrap(sdk: WebOSSdk, target: WebOSTarget): Promise<CheckResult> {
-  return checking('Rootstrap', () => {
-    locateRootstrap(sdk, target);
-    const rootstrap = rootstrapFor(target);
-    return passed('Rootstrap', `${rootstrap.name}, from ${rootstrap.sdkPackage}`);
-  });
-}
-
-/** The certificates of the active signing profile open with their passwords and have not expired. */
-export function checkCertificates(): Promise<CheckResult> {
-  return checking('Certificates', async () => {
-    try {
-      const { name, distributor } = await resolveSigning({});
-      const until = new Date(distributor.validTo).toISOString().slice(0, 10);
-      return passed('Certificates', `${name} (active), distributor until ${until}`);
-    } catch (error) {
-      if (!(error instanceof FixableError)) throw error;
-      return failed('Certificates', error.message, error.hint);
-    }
-  });
-}
-
-/** The remembered TVs that answer. None is a warning: packaging works without one. */
+/**
+ * The connected TVs that let `rn-webos` in: reachable, Developer Mode on, and
+ * a key that still opens them. None is a warning: packaging works without one.
+ */
 export function checkDevices(): Promise<CheckResult> {
   return checking('TVs', async () => {
     const statuses = await listDevices();
     const online = statuses.flatMap((status) => (status.state === 'online' ? [status.device] : []));
-    if (online.length === 0) {
-      const detail =
-        statuses.length === 0 ? 'none connected yet' : `none of ${statuses.length} answers`;
-      return failed('TVs', detail, CONNECT_HINT, 'warn');
+    const offline = statuses.flatMap((status) => (status.state === 'offline' ? [status] : []));
+    if (statuses.length === 0) return failed('TVs', 'none connected yet', CONNECT_HINT, 'warn');
+    if (online.length > 0) {
+      const silent = offline.map((status) => status.known.name).join(', ');
+      const rest = silent === '' ? '' : `; not answering: ${silent}`;
+      return passed('TVs', `${online.map(describe).join(', ')}${rest}`);
     }
-    return passed(
-      'TVs',
-      online.map((device) => `${device.name || 'TV'} at ${device.serial}`).join(', '),
-    );
+    const reasons = offline.map((status) => status.reason).join('; ');
+    const detail = offline.length === 1 ? reasons : `none of ${offline.length} answers: ${reasons}`;
+    return failed('TVs', detail, offline[0]?.hint ?? CONNECT_HINT, 'warn');
   });
 }

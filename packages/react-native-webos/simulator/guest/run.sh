@@ -38,8 +38,8 @@ start_display() {
     echo "$DISPLAY" >"$DISPLAY_FILE"
     wait_for_display
   fi
-  # Elementary stops drawing a window no window manager has shown (it stays
-  # "withdrawn"); a TV's compositor shows and focuses the app the same way.
+  # A TV's compositor shows the app fullscreen and focused; matchbox does the
+  # same for the one window on this screen.
   start_daemon "$WM_PID_FILE" "$INSTANCE_DIR/wm.log" \
     matchbox-window-manager -use_titlebar no -use_cursor no
 }
@@ -78,6 +78,6 @@ start_display
 rm -f "$CONTROL_FIFO"
 mkfifo -m 600 "$CONTROL_FIFO"
 ulimit -c unlimited
-start_daemon "$APP_PID_FILE" "$APP_LOG" "$LAUNCHER" "$APP_DIR" "$CONTROL_FIFO"
+start_daemon "$APP_PID_FILE" "$APP_LOG" "$LAUNCHER" "$INSTANCE_DIR"
 wait_for_window
 cat "$APP_PID_FILE"

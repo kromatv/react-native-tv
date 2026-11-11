@@ -1,7 +1,8 @@
 #pragma once
 
+#include "../render/Scene.h"
+#include "BoxPainter.h"
 #include "PixelGeometry.h"
-#include "ViewBox.h"
 #include "ViewTransform.h"
 
 #include <folly/dynamic.h>
@@ -11,24 +12,21 @@
 #include <react/renderer/core/ReactPrimitives.h>
 #include <react/renderer/core/State.h>
 
-#include <Evas.h>
-
 #include <span>
 #include <string>
 #include <vector>
 
 namespace rnwebos {
 
-/// The native side of one mounted React Native view: an Evas smart object
-/// holding its box (shadows, background, border, clip), what it draws and its
-/// children. Layout arrives in points; every object is placed in canvas
-/// pixels at the surface's point scale factor, by this class and not by Evas,
-/// so a move reaches each descendant once. Subclasses add what a component
-/// draws. Main thread only.
-class ComponentView {
+/// The native side of one mounted React Native view: its box (shadows,
+/// background, border, clip), what it draws and its children, drawn with Skia
+/// when the scene draws a frame. Layout arrives in points; every view places
+/// itself in whole device pixels at the surface's point scale factor.
+/// Subclasses add what a component draws. Main thread only.
+class ComponentView : public SceneLayer {
  public:
-  ComponentView(Evas *evas, facebook::react::Tag tag);
-  virtual ~ComponentView();
+  ComponentView(Scene &scene, facebook::react::Tag tag);
+  ~ComponentView() override;
 
   ComponentView(const ComponentView &) = delete;
   ComponentView &operator=(const ComponentView &) = delete;
@@ -52,91 +50,83 @@ class ComponentView {
   void mountChild(ComponentView &child, std::size_t index);
   void unmountChild(ComponentView &child);
 
-  /// Places the view on the canvas as a surface's root. A view is placed only
-  /// while a root holds it, so a subtree Fabric builds bottom-up is placed
-  /// once, when it joins one, rather than at every level it is inserted at.
-  void mountAsRoot();
+  /// Shows the view as a surface's root, a layer of the scene.
+  void mountAsRoot(int order);
 
-  /// The view's top-left corner on the canvas, in pixels.
+  /// Draws the view and its subtree where its parent's canvas puts it.
+  void draw(SkCanvas &canvas) override;
+
+  /// The view's box in the window, in pixels, before any transform.
+  PixelRect canvasRect() const;
+  /// The view's top-left corner in the window, in pixels.
   facebook::react::Point canvasOrigin() const;
-
- protected:
-  Evas *evas() const;
-  Evas_Object *root() const;
-  /// The view's box on the canvas, in pixels.
-  const PixelRect &canvasRect() const;
   /// The box as it shows on screen, in pixels: `canvasRect()` through the
   /// view's own transform and every ancestor's, as the rect around it.
   PixelRect screenRect() const;
+
+  /// The deepest view under the window point `point` that takes pointer
+  /// events, or null. `local` gets the point in that view's own pixels.
+  ComponentView *hitTest(SkPoint point, SkPoint *local = nullptr);
+
+ protected:
+  Scene &scene() const;
+  /// The size of the view's box, in pixels.
+  PixelSize pixelSize() const;
   /// Device pixels per layout point.
   facebook::react::Float pointScale() const;
-  /// Adds an object the view draws. Below the children, it is clipped with
-  /// them; otherwise it is drawn above everything, the border included.
-  void addMember(Evas_Object *member, bool belowChildren);
-  /// Places the members once the box moved or changed size.
-  virtual void layoutMembers();
+  /// Asks for a redraw: call it when what the view draws changed.
+  void invalidate();
+
+  /// Draws what the component shows inside its box, under its children, in
+  /// the view's own pixels; an `alpha` under 1 comes only to a view whose
+  /// `contentLayers()` is 1, which then draws at that opacity.
+  virtual void drawContent(SkCanvas &canvas, float alpha);
+  /// Draws the children; a view that masks or filters them overrides it.
+  virtual void drawChildren(SkCanvas &canvas);
+  /// Draws over the children and the border, in the view's own pixels.
+  virtual void drawOverChildren(SkCanvas &canvas);
+  /// How many things `drawContent` paints on top of each other: 0 for none.
+  virtual int contentLayers() const;
+  /// Runs once the box moved or changed size.
+  virtual void layoutContent();
   /// How far the children sit from their layout position, in points: minus a
   /// scroll view's content offset.
   virtual facebook::react::Point childrenOffset() const;
-  void placeChildren();
   /// Clips content and children to the box even when `overflow` is visible.
   void setAlwaysClips(bool alwaysClips);
   /// Whether the view is drawn above every other view, at the screen's
   /// origin, rather than inside its parent (a Modal).
   virtual bool isOverlay() const;
-  /// Runs once the view joined a parent and was placed.
+  /// Runs once the view joined a parent.
   virtual void didMount();
   /// Runs before the view leaves its parent, while `parent()` is still set.
   /// A view destroyed while mounted gets no call: its destructor runs instead.
   virtual void willUnmount();
-  /// What `child` is clipped to instead of the box, or null for the box (a
-  /// MaskedView's content hangs from its mask).
-  virtual Evas_Object *clipperFor(const ComponentView &child) const;
   /// Runs once a child joined or left.
   virtual void didChangeChildren();
-  /// Hangs every member and child from its clipper again, after
-  /// `clipperFor` changed its answer.
-  void refreshClips();
-  /// The smart object holding `view` and everything it draws.
-  static Evas_Object *rootOf(const ComponentView &view);
 
  private:
-  struct SmartObject {
-    Evas_Object *const object;
-    ~SmartObject();
-  };
-
   void place();
-  void setRooted(bool rooted);
   void refreshBox();
-  void restack();
-  void stackChild(std::size_t index);
-  void hangFromClipper(Evas_Object *object) const;
-  void hangChild(const ComponentView &child) const;
-  void attach(ComponentView &child);
-  void detach(ComponentView &child);
-  void applyVisibility();
-  PixelPoint childrenOrigin() const;
-  PixelRect bounds() const;
+  PixelPoint childrenShift() const;
+  SkRect paintBounds() const;
+  bool hitTestLocal(SkPoint point, ComponentView *&hit, SkPoint *local);
 
-  Evas *const evas_;
+  Scene &scene_;
   const facebook::react::Tag tag_;
-  SmartObject smart_;
-  Evas_Object *const root_;
-  ViewBox box_;
+  BoxPainter box_;
   ViewTransform transform_;
   ComponentView *parent_{nullptr};
   std::vector<ComponentView *> children_;
-  std::vector<Evas_Object *> contents_;
-  std::vector<Evas_Object *> overlays_;
   facebook::react::LayoutMetrics layoutMetrics_{facebook::react::EmptyLayoutMetrics};
   facebook::react::Props::Shared props_;
   facebook::react::EventEmitter::Shared eventEmitter_;
-  PixelRect rect_;
-  bool placed_{false};
-  bool rooted_{false};
-  bool detached_{false};
+  PixelPoint origin_;
+  PixelSize size_;
+  float opacity_{1};
   bool alwaysClips_{false};
+  bool isRoot_{false};
+  bool isLayer_{false};
 };
 
 } // namespace rnwebos

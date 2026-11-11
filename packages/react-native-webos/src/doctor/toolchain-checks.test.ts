@@ -2,16 +2,18 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MissingProgramError } from '../exec.ts';
 import { recordingTask } from '../fakes.fixtures.ts';
 import { findLlvmTools, findProgram } from './find-program.ts';
+import { installedWebOSSdk } from '../sysroot/webos-sdk.ts';
 import {
   checkCcache,
   checkCMake,
-  checkDotnet,
   checkLlvm,
   checkNinja,
   checkNode,
+  checkSdk,
 } from './toolchain-checks.ts';
 
 vi.mock('./find-program.ts', () => ({ findLlvmTools: vi.fn(), findProgram: vi.fn() }));
+vi.mock('../sysroot/webos-sdk.ts', () => ({ installedWebOSSdk: vi.fn() }));
 
 const LLVM = {
   clang: '/llvm/clang',
@@ -44,7 +46,9 @@ describe('checkLlvm', () => {
     expect(task.commands).toEqual([['/llvm/clang', '--version']]);
   });
 
-  it('names the tools that are missing', async () => {
+  it('names the tools that are missing, and passes without llvm-symbolizer', async () => {
+    vi.mocked(findLlvmTools).mockReturnValueOnce({ ...LLVM, 'llvm-symbolizer': null });
+    expect(await checkLlvm(answering('clang version 23.1.4'))).toMatchObject({ status: 'ok' });
     vi.mocked(findLlvmTools).mockReturnValue({ ...LLVM, 'ld.lld': null, 'llvm-ar': null });
 
     expect(await checkLlvm(answering(''))).toMatchObject({
@@ -82,12 +86,25 @@ describe('checkCMake', () => {
   });
 });
 
-describe('checkDotnet', () => {
-  it('passes .NET 6 or newer and fails an older one', async () => {
-    expect(await checkDotnet(answering('10.0.107\n'))).toMatchObject({ status: 'ok' });
-    expect(await checkDotnet(answering('5.0.408\n'))).toMatchObject({
-      status: 'fail',
-      detail: '5.0.408 is older than 6.0',
+describe('checkSdk', () => {
+  it('passes with where the SDK is, and only warns before the first build downloaded it', async () => {
+    vi.mocked(installedWebOSSdk)
+      .mockResolvedValueOnce({
+        path: '/cache/sdk/2026.08-webos',
+        version: '2026.08-webos',
+        reused: true,
+      })
+      .mockResolvedValueOnce(null);
+
+    expect(await checkSdk()).toEqual({
+      title: 'webOS SDK',
+      status: 'ok',
+      detail: '2026.08-webos at /cache/sdk/2026.08-webos',
+    });
+    expect(await checkSdk()).toMatchObject({
+      status: 'warn',
+      detail: '2026.08-webos not downloaded yet',
+      fix: expect.stringContaining('rn-webos setup'),
     });
   });
 });

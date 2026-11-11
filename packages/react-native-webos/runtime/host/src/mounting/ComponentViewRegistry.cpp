@@ -32,9 +32,9 @@ void registerComponentView(std::string componentName, ComponentViewFactory facto
   shared.factories.insert_or_assign(std::move(componentName), std::move(factory));
 }
 
-std::unique_ptr<ComponentView> createComponentView(Evas *evas, const facebook::react::ShadowView &shadowView) {
-  if (const auto factory = factoryFor(shadowView.componentName)) return factory(evas, shadowView.tag);
-  return std::make_unique<ComponentView>(evas, shadowView.tag);
+std::unique_ptr<ComponentView> createComponentView(Scene &scene, const facebook::react::ShadowView &shadowView) {
+  if (const auto factory = factoryFor(shadowView.componentName)) return factory(scene, shadowView.tag);
+  return std::make_unique<ComponentView>(scene, shadowView.tag);
 }
 
 } // namespace rnwebos

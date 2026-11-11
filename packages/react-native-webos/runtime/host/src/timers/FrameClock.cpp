@@ -11,8 +11,6 @@ namespace {
 
 constexpr int kIdleFramesBeforeStop = 4;
 
-using Owner = std::shared_ptr<FrameClock>;
-
 } // namespace
 
 FrameClock::FrameClock(std::function<bool()> onFrame) : onFrame_(std::move(onFrame)) {}
@@ -26,13 +24,8 @@ void FrameClock::request() {
     running_ = true;
   }
   runOnMainThread([self = shared_from_this()] {
-    auto owner = std::make_unique<Owner>(self);
-    if (ecore_animator_add(tick, owner.get()) != nullptr) {
-      owner.release();
-      return;
-    }
-    std::lock_guard lock(self->mutex_);
-    self->running_ = false;
+    auto id = std::make_shared<MainLoop::Id>(0);
+    *id = MainLoop::get().addFrameCallback([self, id](MainLoop::Clock::time_point) { self->tick(*id); });
   });
 }
 
@@ -52,20 +45,16 @@ bool FrameClock::runFrame() {
   return false;
 }
 
-Eina_Bool FrameClock::tick(void *data) {
-  auto *owner = static_cast<Owner *>(data);
-  auto &self = **owner;
+void FrameClock::tick(MainLoop::Id id) {
   bool closed = false;
   bool requested = false;
   {
-    std::lock_guard lock(self.mutex_);
-    closed = self.closed_;
-    requested = std::exchange(self.requested_, false);
+    std::lock_guard lock(mutex_);
+    closed = closed_;
+    requested = std::exchange(requested_, false);
   }
-  const bool hadWork = !closed && (self.runFrame() || requested);
-  if (!self.shouldStop(hadWork)) return ECORE_CALLBACK_RENEW;
-  std::unique_ptr<Owner> released(owner);
-  return ECORE_CALLBACK_CANCEL;
+  const bool hadWork = !closed && (runFrame() || requested);
+  if (shouldStop(hadWork)) MainLoop::get().removeFrameCallback(id);
 }
 
 bool FrameClock::shouldStop(bool hadWork) {

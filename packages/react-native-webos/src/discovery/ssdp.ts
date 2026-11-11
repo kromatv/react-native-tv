@@ -1,18 +1,23 @@
 import { createSocket } from 'node:dgram';
 
-/** One answer to an SSDP search: who sent it and where its UPnP description is. */
+/** One answer to an SSDP search: who sent it, what it answered for and where its UPnP description is. */
 export interface SsdpReply {
   readonly host: string;
   readonly location: string;
   readonly server: string;
+  /** The search target the device answered, its `ST` header. */
+  readonly target: string;
+  /** The device's UUID, cut out of `USN`; null when it has none. */
+  readonly uuid: string | null;
 }
 
 // oxlint-disable-next-line sonarjs/no-hardcoded-ip
 const GROUP = '239.255.255.250'; // NOSONAR: SSDP's multicast group, fixed by UPnP Device Architecture 1.1
 const PORT = 1900;
 const MAX_WAIT_SECONDS = 2;
-/** DIAL's service type, which a Samsung TV answers from its `nservice` description. */
-export const DIAL_SEARCH_TARGET = 'urn:dial-multiscreen-org:service:dial:1';
+const USN_UUID = /^uuid:([0-9A-Za-z-]{1,64})(?:::|$)/;
+/** The service of an LG TV's remote control, which only its Basic device answers a search for. */
+export const SECOND_SCREEN_SEARCH_TARGET = 'urn:lge-com:service:webos-second-screen:1';
 
 /** The search request of UPnP Device Architecture 1.1, section 1.3.2. */
 export function searchRequest(target: string): Buffer {
@@ -31,13 +36,22 @@ export function parseSsdpReply(message: string, host: string): SsdpReply | null 
   }
   const location = headers.get('location');
   if (location === undefined || !/^https?:\/\//.test(location)) return null;
-  return { host, location, server: headers.get('server') ?? '' };
+  return {
+    host,
+    location,
+    server: headers.get('server') ?? '',
+    target: headers.get('st') ?? '',
+    uuid: USN_UUID.exec(headers.get('usn') ?? '')?.[1] ?? null,
+  };
 }
 
-/** Multicasts one search and collects the replies until `windowMs` ends. Empty when the link is down. */
+/**
+ * Multicasts a search, once more halfway through, and collects the replies
+ * until `windowMs` ends. Empty when the link is down.
+ */
 export async function ssdpSearch(
   windowMs: number,
-  target = DIAL_SEARCH_TARGET,
+  target = SECOND_SCREEN_SEARCH_TARGET,
 ): Promise<SsdpReply[]> {
   const replies = new Map<string, SsdpReply>();
   const socket = createSocket({ type: 'udp4', reuseAddr: true });
@@ -46,14 +60,19 @@ export async function ssdpSearch(
     if (!closed) socket.close();
     closed = true;
   };
+  const search = () => {
+    if (!closed) socket.send(searchRequest(target), PORT, GROUP, () => undefined);
+  };
   socket.on('error', close);
   socket.on('message', (message, from) => {
     const reply = parseSsdpReply(message.toString('utf8'), from.address);
     if (reply !== null) replies.set(`${reply.host} ${reply.location}`, reply);
   });
   await new Promise<void>((resolve) => socket.bind(resolve));
-  if (!closed) socket.send(searchRequest(target), PORT, GROUP, () => undefined);
-  await new Promise((resolve) => setTimeout(resolve, windowMs));
+  search();
+  await new Promise((resolve) => setTimeout(resolve, windowMs / 2));
+  search();
+  await new Promise((resolve) => setTimeout(resolve, windowMs / 2));
   close();
   return [...replies.values()];
 }
