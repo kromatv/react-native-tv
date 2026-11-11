@@ -2,7 +2,6 @@
 #include "../FileIo.h"
 #include "../ModuleDefinition.h"
 #include "../Uuid.h"
-#include "DeviceName.h"
 
 #include "logging/Log.h"
 
@@ -40,7 +39,7 @@ class ExponentConstantsModule final : public Module {
           return session;
         })
         .constant("statusBarHeight", [] { return 0; })
-        .constant("deviceName", [&host] { return tvDeviceName(host.device.modelName); })
+        .constant("deviceName", [&host] { return host.device.modelName; })
         .constant("systemFonts", [] { return std::vector<std::string>(); })
         .constant("systemVersion", [&host] { return host.device.platformVersion; })
         .constant("debugMode", [] { return false; })

@@ -96,4 +96,8 @@ if(RN_WEBOS_TESTS)
   # The full ICU data file ICU's sources ship, for the host's ICU setup to load.
   set_source_files_properties(src/intl/IcuData.test.cpp PROPERTIES
     COMPILE_DEFINITIONS "RN_WEBOS_TEST_ICU_DATA_DIR=\"${icu_SOURCE_DIR}/source/data/in\"")
+  # Skia's own test fonts, a static and a variable one, and ICU's data for the
+  # text engine that registers them.
+  set_source_files_properties(src/text/VariableFont.test.cpp expo/modules/ExpoFontLoaderModule.test.cpp PROPERTIES
+    COMPILE_DEFINITIONS "RN_WEBOS_TEST_FONT_DIR=\"${RN_WEBOS_SKIA_SOURCE_DIR}/resources/fonts\";RN_WEBOS_TEST_ICU_DATA_DIR=\"${icu_SOURCE_DIR}/source/data/in\"")
 endif()

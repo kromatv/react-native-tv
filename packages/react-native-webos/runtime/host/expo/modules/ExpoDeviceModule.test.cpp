@@ -1,6 +1,6 @@
-#include "DeviceName.h"
-
 #include "../ExpoTestRuntime.test.h"
+
+#include "modules/LaunchState.h"
 
 #include <doctest/doctest.h>
 
@@ -23,13 +23,13 @@ ModuleContext hostWith(const char *model, const char *version, const char *build
 
 } // namespace
 
-TEST_CASE("ExpoDevice describes a Samsung TV from the host's device profile") {
-  testing::ExpoTestRuntime expo(hostWith("QE55Q80", "9.0", "T-PTMDEUC-1001.2"));
+TEST_CASE("ExpoDevice describes an LG TV from the host's device profile") {
+  testing::ExpoTestRuntime expo(hostWith("OLED65C25LB", "10.2.0", "33.22.52"));
   expo.eval("globalThis.D = expo.modules.ExpoDevice");
   CHECK(expo.json("[D.isDevice, D.brand, D.manufacturer, D.deviceType, D.osName]") ==
-        R"([true,"Samsung","Samsung",4,"webOS"])");
+        R"([true,"LG","LG Electronics",4,"webOS"])");
   CHECK(expo.json("[D.modelName, D.osVersion, D.osBuildId, D.osInternalBuildId, D.deviceName]") ==
-        R"(["QE55Q80","9.0","T-PTMDEUC-1001.2","T-PTMDEUC-1001.2","QE55Q80"])");
+        R"(["OLED65C25LB","10.2.0","33.22.52","33.22.52","OLED65C25LB"])");
   CHECK(expo.json("[D.modelId, D.designName, D.productName, D.deviceYearClass, D.osBuildFingerprint, D.platformApiLevel]") ==
         "[null,null,null,null,null,null]");
   const auto memory = static_cast<double>(sysconf(_SC_PHYS_PAGES)) * static_cast<double>(sysconf(_SC_PAGESIZE));
@@ -53,16 +53,34 @@ TEST_CASE("ExpoDevice answers its asynchronous questions as a TV with no side lo
   CHECK(second >= first);
 }
 
-TEST_CASE("ExpoWebOS hands JavaScript the model, the platform and the screen") {
-  testing::ExpoTestRuntime expo(hostWith("QE55Q80", "9.0", "T-PTMDEUC-1001.2"));
+TEST_CASE("ExpoWebOS hands JavaScript the model, the platform, the language, the screen and the panel") {
+  auto host = hostWith("OLED65C25LB", "10.2.0", "33.22.52");
+  host.device.screenWidth = 1920;
+  host.device.screenHeight = 1080;
+  host.device.panelWidth = 3840;
+  host.device.panelHeight = 2160;
+  host.device.locale = "en-GB";
+  testing::ExpoTestRuntime expo(host);
   expo.eval("globalThis.T = expo.modules.ExpoWebOS");
-  CHECK(expo.json("[T.modelName, T.platformVersion, T.buildString]") == R"(["QE55Q80","9.0","T-PTMDEUC-1001.2"])");
-  CHECK(expo.json("[T.getScreenSize().width, T.getScreenSize().height]") == "[3840,2160]");
+  CHECK(expo.json("[T.modelName, T.platformVersion, T.buildString, T.locale]") ==
+        R"(["OLED65C25LB","10.2.0","33.22.52","en-GB"])");
+  CHECK(expo.json("[T.getScreenSize().width, T.getScreenSize().height]") == "[1920,1080]");
+  CHECK(expo.json("[T.getPanelSize().width, T.getPanelSize().height]") == "[3840,2160]");
 }
 
-TEST_CASE("tvDeviceName falls back to the model where the platform keeps no name") {
-  CHECK(tvDeviceName("QE55Q80") == "QE55Q80");
-  CHECK(tvDeviceName("").empty());
+TEST_CASE("ExpoWebOS gives the parameters of the launch, then of the last relaunch") {
+  auto launch = std::make_shared<LaunchState>();
+  launch->setParameters(folly::dynamic::object("contentTarget", "example://title/42"));
+  ModuleContext host;
+  host.launch = launch;
+  testing::ExpoTestRuntime expo(host);
+  expo.eval("globalThis.T = expo.modules.ExpoWebOS");
+  CHECK(expo.json("T.getLaunchParameters()") == R"({"contentTarget":"example://title/42"})");
+
+  launch->setParameters(folly::dynamic::object("customParam1", "value1"));
+  CHECK(expo.json("T.getLaunchParameters()") == R"({"customParam1":"value1"})");
+  testing::ExpoTestRuntime withoutLaunch;
+  CHECK(withoutLaunch.json("expo.modules.ExpoWebOS.getLaunchParameters()") == "{}");
 }
 
 } // namespace rnwebos::expo

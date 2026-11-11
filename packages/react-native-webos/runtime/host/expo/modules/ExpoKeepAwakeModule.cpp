@@ -3,27 +3,13 @@
 
 #include "logging/Log.h"
 
-#include <Ecore_Evas.h>
-#include <Elementary.h>
+#include <SDL3/SDL.h>
 
 #include <set>
 
 namespace rnwebos::expo {
 
 namespace {
-
-Evas_Object *appWindow() {
-  Evas_Object *window = nullptr;
-  auto *canvases = ecore_evas_ecore_evas_list_get();
-  void *canvas = nullptr;
-  Eina_List *node = nullptr;
-  EINA_LIST_FOREACH(canvases, node, canvas) {
-    auto *candidate = static_cast<Evas_Object *>(ecore_evas_data_get(static_cast<Ecore_Evas *>(canvas), "elm_win"));
-    if (candidate != nullptr && window == nullptr) window = candidate;
-  }
-  eina_list_free(canvases);
-  return window;
-}
 
 class ExpoKeepAwakeModule final : public Module {
  public:
@@ -32,25 +18,31 @@ class ExpoKeepAwakeModule final : public Module {
         .asyncFunction("activate", [this](const std::string &tag) { return update(tag, true); }, Queue::Main)
         .asyncFunction("deactivate", [this](const std::string &tag) { return update(tag, false); }, Queue::Main)
         .asyncFunction("isActivated", [this] { return !tags_.empty(); }, Queue::Main)
-        .asyncFunction("isAvailableAsync", [] { return appWindow() != nullptr; }, Queue::Main);
+        .asyncFunction("isAvailableAsync", [] { return SDL_WasInit(SDL_INIT_VIDEO) != 0; }, Queue::Main);
   }
 
  private:
+  // SDL's screen saver switch is the one the host answers the TV's screen
+  // saver requests from (platform/ScreenSaver.h). What SDL returns says only
+  // whether its video driver did something more, which webOS's does not.
   bool update(const std::string &tag, bool active) {
     if (active) {
       tags_.insert(tag);
     } else {
       tags_.erase(tag);
     }
-    auto *window = appWindow();
-    if (window == nullptr) {
+    if (SDL_WasInit(SDL_INIT_VIDEO) == 0) {
       log(LogLevel::Warning, "ExpoKeepAwake found no window to keep awake");
       return false;
     }
-    elm_win_noblank_set(window, tags_.empty() ? EINA_FALSE : EINA_TRUE);
+    if (tags_.empty()) {
+      SDL_EnableScreenSaver();
+    } else {
+      SDL_DisableScreenSaver();
+    }
     log(LogLevel::Debug,
-        std::string("Keep awake ") + (elm_win_noblank_get(window) == EINA_TRUE ? "on" : "off") + " (" +
-            std::to_string(tags_.size()) + " tags)");
+        std::string("Keep awake ") + (SDL_ScreenSaverEnabled() ? "off" : "on") + " (" + std::to_string(tags_.size()) +
+            " tags)");
     return true;
   }
 
