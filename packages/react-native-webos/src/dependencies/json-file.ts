@@ -22,7 +22,7 @@ export function readJsonObject(file: string): JsonObject {
 const NON_ASCII = /[\u0080-\uffff]/g;
 
 function escaped(character: string): string {
-  return `\\u${character.charCodeAt(0).toString(16).padStart(4, '0')}`;
+  return String.raw`\u${character.charCodeAt(0).toString(16).padStart(4, '0')}`;
 }
 
 /**

@@ -34,7 +34,8 @@ using EnvironmentLookup = std::function<const char *(const char *name)>;
 /// simulator sets it (`RN_WEBOS_MODEL_NAME`, `RN_WEBOS_PLATFORM_VERSION`,
 /// `RN_WEBOS_BUILD`, `RN_WEBOS_LOCALE`), else placeholders, on a 1920x1080
 /// screen until the window says otherwise.
-DeviceProfile readDeviceProfile(const EnvironmentLookup &environment = std::getenv);
+DeviceProfile readDeviceProfile(
+    const EnvironmentLookup &environment = [](const char *name) { return std::getenv(name); });
 
 /// Puts the reply of the TV's `getSystemInfo` into `profile`. False when it is an error.
 bool applySystemInfo(DeviceProfile &profile, const folly::dynamic &reply);

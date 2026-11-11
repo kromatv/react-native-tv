@@ -22,7 +22,7 @@ std::chrono::milliseconds millis(double seconds) {
 }
 
 std::string clockTime(double seconds) {
-  const int whole = static_cast<int>(seconds);
+  const auto whole = static_cast<int>(seconds);
   return std::format("{}:{:02}.{}", whole / 60, whole % 60, static_cast<int>((seconds - whole) * 10));
 }
 
@@ -31,6 +31,12 @@ std::string language(const std::vector<MediaTrack> &tracks, int index) {
     if (track.index == index) return track.language;
   }
   return "off";
+}
+
+const char *stateName(bool loaded, bool seeking, bool playing) {
+  if (!loaded) return "loading";
+  if (seeking) return "seeking";
+  return playing ? "playing" : "paused";
 }
 
 } // namespace
@@ -180,14 +186,13 @@ void SimulatedPlayer::describe() {
     return;
   }
   const auto &media = stream_.media;
-  const char *state = !loaded_ ? "loading" : seeking_ ? "seeking" : playing_ ? "playing" : "paused";
   auto caption = std::format(
       "Simulated video {}: {}\n{} of {} · {} · {}x · volume {} %{}\n{}x{} {} · audio {} · text {}",
       number_,
       uri_.substr(0, kMaxCaptionUri),
       clockTime(position_),
       clockTime(media.duration),
-      state,
+      stateName(loaded_, seeking_, playing_),
       decimal(rate_, 2),
       static_cast<int>(std::lround(volume_ * 100)),
       foreground_ ? "" : " · in the background",

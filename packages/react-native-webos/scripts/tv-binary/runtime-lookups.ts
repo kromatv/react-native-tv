@@ -2,7 +2,7 @@ import type { ElfFile } from './elf-file.ts';
 import type { Firmware } from './firmware-data.ts';
 
 const LIBRARY_NAME = /^lib[A-Za-z0-9_+.-]+\.so(\.\d+)*$/;
-const SYMBOL_NAME = /^[A-Za-z_][A-Za-z0-9_]{2,}$/;
+const SYMBOL_NAME = /^[A-Za-z_]\w{2,}$/;
 const STRING_SECTIONS = new Set(['.rodata', '.data.rel.ro', '.data']);
 const MAX_STRING = 256;
 
@@ -78,6 +78,11 @@ function lookupsIn(
   return lookups;
 }
 
+function compareCodeUnits(left: string, right: string): number {
+  if (left === right) return 0;
+  return left < right ? -1 : 1;
+}
+
 /**
  * The libraries the executable may open at run time: every library name among
  * its string literals, and those in `required`. `dlopen` and `dlsym` leave no
@@ -94,7 +99,7 @@ export function runtimeLibraries(
   const found = [...strings].filter(
     (text) => LIBRARY_NAME.test(text) && !elf.needed.includes(text),
   );
-  return [...new Set([...required, ...found])].sort().map((name) => ({
+  return [...new Set([...required, ...found])].sort(compareCodeUnits).map((name) => ({
     name,
     required: required.includes(name),
     absentOn: firmwares

@@ -14,7 +14,7 @@ class SvgRootView final : public SvgView {
  public:
   using SvgView::SvgView;
 
- protected:
+ private:
   void readProps(const facebook::react::Props &props) override {
     readSvgProps(static_cast<const Props &>(props));
   }

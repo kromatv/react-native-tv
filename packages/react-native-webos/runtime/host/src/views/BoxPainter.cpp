@@ -59,8 +59,11 @@ int shadowReach(const ShadowStyle &shadow) {
 // from 3 px; dots are one width across, a width apart.
 std::array<float, 2> dashIntervals(StrokePattern pattern, float width, float length) {
   const bool dotted = pattern == StrokePattern::Dotted;
-  const float dash = dotted ? 0 : width * (width < 3 ? 3 : 2);
-  const float gap = dotted ? width * 2 : width * (width < 3 ? 2 : 1);
+  const bool thin = width < 3;
+  const float dashWidths = thin ? 3 : 2;
+  const float gapWidths = thin ? 2 : 1;
+  const float dash = dotted ? 0 : width * dashWidths;
+  const float gap = dotted ? width * 2 : width * gapWidths;
   const float period = dash + gap;
   const auto count = std::max(1.0f, std::round(length / period));
   return {dash, length / count - dash};

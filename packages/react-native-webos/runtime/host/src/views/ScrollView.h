@@ -32,10 +32,9 @@ class ScrollView final : public ComponentView {
 
   facebook::react::Point contentOffset() const;
 
- protected:
+ private:
   facebook::react::Point childrenOffset() const override;
 
- private:
   void scrollTo(facebook::react::Point offset, bool animated);
   void moveContent(facebook::react::Point offset);
   void emitScroll(bool throttled);

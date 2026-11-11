@@ -9,7 +9,8 @@ function size(value: { readonly width: number; readonly height: number } | undef
 const constants = new Map<string, unknown>(Object.entries(Platform.constants));
 
 function constant(name: string): string {
-  return String(constants.get(name) ?? 'missing');
+  const value = constants.get(name) ?? 'missing';
+  return typeof value === 'string' ? value : JSON.stringify(value);
 }
 
 export function DeviceScreen() {

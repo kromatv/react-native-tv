@@ -44,7 +44,8 @@ std::optional<Bytes> bytesFromJs(Runtime &runtime, const Value &value) {
   auto object = value.getObject(runtime);
   if (object.isArrayBuffer(runtime)) {
     auto buffer = object.getArrayBuffer(runtime);
-    return Bytes{std::string(reinterpret_cast<const char *>(buffer.data(runtime)), buffer.size(runtime))};
+    const auto *data = buffer.data(runtime);
+    return Bytes{std::string(data, data + buffer.size(runtime))};
   }
   auto buffer = object.getProperty(runtime, "buffer");
   auto offset = object.getProperty(runtime, "byteOffset");
@@ -56,8 +57,8 @@ std::optional<Bytes> bytesFromJs(Runtime &runtime, const Value &value) {
   const auto start = offset.getNumber();
   const auto count = length.getNumber();
   if (!isByteCount(start) || !isByteCount(count) || start + count > static_cast<double>(bytes.size(runtime))) return std::nullopt;
-  const auto *data = reinterpret_cast<const char *>(bytes.data(runtime));
-  return Bytes{std::string(data + static_cast<std::size_t>(start), static_cast<std::size_t>(count))};
+  const auto *data = bytes.data(runtime) + static_cast<std::size_t>(start);
+  return Bytes{std::string(data, data + static_cast<std::size_t>(count))};
 }
 
 Value sharedObjectToJs(Runtime &runtime, const std::shared_ptr<SharedObject> &object) {

@@ -34,7 +34,7 @@ void ReactHost::registerApp(const LaunchParameters &launch) {
   auto &bus = LunaBus::get();
   const char *appId = std::getenv("APPID");
   if (!bus.isAvailable() || appId == nullptr || *appId == '\0') return;
-  registration_ = AppRegistration::start(
+  tv_.registration = AppRegistration::start(
       bus,
       appId,
       launch.interfaceVersion.value_or(kLifecycleInterface),
@@ -43,8 +43,8 @@ void ReactHost::registerApp(const LaunchParameters &launch) {
           .pause = [this] { pause(); },
           .close = [this] { exit(); },
       });
-  if (registration_ == nullptr) log(LogLevel::Warning, "Cannot register with the app manager: the TV may close the app");
-  screenSaver_ = ScreenSaver::watch(bus, appId);
+  if (tv_.registration == nullptr) log(LogLevel::Warning, "Cannot register with the app manager: the TV may close the app");
+  tv_.screenSaver = ScreenSaver::watch(bus, appId);
 }
 
 void ReactHost::readDevice(const DeviceProfileRequest &request, std::chrono::steady_clock::time_point deadline) {

@@ -6,6 +6,8 @@
 
 #include <react/bridging/Error.h>
 
+#include <string_view>
+
 namespace rnwebos {
 
 namespace {
@@ -13,7 +15,7 @@ namespace {
 constexpr const char *kLaunch = "luna://com.webos.applicationManager/launch";
 constexpr const char *kBrowser = "com.webos.app.browser";
 
-bool isWebUrl(const std::string &url) {
+bool isWebUrl(std::string_view url) {
   return url.starts_with("http://") || url.starts_with("https://");
 }
 

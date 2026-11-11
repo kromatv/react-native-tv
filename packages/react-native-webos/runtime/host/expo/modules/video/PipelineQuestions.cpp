@@ -3,6 +3,7 @@
 #include "PlayerLog.h"
 
 #include <algorithm>
+#include <array>
 #include <cctype>
 #include <cmath>
 #include <format>
@@ -101,8 +102,8 @@ double bufferedSeconds(double endTime) {
 // Inferred from what the codes mean: a refused command, an unknown subtitle
 // file, a failed seek or rate change and the two buffer levels.
 bool endsPlayback(int errorCode) {
-  static constexpr int kSurvivable[] = {101, 210, 700, 701, 61441, 61442};
-  return std::ranges::find(kSurvivable, errorCode) == std::end(kSurvivable);
+  static constexpr std::array kSurvivable{101, 210, 700, 701, 61441, 61442};
+  return std::ranges::find(kSurvivable, errorCode) == kSurvivable.end();
 }
 
 } // namespace rnwebos::expo::pipeline

@@ -65,8 +65,10 @@ void TextInputView::handleCommand(const std::string &name, const folly::dynamic 
   } else if (name == "blur") {
     blur();
   } else if (name == "setTextAndSelection" && args.isArray() && args.size() >= 4) {
-    const auto eventCount = static_cast<int>(args[0].asInt());
-    if (eventCount == kUnset || eventCount < nativeEventCount_) return;
+    if (const auto eventCount = static_cast<int>(args[0].asInt());
+        eventCount == kUnset || eventCount < nativeEventCount_) {
+      return;
+    }
     if (args[1].isString()) setTextFromReact(args[1].asString());
     const auto start = static_cast<int>(args[2].asInt());
     const auto end = args[3].asInt() == kUnset ? start : static_cast<int>(args[3].asInt());

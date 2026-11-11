@@ -3,6 +3,7 @@
 #include <folly/json.h>
 
 #include <array>
+#include <stdexcept>
 
 namespace rnwebos {
 
@@ -30,15 +31,18 @@ folly::dynamic withoutKeys(folly::dynamic object, const auto &keys) {
 }
 
 folly::dynamic callerParameters(const folly::dynamic &argument) {
-  const auto *nested = argument.get_ptr("parameters");
-  if (isLaunchEvent(argument) && nested != nullptr && nested->isObject()) return *nested;
+  if (const auto *nested = argument.get_ptr("parameters");
+      isLaunchEvent(argument) && nested != nullptr && nested->isObject()) {
+    return *nested;
+  }
   auto own = withoutKeys(argument, kProcessKeys);
   return isLaunchEvent(argument) ? withoutKeys(std::move(own), kLaunchEventKeys) : own;
 }
 
 std::optional<int> interfaceVersionOf(const folly::dynamic &argument) {
-  const auto *version = argument.get_ptr("interfaceVersion");
-  if (version != nullptr && version->isInt()) return static_cast<int>(version->getInt());
+  if (const auto *version = argument.get_ptr("interfaceVersion"); version != nullptr && version->isInt()) {
+    return static_cast<int>(version->getInt());
+  }
   return std::nullopt;
 }
 
@@ -49,7 +53,9 @@ LaunchParameters parseLaunchArgument(std::string_view argument) {
   folly::dynamic parsed;
   try {
     parsed = folly::parseJson(argument);
-  } catch (const std::exception &) {
+  } catch (const folly::json::parse_error &) {
+    return {};
+  } catch (const std::range_error &) {
     return {};
   }
   if (!parsed.isObject()) return {};

@@ -30,17 +30,18 @@ OutlineStyle outlineStyle(const facebook::react::ViewProps &props, Float scale) 
 }
 
 StrokePattern strokePattern(const facebook::react::BorderStyles &styles) {
+  using enum StrokePattern;
   const auto style = styles.top;
-  if (styles.left != style || styles.right != style || styles.bottom != style) return StrokePattern::Solid;
+  if (styles.left != style || styles.right != style || styles.bottom != style) return Solid;
   switch (style) {
     case facebook::react::BorderStyle::Dashed:
-      return StrokePattern::Dashed;
+      return Dashed;
     case facebook::react::BorderStyle::Dotted:
-      return StrokePattern::Dotted;
+      return Dotted;
     case facebook::react::BorderStyle::Solid:
-      return StrokePattern::Solid;
+      return Solid;
   }
-  return StrokePattern::Solid;
+  return Solid;
 }
 
 std::vector<ShadowStyle> shadowStyles(const facebook::react::ViewProps &props, Float scale) {

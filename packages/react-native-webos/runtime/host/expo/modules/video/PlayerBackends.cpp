@@ -26,18 +26,19 @@ std::string appId() {
 // The connection is never closed: the pipeline unloads a media when the client
 // that loaded it leaves the bus.
 LunaConnection *connect() {
+  using enum LogLevel;
   for (const auto &name : pipeline::busNames(appId(), getpid())) {
     std::string refusal;
     if (auto client = LunaClient::registerAs(name, &refusal)) {
-      log(LogLevel::Info, "[video] on the Luna bus as " + name);
+      log(Info, "[video] on the Luna bus as " + name);
       return client.release();
     }
     if (refusal.empty()) return nullptr;
-    log(LogLevel::Debug, std::format("[video] open question: the Luna bus refused the name {}: {}", name, refusal));
+    log(Debug, std::format("[video] open question: the Luna bus refused the name {}: {}", name, refusal));
   }
   auto &own = LunaBus::get();
   if (!own.isAvailable()) return nullptr;
-  log(LogLevel::Debug, "[video] open question: calling com.webos.media as the app itself, which the TV may deny");
+  log(Debug, "[video] open question: calling com.webos.media as the app itself, which the TV may deny");
   return &own;
 }
 

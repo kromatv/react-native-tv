@@ -9,7 +9,7 @@ namespace rnwebos::expo {
 
 void MediaPlayer::backendLoaded(const LoadedMedia &media) {
   if (phase_ == Phase::Idle) return;
-  duration_ = media.duration;
+  timeline_.duration = media.duration;
   video_ = media.video;
   playerLog(
       number_,
@@ -38,7 +38,7 @@ void MediaPlayer::backendPlayingChanged(bool playing) {
   if (phase_ != Phase::Ready) return;
   if (awaitedPlaying_ == playing) {
     awaitedPlaying_.reset();
-  } else if (!awaitedPlaying_ && playing != wantsPlaying_) {
+  } else if (!awaitedPlaying_.has_value() && playing != wantsPlaying_) {
     playerLog(number_, playing ? "the pipeline started playing by itself" : "the pipeline paused by itself");
     wantsPlaying_ = playing;
     askedPlaying_ = playing;
@@ -48,32 +48,32 @@ void MediaPlayer::backendPlayingChanged(bool playing) {
 }
 
 void MediaPlayer::backendPosition(double seconds) {
-  if (phase_ != Phase::Ready || seek_.inFlight || seek_.pending) return;
-  position_ = seconds;
-  positionAt_ = Clock::now();
+  if (phase_ != Phase::Ready || seek_.inFlight || seek_.pending.has_value()) return;
+  timeline_.position = seconds;
+  timeline_.positionAt = Clock::now();
   reportProgress(false);
 }
 
 void MediaPlayer::backendBuffered(double seconds) {
-  buffered_ = seconds;
+  timeline_.buffered = seconds;
 }
 
 void MediaPlayer::backendBuffering(bool buffering) {
   using enum PlayerStatus;
   if (phase_ != Phase::Ready) return;
   if (buffering && status_ == ReadyToPlay) {
-    position_ = position();
+    timeline_.position = position();
     setStatus(Loading);
   } else if (!buffering && status_ == Loading) {
-    positionAt_ = Clock::now();
+    timeline_.positionAt = Clock::now();
     setStatus(ReadyToPlay);
   }
 }
 
 void MediaPlayer::backendSeekDone() {
   if (!std::exchange(seek_.inFlight, false)) return;
-  position_ = seek_.target;
-  positionAt_ = Clock::now();
+  timeline_.position = seek_.target;
+  timeline_.positionAt = Clock::now();
   playerLog(number_, std::format("seek done at {} s", decimal(seek_.target)));
   reportProgress(false);
   pump();
@@ -82,7 +82,7 @@ void MediaPlayer::backendSeekDone() {
 void MediaPlayer::backendEnded() {
   if (phase_ != Phase::Ready) return;
   playerLog(number_, settings_.looping ? "ended, looping" : "ended");
-  if (duration_ > 0) position_ = duration_;
+  if (timeline_.duration > 0) timeline_.position = timeline_.duration;
   askedPlaying_ = false;
   if (settings_.looping) {
     seek_.pending = 0;
@@ -130,19 +130,19 @@ void MediaPlayer::startProgress() {
 }
 
 double MediaPlayer::position() const {
-  if (seek_.pending) return *seek_.pending;
+  if (seek_.pending.has_value()) return *seek_.pending;
   if (seek_.inFlight) return seek_.target;
-  auto position = position_;
+  auto position = timeline_.position;
   if (playing_ && status_ == PlayerStatus::ReadyToPlay) {
-    position += std::chrono::duration<double>(Clock::now() - positionAt_).count() * settings_.rate;
+    position += std::chrono::duration<double>(Clock::now() - timeline_.positionAt).count() * settings_.rate;
   }
-  return duration_ > 0 ? std::min(position, duration_) : position;
+  return timeline_.duration > 0 ? std::min(position, timeline_.duration) : position;
 }
 
-void MediaPlayer::reportProgress(bool tick) {
+void MediaPlayer::reportProgress(bool tick) const {
   if (phase_ != Phase::Ready) return;
   if (auto observer = observer_.lock()) {
-    observer->playerProgress(position(), buffered_, duration_, seek_.generation, tick);
+    observer->playerProgress(position(), timeline_.buffered, timeline_.duration, seek_.generation, tick);
   }
 }
 

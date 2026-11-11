@@ -19,12 +19,12 @@ void ReactHost::createWindow() {
     MainLoop::get().setFramePeriod(std::chrono::nanoseconds(static_cast<std::int64_t>(1e9 / rate)));
   }
   scene_ = std::make_unique<Scene>(*window_);
-  keyboardFocus_ = std::make_unique<KeyboardFocus>(*scene_);
+  input_.keyboardFocus = std::make_unique<KeyboardFocus>(*scene_);
   textMeasurer_ = std::make_shared<SkiaTextMeasurer>(pointScaleFactor(
       {.width = static_cast<facebook::react::Float>(size.width),
        .height = static_cast<facebook::react::Float>(size.height)}));
-  errorScreen_ = std::make_unique<ErrorScreen>(*scene_);
-  alertDialog_ = std::make_unique<AlertDialog>(*scene_);
+  overlays_.errorScreen = std::make_unique<ErrorScreen>(*scene_);
+  overlays_.alertDialog = std::make_unique<AlertDialog>(*scene_);
 }
 
 void ReactHost::startSurface() {
@@ -40,22 +40,23 @@ void ReactHost::emitDeviceEvent(const std::string &eventName, folly::dynamic pay
 }
 
 void ReactHost::handleEvent(const SDL_Event &event) {
-  if (!errorScreen_->isShown() && pointerInput_->handleEvent(event)) return;
+  if (!overlays_.errorScreen->isShown() && input_.pointerInput->handleEvent(event)) return;
   switch (event.type) {
     case SDL_EVENT_KEY_DOWN:
       // The TV reports the pointer going away as a key
       // (docs/reference/webos-window-input.md, section 9).
-      if (event.key.scancode == SDL_SCANCODE_WEBOS_CURSOR_HIDE) pointerInput_->pointerLeft();
-      remotePresses_->keyDown(event.key);
+      if (event.key.scancode == SDL_SCANCODE_WEBOS_CURSOR_HIDE) input_.pointerInput->pointerLeft();
+      input_.remotePresses->keyDown(event.key);
       return;
     case SDL_EVENT_KEY_UP:
-      remotePresses_->keyUp(event.key);
+      input_.remotePresses->keyUp(event.key);
       return;
     case SDL_EVENT_TEXT_INPUT:
     case SDL_EVENT_TEXT_EDITING:
     case SDL_EVENT_SCREEN_KEYBOARD_SHOWN:
     case SDL_EVENT_SCREEN_KEYBOARD_HIDDEN:
-      if (!errorScreen_->isShown() && !alertDialog_->isShown()) keyboardFocus_->handleTextEvent(event);
+      if (overlays_.errorScreen->isShown() || overlays_.alertDialog->isShown()) return;
+      input_.keyboardFocus->handleTextEvent(event);
       return;
     case SDL_EVENT_QUIT:
     case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
@@ -68,9 +69,9 @@ void ReactHost::handleEvent(const SDL_Event &event) {
       resume();
       return;
     case SDL_EVENT_WINDOW_FOCUS_LOST:
-      remotePresses_->releaseAll();
-      pointerInput_->pointerLeft();
-      keyboardFocus_->releaseKeys();
+      input_.remotePresses->releaseAll();
+      input_.pointerInput->pointerLeft();
+      input_.keyboardFocus->releaseKeys();
       return;
     case SDL_EVENT_WINDOW_EXPOSED:
       scene_->invalidate();
@@ -81,12 +82,12 @@ void ReactHost::handleEvent(const SDL_Event &event) {
 }
 
 void ReactHost::onRemoteEvent(const RemoteEvent &event) {
-  if (errorScreen_->isShown()) {
+  if (overlays_.errorScreen->isShown()) {
     if (event.isBack) exit();
     return;
   }
-  if (alertDialog_->isShown()) {
-    alertDialog_->handle(event);
+  if (overlays_.alertDialog->isShown()) {
+    overlays_.alertDialog->handle(event);
     return;
   }
   if (event.isBack) {

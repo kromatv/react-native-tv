@@ -78,7 +78,7 @@ void RemotePresses::track(std::uint32_t code, const SDL_KeyboardEvent &key, cons
   }
 }
 
-void RemotePresses::finish(Press &press, bool released) {
+void RemotePresses::finish(Press &press, bool released) const {
   if (press.holdTimer != 0) {
     MainLoop::get().removeTimer(press.holdTimer);
     press.holdTimer = 0;

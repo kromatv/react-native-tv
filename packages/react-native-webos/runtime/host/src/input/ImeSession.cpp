@@ -125,8 +125,7 @@ void ImeSession::compositionEmptied() {
   // field must see one edit, so the empty one waits for the events queued with it.
   emptiedComposition_ = std::make_shared<bool>(true);
   MainLoop::get().post([this, emptied = std::weak_ptr(emptiedComposition_)] {
-    const auto pending = emptied.lock();
-    if (!pending || pending != emptiedComposition_) return;
+    if (const auto pending = emptied.lock(); !pending || pending != emptiedComposition_) return;
     emptiedComposition_.reset();
     if (client_ != nullptr) client_->imePreedit({}, 0);
   });

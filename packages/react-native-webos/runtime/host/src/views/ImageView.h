@@ -26,12 +26,11 @@ class ImageView final : public ComponentView {
   void updateState(const facebook::react::State::Shared &state) override;
   void updateLayout(const facebook::react::LayoutMetrics &layoutMetrics) override;
 
- protected:
+ private:
   void drawContent(SkCanvas &canvas, float alpha) override;
   int contentLayers() const override;
   void layoutContent() override;
 
- private:
   void loadIfNeeded();
   void startLoad();
   void sharpenIfNeeded();

@@ -91,12 +91,11 @@ class GeometryNode final : public ShapeNode {
     forgetPath();
   }
 
- protected:
+ private:
   SkPath buildPath(SkSize viewport) const override {
     return geometry_.path(viewport);
   }
 
- private:
   Geometry geometry_;
 };
 

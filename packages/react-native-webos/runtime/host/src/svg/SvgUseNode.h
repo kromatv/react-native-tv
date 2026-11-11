@@ -26,14 +26,13 @@ class UseNode final : public Node {
   Length width;
   Length height;
 
- protected:
+ private:
   void draw(SkCanvas &canvas, const RenderContext &context) const override;
   int contentPaintCount(const RenderContext &context) const override;
   SkRect contentBounds(const RenderContext &context) const override;
   void appendContentOutlines(
       std::vector<SkPath> &outlines, const SkMatrix &transform, const RenderContext &context) const override;
 
- private:
   const Node *target(const RenderContext &context) const;
   /// From the target's parent space to the use's content space.
   SkMatrix placement(const Node &target, const RenderContext &context) const;

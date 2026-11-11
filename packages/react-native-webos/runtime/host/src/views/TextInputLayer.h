@@ -65,6 +65,23 @@ class TextInputLayer final {
     float height;
   };
 
+  struct Caret {
+    std::size_t offset{0};
+    SkRect inText{};
+    SkColor4f color{SkColors::kBlack};
+    MainLoop::Id blink{0};
+    int width{1};
+    bool shown{false};
+    bool lit{true};
+  };
+
+  struct Selection {
+    std::size_t start{0};
+    std::size_t end{0};
+    std::vector<SkRect> rects;
+    SkColor4f color{SkColors::kTransparent};
+  };
+
   bool ensureLaidOut();
   void readLines();
   void place();
@@ -79,26 +96,17 @@ class TextInputLayer final {
   std::optional<facebook::react::TextAlignmentVertical> verticalAlignment_;
   ParagraphLayout layout_;
   std::vector<Line> lines_;
-  std::vector<SkRect> selectionRects_;
-  SkRect caretInText_{};
-  SkColor4f caretColor_{SkColors::kBlack};
-  SkColor4f selectionColor_{SkColors::kTransparent};
+  Caret caret_;
+  Selection selection_;
   PixelRect box_{};
   facebook::react::Float scale_{1};
-  MainLoop::Id blink_{0};
-  std::size_t caret_{0};
-  std::size_t selectionStart_{0};
-  std::size_t selectionEnd_{0};
   int textWidth_{0};
   int textHeight_{0};
-  int caretWidth_{1};
   int scrollX_{0};
   int scrollY_{0};
   int offsetY_{0};
   bool multiline_{false};
   bool placed_{false};
-  bool caretShown_{false};
-  bool caretLit_{true};
 };
 
 } // namespace rnwebos

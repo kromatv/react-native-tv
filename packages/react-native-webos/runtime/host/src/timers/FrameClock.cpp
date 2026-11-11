@@ -34,7 +34,7 @@ void FrameClock::close() {
   closed_ = true;
 }
 
-bool FrameClock::runFrame() {
+bool FrameClock::runFrame() const {
   try {
     return onFrame_();
   } catch (const std::exception &error) {

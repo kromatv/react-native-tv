@@ -42,7 +42,7 @@ void finish(const std::shared_ptr<Unload> &unload) {
     auto &state = gate();
     if (--state.unloading > 0) return;
     auto waiting = std::exchange(state.waiting, {});
-    for (auto &task : waiting) task();
+    for (const auto &task : waiting) task();
   });
 }
 

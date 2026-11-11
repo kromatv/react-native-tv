@@ -17,6 +17,7 @@
 #include <chrono>
 #include <cstdlib>
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -37,13 +38,12 @@ struct Key {
 };
 
 void sendKey(Key key, bool down) {
-  SDL_Event event{};
-  event.type = down ? SDL_EVENT_KEY_DOWN : SDL_EVENT_KEY_UP;
-  event.key.timestamp = SDL_GetTicksNS();
-  event.key.scancode = key.scancode;
-  event.key.key = SDL_GetKeyFromScancode(key.scancode, key.modifiers, false);
-  event.key.mod = key.modifiers;
-  event.key.down = down;
+  SDL_Event event{.key = {.type = down ? SDL_EVENT_KEY_DOWN : SDL_EVENT_KEY_UP,
+                          .timestamp = SDL_GetTicksNS(),
+                          .scancode = key.scancode,
+                          .key = SDL_GetKeyFromScancode(key.scancode, key.modifiers, false),
+                          .mod = key.modifiers,
+                          .down = down}};
   SDL_PushEvent(&event);
 }
 
@@ -55,20 +55,14 @@ void pressKey(Key key, std::chrono::milliseconds length) {
 // SDL frees the text of its own events only: this one's is kept until the
 // loop has dispatched it, which it does before it runs what was posted.
 void sendText(SDL_EventType type, std::string_view text) {
-  const auto kept = std::make_shared<const std::string>(text);
-  SDL_Event event{};
-  event.type = type;
-  if (type == SDL_EVENT_TEXT_EDITING) {
-    event.edit.timestamp = SDL_GetTicksNS();
-    event.edit.text = kept->c_str();
-    event.edit.start = -1;
-    event.edit.length = -1;
-  } else {
-    event.text.timestamp = SDL_GetTicksNS();
-    event.text.text = kept->c_str();
-  }
+  auto kept = std::make_shared<const std::string>(text);
+  const auto now = SDL_GetTicksNS();
+  auto event =
+      type == SDL_EVENT_TEXT_EDITING
+          ? SDL_Event{.edit = {.type = type, .timestamp = now, .text = kept->c_str(), .start = -1, .length = -1}}
+          : SDL_Event{.text = {.type = type, .timestamp = now, .text = kept->c_str()}};
   SDL_PushEvent(&event);
-  MainLoop::get().post([kept] {});
+  MainLoop::get().post([kept = std::move(kept)]() mutable { kept.reset(); });
 }
 
 bool &isComposing() {
@@ -92,9 +86,8 @@ void sendKeyboardState(std::string_view state) {
     log(LogLevel::Warning, "The simulator's keyboard is shown or hidden, not " + std::string(state));
     return;
   }
-  SDL_Event event{};
-  event.type = state == "shown" ? SDL_EVENT_SCREEN_KEYBOARD_SHOWN : SDL_EVENT_SCREEN_KEYBOARD_HIDDEN;
-  event.common.timestamp = SDL_GetTicksNS();
+  const SDL_EventType type = state == "shown" ? SDL_EVENT_SCREEN_KEYBOARD_SHOWN : SDL_EVENT_SCREEN_KEYBOARD_HIDDEN;
+  SDL_Event event{.common = {.type = type, .timestamp = SDL_GetTicksNS()}};
   SDL_PushEvent(&event);
 }
 
@@ -138,20 +131,13 @@ void runPointerCommand(std::string_view command, std::string_view arguments) {
   if (command == "pointer-move") {
     x = number(first);
     y = number(second);
-    event.type = SDL_EVENT_MOUSE_MOTION;
-    event.motion.x = x;
-    event.motion.y = y;
+    event = {.motion = {.type = SDL_EVENT_MOUSE_MOTION, .x = x, .y = y}};
   } else if (command == "pointer-down" || command == "pointer-up") {
-    event.type = command == "pointer-down" ? SDL_EVENT_MOUSE_BUTTON_DOWN : SDL_EVENT_MOUSE_BUTTON_UP;
-    event.button.button = SDL_BUTTON_LEFT;
-    event.button.down = command == "pointer-down";
-    event.button.x = x;
-    event.button.y = y;
+    const bool down = command == "pointer-down";
+    const auto type = down ? SDL_EVENT_MOUSE_BUTTON_DOWN : SDL_EVENT_MOUSE_BUTTON_UP;
+    event = {.button = {.type = type, .button = SDL_BUTTON_LEFT, .down = down, .x = x, .y = y}};
   } else if (command == "pointer-wheel") {
-    event.type = SDL_EVENT_MOUSE_WHEEL;
-    event.wheel.y = number(first);
-    event.wheel.mouse_x = x;
-    event.wheel.mouse_y = y;
+    event = {.wheel = {.type = SDL_EVENT_MOUSE_WHEEL, .y = number(first), .mouse_x = x, .mouse_y = y}};
   } else if (command == "pointer-leave") {
     event.type = SDL_EVENT_WINDOW_MOUSE_LEAVE;
   } else {
@@ -161,12 +147,19 @@ void runPointerCommand(std::string_view command, std::string_view arguments) {
   SDL_PushEvent(&event);
 }
 
-void runRelaunch(const SimulatorControl::Host &host, std::string_view json) {
+folly::dynamic relaunchParameters(std::string_view json) {
+  if (json.empty()) return folly::dynamic::object();
   try {
-    const auto parameters = json.empty() ? folly::dynamic(folly::dynamic::object()) : folly::parseJson(json);
-    if (parameters.isObject()) return host.relaunch(parameters);
-  } catch (const std::exception &) {
+    return folly::parseJson(json);
+  } catch (const folly::json::parse_error &) {
+    return nullptr;
+  } catch (const std::range_error &) {
+    return nullptr;
   }
+}
+
+void runRelaunch(const SimulatorControl::Host &host, std::string_view json) {
+  if (const auto parameters = relaunchParameters(json); parameters.isObject()) return host.relaunch(parameters);
   log(LogLevel::Warning, "The parameters of a relaunch are a JSON object, not: " + std::string(json));
 }
 
@@ -205,8 +198,9 @@ SimulatorControl::SimulatorControl(int fifo, int wake, Host host)
 
 SimulatorControl::~SimulatorControl() {
   thread_.request_stop();
-  const std::uint64_t one = 1;
-  if (write(wake_, &one, sizeof one) < 0) log(LogLevel::Debug, "Cannot wake the simulator control thread");
+  if (const std::uint64_t one = 1; write(wake_, &one, sizeof one) < 0) {
+    log(LogLevel::Debug, "Cannot wake the simulator control thread");
+  }
   thread_.join();
   close(fifo_);
   close(wake_);
@@ -223,9 +217,11 @@ void SimulatorControl::run() {
     const auto count = read(fifo_, buffer.data(), buffer.size());
     if (count <= 0) continue;
     pending.append(buffer.data(), static_cast<std::size_t>(count));
-    for (auto end = pending.find('\n'); end != std::string::npos; end = pending.find('\n')) {
+    auto end = pending.find('\n');
+    while (end != std::string::npos) {
       auto line = pending.substr(0, end);
       pending.erase(0, end + 1);
+      end = pending.find('\n');
       if (line.empty()) continue;
       runOnMainThread([host = host_, line = std::move(line)] { runCommand(*host, line); });
     }

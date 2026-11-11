@@ -48,16 +48,6 @@ SyncGate &gate() {
   return shared;
 }
 
-void runQueuedTask(const std::function<void()> &task) {
-  try {
-    task();
-  } catch (const std::exception &error) {
-    logUncaughtException("the main loop", error);
-  } catch (...) {
-    logUncaughtException("the main loop");
-  }
-}
-
 std::shared_ptr<SyncJob> openJob(SyncGate &shared) {
   std::lock_guard lock(shared.mutex);
   if (shared.closing) return nullptr;
@@ -104,7 +94,15 @@ bool awaitJob(SyncGate &shared, SyncJob &job) {
 } // namespace
 
 void runOnMainThread(std::function<void()> task) {
-  MainLoop::get().post([task = std::move(task)] { runQueuedTask(task); });
+  MainLoop::get().post([task = std::move(task)] {
+    try {
+      task();
+    } catch (const std::exception &error) {
+      logUncaughtException("the main loop", error);
+    } catch (...) {
+      logUncaughtException("the main loop");
+    }
+  });
 }
 
 bool runOnMainThreadSync(const std::function<void()> &task) {

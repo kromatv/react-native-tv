@@ -64,13 +64,17 @@ class DecodePool final {
   }
 
  private:
+  std::function<void()> takeJob() {
+    std::unique_lock lock(mutex_);
+    wake_.wait(lock, [this] { return !jobs_.empty(); });
+    auto job = std::move(jobs_.front());
+    jobs_.pop_front();
+    return job;
+  }
+
   [[noreturn]] void run() {
     while (true) {
-      std::unique_lock lock(mutex_);
-      wake_.wait(lock, [this] { return !jobs_.empty(); });
-      const auto job = std::move(jobs_.front());
-      jobs_.pop_front();
-      lock.unlock();
+      const auto job = takeJob();
       job();
     }
   }

@@ -2,11 +2,13 @@
 
 #include "../threading/MainThread.h"
 
+#include <folly/Indestructible.h>
 #include <folly/json.h>
 
 #include <atomic>
 #include <condition_variable>
 #include <mutex>
+#include <stdexcept>
 #include <utility>
 
 namespace rnwebos {
@@ -23,7 +25,9 @@ folly::dynamic parsed(const std::string &text) {
   if (text.size() > kMaxReplyBytes) return failure("The reply was too large");
   try {
     return folly::parseJson(text);
-  } catch (const std::exception &) {
+  } catch (const folly::json::parse_error &) {
+    return failure("The reply was not JSON");
+  } catch (const std::range_error &) {
     return failure("The reply was not JSON");
   }
 }
@@ -73,7 +77,7 @@ LunaBus::LunaBus(std::unique_ptr<LunaTransport> transport) : transport_(std::mov
 LunaBus::~LunaBus() = default;
 
 LunaBus &LunaBus::get() {
-  static LunaBus *bus = new LunaBus(makeLibHelpersTransport());
+  static folly::Indestructible<LunaBus> bus(makeLibHelpersTransport());
   return *bus;
 }
 

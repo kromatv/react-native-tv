@@ -45,24 +45,25 @@ async function readAppInfo(appDir: string) {
   throw new Error(`${file}: ${issue?.path.join('.') ?? ''}: ${issue?.message ?? 'not valid'}`);
 }
 
-async function collect(dir: string, path: string, main: string, entries: TarEntry[]) {
-  for (const child of await readdir(dir, { withFileTypes: true })) {
-    const childPath = path === '' ? child.name : `${path}/${child.name}`;
-    const onDisk = join(dir, child.name);
-    if (child.isDirectory()) {
-      entries.push({ path: childPath, mode: DIRECTORY_MODE });
-      await collect(onDisk, childPath, main, entries);
-    } else if (child.isFile()) {
+async function collect(dir: string, path: string, main: string): Promise<TarEntry[]> {
+  const children = await readdir(dir, { withFileTypes: true });
+  const entries = await Promise.all(
+    children.map(async (child): Promise<TarEntry[]> => {
+      const childPath = path === '' ? child.name : `${path}/${child.name}`;
+      const onDisk = join(dir, child.name);
+      if (child.isDirectory()) {
+        const below = await collect(onDisk, childPath, main);
+        return [{ path: childPath, mode: DIRECTORY_MODE }, ...below];
+      }
+      if (!child.isFile()) {
+        throw new Error(`${onDisk} is neither a file nor a directory: a package holds only those`);
+      }
       const executable = childPath === main || ((await lstat(onDisk)).mode & EXECUTE_BITS) !== 0;
-      entries.push({
-        path: childPath,
-        mode: executable ? EXECUTABLE_MODE : FILE_MODE,
-        data: await readFile(onDisk),
-      });
-    } else {
-      throw new Error(`${onDisk} is neither a file nor a directory: a package holds only those`);
-    }
-  }
+      const data = await readFile(onDisk);
+      return [{ path: childPath, mode: executable ? EXECUTABLE_MODE : FILE_MODE, data }];
+    }),
+  );
+  return entries.flat();
 }
 
 function requireArmExecutable(entries: readonly TarEntry[], main: string): void {
@@ -105,8 +106,7 @@ function dataEntries(appId: string, version: string, app: readonly TarEntry[]): 
  */
 export async function writeIpk(request: IpkRequest): Promise<WrittenIpk> {
   const info = await readAppInfo(request.appDir);
-  const app: TarEntry[] = [];
-  await collect(request.appDir, '', info.main, app);
+  const app = await collect(request.appDir, '', info.main);
   requireArmExecutable(app, info.main);
   const data = dataEntries(info.id, info.version, app);
   const installedSize = data.reduce((total, entry) => total + (entry.data?.byteLength ?? 0), 0);

@@ -16,13 +16,16 @@ namespace {
 
 constexpr const char *kService = "luna://com.webos.media/";
 
-// A cookie or a signed referer is a credential: the log says only that it was sent.
-std::string loggable(folly::dynamic payload) {
+folly::dynamic *httpHeaderOf(folly::dynamic &payload) {
   auto *option = payload["payload"].get_ptr("option");
   auto *transmission = option != nullptr ? option->get_ptr("transmission") : nullptr;
-  auto *header = transmission != nullptr ? transmission->get_ptr("httpHeader") : nullptr;
-  if (header != nullptr) {
-    for (auto &entry : header->items()) entry.second = "(sent)";
+  return transmission != nullptr ? transmission->get_ptr("httpHeader") : nullptr;
+}
+
+// A cookie or a signed referer is a credential: the log says only that it was sent.
+std::string loggable(folly::dynamic payload) {
+  if (auto *header = httpHeaderOf(payload); header != nullptr) {
+    for (auto &value : header->values()) value = "(sent)";
   }
   return folly::toJson(payload);
 }
@@ -100,10 +103,11 @@ void LunaMediaPlayer::start(const MediaSource &source) {
   auto onReply = [this, alive = std::weak_ptr<int>(alive_), generation = generation_](const folly::dynamic &reply) {
     if (!alive.expired()) onLoadReply(reply, generation);
   };
-  if (bus_.call(std::string(kService) + "load", payload, std::move(onReply))) return;
-  later([this, generation = generation_] {
-    if (generation == generation_) fail("The TV's media service did not take the load");
-  });
+  if (!bus_.call(std::string(kService) + "load", payload, std::move(onReply))) {
+    later([this, generation = generation_] {
+      if (generation == generation_) fail("The TV's media service did not take the load");
+    });
+  }
 }
 
 void LunaMediaPlayer::onLoadReply(const folly::dynamic &reply, unsigned generation) {
@@ -137,12 +141,12 @@ void LunaMediaPlayer::onLoadReply(const folly::dynamic &reply, unsigned generati
 
 void LunaMediaPlayer::unload() {
   ++generation_;
-  playWait_.cancel();
-  seekWait_.cancel();
-  trackWait_.cancel();
-  awaitedPlaying_.reset();
-  awaitedTrack_.reset();
-  seeking_ = false;
+  awaited_.playWait.cancel();
+  awaited_.seekWait.cancel();
+  awaited_.trackWait.cancel();
+  awaited_.playing.reset();
+  awaited_.track.reset();
+  awaited_.seek = false;
   if (mediaId_.empty()) return;
   playerLog(number_, "unload " + mediaId_);
   unloadMedia(bus_, std::exchange(mediaId_, {}), std::move(events_), std::move(sink_), plane_, number_);
@@ -158,10 +162,10 @@ void LunaMediaPlayer::pause() {
 
 void LunaMediaPlayer::requestPlaying(bool playing) {
   if (mediaId_.empty()) return;
-  awaitedPlaying_ = playing;
+  awaited_.playing = playing;
   send(playing ? "play" : "pause", media(), [this, playing](bool accepted) {
-    if (!accepted || awaitedPlaying_ != playing) return;
-    playWait_.start(pipeline::kPlayStateWait, [this, playing] {
+    if (!accepted || awaited_.playing != playing) return;
+    awaited_.playWait.start(pipeline::kPlayStateWait, [this, playing] {
       pipeline::openQuestion(number_, std::format("no {} event: assumed", playing ? "playing" : "paused"));
       setPlaying(playing);
     });
@@ -170,15 +174,15 @@ void LunaMediaPlayer::requestPlaying(bool playing) {
 
 void LunaMediaPlayer::seek(double seconds) {
   if (mediaId_.empty()) return;
-  seeking_ = true;
+  awaited_.seek = true;
   const auto position = static_cast<std::int64_t>(std::llround(seconds * 1000));
   send("seek", folly::dynamic::object("mediaId", mediaId_)("position", position), [this](bool accepted) {
-    if (!seeking_) return;
+    if (!awaited_.seek) return;
     if (!accepted) {
       finishSeek();
       return;
     }
-    seekWait_.start(pipeline::kSeekDoneWait, [this] {
+    awaited_.seekWait.start(pipeline::kSeekDoneWait, [this] {
       pipeline::openQuestion(number_, "no seekDone after seek: assumed done");
       finishSeek();
     });
@@ -206,13 +210,13 @@ void LunaMediaPlayer::selectTrack(TrackKind kind, int index) {
     return;
   }
   const char *type = kind == TrackKind::Audio ? "audio" : "text";
-  awaitedTrack_ = Track(kind, index);
+  awaited_.track = Track(kind, index);
   send(
       "selectTrack",
       folly::dynamic::object("mediaId", mediaId_)("type", type)("index", index),
       [this, kind, index](bool accepted) {
-        if (!accepted || awaitedTrack_ != Track(kind, index)) return;
-        trackWait_.start(pipeline::kTrackSelectedWait, [this, kind, index] {
+        if (!accepted || awaited_.track != Track(kind, index)) return;
+        awaited_.trackWait.start(pipeline::kTrackSelectedWait, [this, kind, index] {
           pipeline::openQuestion(number_, "no trackSelected after selectTrack: assumed selected");
           confirmTrack(kind, index);
         });

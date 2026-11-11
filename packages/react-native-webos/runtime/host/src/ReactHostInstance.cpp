@@ -103,7 +103,7 @@ void ReactHost::createInstance() {
           .showAlert =
               [weakHost = weakHost_](AlertRequest request) {
                 runOnMainThread([weakHost, request = std::move(request)]() mutable {
-                  if (auto host = weakHost.lock()) (*host)->alertDialog_->show(std::move(request));
+                  if (auto host = weakHost.lock()) (*host)->overlays_.alertDialog->show(std::move(request));
                 });
               },
           .luna = &LunaBus::get(),
@@ -165,7 +165,7 @@ void ReactHost::showFatalError(const ErrorReport &report) {
     exit();
     return;
   }
-  errorScreen_->show(report);
+  overlays_.errorScreen->show(report);
 }
 
 } // namespace rnwebos

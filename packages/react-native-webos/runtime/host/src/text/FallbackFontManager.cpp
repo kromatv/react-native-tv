@@ -16,7 +16,7 @@ class FallbackFontManager final : public SkFontMgr {
  public:
   explicit FallbackFontManager(sk_sp<SkFontMgr> fonts) : fonts_(std::move(fonts)) {}
 
- protected:
+ private:
   int onCountFamilies() const override {
     return fonts_->countFamilies();
   }
@@ -71,7 +71,6 @@ class FallbackFontManager final : public SkFontMgr {
     return fonts_->legacyMakeTypeface(familyName, style);
   }
 
- private:
   int familyWith(SkUnichar character, const SkFontStyle &style) const {
     std::lock_guard lock(mutex_);
     if (const auto known = families_.find(character); known != families_.end()) return known->second;

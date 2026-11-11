@@ -18,7 +18,7 @@ bool succeeded(const folly::dynamic &reply) {
 
 } // namespace
 
-void leaveOnBackAtRoot(LunaBus &bus, BackAtRoot behaviour, std::function<void()> exitApp) {
+void leaveOnBackAtRoot(LunaBus &bus, BackAtRoot behaviour, const std::function<void()> &exitApp) {
   if (behaviour == BackAtRoot::Exit) {
     exitApp();
     return;

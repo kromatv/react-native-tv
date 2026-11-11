@@ -26,19 +26,18 @@ class TextNode final : public Node {
 
   void setContent(std::string content);
 
- protected:
+ private:
   void draw(SkCanvas &canvas, const RenderContext &context) const override;
   int contentPaintCount(const RenderContext &context) const override;
   void inherit(RenderContext &context) const override;
 
- private:
   struct Run {
     Font font;
     sk_sp<SkTextBlob> glyphs;
     float advance{0};
   };
 
-  const Run &run(const Font &font) const;
+  const Run &run(const Font &resolved) const;
   void movePen(SkPoint &pen, SkSize viewport) const;
   /// The advance of the node's glyphs in `own`, its resolved font, and of the
   /// spans after them, up to one with an `x` of its own, which sets `ended`.

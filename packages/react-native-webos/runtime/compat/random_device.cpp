@@ -6,6 +6,7 @@
 // libstdc++'s were linked too, the link would fail on the duplicates.
 
 #include <cerrno>
+#include <cstddef>
 #include <random>
 
 #include <sys/random.h>
@@ -24,11 +25,13 @@ void random_device::_M_init(const std::string &token) {
   _M_init(token.data(), token.size());
 }
 
-void random_device::_M_fini() {}
+void random_device::_M_fini() {
+  // Nothing to close: _M_init opens no file.
+}
 
 random_device::result_type random_device::_M_getval() {
   result_type value;
-  auto *bytes = reinterpret_cast<unsigned char *>(&value);
+  auto *bytes = reinterpret_cast<std::byte *>(&value);
   size_t filled = 0;
   while (filled < sizeof value) {
     const auto received = getrandom(bytes + filled, sizeof value - filled, 0);

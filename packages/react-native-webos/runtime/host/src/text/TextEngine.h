@@ -5,6 +5,7 @@
 
 #include <filesystem>
 #include <mutex>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -19,6 +20,12 @@ struct TextEngine {
   std::mutex mutex;
   sk_sp<skia::textlayout::FontCollection> fonts;
   sk_sp<SkUnicode> unicode;
+};
+
+/// What `textEngine` throws when ICU's data file is not in place.
+class TextEngineError : public std::runtime_error {
+ public:
+  using std::runtime_error::runtime_error;
 };
 
 /// The process's text engine, created at its first use. Any thread.

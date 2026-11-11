@@ -11,7 +11,7 @@ class MaskedView final : public ComponentView {
  public:
   using ComponentView::ComponentView;
 
- protected:
+ private:
   void drawChildren(SkCanvas &canvas) override;
 };
 

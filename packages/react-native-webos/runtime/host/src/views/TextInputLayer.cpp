@@ -31,7 +31,7 @@ int scrolledToShow(int scroll, int start, int size, int viewport, int content) {
 TextInputLayer::TextInputLayer(Scene &scene) : scene_(scene) {}
 
 TextInputLayer::~TextInputLayer() {
-  if (blink_ != 0) MainLoop::get().removeTimer(blink_);
+  if (caret_.blink != 0) MainLoop::get().removeTimer(caret_.blink);
 }
 
 void TextInputLayer::setText(
@@ -47,10 +47,10 @@ void TextInputLayer::setText(
 }
 
 void TextInputLayer::setSelection(std::size_t caret, std::size_t start, std::size_t end, SkColor4f color) {
-  caret_ = caret;
-  selectionStart_ = start;
-  selectionEnd_ = end;
-  selectionColor_ = color;
+  caret_.offset = caret;
+  selection_.start = start;
+  selection_.end = end;
+  selection_.color = color;
   placed_ = false;
   restartBlink();
 }
@@ -63,9 +63,9 @@ void TextInputLayer::setVerticalAlignment(std::optional<facebook::react::TextAli
 }
 
 void TextInputLayer::setCaret(bool shown, SkColor4f color) {
-  caretColor_ = color;
-  if (shown == caretShown_) return;
-  caretShown_ = shown;
+  caret_.color = color;
+  if (shown == caret_.shown) return;
+  caret_.shown = shown;
   restartBlink();
 }
 
@@ -73,7 +73,7 @@ void TextInputLayer::layout(const PixelRect &box, facebook::react::Float scale, 
   if (box.width != box_.width || scale != scale_) layout_ = {};
   box_ = box;
   scale_ = scale;
-  caretWidth_ = std::max(1, caretWidth);
+  caret_.width = std::max(1, caretWidth);
   placed_ = false;
   scene_.invalidate();
 }
@@ -154,20 +154,23 @@ float TextInputLayer::caretX(const Line &line, std::size_t offset) const {
 void TextInputLayer::place() {
   using enum facebook::react::TextAlignmentVertical;
   placed_ = true;
-  selectionRects_.clear();
-  caretInText_ = SkRect::MakeWH(static_cast<float>(caretWidth_), static_cast<float>(textHeight_));
+  selection_.rects.clear();
+  caret_.inText = SkRect::MakeWH(static_cast<float>(caret_.width), static_cast<float>(textHeight_));
   if (!lines_.empty()) {
-    const auto &line = lines_[lineOf(caret_)];
-    caretInText_ = SkRect::MakeXYWH(
-        std::round(caretX(line, caret_)), std::round(line.top), static_cast<float>(caretWidth_), std::round(line.height));
+    const auto &line = lines_[lineOf(caret_.offset)];
+    caret_.inText = SkRect::MakeXYWH(
+        std::round(caretX(line, caret_.offset)),
+        std::round(line.top),
+        static_cast<float>(caret_.width),
+        std::round(line.height));
   }
-  if (selectionEnd_ > selectionStart_) {
+  if (selection_.end > selection_.start) {
     const auto boxes = layout_.paragraph->getRectsForRange(
-        static_cast<unsigned>(selectionStart_),
-        static_cast<unsigned>(selectionEnd_),
+        static_cast<unsigned>(selection_.start),
+        static_cast<unsigned>(selection_.end),
         RectHeightStyle::kMax,
         RectWidthStyle::kTight);
-    for (const auto &box : boxes) selectionRects_.push_back(box.rect);
+    for (const auto &box : boxes) selection_.rects.push_back(box.rect);
   }
 
   offsetY_ = 0;
@@ -179,14 +182,14 @@ void TextInputLayer::place() {
       offsetY_ = (box_.height - textHeight_) / 2;
     }
   }
-  const auto caretLeft = static_cast<int>(caretInText_.left());
-  const auto caretTop = static_cast<int>(caretInText_.top());
+  const auto caretLeft = static_cast<int>(caret_.inText.left());
+  const auto caretTop = static_cast<int>(caret_.inText.top());
   if (multiline_) {
     scrollX_ = 0;
-    scrollY_ = scrolledToShow(scrollY_, caretTop, static_cast<int>(caretInText_.height()), box_.height, textHeight_);
+    scrollY_ = scrolledToShow(scrollY_, caretTop, static_cast<int>(caret_.inText.height()), box_.height, textHeight_);
   } else {
     scrollY_ = 0;
-    scrollX_ = scrolledToShow(scrollX_, caretLeft, caretWidth_, box_.width, textWidth_ + caretWidth_);
+    scrollX_ = scrolledToShow(scrollX_, caretLeft, caret_.width, box_.width, textWidth_ + caret_.width);
   }
 }
 
@@ -196,29 +199,29 @@ void TextInputLayer::draw(SkCanvas &canvas) {
   canvas.clipRect(SkRect::MakeXYWH(
       static_cast<float>(box_.x),
       static_cast<float>(box_.y),
-      static_cast<float>(box_.width + caretWidth_),
+      static_cast<float>(box_.width + caret_.width),
       static_cast<float>(box_.height)));
   canvas.translate(static_cast<float>(box_.x - scrollX_), static_cast<float>(box_.y + offsetY_ - scrollY_));
-  if (!selectionRects_.empty()) {
+  if (!selection_.rects.empty()) {
     SkPaint highlight;
-    highlight.setColor4f(selectionColor_);
-    for (const auto &rect : selectionRects_) canvas.drawRect(rect, highlight);
+    highlight.setColor4f(selection_.color);
+    for (const auto &rect : selection_.rects) canvas.drawRect(rect, highlight);
   }
   layout_.paragraph->paint(&canvas, 0, 0);
-  if (caretShown_ && caretLit_) {
+  if (caret_.shown && caret_.lit) {
     SkPaint caret;
-    caret.setColor4f(caretColor_);
-    canvas.drawRect(caretInText_, caret);
+    caret.setColor4f(caret_.color);
+    canvas.drawRect(caret_.inText, caret);
   }
 }
 
 PixelRect TextInputLayer::caretRect() {
-  if (!ensureLaidOut()) return {.x = box_.x, .y = box_.y, .width = caretWidth_, .height = box_.height};
+  if (!ensureLaidOut()) return {.x = box_.x, .y = box_.y, .width = caret_.width, .height = box_.height};
   return {
-      .x = box_.x - scrollX_ + static_cast<int>(caretInText_.left()),
-      .y = box_.y + offsetY_ - scrollY_ + static_cast<int>(caretInText_.top()),
-      .width = caretWidth_,
-      .height = static_cast<int>(caretInText_.height()),
+      .x = box_.x - scrollX_ + static_cast<int>(caret_.inText.left()),
+      .y = box_.y + offsetY_ - scrollY_ + static_cast<int>(caret_.inText.top()),
+      .width = caret_.width,
+      .height = static_cast<int>(caret_.inText.height()),
   };
 }
 
@@ -229,25 +232,25 @@ PixelSize TextInputLayer::textSize() {
 
 std::optional<std::size_t> TextInputLayer::caretOnLine(int lines) {
   if (!multiline_ || !ensureLaidOut() || lines_.empty()) return std::nullopt;
-  const auto target = static_cast<long>(lineOf(caret_)) + lines;
+  const auto target = static_cast<long>(lineOf(caret_.offset)) + lines;
   if (target < 0 || target >= static_cast<long>(lines_.size())) return std::nullopt;
   const auto &line = lines_[static_cast<std::size_t>(target)];
-  const auto hit = layout_.paragraph->getGlyphPositionAtCoordinate(caretInText_.left(), line.top + line.height / 2);
+  const auto hit = layout_.paragraph->getGlyphPositionAtCoordinate(caret_.inText.left(), line.top + line.height / 2);
   const auto landed = static_cast<std::size_t>(std::max(0, hit.position));
   return std::clamp(landed, line.start, std::max(line.start, line.end));
 }
 
 void TextInputLayer::restartBlink() {
-  caretLit_ = true;
-  if (blink_ != 0) MainLoop::get().removeTimer(blink_);
-  blink_ = 0;
-  if (caretShown_) armBlink();
+  caret_.lit = true;
+  if (caret_.blink != 0) MainLoop::get().removeTimer(caret_.blink);
+  caret_.blink = 0;
+  if (caret_.shown) armBlink();
   scene_.invalidate();
 }
 
 void TextInputLayer::armBlink() {
-  blink_ = MainLoop::get().addTimer(kBlinkPeriod, [this] {
-    caretLit_ = !caretLit_;
+  caret_.blink = MainLoop::get().addTimer(kBlinkPeriod, [this] {
+    caret_.lit = !caret_.lit;
     scene_.invalidate();
     armBlink();
   });

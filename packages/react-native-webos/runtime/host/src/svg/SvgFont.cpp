@@ -50,16 +50,17 @@ std::optional<int> weightFrom(const folly::dynamic &value) {
   for (const auto &[name, weight] : kNamedWeights) {
     if (text == name) return weight;
   }
-  if (const auto number = numberFrom(text)) return static_cast<int>(*number);
+  if (const auto number = numberFrom(text); number.has_value()) return static_cast<int>(*number);
   return std::nullopt;
 }
 
 std::optional<TextAnchor> anchorFrom(const folly::dynamic &value) {
+  using enum TextAnchor;
   if (!value.isString()) return std::nullopt;
   const std::string_view text = value.stringPiece();
-  if (text == "middle") return TextAnchor::Middle;
-  if (text == "end") return TextAnchor::End;
-  if (text == "start") return TextAnchor::Start;
+  if (text == "middle") return Middle;
+  if (text == "end") return End;
+  if (text == "start") return Start;
   return std::nullopt;
 }
 
@@ -67,11 +68,11 @@ std::optional<TextAnchor> anchorFrom(const folly::dynamic &value) {
 
 Font FontAttributes::over(const Font &inherited) const {
   Font font = inherited;
-  if (family) font.family = *family;
-  if (size) font.size = relativeSize ? inherited.size * *size : *size;
-  if (weight) font.weight = *weight;
-  if (italic) font.italic = *italic;
-  if (anchor) font.anchor = *anchor;
+  if (family.has_value()) font.family = *family;
+  if (size.has_value()) font.size = relativeSize ? inherited.size * *size : *size;
+  if (weight.has_value()) font.weight = *weight;
+  if (italic.has_value()) font.italic = *italic;
+  if (anchor.has_value()) font.anchor = *anchor;
   return font;
 }
 

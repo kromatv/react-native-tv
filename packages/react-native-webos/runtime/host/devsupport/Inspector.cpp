@@ -17,6 +17,7 @@ namespace {
 using facebook::react::jsinspector_modern::getInspectorInstance;
 using facebook::react::jsinspector_modern::HostCommand;
 using facebook::react::jsinspector_modern::HostTarget;
+using facebook::react::jsinspector_modern::HostTargetDelegate;
 using facebook::react::jsinspector_modern::HostTargetMetadata;
 using facebook::react::jsinspector_modern::ILocalConnection;
 using facebook::react::jsinspector_modern::InspectorPackagerConnection;
@@ -42,31 +43,41 @@ std::string reactNativeVersion() {
   return version.Prerelease.empty() ? text : std::format("{}-{}", text, version.Prerelease);
 }
 
-} // namespace
-
-Inspector::Inspector(const DevServer &server, const DeviceProfile &device, Host host)
-    : app_(server.app), deviceName_(device.modelName), host_(std::move(host)) {
-  target_ = HostTarget::create(*this, [](std::function<void()> &&callback) {
+std::shared_ptr<HostTarget> createTarget(HostTargetDelegate &delegate) {
+  return HostTarget::create(delegate, [](std::function<void()> &&callback) {
     if (isMainThread()) {
       callback();
       return;
     }
     runOnMainThread(std::move(callback));
   });
-  pageId_ = getInspectorInstance().addPage(
+}
+
+int addPage(const std::shared_ptr<HostTarget> &hostTarget) {
+  return getInspectorInstance().addPage(
       kPageDescription,
       "",
-      [weakTarget = std::weak_ptr<HostTarget>(target_)](
+      [weakTarget = std::weak_ptr<HostTarget>(hostTarget)](
           std::unique_ptr<IRemoteConnection> remote) -> std::unique_ptr<ILocalConnection> {
         if (auto target = weakTarget.lock()) return target->connect(std::move(remote));
         return nullptr;
       },
       {.nativePageReloads = true});
-  connection_ = std::make_unique<InspectorPackagerConnection>(
-      server.inspectorUrl(deviceName_, logicalDeviceId(app_, device)),
-      deviceName_,
-      app_,
-      std::make_unique<InspectorTransport>());
+}
+
+} // namespace
+
+Inspector::Inspector(const DevServer &server, const DeviceProfile &device, Host host)
+    : app_(server.app),
+      deviceName_(device.modelName),
+      host_(std::move(host)),
+      target_(createTarget(*this)),
+      pageId_(addPage(target_)),
+      connection_(std::make_unique<InspectorPackagerConnection>(
+          server.inspectorUrl(deviceName_, logicalDeviceId(app_, device)),
+          deviceName_,
+          app_,
+          std::make_unique<InspectorTransport>())) {
   connection_->connect();
 }
 

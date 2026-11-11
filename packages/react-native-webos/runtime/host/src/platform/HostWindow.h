@@ -12,9 +12,16 @@
 
 #include <cstddef>
 #include <memory>
+#include <stdexcept>
 #include <string>
 
 namespace rnwebos {
+
+/// The window, its OpenGL ES context or its Skia surface could not be made, which the message names.
+class HostWindowError final : public std::runtime_error {
+ public:
+  using std::runtime_error::runtime_error;
+};
 
 /// The app's one window: an SDL window over the TV's graphics plane, its
 /// OpenGL ES context, and the Skia surface that draws into it
@@ -23,7 +30,7 @@ class HostWindow final {
  public:
   /// Opens the window fullscreen; `size` is what it asks for where the
   /// display does not decide, and `shaderCacheDirectory` where Skia's compiled
-  /// shaders are kept between runs. Throws std::runtime_error when the
+  /// shaders are kept between runs. Throws HostWindowError when the
   /// window, the context or the Skia surface cannot be made.
   HostWindow(const std::string &title, PixelSize size, const std::string &shaderCacheDirectory);
   ~HostWindow();

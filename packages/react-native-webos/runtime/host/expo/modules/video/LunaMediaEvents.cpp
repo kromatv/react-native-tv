@@ -84,7 +84,7 @@ std::vector<MediaTrack> tracks(const folly::dynamic &program, std::string_view l
       result.push_back({.index = static_cast<int>(result.size()), .language = language.empty() ? "und" : language});
     }
   }
-  for (int index = static_cast<int>(result.size()); index < integer(program, count); ++index) {
+  for (auto index = static_cast<int>(result.size()); index < integer(program, count); ++index) {
     result.push_back({.index = index, .language = "und"});
   }
   return result;
@@ -126,6 +126,20 @@ void readError(const folly::dynamic &error, LunaMediaEvent &event) {
   event.errorText = text(error, "errorText");
 }
 
+void readBody(const folly::dynamic &body, LunaMediaEvent &event) {
+  using enum LunaMediaEvent::Kind;
+  const auto kind = event.kind;
+  if (kind == SourceInfo) readSourceInfo(body, event);
+  if (kind == VideoInfo) event.video = videoStream(body);
+  if (kind == CurrentTime) event.seconds = (body.isNumber() ? body.asDouble() : number(body, "currentTime")) / 1000;
+  if (kind == BufferRange) readBufferRange(body, event);
+  if (kind == Error) readError(body, event);
+  if (kind == TrackSelected) {
+    event.trackKind = text(body, "type") == "audio" ? TrackKind::Audio : TrackKind::Text;
+    event.trackIndex = integer(body, "index", -1);
+  }
+}
+
 } // namespace
 
 LunaMediaEvent parseLunaMediaEvent(const folly::dynamic &message) {
@@ -136,15 +150,7 @@ LunaMediaEvent parseLunaMediaEvent(const folly::dynamic &message) {
     if (body == nullptr) continue;
     event.kind = kind;
     event.name = name;
-    if (kind == Kind::SourceInfo) readSourceInfo(*body, event);
-    if (kind == Kind::VideoInfo) event.video = videoStream(*body);
-    if (kind == Kind::CurrentTime) event.seconds = (body->isNumber() ? body->asDouble() : number(*body, "currentTime")) / 1000;
-    if (kind == Kind::BufferRange) readBufferRange(*body, event);
-    if (kind == Kind::Error) readError(*body, event);
-    if (kind == Kind::TrackSelected) {
-      event.trackKind = text(*body, "type") == "audio" ? TrackKind::Audio : TrackKind::Text;
-      event.trackIndex = integer(*body, "index", -1);
-    }
+    readBody(*body, event);
     return event;
   }
   if (const auto *accepted = field(message, "returnValue"); accepted != nullptr && accepted->isBool()) {
@@ -159,9 +165,8 @@ LunaMediaEvent parseLunaMediaEvent(const folly::dynamic &message) {
     event.name = "subscription";
     return event;
   }
-  for (const auto &[name, value] : message.items()) {
-    if (name.isString()) event.name = name.getString();
-    break;
+  if (const auto first = message.keys().begin(); first != message.keys().end() && first->isString()) {
+    event.name = first->getString();
   }
   return event;
 }

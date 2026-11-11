@@ -36,12 +36,12 @@ void TextNode::setContent(std::string content) {
   run_.reset();
 }
 
-const TextNode::Run &TextNode::run(const Font &font) const {
-  if (run_ && run_->font == font) return *run_;
-  run_ = Run{.font = font};
-  auto typeface = typefaceFor(font);
-  if (!typeface || content_.empty() || font.size <= 0) return *run_;
-  SkFont glyphFont(std::move(typeface), font.size);
+const TextNode::Run &TextNode::run(const Font &resolved) const {
+  if (run_ && run_->font == resolved) return *run_;
+  run_ = Run{.font = resolved};
+  auto typeface = typefaceFor(resolved);
+  if (!typeface || content_.empty() || resolved.size <= 0) return *run_;
+  SkFont glyphFont(std::move(typeface), resolved.size);
   glyphFont.setSubpixel(true);
   glyphFont.setEdging(SkFont::Edging::kAntiAlias);
   run_->glyphs = SkTextBlob::MakeFromText(content_.data(), content_.size(), glyphFont, SkTextEncoding::kUTF8);

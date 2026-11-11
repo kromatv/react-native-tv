@@ -49,6 +49,15 @@ class LunaMediaPlayer final : public PlayerBackend {
   using Answer = std::function<void(bool accepted)>;
   using Track = std::pair<TrackKind, int>;
 
+  struct Awaited {
+    std::optional<bool> playing;
+    PlayerTimer playWait;
+    bool seek{false};
+    PlayerTimer seekWait;
+    std::optional<Track> track;
+    PlayerTimer trackWait;
+  };
+
   void start(const MediaSource &source);
   void send(const std::string &method, const folly::dynamic &payload, Answer onAnswer = {});
   folly::dynamic media() const;
@@ -87,13 +96,8 @@ class LunaMediaPlayer final : public PlayerBackend {
   bool sourceKnown_{false};
   bool foreground_{true};
   bool playing_{false};
-  bool seeking_{false};
   int textTrack_{-1};
-  std::optional<bool> awaitedPlaying_;
-  std::optional<Track> awaitedTrack_;
-  PlayerTimer playWait_;
-  PlayerTimer seekWait_;
-  PlayerTimer trackWait_;
+  Awaited awaited_;
 };
 
 } // namespace rnwebos::expo

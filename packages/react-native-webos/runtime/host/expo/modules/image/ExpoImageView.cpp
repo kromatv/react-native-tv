@@ -28,11 +28,12 @@ std::string stringField(const folly::dynamic &object, const char *name) {
 }
 
 ImageFit fitOf(std::string_view contentFit) {
-  if (contentFit == "contain") return ImageFit::Contain;
-  if (contentFit == "fill") return ImageFit::Stretch;
-  if (contentFit == "none") return ImageFit::Natural;
-  if (contentFit == "scale-down") return ImageFit::Center;
-  return ImageFit::Cover;
+  using enum ImageFit;
+  if (contentFit == "contain") return Contain;
+  if (contentFit == "fill") return Stretch;
+  if (contentFit == "none") return Natural;
+  if (contentFit == "scale-down") return Center;
+  return Cover;
 }
 
 struct FetchedImage {

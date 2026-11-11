@@ -135,22 +135,22 @@ void LunaMediaPlayer::onUnloaded() {
 }
 
 void LunaMediaPlayer::setPlaying(bool playing) {
-  if (awaitedPlaying_ == playing) {
-    awaitedPlaying_.reset();
-    playWait_.cancel();
+  if (awaited_.playing == playing) {
+    awaited_.playing.reset();
+    awaited_.playWait.cancel();
   }
   if (std::exchange(playing_, playing) != playing) listener_.backendPlayingChanged(playing);
 }
 
 void LunaMediaPlayer::finishSeek() {
-  seekWait_.cancel();
-  if (std::exchange(seeking_, false)) listener_.backendSeekDone();
+  awaited_.seekWait.cancel();
+  if (std::exchange(awaited_.seek, false)) listener_.backendSeekDone();
 }
 
 void LunaMediaPlayer::confirmTrack(TrackKind kind, int index) {
-  if (awaitedTrack_ == Track(kind, index)) {
-    awaitedTrack_.reset();
-    trackWait_.cancel();
+  if (awaited_.track == Track(kind, index)) {
+    awaited_.track.reset();
+    awaited_.trackWait.cancel();
   }
   auto &current = kind == TrackKind::Audio ? media_.audioTrack : textTrack_;
   if (std::exchange(current, index) != index) listener_.backendTrackChanged(kind, index);

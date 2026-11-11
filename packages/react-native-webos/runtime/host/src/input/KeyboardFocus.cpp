@@ -55,7 +55,7 @@ void KeyboardFocus::focus(KeyboardClient &client, const ImeOptions &options) {
   ime().begin(client, options);
 }
 
-void KeyboardFocus::blur(KeyboardClient &client) {
+void KeyboardFocus::blur(const KeyboardClient &client) {
   if (focused_ != &client) return;
   focused_ = nullptr;
   ime().end();

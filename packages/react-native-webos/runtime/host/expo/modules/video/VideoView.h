@@ -29,14 +29,13 @@ class VideoView final : public ExpoView {
   [[noreturn]] void startPictureInPicture();
   void stopPictureInPicture();
 
- protected:
+ private:
   void drawContent(SkCanvas &canvas, float alpha) override;
   int contentLayers() const override;
   void layoutContent() override;
   void didMount() override;
   void willUnmount() override;
 
- private:
   class FullscreenHole;
 
   void present();

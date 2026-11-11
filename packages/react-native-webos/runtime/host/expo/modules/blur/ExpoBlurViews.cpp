@@ -30,7 +30,7 @@ class ExpoBlurView final : public ExpoView {
     reductionFactor_ = value.isNumber() && value.asDouble() > 0 ? value.asDouble() : 4.0;
   }
 
- protected:
+ private:
   void didUpdateProps() override {
     refresh();
   }
@@ -53,7 +53,6 @@ class ExpoBlurView final : public ExpoView {
     return 1;
   }
 
- private:
   void refresh() {
     tint_ = blurTintColor(tintName_, intensity_);
     blur_.setSigma(blurSigmaPixels(intensity_, reductionFactor_, pointScale()));

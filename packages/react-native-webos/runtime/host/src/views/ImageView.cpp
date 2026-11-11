@@ -45,7 +45,9 @@ void ImageView::updateProps(const facebook::react::Props::Shared &props) {
   notifiesLoadEvents_ = imageProps.shouldNotifyLoadEvents;
   const bool tinted = imageProps.tintColor && *imageProps.tintColor;
   content_.setTint(tinted ? std::optional{skColor(*imageProps.tintColor)} : std::nullopt);
-  if (!hasStateSource_) source_ = imageProps.sources.empty() ? facebook::react::ImageSource{} : imageProps.sources.front();
+  if (!hasStateSource_) {
+    source_ = imageProps.sources.empty() ? facebook::react::ImageSource{} : imageProps.sources.front();
+  }
   ComponentView::updateProps(props);
   updateCorners();
   loadIfNeeded();

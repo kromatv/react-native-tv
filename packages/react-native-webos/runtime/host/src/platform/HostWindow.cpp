@@ -17,7 +17,6 @@
 #include <chrono>
 #include <cstddef>
 #include <format>
-#include <stdexcept>
 
 namespace rnwebos {
 
@@ -39,8 +38,8 @@ std::size_t resourceCacheLimit(PixelSize size) {
   return static_cast<std::size_t>(size.width) * static_cast<std::size_t>(size.height) * 12 * 4;
 }
 
-std::runtime_error sdlError(const char *what) {
-  return std::runtime_error(std::format("{}: {}", what, SDL_GetError()));
+HostWindowError sdlError(const char *what) {
+  return HostWindowError(std::format("{}: {}", what, SDL_GetError()));
 }
 
 const char *glString(unsigned int name) {
@@ -101,13 +100,13 @@ void HostWindow::createSurface() {
   // and time: Flutter's setting (docs/reference/skia-rendering.md, section 7).
   options.fAvoidStencilBuffers = true;
   gpu_ = GrDirectContexts::MakeGL(GrGLInterfaces::MakeEGL(), options);
-  if (!gpu_) throw std::runtime_error("Skia cannot use the window's OpenGL ES context");
+  if (!gpu_) throw HostWindowError("Skia cannot use the window's OpenGL ES context");
   gpu_->setResourceCacheLimit(resourceCacheLimit(size_));
   const GrGLFramebufferInfo framebuffer{.fFBOID = 0, .fFormat = kRgba8};
   const auto target = GrBackendRenderTargets::MakeGL(size_.width, size_.height, 0, 0, framebuffer);
   surface_ = SkSurfaces::WrapBackendRenderTarget(
       gpu_.get(), target, kBottomLeft_GrSurfaceOrigin, kRGBA_8888_SkColorType, SkColorSpace::MakeSRGB(), nullptr);
-  if (!surface_) throw std::runtime_error("Skia cannot draw into the window's framebuffer");
+  if (!surface_) throw HostWindowError("Skia cannot draw into the window's framebuffer");
 }
 
 PixelSize HostWindow::size() const {

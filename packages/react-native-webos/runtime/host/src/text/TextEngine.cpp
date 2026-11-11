@@ -11,7 +11,7 @@
 #include "modules/skunicode/include/SkUnicode_icu.h"
 
 #include <cstdlib>
-#include <stdexcept>
+#include <memory>
 
 namespace rnwebos {
 
@@ -36,7 +36,7 @@ const std::vector<SkString> &defaultFamilies() {
 
 Engine &engine() {
   static Engine *instance = [] {
-    auto *created = new Engine();
+    auto created = std::make_unique<Engine>();
     const char *directory = std::getenv("RN_WEBOS_FONT_DIR");
     created->system = withCharacterFallback(
         SkFontMgr_New_Custom_Directory(directory != nullptr ? directory : kSystemFontDirectory));
@@ -46,8 +46,8 @@ Engine &engine() {
     created->text.fonts->setDefaultFontManager(created->system, defaultFamilies());
     created->text.fonts->enableFontFallback();
     created->text.unicode = SkUnicodes::ICU::Make();
-    if (!created->text.unicode) throw std::runtime_error("ICU has no break rules: is the ICU data file in place?");
-    return created;
+    if (!created->text.unicode) throw TextEngineError("ICU has no break rules: is the ICU data file in place?");
+    return created.release();
   }();
   return *instance;
 }

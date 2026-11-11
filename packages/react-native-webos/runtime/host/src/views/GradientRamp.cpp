@@ -77,8 +77,8 @@ float chordError(float from, float to, float exponent) {
   const auto high = std::pow(to, exponent);
   float error = 0;
   for (const auto part : {0.25f, 0.5f, 0.75f}) {
-    const auto curve = std::pow(from + (to - from) * part, exponent);
-    error = std::max(error, std::abs(curve - (low + (high - low) * part)));
+    const auto curve = std::pow(std::lerp(from, to, part), exponent);
+    error = std::max(error, std::abs(curve - std::lerp(low, high, part)));
   }
   return error;
 }
@@ -118,28 +118,34 @@ GradientRamp::GradientRamp(const std::vector<facebook::react::ColorStop> &stops,
     }
     const auto color = colorOf(stop.color);
     if (pendingHint.has_value()) {
-      const auto from = positions_.back();
-      const auto fromColor = colors_.back();
-      const auto span = positions[i] - from;
-      const auto hint = span > 0 ? (*pendingHint - from) / span : 0.5f;
+      addHintStops(*pendingHint, color, positions[i]);
       pendingHint.reset();
-      if (hint <= 0) {
-        colors_.push_back(color);
-        positions_.push_back(from);
-      } else if (hint >= 1) {
-        colors_.push_back(fromColor);
-        positions_.push_back(positions[i]);
-      } else {
-        const auto exponent = std::log(0.5f) / std::log(hint);
-        const auto steps = hintSteps(exponent);
-        for (std::size_t step = 1; step + 1 < steps.size(); ++step) {
-          colors_.push_back(mixed(fromColor, color, std::pow(steps[step], exponent)));
-          positions_.push_back(from + span * steps[step]);
-        }
-      }
     }
     colors_.push_back(color);
     positions_.push_back(positions[i]);
+  }
+}
+
+void GradientRamp::addHintStops(float hintPosition, const SkColor4f &color, float position) {
+  const auto from = positions_.back();
+  const auto fromColor = colors_.back();
+  const auto span = position - from;
+  const auto hint = span > 0 ? (hintPosition - from) / span : 0.5f;
+  if (hint <= 0) {
+    colors_.push_back(color);
+    positions_.push_back(from);
+    return;
+  }
+  if (hint >= 1) {
+    colors_.push_back(fromColor);
+    positions_.push_back(position);
+    return;
+  }
+  const auto exponent = std::log(0.5f) / std::log(hint);
+  const auto steps = hintSteps(exponent);
+  for (std::size_t step = 1; step + 1 < steps.size(); ++step) {
+    colors_.push_back(mixed(fromColor, color, std::pow(steps[step], exponent)));
+    positions_.push_back(from + span * steps[step]);
   }
 }
 

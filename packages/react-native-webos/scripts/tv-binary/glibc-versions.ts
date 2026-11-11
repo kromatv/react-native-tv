@@ -37,5 +37,6 @@ export function versionUses(imports: readonly ImportedSymbol[]): VersionUse[] {
 /** The highest version node with the given prefix, such as `GLIBC_` or `GLIBCXX_`; null when none is imported. */
 export function highestVersion(uses: readonly VersionUse[], prefix: string): string | null {
   const nodes = uses.map((use) => use.version).filter((version) => version.startsWith(prefix));
-  return nodes.sort(compareVersionNodes).at(-1) ?? null;
+  nodes.sort(compareVersionNodes);
+  return nodes.at(-1) ?? null;
 }

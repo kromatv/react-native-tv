@@ -114,7 +114,7 @@ function describe({ numbers, strings }: ReturnType<typeof readTags>): ArmAttribu
   return {
     cpuName: strings.get(TAG.cpuName) ?? null,
     cpuArch: named(CPU_ARCH, number(TAG.cpuArch)),
-    profile: profile === 0 ? 'none' : String.fromCharCode(profile),
+    profile: profile === 0 ? 'none' : String.fromCodePoint(profile),
     armInstructions: number(TAG.armUse) === 1,
     thumb: named(THUMB_USE, number(TAG.thumbUse)),
     fpArch: named(FP_ARCH, number(TAG.fpArch)),

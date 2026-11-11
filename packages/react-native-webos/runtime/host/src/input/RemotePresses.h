@@ -55,7 +55,7 @@ class RemotePresses final {
   };
 
   void track(std::uint32_t code, const SDL_KeyboardEvent &key, const RemoteKey &remoteKey);
-  void finish(Press &press, bool released);
+  void finish(Press &press, bool released) const;
   void holdStarted(std::uint32_t code);
 
   EventHandler onEvent_;

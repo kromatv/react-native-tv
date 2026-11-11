@@ -25,7 +25,7 @@ class FrameClock final : public std::enable_shared_from_this<FrameClock> {
 
  private:
   void tick(MainLoop::Id id);
-  bool runFrame();
+  bool runFrame() const;
   bool shouldStop(bool hadWork);
 
   const std::function<bool()> onFrame_;

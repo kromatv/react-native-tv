@@ -48,4 +48,32 @@ TEST_CASE("a node's font properties go over the inherited ones") {
   CHECK(font.anchor == TextAnchor::End);
 }
 
+TEST_CASE("fontAttributesFromProp reads a weight written as a number in a string, and every text anchor") {
+  const auto weight = [](const folly::dynamic &value) {
+    return fontAttributesFromProp(folly::dynamic::object("fontWeight", value)).weight;
+  };
+  CHECK(weight("600") == 600);
+  CHECK_FALSE(weight("chunky").has_value());
+  CHECK_FALSE(weight(true).has_value());
+
+  const auto anchor = [](const folly::dynamic &value) {
+    return fontAttributesFromProp(folly::dynamic::object("textAnchor", value)).anchor;
+  };
+  CHECK(anchor("start") == TextAnchor::Start);
+  CHECK(anchor("end") == TextAnchor::End);
+  CHECK_FALSE(anchor("justify").has_value());
+  CHECK_FALSE(anchor(3).has_value());
+}
+
+TEST_CASE("a node that sets every font property replaces the inherited ones, and one that sets none keeps them") {
+  const Font inherited{.family = "Noto Sans", .size = 20, .weight = 700, .italic = false, .anchor = TextAnchor::End};
+
+  CHECK(FontAttributes{}.over(inherited) == inherited);
+
+  const auto all = fontAttributesFromProp(folly::dynamic::object("fontFamily", "DejaVu Sans")("fontSize", 30)(
+      "fontWeight", 300)("fontStyle", "italic")("textAnchor", "start"));
+  CHECK(all.over(inherited) ==
+        Font{.family = "DejaVu Sans", .size = 30, .weight = 300, .italic = true, .anchor = TextAnchor::Start});
+}
+
 } // namespace rnwebos::svg

@@ -128,9 +128,9 @@ export async function requireRunningVm(task: Task): Promise<void> {
 
 /** How an app starts: the JSON a TV's app manager would launch it with, and the screen it gets. */
 export interface StartOptions {
-  readonly launchParams?: string | undefined;
+  readonly launchParams?: string;
   /** Kept from the instance's last start when left out. */
-  readonly screen?: ScreenSize | undefined;
+  readonly screen?: ScreenSize;
 }
 
 /**

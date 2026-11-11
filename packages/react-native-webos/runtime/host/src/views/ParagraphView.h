@@ -19,12 +19,11 @@ class ParagraphView final : public ComponentView {
 
   void updateState(const facebook::react::State::Shared &state) override;
 
- protected:
+ private:
   void drawContent(SkCanvas &canvas, float alpha) override;
   int contentLayers() const override;
   void layoutContent() override;
 
- private:
   PixelRect contentRect() const;
 
   std::shared_ptr<const facebook::react::ParagraphShadowNode::ConcreteState> paragraph_;

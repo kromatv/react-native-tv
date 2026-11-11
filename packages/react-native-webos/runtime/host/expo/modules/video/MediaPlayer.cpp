@@ -16,7 +16,7 @@ MediaPlayer::MediaPlayer(std::weak_ptr<PlayerObserver> observer, int number, Bac
 // the closing main loop, and unloading through that loop would call back into it.
 MediaPlayer::~MediaPlayer() = default;
 
-void MediaPlayer::open(const std::string &uri, const SourceHeaders &headers) {
+void MediaPlayer::open(std::string_view uri, const SourceHeaders &headers) {
   if (released_) return;
   if (!backend_) {
     backend_ = makeBackend_ ? makeBackend_(*this, number_) : makePlayerBackend(*this, number_);
@@ -29,9 +29,9 @@ void MediaPlayer::open(const std::string &uri, const SourceHeaders &headers) {
   pendingTracks_.clear();
   askedPlaying_ = false;
   awaitedPlaying_.reset();
-  duration_ = 0;
-  position_ = 0;
-  buffered_ = -1;
+  timeline_.duration = 0;
+  timeline_.position = 0;
+  timeline_.buffered = -1;
   video_ = {};
   display_.firstFrameOwner = nullptr;
   setPlaying(false);
@@ -63,13 +63,13 @@ void MediaPlayer::pause() {
 
 void MediaPlayer::seekTo(double seconds, unsigned generation) {
   seek_.generation = generation;
-  seek_.pending = std::max(0.0, duration_ > 0 ? std::min(seconds, duration_) : seconds);
+  seek_.pending = std::max(0.0, timeline_.duration > 0 ? std::min(seconds, timeline_.duration) : seconds);
   pump();
 }
 
 void MediaPlayer::pump() {
   if (!backend_ || phase_ != Phase::Ready || seek_.inFlight) return;
-  if (seek_.pending) {
+  if (seek_.pending.has_value()) {
     seek_.target = *std::exchange(seek_.pending, std::nullopt);
     seek_.inFlight = true;
     playerLog(number_, std::format("seek to {} s", decimal(seek_.target)));
@@ -78,7 +78,7 @@ void MediaPlayer::pump() {
   }
   if (wantsPlaying_ == askedPlaying_) return;
   askedPlaying_ = wantsPlaying_;
-  if (awaitedPlaying_ || playing_ != wantsPlaying_) awaitedPlaying_ = wantsPlaying_;
+  if (awaitedPlaying_.has_value() || playing_ != wantsPlaying_) awaitedPlaying_ = wantsPlaying_;
   playerLog(number_, wantsPlaying_ ? "play" : "pause");
   if (wantsPlaying_) {
     backend_->play();
@@ -126,8 +126,8 @@ void MediaPlayer::setLooping(bool looping) {
 }
 
 void MediaPlayer::setPlaybackRate(double rate) {
-  position_ = position();
-  positionAt_ = Clock::now();
+  timeline_.position = position();
+  timeline_.positionAt = Clock::now();
   settings_.rate = rate;
   if (!backend_ || phase_ != Phase::Ready) return;
   playerLog(number_, std::format("playback rate {}", decimal(rate, 2)));
@@ -171,8 +171,8 @@ void MediaPlayer::setStatus(PlayerStatus status, const std::string &error) {
 
 void MediaPlayer::setPlaying(bool playing) {
   if (playing == playing_) return;
-  position_ = position();
-  positionAt_ = Clock::now();
+  timeline_.position = position();
+  timeline_.positionAt = Clock::now();
   playing_ = playing;
   reportProgress(false);
   if (auto observer = observer_.lock()) observer->playerPlayingChanged(playing);

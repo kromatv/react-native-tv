@@ -56,18 +56,19 @@ void ReactHost::start(const LaunchParameters &launch) {
   createInstance();
   startPerfMonitor();
   loadBundle();
-  remotePresses_ = std::make_unique<RemotePresses>(
+  input_.remotePresses = std::make_unique<RemotePresses>(
       [this](const RemoteEvent &event) { onRemoteEvent(event); },
       [this](const SDL_KeyboardEvent &key, bool isDown) {
-        return !errorScreen_->isShown() && !alertDialog_->isShown() && keyboardFocus_->handleKey(key, isDown);
+        if (overlays_.errorScreen->isShown() || overlays_.alertDialog->isShown()) return false;
+        return input_.keyboardFocus->handleKey(key, isDown);
       });
-  pointerInput_ = std::make_unique<PointerInput>(*scene_, [this](facebook::react::Tag tag) {
+  input_.pointerInput = std::make_unique<PointerInput>(*scene_, [this](facebook::react::Tag tag) {
     return presenter_ ? presenter_->mountingManager().findView(tag) : nullptr;
   });
   MainLoop::get().setEventHandler([this](const SDL_Event &event) { handleEvent(event); });
   startSurface();
 #if RN_WEBOS_SIMULATOR
-  simulatorControl_ = SimulatorControl::open({
+  diagnostics_.simulatorControl = SimulatorControl::open({
       .pause = [this] { pause(); },
       .resume = [this] { resume(); },
       .exit = [this] { exit(); },
@@ -92,22 +93,22 @@ ReactHost::~ReactHost() {
 void ReactHost::stop() {
   lifetime_.reset();
   diagnostics_.perfMonitor.reset();
-  registration_.reset();
-  screenSaver_.reset();
+  tv_.registration.reset();
+  tv_.screenSaver.reset();
 #if RN_WEBOS_SIMULATOR
-  simulatorControl_.reset();
+  diagnostics_.simulatorControl.reset();
 #endif
   MainLoop::get().setEventHandler(nullptr);
-  pointerInput_.reset();
-  remotePresses_.reset();
+  input_.pointerInput.reset();
+  input_.remotePresses.reset();
   closeMainThreadSync();
   if (instanceGate_ != nullptr) instanceGate_->close();
   stopReactNative();
   devSupport_.reset();
-  keyboardFocus_.reset();
+  input_.keyboardFocus.reset();
   textMeasurer_.reset();
-  alertDialog_.reset();
-  errorScreen_.reset();
+  overlays_.alertDialog.reset();
+  overlays_.errorScreen.reset();
   scene_.reset();
   window_.reset();
 }
@@ -125,15 +126,15 @@ void ReactHost::startPerfMonitor() {
 void ReactHost::reload() {
   log(LogLevel::Info, "Reloading " + config_.appKey);
   diagnostics_.perfMonitor.reset();
-  remotePresses_->releaseAll();
-  pointerInput_->pointerLeft();
-  keyboardFocus_->releaseKeys();
+  input_.remotePresses->releaseAll();
+  input_.pointerInput->pointerLeft();
+  input_.keyboardFocus->releaseKeys();
   closeMainThreadSync();
   instanceGate_->close();
   stopReactNative();
   openMainThreadSync();
-  errorScreen_ = std::make_unique<ErrorScreen>(*scene_);
-  alertDialog_ = std::make_unique<AlertDialog>(*scene_);
+  overlays_.errorScreen = std::make_unique<ErrorScreen>(*scene_);
+  overlays_.alertDialog = std::make_unique<AlertDialog>(*scene_);
   createInstance();
   startPerfMonitor();
   loadBundle();
@@ -165,9 +166,9 @@ void ReactHost::setActive(bool isActive) {
 }
 
 void ReactHost::pause() {
-  remotePresses_->releaseAll();
-  pointerInput_->pointerLeft();
-  keyboardFocus_->releaseKeys();
+  input_.remotePresses->releaseAll();
+  input_.pointerInput->pointerLeft();
+  input_.keyboardFocus->releaseKeys();
   pauseMediaSessionsForBackground();
   setActive(false);
   releaseMemory();

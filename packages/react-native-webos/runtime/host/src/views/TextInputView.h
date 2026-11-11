@@ -34,13 +34,12 @@ class TextInputView final : public ComponentView, public KeyboardClient {
   void imePreedit(std::string_view text, int cursor) override;
   void imePanelHidden() override;
 
- protected:
+ private:
   void drawContent(SkCanvas &canvas, float alpha) override;
   int contentLayers() const override;
   void layoutContent() override;
   void didMount() override;
 
- private:
   const TextInputProps &inputProps() const;
   KeyboardFocus *keyboard() const;
   bool isEditable() const;

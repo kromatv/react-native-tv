@@ -24,13 +24,12 @@ class ExpoImageView final : public ExpoView {
   void setContentFit(const folly::dynamic &value);
   void setTransition(const folly::dynamic &value);
 
- protected:
+ private:
   void didUpdateProps() override;
   void layoutContent() override;
   void drawContent(SkCanvas &canvas, float alpha) override;
   int contentLayers() const override;
 
- private:
   void loadIfNeeded();
   void load();
   void sharpenIfNeeded();

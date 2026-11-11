@@ -31,6 +31,7 @@ class GradientRamp {
 
  private:
   GradientRamp() = default;
+  void addHintStops(float hintPosition, const SkColor4f &color, float position);
   SkColor4f at(float position, bool after) const;
 
   std::vector<SkColor4f> colors_;

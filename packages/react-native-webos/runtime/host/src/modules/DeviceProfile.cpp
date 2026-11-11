@@ -10,7 +10,8 @@ constexpr const char *kGetSystemInfo = "luna://com.webos.service.tv.systemproper
 constexpr const char *kGetSystemSettings = "luna://com.webos.settingsservice/getSystemSettings";
 constexpr std::size_t kMaxFieldBytes = 256;
 
-std::string valueOr(const EnvironmentLookup &environment, const char *name, const char *fallback) {
+template <typename Lookup>
+std::string valueOr(const Lookup &environment, const char *name, const char *fallback) {
   const char *value = environment(name);
   return value != nullptr && *value != '\0' ? value : fallback;
 }
@@ -82,12 +83,12 @@ DeviceProfileRequest::DeviceProfileRequest(LunaBus &bus)
 
 void DeviceProfileRequest::finish(DeviceProfile &profile, std::chrono::steady_clock::time_point deadline) const {
   if (!available_) return;
-  const auto systemInfo = systemInfo_ != nullptr ? systemInfo_->waitUntil(deadline) : std::nullopt;
-  if (!systemInfo || !applySystemInfo(profile, *systemInfo)) {
+  if (const auto systemInfo = systemInfo_ != nullptr ? systemInfo_->waitUntil(deadline) : std::nullopt;
+      !systemInfo || !applySystemInfo(profile, *systemInfo)) {
     log(LogLevel::Warning, "The TV did not say its model and version: they read as unknown");
   }
-  const auto localeInfo = localeInfo_ != nullptr ? localeInfo_->waitUntil(deadline) : std::nullopt;
-  if (!localeInfo || !applyLocaleInfo(profile, *localeInfo)) {
+  if (const auto localeInfo = localeInfo_ != nullptr ? localeInfo_->waitUntil(deadline) : std::nullopt;
+      !localeInfo || !applyLocaleInfo(profile, *localeInfo)) {
     log(LogLevel::Warning, "The TV did not say its language: the app keeps the one of its environment");
   }
 }

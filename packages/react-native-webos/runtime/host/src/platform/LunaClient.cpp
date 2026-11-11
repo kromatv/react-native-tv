@@ -9,6 +9,7 @@
 #include <bit>
 #include <format>
 #include <mutex>
+#include <stdexcept>
 #include <thread>
 #include <utility>
 
@@ -96,7 +97,9 @@ std::string describe(const LSError &error) {
 folly::dynamic parsed(const std::string &text) {
   try {
     return folly::parseJson(text);
-  } catch (const std::exception &) {
+  } catch (const folly::json::parse_error &) {
+    return folly::dynamic::object("returnValue", false)("errorText", "The reply was not JSON");
+  } catch (const std::range_error &) {
     return folly::dynamic::object("returnValue", false)("errorText", "The reply was not JSON");
   }
 }
@@ -109,7 +112,7 @@ struct LunaClient::Registration {
   GMainContext *context{nullptr};
   GMainLoop *loop{nullptr};
   std::string name;
-  std::thread thread;
+  std::jthread thread;
 
   ~Registration() {
     // Queued rather than called, so it also ends a loop that has not started yet.
@@ -145,9 +148,9 @@ struct ClientCall {
 
 // The registration joins its own thread when it goes, so its last reference
 // is never dropped there.
-void release(ClientCall *call) {
+void release(std::unique_ptr<ClientCall> call) {
   auto registration = std::move(call->registration);
-  delete call;
+  call.reset();
   runOnMainThread([registration = std::move(registration)]() mutable { registration.reset(); });
 }
 
@@ -167,7 +170,7 @@ bool onReply(LSHandle *, LSMessage *reply, void *context) {
   auto *call = static_cast<ClientCall *>(context);
   const char *text = call->registration->api->payload(reply);
   deliver(*call, text != nullptr ? text : "{}");
-  if (!call->multiple) release(call);
+  if (!call->multiple) release(std::unique_ptr<ClientCall>(call));
   return true;
 }
 
@@ -185,7 +188,7 @@ int sendCall(void *data) {
     call->token = 0;
   }
   registration.api->errorFree(&error);
-  if (!sent && !call->multiple) release(call);
+  if (!sent && !call->multiple) release(std::unique_ptr<ClientCall>(call));
   return 0;
 }
 
@@ -198,7 +201,7 @@ int cancelCall(void *data) {
     registration.api->callCancel(registration.handle, call->token, &error);
     registration.api->errorFree(&error);
   }
-  release(call);
+  release(std::unique_ptr<ClientCall>(call));
   return 0;
 }
 
@@ -215,24 +218,27 @@ class ClientSubscription final : public LunaConnection::Subscription {
     registration->api->contextInvoke(registration->context, cancelCall, call_);
   }
 
+  ClientSubscription(const ClientSubscription &) = delete;
+  ClientSubscription &operator=(const ClientSubscription &) = delete;
+
  private:
   ClientCall *const call_;
 };
 
 ClientCall *queue(
     const std::shared_ptr<LunaClient::Registration> &registration,
-    const std::string &uri,
+    std::string uri,
     const folly::dynamic &payload,
     LunaConnection::Reply onReply,
     bool multiple) {
-  auto *call = new ClientCall();
+  auto call = std::make_unique<ClientCall>();
   call->registration = registration;
-  call->uri = uri;
+  call->uri = std::move(uri);
   call->payload = folly::toJson(payload);
   call->multiple = multiple;
   call->onReply = std::move(onReply);
-  registration->api->contextInvoke(registration->context, sendCall, call);
-  return call;
+  registration->api->contextInvoke(registration->context, sendCall, call.get());
+  return call.release();
 }
 
 } // namespace
@@ -269,7 +275,7 @@ std::unique_ptr<LunaClient> LunaClient::registerAs(const std::string &name, std:
   registration->context = context;
   registration->loop = api->loopNew(context, 0);
   registration->name = name;
-  registration->thread = std::thread([api, loop = registration->loop] { api->loopRun(loop); });
+  registration->thread = std::jthread([api, loop = registration->loop] { api->loopRun(loop); });
   return std::unique_ptr<LunaClient>(new LunaClient(std::move(registration)));
 }
 

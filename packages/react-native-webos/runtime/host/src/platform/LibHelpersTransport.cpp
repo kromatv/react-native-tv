@@ -43,6 +43,7 @@ struct Call {
 // Runs on libhelpers' own thread.
 int onReply(LSHandle *, LSMessage *reply, HContext *context) {
   auto *call = static_cast<Call *>(context->userdata);
+  const std::unique_ptr<Call> answeredOnce(call->multiple ? nullptr : call);
   const char *text = call->message(reply);
   LunaTransport::OnMessage handler;
   {
@@ -50,7 +51,6 @@ int onReply(LSHandle *, LSMessage *reply, HContext *context) {
     handler = call->onMessage;
   }
   if (handler) handler(text != nullptr ? text : "{}");
-  if (!call->multiple) delete call;
   return 1;
 }
 
@@ -67,6 +67,9 @@ class LibHelpersSubscription final : public LunaTransport::Subscription {
     }
     unregister_(&call_->context);
   }
+
+  LibHelpersSubscription(const LibHelpersSubscription &) = delete;
+  LibHelpersSubscription &operator=(const LibHelpersSubscription &) = delete;
 
  private:
   Call *const call_;
@@ -89,9 +92,9 @@ class LibHelpersTransport final : public LunaTransport {
     // HLunaServiceCall never returns when libhelpers cannot register on the
     // bus, as for a binary started from a shell: making its bridge first tells
     // (docs/reference/webos-tv-platform.md, section 4.1).
-    const auto bridge =
-        std::bit_cast<HLunaServiceBridgeInstance>(dlsym(helpers, "_ZN18HLunaServiceBridge8instanceEv"));
-    if (bridge != nullptr && bridge() == nullptr) {
+    if (const auto bridge =
+            std::bit_cast<HLunaServiceBridgeInstance>(dlsym(helpers, "_ZN18HLunaServiceBridge8instanceEv"));
+        bridge != nullptr && bridge() == nullptr) {
       log(LogLevel::Warning, "libhelpers cannot register on the Luna bus: the bus is unavailable");
       return;
     }
@@ -117,17 +120,16 @@ class LibHelpersTransport final : public LunaTransport {
  private:
   Call *start(const std::string &uri, const std::string &payload, OnMessage onMessage, bool multiple) const {
     if (call_ == nullptr) return nullptr;
-    auto *sent = new Call();
+    auto sent = std::make_unique<Call>();
     sent->message = message_;
     sent->onMessage = std::move(onMessage);
     sent->multiple = multiple;
     sent->context.callback = onReply;
-    sent->context.userdata = sent;
+    sent->context.userdata = sent.get();
     sent->context.multiple = multiple ? 1 : 0;
     sent->context.pub = 1;
-    if (call_(uri.c_str(), payload.c_str(), &sent->context) == 0) return sent;
+    if (call_(uri.c_str(), payload.c_str(), &sent->context) == 0) return sent.release();
     log(LogLevel::Warning, "The Luna bus refused " + uri);
-    delete sent;
     return nullptr;
   }
 

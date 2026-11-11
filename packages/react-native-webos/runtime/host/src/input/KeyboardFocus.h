@@ -43,7 +43,7 @@ class KeyboardFocus final {
   /// Gives `client` the keyboard and starts text input with `options`.
   void focus(KeyboardClient &client, const ImeOptions &options);
   /// Takes the keyboard back from `client`, if it has it.
-  void blur(KeyboardClient &client);
+  void blur(const KeyboardClient &client);
   bool hasFocus(const KeyboardClient &client) const;
 
   /// Gives a key to the focused field. True when the field used it, so the

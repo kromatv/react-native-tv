@@ -38,7 +38,7 @@ AccessibilityManagerModule::AccessibilityManagerModule(
   audioGuidance_ = luna_->subscribe(
       kGetSystemSettings, audioGuidanceRequest(true), [last, emit = context.emitDeviceEvent](const folly::dynamic &reply) {
         const auto enabled = audioGuidanceOf(reply);
-        if (!enabled) return;
+        if (!enabled.has_value()) return;
         const auto previous = std::exchange(*last, enabled);
         if (previous.has_value() && previous != enabled) emit("screenReaderChanged", *enabled);
       });

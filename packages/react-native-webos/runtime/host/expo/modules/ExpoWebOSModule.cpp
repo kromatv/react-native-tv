@@ -24,7 +24,7 @@ class ExpoWebOSModule final : public Module {
         .constant("locale", [&device] { return device.locale; })
         .function("getScreenSize", [&device] { return size(device.screenWidth, device.screenHeight); })
         .function("getPanelSize", [&device] { return size(device.panelWidth, device.panelHeight); })
-        .function("getLaunchParameters", [launch]() -> folly::dynamic {
+        .function("getLaunchParameters", [launch] {
           return launch != nullptr ? launch->parameters() : folly::dynamic(folly::dynamic::object());
         });
   }

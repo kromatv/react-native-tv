@@ -10,6 +10,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 
 namespace rnwebos::expo {
 
@@ -60,7 +61,7 @@ class MediaPlayer final : public PlayerBackendListener {
 
   /// Makes `uri` the source, replacing the one before; an empty one leaves
   /// the player idle. Of `headers`, the pipeline takes User-Agent, Cookie and Referer.
-  void open(const std::string &uri, const SourceHeaders &headers);
+  void open(std::string_view uri, const SourceHeaders &headers);
   /// Loads the source `open` set.
   void prepare();
   void play();
@@ -122,6 +123,13 @@ class MediaPlayer final : public PlayerBackendListener {
     double progressInterval{0};
   };
 
+  struct Timeline {
+    double duration{0};
+    double position{0};
+    Clock::time_point positionAt{};
+    double buffered{-1};
+  };
+
   struct DisplayState {
     const VideoView *owner{nullptr};
     const VideoView *firstFrameOwner{nullptr};
@@ -140,7 +148,7 @@ class MediaPlayer final : public PlayerBackendListener {
   void applyVolume();
   double position() const;
   void startProgress();
-  void reportProgress(bool tick);
+  void reportProgress(bool tick) const;
   void applyDisplay();
   void notifyFirstFrame();
   void notifyDisplayChange();
@@ -161,10 +169,7 @@ class MediaPlayer final : public PlayerBackendListener {
   SeekState seek_;
   std::map<TrackKind, int> pendingTracks_;
   Settings settings_;
-  double duration_{0};
-  double position_{0};
-  Clock::time_point positionAt_{};
-  double buffered_{-1};
+  Timeline timeline_;
   VideoStream video_;
   DisplayState display_;
   PlayerTimer progress_;

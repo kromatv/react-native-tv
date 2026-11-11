@@ -11,6 +11,7 @@ namespace {
 
 constexpr std::size_t kKeyPressUnits = 2;
 constexpr SDL_Keycode kFirstPrintable = SDLK_SPACE;
+constexpr SDL_Keymod kCommandModifiers = SDL_KMOD_CTRL | SDL_KMOD_ALT | SDL_KMOD_GUI;
 
 bool isBack(const SDL_KeyboardEvent &key) {
   const auto remoteKey = remoteKeyFor(key.scancode, key.raw);
@@ -28,7 +29,6 @@ bool hasShift(const SDL_KeyboardEvent &key) {
 
 // SDL sends what such a key types as a text input event of its own.
 bool typesText(const SDL_KeyboardEvent &key) {
-  constexpr SDL_Keymod kCommandModifiers = SDL_KMOD_CTRL | SDL_KMOD_ALT | SDL_KMOD_GUI;
   if ((key.mod & kCommandModifiers) != 0) return false;
   return key.key >= kFirstPrintable && key.key != SDLK_DELETE && (key.key & (SDLK_SCANCODE_MASK | SDLK_EXTENDED_MASK)) == 0;
 }
@@ -150,8 +150,7 @@ void TextInputView::okReleased() {
 }
 
 void TextInputView::backReleased() {
-  auto *focus = keyboard();
-  if (focus != nullptr && focus->ime().isPanelShown()) {
+  if (auto *focus = keyboard(); focus != nullptr && focus->ime().isPanelShown()) {
     focus->ime().hidePanel();
     return;
   }
@@ -173,8 +172,8 @@ void TextInputView::imePreedit(std::string_view text, int cursor) {
   const auto before = buffer_.composing();
   if (decoded.empty() && !before) return;
   const auto composedBefore = before ? before->end - before->start : 0;
-  const auto caret = cursor < 0 ? decoded.size() : static_cast<std::size_t>(cursor);
-  if (!buffer_.compose(decoded, caret, maxLength())) {
+  if (const auto caret = cursor < 0 ? decoded.size() : static_cast<std::size_t>(cursor);
+      !buffer_.compose(decoded, caret, maxLength())) {
     refresh();
     return;
   }

@@ -5,6 +5,7 @@
 
 #include <SDL3/SDL.h>
 
+#include <format>
 #include <set>
 
 namespace rnwebos::expo {
@@ -40,9 +41,7 @@ class ExpoKeepAwakeModule final : public Module {
     } else {
       SDL_DisableScreenSaver();
     }
-    log(LogLevel::Debug,
-        std::string("Keep awake ") + (SDL_ScreenSaverEnabled() ? "off" : "on") + " (" + std::to_string(tags_.size()) +
-            " tags)");
+    log(LogLevel::Debug, std::format("Keep awake {} ({} tags)", SDL_ScreenSaverEnabled() ? "off" : "on", tags_.size()));
     return true;
   }
 

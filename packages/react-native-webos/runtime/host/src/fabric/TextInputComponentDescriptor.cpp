@@ -15,7 +15,7 @@ class TextInputComponentDescriptor final : public facebook::react::ConcreteCompo
       : ConcreteComponentDescriptor(parameters),
         textLayoutManager_(std::make_shared<facebook::react::TextLayoutManager>(contextContainer_)) {}
 
- protected:
+ private:
   void adopt(facebook::react::ShadowNode &shadowNode) const override {
     auto &textInput = static_cast<TextInputShadowNode &>(shadowNode);
     textInput.setTextLayoutManager(textLayoutManager_);
@@ -23,7 +23,6 @@ class TextInputComponentDescriptor final : public facebook::react::ConcreteCompo
     ConcreteComponentDescriptor::adopt(shadowNode);
   }
 
- private:
   const std::shared_ptr<facebook::react::TextLayoutManager> textLayoutManager_;
 };
 

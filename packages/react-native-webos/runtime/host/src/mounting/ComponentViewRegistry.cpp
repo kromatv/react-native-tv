@@ -1,15 +1,24 @@
 #include "ComponentViewRegistry.h"
 
 #include <mutex>
+#include <string_view>
 #include <unordered_map>
 
 namespace rnwebos {
 
 namespace {
 
+struct StringHash {
+  using is_transparent = void;
+
+  std::size_t operator()(std::string_view text) const {
+    return std::hash<std::string_view>{}(text);
+  }
+};
+
 struct Registry {
   std::mutex mutex;
-  std::unordered_map<std::string, ComponentViewFactory> factories;
+  std::unordered_map<std::string, ComponentViewFactory, StringHash, std::equal_to<>> factories;
 };
 
 Registry &registry() {
@@ -17,7 +26,7 @@ Registry &registry() {
   return shared;
 }
 
-ComponentViewFactory factoryFor(const std::string &componentName) {
+ComponentViewFactory factoryFor(std::string_view componentName) {
   auto &shared = registry();
   std::lock_guard lock(shared.mutex);
   const auto found = shared.factories.find(componentName);

@@ -97,9 +97,28 @@ class ReactHost final {
   void setActive(bool isActive);
   void stopReactNative();
 
+  struct TvServices {
+    std::unique_ptr<AppRegistration> registration;
+    std::unique_ptr<ScreenSaver> screenSaver;
+  };
+
+  struct Input {
+    std::unique_ptr<KeyboardFocus> keyboardFocus;
+    std::unique_ptr<RemotePresses> remotePresses;
+    std::unique_ptr<PointerInput> pointerInput;
+  };
+
+  struct Overlays {
+    std::unique_ptr<ErrorScreen> errorScreen;
+    std::unique_ptr<AlertDialog> alertDialog;
+  };
+
   struct Diagnostics {
     std::unique_ptr<ControlLink> controlLink;
     std::unique_ptr<PerfMonitor> perfMonitor;
+#if RN_WEBOS_SIMULATOR
+    std::unique_ptr<SimulatorControl> simulatorControl;
+#endif
   };
 
   const HostConfig config_;
@@ -108,8 +127,7 @@ class ReactHost final {
   std::shared_ptr<LaunchState> launch_{std::make_shared<LaunchState>()};
   std::shared_ptr<ReactHost *> lifetime_;
   const std::weak_ptr<ReactHost *> weakHost_;
-  std::unique_ptr<AppRegistration> registration_;
-  std::unique_ptr<ScreenSaver> screenSaver_;
+  TvServices tv_;
   std::unique_ptr<HostWindow> window_;
   std::unique_ptr<Scene> scene_;
   std::shared_ptr<SkiaTextMeasurer> textMeasurer_;
@@ -119,15 +137,9 @@ class ReactHost final {
   std::shared_ptr<InstanceGate> instanceGate_;
   std::shared_ptr<TurboModuleProvider> modules_;
   std::unique_ptr<SurfacePresenter> presenter_;
-  std::unique_ptr<KeyboardFocus> keyboardFocus_;
-  std::unique_ptr<RemotePresses> remotePresses_;
-  std::unique_ptr<PointerInput> pointerInput_;
-  std::unique_ptr<ErrorScreen> errorScreen_;
-  std::unique_ptr<AlertDialog> alertDialog_;
+  Input input_;
+  Overlays overlays_;
   Diagnostics diagnostics_;
-#if RN_WEBOS_SIMULATOR
-  std::unique_ptr<SimulatorControl> simulatorControl_;
-#endif
   std::shared_ptr<DevSupport> devSupport_;
 };
 

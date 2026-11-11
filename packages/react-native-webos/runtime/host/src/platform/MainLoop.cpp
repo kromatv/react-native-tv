@@ -66,7 +66,7 @@ struct MainLoop::State {
     return next;
   }
 
-  void dispatch(const SDL_Event &event) {
+  void dispatch(const SDL_Event &event) const {
     if (event.type == SDL_EVENT_USER) return;
     if (eventHandler) eventHandler(event);
   }
@@ -77,7 +77,7 @@ struct MainLoop::State {
       std::lock_guard lock(mutex);
       tasks.swap(posted);
     }
-    for (auto &task : tasks) task();
+    for (const auto &task : tasks) task();
   }
 
   void runTimers() {
@@ -179,7 +179,7 @@ void MainLoop::quit(int exitCode) {
 
 MainLoop::Id MainLoop::addTimer(Clock::duration delay, Task task) {
   const auto id = state_->nextId++;
-  state_->timers.emplace(id, Timer{.due = Clock::now() + delay, .task = std::move(task)});
+  state_->timers.try_emplace(id, Timer{.due = Clock::now() + delay, .task = std::move(task)});
   return id;
 }
 
@@ -189,7 +189,7 @@ void MainLoop::removeTimer(Id id) {
 
 MainLoop::Id MainLoop::addFrameCallback(FrameCallback callback) {
   const auto id = state_->nextId++;
-  state_->frameCallbacks.emplace(id, std::move(callback));
+  state_->frameCallbacks.try_emplace(id, std::move(callback));
   return id;
 }
 
@@ -239,12 +239,11 @@ int MainLoop::run() {
     // A swap that waits for the display paces the frames by itself; where it
     // returns at once, as under Xvfb, the frame period does.
     if (state.wantsFrame()) wakeAt = std::min(wakeAt, state.nextFrame);
-    bool hasPosted = false;
+    int timeout = wakeAt == Clock::time_point::max() ? -1 : millisecondsUntil(wakeAt, now);
     {
       std::lock_guard lock(state.mutex);
-      hasPosted = !state.posted.empty();
+      if (!state.posted.empty()) timeout = 0;
     }
-    const int timeout = hasPosted ? 0 : wakeAt == Clock::time_point::max() ? -1 : millisecondsUntil(wakeAt, now);
     state.pumpEvents(timeout);
     state.runPosted();
     state.runTimers();

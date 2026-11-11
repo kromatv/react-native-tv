@@ -1,5 +1,6 @@
 #include "ImeSession.h"
 
+#include <algorithm>
 #include <array>
 #include <format>
 
@@ -13,10 +14,7 @@ constexpr std::array<std::string_view, 3> kReturnKeysShown{"", "default", "done"
 
 template <std::size_t Count>
 bool isOneOf(std::string_view value, const std::array<std::string_view, Count> &values) {
-  for (const auto candidate : values) {
-    if (candidate == value) return true;
-  }
-  return false;
+  return std::ranges::find(values, value) != values.end();
 }
 
 SDL_TextInputType typeFor(std::string_view keyboardType, bool secure) {

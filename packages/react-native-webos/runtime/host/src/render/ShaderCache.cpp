@@ -1,6 +1,7 @@
 #include "ShaderCache.h"
 
 #include <array>
+#include <bit>
 #include <cstdint>
 #include <cstring>
 #include <filesystem>
@@ -60,8 +61,9 @@ std::string ShaderCache::pathOf(const SkData &key) const {
 
 sk_sp<SkData> ShaderCache::load(const SkData &key) {
   std::ifstream file(pathOf(key), std::ios::binary);
-  Header header{};
-  if (!file.read(reinterpret_cast<char *>(&header), sizeof(header))) return nullptr;
+  std::array<char, sizeof(Header)> packed{};
+  if (!file.read(packed.data(), packed.size())) return nullptr;
+  const auto header = std::bit_cast<Header>(packed);
   if (header.magic != kMagic || header.keyBytes != key.size() || header.programBytes == 0 ||
       header.programBytes > kMaxProgramBytes) {
     return nullptr;
@@ -80,14 +82,14 @@ void ShaderCache::store(const SkData &key, const SkData &data, const SkString &)
   if (storedBytes_ + bytes > kMaxStoredBytes) return;
   const auto path = pathOf(key);
   const auto partial = path + ".partial";
-  const Header header{
+  const auto header = std::bit_cast<std::array<char, sizeof(Header)>>(Header{
       .magic = kMagic,
       .keyBytes = static_cast<std::uint32_t>(key.size()),
       .programBytes = static_cast<std::uint32_t>(data.size()),
-  };
+  });
   {
     std::ofstream file(partial, std::ios::binary | std::ios::trunc);
-    file.write(reinterpret_cast<const char *>(&header), sizeof(header));
+    file.write(header.data(), header.size());
     file.write(static_cast<const char *>(key.data()), static_cast<std::streamsize>(key.size()));
     file.write(static_cast<const char *>(data.data()), static_cast<std::streamsize>(data.size()));
     if (!file) return;
