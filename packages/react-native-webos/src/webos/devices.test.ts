@@ -47,9 +47,9 @@ describe('probeDevice', () => {
       message: `127.0.0.1:${refusing.tv.port} refused the key rn-webos has for it`,
       hint: expect.stringContaining(`rn-webos connect 127.0.0.1:${refusing.tv.port}`),
     });
-    await expect(
-      probeDevice({ name: 'b', host: '127.0.0.1', port: gone.tv.port }),
-    ).rejects.toThrow('Developer Mode is off');
+    await expect(probeDevice({ name: 'b', host: '127.0.0.1', port: gone.tv.port })).rejects.toThrow(
+      'Developer Mode is off',
+    );
   });
 });
 

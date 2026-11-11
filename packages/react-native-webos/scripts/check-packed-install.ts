@@ -22,11 +22,11 @@ const config = { name: 'Packed' };
 if (plugin(config, { package: 'org.example.packed' }) !== config) throw new Error('the plugin changed the config');
 let refused = false;
 try {
-  plugin(config, { package: 'packed' });
+  plugin(config, { package: 'Packed App' });
 } catch {
   refused = true;
 }
-if (!refused) throw new Error('the plugin took a bad package id');
+if (!refused) throw new Error('the plugin took a bad app id');
 `;
 
 const exampleSchema = z.object({

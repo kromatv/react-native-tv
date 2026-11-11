@@ -14,7 +14,6 @@
 #include <react/renderer/scheduler/SurfaceHandler.h>
 #include <react/utils/ContextContainer.h>
 
-#include <Ecore_Evas.h>
 
 #include <functional>
 #include <memory>
@@ -31,8 +30,7 @@ class FabricSurface final : public facebook::react::SchedulerDelegate {
 
   FabricSurface()
       : providers_(viewProviders()),
-        canvas_(newCanvas(), ecore_evas_free),
-        mountingManager_(ecore_evas_get(canvas_.get())),
+        mountingManager_(scene_),
         runtimeScheduler_(std::make_shared<facebook::react::RuntimeScheduler>(executor())),
         contextContainer_(contextWith(runtimeScheduler_)),
         scheduler_(toolbox(), nullptr, this),
@@ -111,12 +109,6 @@ class FabricSurface final : public facebook::react::SchedulerDelegate {
     return providers;
   }
 
-  static Ecore_Evas *newCanvas() {
-    static const bool initialized = ecore_evas_init() > 0;
-    REQUIRE(initialized);
-    return ecore_evas_buffer_new(static_cast<int>(kLogicalScreenSize.width), static_cast<int>(kLogicalScreenSize.height));
-  }
-
   static std::shared_ptr<const facebook::react::ContextContainer> contextWith(
       const std::shared_ptr<facebook::react::RuntimeScheduler> &runtimeScheduler) {
     auto context = std::make_shared<const facebook::react::ContextContainer>();
@@ -150,7 +142,7 @@ class FabricSurface final : public facebook::react::SchedulerDelegate {
 
   const std::unique_ptr<const facebook::react::ComponentDescriptorProviderRegistry> providers_;
   const std::unique_ptr<facebook::hermes::HermesRuntime> runtime_{facebook::hermes::makeHermesRuntime()};
-  const std::unique_ptr<Ecore_Evas, decltype(&ecore_evas_free)> canvas_;
+  Scene scene_{PixelSize{static_cast<int>(kLogicalScreenSize.width), static_cast<int>(kLogicalScreenSize.height)}};
   MountingManager mountingManager_;
   const std::shared_ptr<facebook::react::RuntimeScheduler> runtimeScheduler_;
   const std::shared_ptr<const facebook::react::ContextContainer> contextContainer_;

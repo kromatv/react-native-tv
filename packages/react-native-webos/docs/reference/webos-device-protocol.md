@@ -76,6 +76,8 @@ How sources are written:
 | ssh2 signs the login with `ssh-rsa` (SHA-1) when the server sends no `server-sig-algs`. A 6.1 server predates the RSA SHA-2 signatures that list would name. | S, I | ssh2:lib/client.js:2155-2173; from [openssh-88] |
 | ares-cli-rs (libssh) sets: key exchange `curve25519-sha256`, `curve25519-sha256@libssh.org`, the three `ecdh-sha2-nistp*`, `diffie-hellman-group18-sha512`, `-group16-sha512`, `-group-exchange-sha256`, `-group14-sha256`, `-group1-sha1`, `-group14-sha1`; MACs `hmac-sha2-256-etm@openssh.com`, `hmac-sha2-512-etm@openssh.com`, `hmac-sha2-256`, `hmac-sha2-512`, `hmac-sha1-96`, `hmac-sha1`, `hmac-md5`; host and public key types `ssh-ed25519`, `ecdsa-sha2-nistp521`, `-nistp384`, `-nistp256`, `rsa-sha2-512`, `rsa-sha2-256`, `ssh-rsa`. Timeout 10 s. Known hosts point at the null device: "a device has no stable host key". | S | [acr-session] 125-172 |
 | It also turns on TCP keepalive (30 s idle, 10 s interval, 3 probes), because a TV that drops off Wi-Fi sends no FIN and a waiting install would hang. | S | [acr-session] 55-72 |
+| ssh2 takes each algorithm list as an array, or as `{append, prepend, remove}` applied to its defaults. `diffie-hellman-group14-sha1` and `diffie-hellman-group1-sha1` are in its supported key exchanges and not in its default ones. | S | ssh2:lib/utils.js:210-300; ssh2:lib/protocol/constants.js:35-61 |
+| ssh2 runs over a socket the caller hands it as `sock`, and starts the handshake at once when that socket is already connected; `readyTimeout` still bounds the handshake. So TCP keepalive is the caller's to set, on its own `net` socket. | S | ssh2:lib/client.js:290, 1111-1120, 1160-1173 |
 | Before SSH, ares opens a bare TCP connection to the port with a 2 s timeout and reports a timeout or refusal from that. | S | cli:lib/base/novacom.js:567-594 |
 
 ## 4. What the `prisoner` session can do
@@ -102,8 +104,10 @@ How sources are written:
 | The device entry's `files` field (`"stream"` for a new TV, `"sftp"` after `--getkey`) is read into `options.op` and never used. | S | cli:lib/install.js:90; cli:files/conf-base/profile/config-tv.json:19; cli:bin/ares-novacom.js:138 |
 | ares-cli-rs uses SFTP unless the entry says `"files": "stream"` or the SFTP session does not start. Over SFTP it opens the file write-only, create, truncate, mode 0644. Otherwise it execs `cat > <quoted path>`, writes the file, sends EOF and reads the exit status. | S | [acr-transfer] 122-133, 244-274 |
 | Neither tool uses `scp`. | S | the two files above |
+| ssh2 1.17 reports an SFTP session that does not start through the callback of `sftp()`: `Unable to start subsystem: sftp` when the server refuses the request, `Received exit code <n> while establishing SFTP session` or `Received unexpected SFTP session termination` when the channel exits or closes before the session is ready. | S | ssh2:lib/client.js:1555-1630, 1903 |
 | The package goes to `/media/developer/temp/<local file name>` (ares) or `/media/developer/temp/ares_install_<first 10 hex digits of its SHA-256>.ipk` (ares-cli-rs). ares first runs `/usr/bin/test -d /media/developer/temp \|\| /bin/mkdir -p /media/developer/temp`. | S | cli:lib/install.js:52-56, 68, 86; [acr-install] 107, 122 |
 | After the push ares runs `/bin/ls -l "<path>"`, then compares the MD5 of the last 200 bytes with `/usr/bin/tail -c 200 "<path>" \| /usr/bin/md5sum`; a mismatch stops the install. ares-cli-rs compares `sha256sum <path>` of the whole file. | S | cli:lib/install.js:99-178; [acr-install] 245-256 |
+| ares reads the TV's `md5sum` answer as the text before the first `-`, so the digest starts the line. When either digest is missing it only warns, "Cannot verify transmitted file", and installs all the same. | S | cli:lib/install.js:141-175 |
 | When the install has answered, ares runs `/bin/rm -f "<path>"`. | S | cli:lib/install.js:246-248 |
 | The installer wants a path that exists and whose first `.ipk` is its last four characters. | S | [ai2-service] 311-329 (webOS OSE source, not the TV's build) |
 
@@ -313,6 +317,18 @@ ares-cli-rs keeps a list of the same shape in another place,
 - Name the remote file ourselves, as ares-cli-rs does: a fixed pattern
   ending in `.ipk` under `/media/developer/temp`, with no characters that
   need quoting. Verify it with `md5sum` or `sha256sum` before installing.
+- `rn-webos` runs `/usr/bin/md5sum <path>` over the whole file and reads the
+  32 hexadecimal digits that start the answer. That `md5sum` prints the digest
+  first for a file argument, as it does for standard input, is inferred (I),
+  not seen on a TV. Like ares it installs when the TV gives no digest, and
+  stops only on a different one.
+- It tries SFTP and falls back to `cat` whenever the SFTP session does not
+  start, whatever the reason, as ares-cli-rs does.
+- It keeps ssh2's default algorithms and appends the two SHA-1 key exchanges
+  ares adds, so a newer sshd still gets the modern ones first.
+- `rn-webos install --launch` takes the app to launch from `details.packageId`
+  of the install stream, seen in the one recording of 6.3, else from a file
+  named `<id>_<version>_<arch>.ipk`.
 - Keep stdin open while an `-i` call runs, read lines until `details.state`
   is `installed` or contains `failed`, then close stdin. The stream does not
   end by itself.

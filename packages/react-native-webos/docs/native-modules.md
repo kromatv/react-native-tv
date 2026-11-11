@@ -1,7 +1,7 @@
 # Native libraries on webOS
 
-How `rn-webos` builds an app's third-party native code into
-`libreact-native-webos.so`, and how a library adds its own webOS support.
+How `rn-webos` builds an app's third-party native code into the
+`react-native-webos` executable, and how a library adds its own webOS support.
 
 ## What `rn-webos` does with an app's dependencies
 
@@ -48,10 +48,9 @@ the runtime. It creates no target of its own: it adds sources to the one
 
 | Name | What it is |
 |------|------------|
-| `RN_WEBOS_LIBRARY_TARGET` | An OBJECT library linked into `libreact-native-webos.so`. It already holds the codegen output, and its include path has React Native's headers, the codegen root (`<name>JSI.h`, `react/renderer/components/<name>/...`) and the host's `runtime/host/src` |
+| `RN_WEBOS_LIBRARY_TARGET` | An OBJECT library linked into the `react-native-webos` executable. It already holds the codegen output, and its include path has React Native's headers, the codegen root (`<name>JSI.h`, `react/renderer/components/<name>/...`) and the host's `runtime/host/src` |
 | `RN_WEBOS_LIBRARY_PACKAGE` | The npm name |
 | `RN_WEBOS_LIBRARY_DIR` | The package's directory |
-| `target_link_webos_libraries(<target> <libs>...)` | Links webOS native libraries such as `evas` or `ecore`, and fails on one outside the target webOS version's public native API, or with no stand-in in the simulator |
 
 ```cmake
 file(GLOB _maps_sources CONFIGURE_DEPENDS
@@ -59,12 +58,20 @@ file(GLOB _maps_sources CONFIGURE_DEPENDS
   "${RN_WEBOS_LIBRARY_DIR}/common/cpp/react/renderer/components/rnmaps/*.cpp")
 target_sources(${RN_WEBOS_LIBRARY_TARGET} PRIVATE ${_maps_sources})
 target_include_directories(${RN_WEBOS_LIBRARY_TARGET} PUBLIC "${RN_WEBOS_LIBRARY_DIR}/common/cpp")
-target_link_webos_libraries(${RN_WEBOS_LIBRARY_TARGET} evas ecore)
 ```
 
-The objects are linked into the library itself, so registrations made by static
-initializers are kept. The host's headers are not a stable API yet: a library
-built against one react-native-webos version may need changes for the next.
+The objects are linked into the executable itself, so registrations made by
+static initializers are kept. The host's headers are not a stable API yet: a
+library built against one react-native-webos version may need changes for the
+next.
+
+A library is compiled for 32-bit ARM against the SDK's glibc 2.12.2, older
+than any TV's, so it runs on every release the package does. One that links a
+library of the TV may only name those every release carries under one name:
+the list is in
+[reference/webos-native-toolchain.md](reference/webos-native-toolchain.md),
+"Safe to link from the TV". The TV's curl, OpenSSL, ICU and libjpeg change
+their names between releases: compile such a dependency in instead.
 
 ## Declaring webOS support in an Expo module
 
@@ -115,8 +122,8 @@ Everything registers itself from its own file ([decisions.md](decisions.md)):
 | A TurboModule | `RN_WEBOS_PLATFORM_MODULE("<JS name>", Module)`, `Module` built from `(jsInvoker, ModuleContext)`, usually on codegen's `Native<Spec>CxxSpec<Module>` from `<name>JSI.h` | `modules/PlatformModuleRegistry.h` |
 
 A view receives its codegen props class, `<Name>Props`, which derives from
-`ViewProps`. Evas may only be touched on the main loop, and drawing follows
-[reference/efl-rendering.md](reference/efl-rendering.md).
+`ViewProps`. Drawing follows
+[reference/skia-rendering.md](reference/skia-rendering.md).
 
 ## Implementations react-native-webos bundles
 
@@ -130,25 +137,12 @@ that directory; nothing else lists it.
 |---------|-----------|
 | react-native-svg | `runtime/host/src/svg` |
 
-### react-native-svg
-
-Each `<Svg>` paints its whole tree into one Evas VG object, clipped to the view.
-
-| Works | Not drawn yet |
-|-------|---------------|
-| `Svg` with `viewBox` and `preserveAspectRatio`, `G`, `Path` (all of SVG's path data), `Circle`, `Ellipse`, `Rect` with `rx`/`ry`, `Line`, `Polyline`, `Polygon` | `Text`, `TSpan`, `TextPath`, `Image`, `Use`, `Symbol`, `ForeignObject`, filters |
-| `fill`, `stroke`, `strokeWidth`, `strokeLinecap`, `strokeLinejoin`, `opacity`, `fillOpacity`, `strokeOpacity`, `currentColor` and `color`, `matrix` and `transform`, `display="none"`, inheritance from `G` | Gradients and patterns (a `url(#id)` paint draws nothing), `clipPath`, `mask`, markers, `fillRule="evenodd"`, `strokeDasharray`, `strokeMiterlimit` |
-| Lengths in user units, `px`, `pt`, `pc`, `mm`, `cm`, `in` and `%` | `em`, `ex` |
-
-`opacity` on a `G` multiplies into each shape, so overlapping shapes inside a
-translucent group show through each other. The TurboModules (`getBBox`,
-`isPointInFill`, `toDataURL`...) are missing.
-
 ## Limits
 
 - A bundled implementation does not check the package's version.
 - Codegen output that does not compile fails the runtime build, and an app
   cannot leave a library out yet.
-- A library cannot declare webOS privileges.
+- A library cannot add ACG groups to `appinfo.json`: the app lists the ones
+  its libraries' Luna calls need in the config plugin's `permissions` prop.
 - An Expo module is found by its `expo-module.config.json` only; Expo's
   `searchPaths`, `exclude` and `include` autolinking options are not read.

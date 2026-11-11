@@ -38,7 +38,8 @@ export class TvCommandError extends Error {
 
 /** `text` as one word of a POSIX shell command. */
 export function shellQuote(text: string): string {
-  return `'${text.replaceAll("'", `'\\''`)}'`;
+  const escaped = text.replaceAll("'", String.raw`'\''`);
+  return `'${escaped}'`;
 }
 
 /** The command line of one luna call: `-n 1` for one reply, `-i` to stay subscribed. */
@@ -66,7 +67,8 @@ function refusal(uri: string, reply: LunaReply): LunaError | null {
 
 function silent(uri: string, result: ExecResult): TvCommandError {
   const said = `${result.stdout}${result.stderr}`.trim();
-  return new TvCommandError(`${uri} did not answer${said === '' ? '' : `: ${said}`}`, result);
+  const detail = said === '' ? '' : `: ${said}`;
+  return new TvCommandError(`${uri} did not answer${detail}`, result);
 }
 
 /** Calls a luna service for one reply and holds it to `schema`. */

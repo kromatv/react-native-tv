@@ -8,7 +8,7 @@ import { Reporter } from '../cli/reporter.ts';
 import { pickLanAddress } from '../logs/lan-address.ts';
 import { crashSymbolizer } from '../logs/llvm-symbolizer.ts';
 import { LogPrinter } from '../logs/log-printer.ts';
-import { RUNTIME_LIBRARY } from '../runtime/build-runtime.ts';
+import { stagedExecutable } from '../package/stage-app.ts';
 import { listenForLogs } from '../logs/log-server.ts';
 
 const OPTIONS = {
@@ -37,13 +37,13 @@ export const logsCommand: Command = {
     const values = parseCommandArgs('logs', args, OPTIONS);
     const reporter = new Reporter({ verbose: values.verbose ?? false });
     const minimum = parseLevel(values.level, 'logs');
+    const dir = resolve(context.cwd, values.project ?? '.');
     const printer = new LogPrinter({
       paint: reporter.paint,
       minimum,
       held: false,
-      transform: crashSymbolizer(join(context.cwd, 'webos', 'lib', RUNTIME_LIBRARY)),
+      transform: crashSymbolizer(stagedExecutable(join(dir, 'webos'))),
     });
-    const dir = resolve(context.cwd, values.project ?? '.');
     const app = targetPackage(values.package, dir, 'logs');
     const server = await listenForLogs(parsePort(values.port, '--port', 'logs'), printer, { app });
     const address = pickLanAddress(networkInterfaces(), null) ?? 'this computer';

@@ -3,9 +3,9 @@
 #include "Context.h"
 #include "ExpoRuntime.h"
 
+#include "platform/MainLoop.h"
 #include "threading/MainLoop.test.h"
 
-#include <Ecore.h>
 #include <hermes/hermes.h>
 #include <jsi/jsi.h>
 
@@ -136,7 +136,7 @@ class ExpoTestRuntime final {
   void pump() {
     invoker_->drain(*runtime_);
     runtime_->drainMicrotasks();
-    ecore_main_loop_iterate();
+    MainLoop::get().iterate(true);
   }
 
  private:

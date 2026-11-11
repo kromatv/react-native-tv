@@ -93,7 +93,10 @@ describe('openRemote', () => {
     await session.press(['DOWN', 'ENTER']);
     session.close();
 
-    expect(started.pointerFrames).toEqual(['type:button\nname:DOWN\n\n', 'type:button\nname:ENTER\n\n']);
+    expect(started.pointerFrames).toEqual([
+      'type:button\nname:DOWN\n\n',
+      'type:button\nname:ENTER\n\n',
+    ]);
   });
 
   it("passes on the TV's words when its viewer declines", async () => {
@@ -110,7 +113,9 @@ describe('openRemote', () => {
 
     const opening = openRemote({ ...options(started, memoryKeys()), pairingTimeoutMs: 20 });
 
-    await expect(opening).rejects.toThrow('Nobody accepted rn-webos on the TV at 127.0.0.1 within 0.02 s');
+    await expect(opening).rejects.toThrow(
+      'Nobody accepted rn-webos on the TV at 127.0.0.1 within 0.02 s',
+    );
   });
 
   it('says the TV cannot be reached when nothing listens, or nothing answers', async () => {
@@ -119,11 +124,13 @@ describe('openRemote', () => {
     await gone.close();
 
     await expect(openRemote(options(gone, memoryKeys()))).rejects.toMatchObject({
-      message: expect.stringContaining('Cannot reach the remote control service of the TV at 127.0.0.1'),
+      message: expect.stringContaining(
+        'Cannot reach the remote control service of the TV at 127.0.0.1',
+      ),
       hint: expect.stringContaining('LG Connect Apps'),
     });
-    await expect(
-      openRemote({ ...options(silent, memoryKeys()), timeoutMs: 30 }),
-    ).rejects.toThrow('no answer within 0.03 s');
+    await expect(openRemote({ ...options(silent, memoryKeys()), timeoutMs: 30 })).rejects.toThrow(
+      'no answer within 0.03 s',
+    );
   });
 });

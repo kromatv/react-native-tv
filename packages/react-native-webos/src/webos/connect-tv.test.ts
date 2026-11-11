@@ -1,7 +1,12 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { connectTv, registerTv } from './connect-tv.ts';
 import { useTemporaryState } from './connected-tv.fixtures.ts';
-import { fakeKeyServer, protectKey, rsaKeyPem, type FakeKeyServer } from './developer-key.fixtures.ts';
+import {
+  fakeKeyServer,
+  protectKey,
+  rsaKeyPem,
+  type FakeKeyServer,
+} from './developer-key.fixtures.ts';
 import { readDeviceKey } from './device-key.ts';
 import { fakeTv, type FakeTv, type FakeTvOptions } from './fake-tv.fixtures.ts';
 import { readKnownDevices } from './known-devices.ts';

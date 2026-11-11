@@ -1,7 +1,8 @@
 #include "../threading/MainLoop.test.h"
 #include "ThreadTimerRegistry.h"
 
-#include <Ecore.h>
+#include "../platform/MainLoop.h"
+
 #include <doctest/doctest.h>
 
 #include <atomic>
@@ -32,7 +33,7 @@ struct Timers {
   bool waitForCalls(int count, bool iterateMainLoop) const {
     const auto giveUp = std::chrono::steady_clock::now() + 5s;
     while (calls < count && std::chrono::steady_clock::now() < giveUp) {
-      if (iterateMainLoop) ecore_main_loop_iterate();
+      if (iterateMainLoop) MainLoop::get().iterate(true);
       std::this_thread::sleep_for(1ms);
     }
     return calls == count;

@@ -11,7 +11,10 @@ interface SftpTarget {
 }
 
 function assemble(file: OpenFile): Buffer {
-  const size = file.chunks.reduce((end, chunk) => Math.max(end, chunk.offset + chunk.data.length), 0);
+  const size = file.chunks.reduce(
+    (end, chunk) => Math.max(end, chunk.offset + chunk.data.length),
+    0,
+  );
   const bytes = Buffer.alloc(size);
   for (const chunk of file.chunks) chunk.data.copy(bytes, chunk.offset);
   return bytes;
@@ -22,7 +25,8 @@ export function acceptSftp(sftp: SFTPWrapper, tv: SftpTarget): void {
   const { OK, FAILURE } = ssh2.utils.sftp.STATUS_CODE;
   const open = new Map<number, OpenFile>();
   let nextHandle = 0;
-  const fileFor = (handle: Buffer) => (handle.length === 4 ? open.get(handle.readUInt32BE(0)) : undefined);
+  const fileFor = (handle: Buffer) =>
+    handle.length === 4 ? open.get(handle.readUInt32BE(0)) : undefined;
   sftp.on('OPEN', (requestId, path) => {
     const handle = Buffer.alloc(4);
     handle.writeUInt32BE(nextHandle, 0);

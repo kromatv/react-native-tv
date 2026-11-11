@@ -1,7 +1,7 @@
 #include "MainLoop.test.h"
 #include "MainThread.h"
 
-#include <Ecore.h>
+#include "../platform/MainLoop.h"
 #include <doctest/doctest.h>
 
 #include <atomic>
@@ -73,7 +73,7 @@ TEST_CASE("runOnMainThread from the main loop runs on its next iteration, not in
 
   runOnMainThread([&ran] { ran = true; });
   const bool ranInline = ran;
-  ecore_main_loop_iterate();
+  MainLoop::get().iterate(true);
 
   CHECK_FALSE(ranInline);
   CHECK(ran);

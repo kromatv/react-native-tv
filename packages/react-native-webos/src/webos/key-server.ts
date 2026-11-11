@@ -38,7 +38,8 @@ export async function fetchDeveloperKey(host: string, port = KEY_SERVER_PORT): P
   }
   const pem = response.status === 200 ? await bodyText(response) : null;
   if (pem === null || !PEM_KEY.test(pem)) {
-    const what = response.status === 200 ? 'something that is not a key' : `HTTP ${response.status}`;
+    const what =
+      response.status === 200 ? 'something that is not a key' : `HTTP ${response.status}`;
     throw new FixableError(`The key server of the TV at ${tv} answered ${what}`, KEY_SERVER_HINT);
   }
   return pem;

@@ -34,14 +34,7 @@ describe('openPlan', () => {
     expect(openPlan('10.0.0.7', 'http://localhost:8081')).toEqual({
       kind: 'run-tv',
       title: 'Run on TV 10.0.0.7',
-      args: [
-        'run',
-        '--device',
-        '10.0.0.7',
-        '--dev-server',
-        'http://localhost:8081',
-        '--no-logs',
-      ],
+      args: ['run', '--device', '10.0.0.7', '--dev-server', 'http://localhost:8081', '--no-logs'],
       exclusive: true,
       bundles: true,
     });

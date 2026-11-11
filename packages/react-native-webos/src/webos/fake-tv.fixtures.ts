@@ -9,6 +9,8 @@ export type LunaHandler = (params: Record<string, unknown>, tv: FakeTv) => reado
 export interface FakeTvOptions {
   /** `false` is a TV without `sftp-server`: the subsystem request is refused. */
   readonly sftp?: boolean;
+  /** `missing` is a TV without `md5sum`; `wrong` one that received other bytes than were sent. */
+  readonly md5sum?: 'missing' | 'wrong';
   /** `false` refuses every key, as a TV whose Developer Mode app was reinstalled. */
   readonly acceptKey?: boolean;
   /** Restricts what the server negotiates, to stand for an old sshd. */
@@ -91,7 +93,13 @@ const DEFAULT_LUNA: Readonly<Record<string, LunaHandler>> = {
           visible: true,
           folderPath: '/media/developer/apps/usr/palm/applications/com.example.myapp',
         },
-        { id: 'com.example.hidden', version: '0.1.0', type: 'web', title: 'Hidden', visible: false },
+        {
+          id: 'com.example.hidden',
+          version: '0.1.0',
+          type: 'web',
+          title: 'Hidden',
+          visible: false,
+        },
       ],
     },
   ],
@@ -151,10 +159,16 @@ function runLuna(tv: FakeTv, channel: ServerChannel, match: RegExpExecArray, lun
 
 type LunaLookup = (uri: string) => LunaHandler | undefined;
 
-function runCommand(tv: FakeTv, channel: ServerChannel, command: string, luna: LunaLookup): void {
+function runCommand(
+  tv: FakeTv,
+  channel: ServerChannel,
+  command: string,
+  luna: LunaLookup,
+  md5sum: FakeTvOptions['md5sum'],
+): void {
   const lunaCall = LUNA.exec(command);
   const cat = CAT.exec(command)?.[1];
-  const hashed = MD5.exec(command)?.[1];
+  const hashed = md5sum === 'missing' ? undefined : MD5.exec(command)?.[1];
   const removed = RM.exec(command)?.[1];
   if (lunaCall !== null) {
     runLuna(tv, channel, lunaCall, luna);
@@ -171,7 +185,9 @@ function runCommand(tv: FakeTv, channel: ServerChannel, command: string, luna: L
     if (file === undefined) finish(channel, 1, `md5sum: ${hashed}: No such file or directory\n`);
     else {
       // oxlint-disable-next-line sonarjs/hashing
-      const digest = createHash('md5').update(file).digest('hex'); // NOSONAR: what md5sum prints
+      const digest = createHash('md5') // NOSONAR: what md5sum prints
+        .update(md5sum === 'wrong' ? 'other bytes' : file)
+        .digest('hex');
       channel.write(`${digest}  ${hashed}\n`);
       finish(channel, 0);
     }
@@ -205,7 +221,7 @@ function serve(tv: FakeTv, connection: Connection, options: FakeTvOptions, keyPe
       const session: Session = accept();
       session.on('exec', (acceptExec, _reject, info) => {
         tv.commands.push(info.command);
-        runCommand(tv, acceptExec(), info.command, luna);
+        runCommand(tv, acceptExec(), info.command, luna, options.md5sum);
       });
       session.on('sftp', (acceptSftpSession, reject) => {
         if (options.sftp === false) reject();

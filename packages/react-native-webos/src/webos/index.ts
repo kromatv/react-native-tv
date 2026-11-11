@@ -11,11 +11,7 @@ export {
 export { readKnownDevices, type KnownDevice } from './known-devices.ts';
 export { installApp } from './install-app.ts';
 export { closeApp, launchApp, uninstallApp } from './app-control.ts';
-export {
-  listInstalledApps,
-  listRunningApps,
-  type InstalledApp,
-} from './list-apps.ts';
+export { listInstalledApps, listRunningApps, type InstalledApp } from './list-apps.ts';
 export { scanForTvs, type FoundTv, type ScanOptions } from '../discovery/scan-tvs.ts';
 export { pressRemoteKeys, type PressOptions } from '../remote/press-keys.ts';
 export { FixableError } from '../errors.ts';

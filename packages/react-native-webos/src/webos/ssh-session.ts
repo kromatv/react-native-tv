@@ -1,11 +1,6 @@
 import { createConnection, type Socket } from 'node:net';
 import type { Readable } from 'node:stream';
-import ssh2, {
-  type Client,
-  type ClientChannel,
-  type KexAlgorithm,
-  type SFTPWrapper,
-} from 'ssh2';
+import ssh2, { type Client, type ClientChannel, type KexAlgorithm, type SFTPWrapper } from 'ssh2';
 import type { TvAddress } from './device-address.ts';
 
 /** The login of a TV's Developer Mode SSH server. It takes a key and no password. */

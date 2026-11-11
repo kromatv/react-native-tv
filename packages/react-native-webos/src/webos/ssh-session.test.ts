@@ -120,8 +120,10 @@ describe('sftpPut', () => {
     const session = await openSshSession(target(started));
     const sent: number[] = [];
 
-    await session.sftpPut(Readable.from([Buffer.from('package')]), '/media/developer/temp/a.ipk', (bytes) =>
-      sent.push(bytes),
+    await session.sftpPut(
+      Readable.from([Buffer.from('package')]),
+      '/media/developer/temp/a.ipk',
+      (bytes) => sent.push(bytes),
     );
     session.close();
 
@@ -133,7 +135,10 @@ describe('sftpPut', () => {
     const started = await tv({ sftp: false });
     const session = await openSshSession(target(started));
 
-    const putting = session.sftpPut(Readable.from([Buffer.from('x')]), '/media/developer/temp/a.ipk');
+    const putting = session.sftpPut(
+      Readable.from([Buffer.from('x')]),
+      '/media/developer/temp/a.ipk',
+    );
 
     await expect(putting).rejects.toBeInstanceOf(SftpUnavailableError);
     session.close();

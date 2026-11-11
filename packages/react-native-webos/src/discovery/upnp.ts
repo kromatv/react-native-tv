@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { fetchText } from './http-text.ts';
 import { SECOND_SCREEN_SEARCH_TARGET } from './ssdp.ts';
 
@@ -15,6 +16,8 @@ export interface UpnpDevice {
 
 const MAX_DESCRIPTION_BYTES = 32 * 1024;
 const UDN = /^uuid:([0-9A-Za-z-]{1,64})$/;
+const name = z.string().max(256).catch('');
+const descriptionSchema = z.object({ friendlyName: name, manufacturer: name, modelNumber: name });
 const ENTITIES: Record<string, string> = {
   '&quot;': '"',
   '&apos;': "'",
@@ -37,11 +40,15 @@ function elementText(xml: string, tag: string): string {
   return end === -1 ? '' : unescapeName(xml.slice(start, end).trim());
 }
 
+/** Reads the fields of a description; one that is missing, or too long to be a name, is empty. */
 export function parseDeviceDescription(xml: string): UpnpDevice {
-  return {
+  const fields = descriptionSchema.parse({
     friendlyName: elementText(xml, 'friendlyName'),
     manufacturer: elementText(xml, 'manufacturer'),
     modelNumber: elementText(xml, 'modelNumber'),
+  });
+  return {
+    ...fields,
     udn: UDN.exec(elementText(xml, 'UDN'))?.[1] ?? '',
     secondScreen: xml.includes(`<serviceType>${SECOND_SCREEN_SEARCH_TARGET}</serviceType>`),
   };

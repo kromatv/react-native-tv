@@ -28,6 +28,7 @@ ICU's data, and the JavaScript bundle carries the FormatJS polyfills.
 | ICU, its code and `icudt78l.dat` | 78.3 | Unicode-3.0, with the third-party terms in ICU's licence | Unicode, Inc. and others |
 | FormatJS: `@formatjs/intl-numberformat`, `intl-pluralrules`, `intl-relativetimeformat` and their locale data | 10.0.2, 7.0.2, 13.0.1 | MIT | FormatJS |
 | GCC's libstdc++ and libatomic | GCC 14 | GPL-3.0-or-later WITH GCC-exception-3.1 | the Free Software Foundation |
+| Mozilla's CA certificates, as `res/cacert.pem`, extracted by curl (<https://curl.se/docs/caextract.html>) | 2026-11-05 | MPL-2.0 | Mozilla and the certificate authorities |
 
 The GCC Runtime Library Exception lets a program ship these two libraries
 without their terms; they are listed so the package says what it holds.

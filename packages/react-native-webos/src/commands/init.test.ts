@@ -2,7 +2,6 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { readExpoConfig } from '../app/expo-config.ts';
 import { ask, canAsk } from '../cli/ask.ts';
 import { run as runCommand } from '../exec.ts';
 import { captureProcessOutput } from '../fakes.fixtures.ts';
@@ -82,20 +81,20 @@ describe('rn-webos init', () => {
   it('takes the suggested id without a terminal, and says so', async () => {
     await run();
 
-    expect(appJson().expo.plugins[0][1]).toEqual({ package: 'com.anonymous.tvapp' });
-    expect(output.stdout()).toContain('Package id com.anonymous.tvapp; pass --package');
+    expect(appJson().expo.plugins[0][1]).toEqual({ package: 'com.anonymous.tv-app' });
+    expect(output.stdout()).toContain('App id com.anonymous.tv-app; pass --package');
   });
 
   it('asks on a terminal until the id is valid', async () => {
     vi.mocked(canAsk).mockReturnValue(true);
-    vi.mocked(ask).mockResolvedValueOnce('not valid').mockResolvedValueOnce('org.example.tv');
+    vi.mocked(ask).mockResolvedValueOnce('Not Valid').mockResolvedValueOnce('org.example.tv');
 
     await run();
 
-    expect(ask).toHaveBeenCalledWith('webOS package id', 'com.anonymous.tvapp');
+    expect(ask).toHaveBeenCalledWith('webOS app id', 'com.anonymous.tv-app');
     expect(ask).toHaveBeenCalledTimes(2);
     expect(appJson().expo.plugins[0][1]).toEqual({ package: 'org.example.tv' });
-    expect(output.stdout()).toContain('not valid: expected a reverse-DNS id');
+    expect(output.stdout()).toContain('Not Valid: expected an id such as com.example.myapp');
   });
 
   it('prints what to add to an app.config file and a Metro config it cannot change safely', async () => {
@@ -117,21 +116,9 @@ describe('rn-webos init', () => {
     await run('--package', 'com.example.tv');
 
     expect(output.stdout()).toContain('Next: bunx expo start');
-    expect(output.stdout()).toContain('bunx rn-webos doctor checks it');
-  });
-
-  it("names the rootstrap package the app's floor needs", async () => {
-    await run('--package', 'com.example.tv');
-    vi.mocked(readExpoConfig).mockReturnValueOnce({
-      name: 'TV',
-      plugins: [['@kromatv/react-native-webos', { package: 'com.example.tv', platform: '8.0' }]],
-    });
-    await run();
-
     expect(output.stdout()).toContain(
-      "Builds for webOS 6.0, the app's floor, need IOT-Headed-6.0-NativeAppDevelopment-CLI",
+      'The first build downloads the SDK it compiles against, once: bunx rn-webos doctor checks the rest of the toolchain.',
     );
-    expect(output.stdout()).toContain('need WEBOS-8.0-NativeAppDevelopment-CLI');
   });
 
   it('prints the plugin entry to add to an app.config file', async () => {
@@ -143,7 +130,7 @@ describe('rn-webos init', () => {
       'app.config.js is evaluated by Expo: add this entry to its plugins',
     );
     expect(output.stdout()).toContain(
-      '["@kromatv/react-native-webos",{"package":"com.anonymous.tvapp"}]',
+      '["@kromatv/react-native-webos",{"package":"com.anonymous.tv-app"}]',
     );
   });
 
@@ -216,8 +203,10 @@ describe('rn-webos init', () => {
     );
   });
 
-  it('refuses a bad package id and a directory that is not an app', async () => {
-    await expect(run('--package', 'tv')).rejects.toThrow('tv is not a webOS package id');
+  it('refuses a bad app id and a directory that is not an app', async () => {
+    await expect(run('--package', 'com.lge.tv')).rejects.toThrow(
+      'com.lge.tv is not a webOS app id: must not start with',
+    );
     rmSync(join(dir, 'package.json'));
     await expect(run('--package', 'com.example.tv')).rejects.toThrow('has no package.json');
   });

@@ -69,7 +69,10 @@ async function onlyDevice(): Promise<Device> {
   }
   if (online.length > 1) {
     const names = online.map((device) => device.name).join(', ');
-    throw new FixableError(`${online.length} TVs are connected`, `Pick one with --device: ${names}`);
+    throw new FixableError(
+      `${online.length} TVs are connected`,
+      `Pick one with --device: ${names}`,
+    );
   }
   return first;
 }

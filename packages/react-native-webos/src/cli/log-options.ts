@@ -9,11 +9,11 @@ import { UsageError, type OptionSpecs } from './command.ts';
 export const RELEASE_OPTION = {
   release: {
     type: 'boolean',
-    description: 'Build for the store: the app streams no logs',
+    description: 'Make a release build: the app streams no logs',
   },
 } as const satisfies OptionSpecs;
 
-/** `--dev`, for a command that builds for the store unless asked. */
+/** `--dev`, for a command that makes a release build unless asked. */
 export const DEV_OPTION = {
   dev: {
     type: 'boolean',

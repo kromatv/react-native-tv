@@ -7,26 +7,28 @@
 
 namespace rnwebos {
 
-Scene::Scene(HostWindow &window) : window_(window) {
+Scene::Scene(HostWindow &window) : window_(&window), size_(window.size()) {
   MainLoop::get().setRenderer([this] { return render(); });
   MainLoop::get().requestFrame();
 }
 
+Scene::Scene(PixelSize size) : window_(nullptr), size_(size) {}
+
 Scene::~Scene() {
-  MainLoop::get().setRenderer(nullptr);
+  if (window_ != nullptr) MainLoop::get().setRenderer(nullptr);
 }
 
-HostWindow &Scene::window() const {
+HostWindow *Scene::window() const {
   return window_;
 }
 
 PixelSize Scene::size() const {
-  return window_.size();
+  return size_;
 }
 
 void Scene::invalidate() {
   if (std::exchange(invalid_, true)) return;
-  MainLoop::get().requestFrame();
+  if (window_ != nullptr) MainLoop::get().requestFrame();
 }
 
 void Scene::addLayer(SceneLayer &layer, int order) {
@@ -54,11 +56,11 @@ void Scene::drawInto(SkCanvas &canvas) {
 }
 
 bool Scene::render() {
-  if (!std::exchange(invalid_, false)) return false;
+  if (window_ == nullptr || !std::exchange(invalid_, false)) return false;
   const auto started = std::chrono::steady_clock::now();
-  drawInto(window_.canvas());
+  drawInto(window_->canvas());
   const auto drawn = std::chrono::steady_clock::now();
-  window_.present();
+  window_->present();
   if (frameObserver_) {
     frameObserver_({.started = started, .draw = drawn - started, .present = std::chrono::steady_clock::now() - drawn});
   }

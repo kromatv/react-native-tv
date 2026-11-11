@@ -1,86 +1,43 @@
-import { mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { checkDevices } from '../doctor/webos-checks.ts';
-import {
-  capabilityPayload,
-  fakeTv,
-  TV_CAPABILITIES,
-  type FakeTv,
-} from '../sdb/fake-tv.fixtures.ts';
+import { scanForTvs } from '../discovery/scan-tvs.ts';
+import { captureProcessOutput } from '../fakes.fixtures.ts';
+import { useFakeTvs, useTemporaryState } from '../webos/connected-tv.fixtures.ts';
 import { devicesCommand } from './devices.ts';
 
-const tvs: FakeTv[] = [];
-let state = '';
-let previous: string | undefined;
-let printed: string[] = [];
+vi.mock('../discovery/scan-tvs.ts', () => ({ scanForTvs: vi.fn() }));
+
+let output: ReturnType<typeof captureProcessOutput>;
+
+const state = useTemporaryState();
+const connect = useFakeTvs();
 
 beforeEach(() => {
-  previous = process.env.XDG_STATE_HOME;
-  state = mkdtempSync(join(tmpdir(), 'rn-webos-devices-'));
-  process.env.XDG_STATE_HOME = state;
-  printed = [];
-  vi.spyOn(process.stdout, 'write').mockImplementation((chunk) => {
-    printed.push(String(chunk));
-    return true;
-  });
+  output = captureProcessOutput();
 });
 
-afterEach(async () => {
+afterEach(() => {
   vi.restoreAllMocks();
-  if (previous === undefined) delete process.env.XDG_STATE_HOME;
-  else process.env.XDG_STATE_HOME = previous;
-  rmSync(state, { recursive: true, force: true });
-  await Promise.all(tvs.splice(0).map((started) => started.close()));
 });
-
-async function tv(): Promise<FakeTv> {
-  const started = await fakeTv({
-    services: {
-      'capability:': (stream) => {
-        stream.write(capabilityPayload(TV_CAPABILITIES));
-        stream.close();
-      },
-    },
-  });
-  tvs.push(started);
-  return started;
-}
 
 describe('rn-webos devices', () => {
   it('says how to connect a TV when none is known', async () => {
-    await devicesCommand.run(['--no-scan'], { cwd: state });
+    await devicesCommand.run(['--no-scan'], { cwd: state() });
 
-    expect(printed.join('')).toContain('No Samsung TV found');
+    expect(output.stdout()).toContain('No LG TV found');
+    expect(output.stdout()).toContain('rn-webos connect <tv ip>');
+    expect(scanForTvs).not.toHaveBeenCalled();
   });
 
-  it('connects a TV, remembers it and lists it with its CPU and platform', async () => {
-    const started = await tv();
+  it('logs in to a connected TV the scan did not find, and lists what it reports', async () => {
+    const { tv } = await connect({ name: 'lounge' });
 
-    await devicesCommand.run(['--no-scan', '--connect', `127.0.0.1:${started.port}`], {
-      cwd: state,
-    });
-    printed = [];
-    await devicesCommand.run(['--no-scan'], { cwd: state });
+    await devicesCommand.run(['--no-scan'], { cwd: state() });
 
-    expect(printed.join('')).toContain('GQ75LS03DAUXZG');
-    expect(printed.join('')).toContain('ready: armv7, webOS 9.0');
-  });
-});
-
-describe('checkDevices', () => {
-  it('warns when no TV is known, and names the TVs that answer', async () => {
-    expect((await checkDevices()).status).toBe('warn');
-
-    const started = await tv();
-    await devicesCommand.run(['--no-scan', '--connect', `127.0.0.1:${started.port}`], {
-      cwd: state,
-    });
-
-    expect(await checkDevices()).toMatchObject({
-      status: 'ok',
-      detail: `GQ75LS03DAUXZG at 127.0.0.1:${started.port}`,
-    });
+    expect(output.stdout()).toContain('127.0.0.1  OLED65C25LB');
+    expect(output.stdout()).toContain('webOS 26 (11.2.0)');
+    expect(output.stdout()).toMatch(/Developer Mode\s+on\n/);
+    expect(output.stdout()).toContain('connected as lounge');
+    expect(output.stdout()).toContain('1 of 1 connected');
+    expect(tv.connections).toBe(1);
   });
 });

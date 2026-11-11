@@ -119,9 +119,13 @@ MainLoop &MainLoop::get() {
   return loop;
 }
 
-MainLoop::MainLoop() : state_(std::make_unique<State>()) {}
+MainLoop::MainLoop() : state_(std::make_unique<State>()) {
+  SDL_InitSubSystem(SDL_INIT_EVENTS);
+}
 
-MainLoop::~MainLoop() = default;
+MainLoop::~MainLoop() {
+  SDL_QuitSubSystem(SDL_INIT_EVENTS);
+}
 
 bool MainLoop::isMainThread() const {
   return std::this_thread::get_id() == state_->mainThread;

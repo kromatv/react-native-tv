@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { decodePng, encodePng, pngSize } from './png-image.ts';
+import { encodePng } from './png-encode.ts';
+import { decodePng, pngSize } from './png-image.ts';
 import { plainPng, rawPng } from './png.fixtures.ts';
 
 const pixels = (png: Uint8Array) => [...decodePng(png).pixels];

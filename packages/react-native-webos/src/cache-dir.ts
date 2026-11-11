@@ -2,7 +2,7 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 
 /**
- * Where downloads, sysroot mirrors and runtime builds live. Shared by every
+ * Where downloads, the SDK and runtime builds live. Shared by every
  * project on the machine; `RN_WEBOS_CACHE_DIR` overrides it, and the CMake
  * toolchain resolves the same directory.
  */

@@ -4,7 +4,8 @@ import { join, resolve } from 'node:path';
 import type { AppProject } from '../app/app-project.ts';
 import { FixableError } from '../errors.ts';
 import { ICON_FILE, LARGE_ICON_FILE, SPLASH_FILE } from './appinfo.ts';
-import { decodePng, encodePng, pngSize, type RgbaImage } from './png-image.ts';
+import { encodePng } from './png-encode.ts';
+import { decodePng, pngSize, type RgbaImage } from './png-image.ts';
 import { fitImage } from './scale-image.ts';
 
 const ICON_SIZE = 80;

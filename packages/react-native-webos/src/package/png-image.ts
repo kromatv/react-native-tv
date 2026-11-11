@@ -1,4 +1,4 @@
-import { crc32, deflateSync, inflateSync } from 'node:zlib';
+import { inflateSync } from 'node:zlib';
 
 /** An image as straight (not premultiplied) 8-bit RGBA, row after row. */
 export interface RgbaImage {
@@ -7,7 +7,8 @@ export interface RgbaImage {
   readonly pixels: Uint8Array;
 }
 
-const SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+/** The eight bytes every PNG starts with. */
+export const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 const MAX_PIXELS = 64 * 1024 * 1024;
 const COLOR_GRAY = 0;
 const COLOR_RGB = 2;
@@ -38,7 +39,8 @@ interface PngChunks {
 }
 
 function readHeader(png: Buffer): PngHeader {
-  if (png.byteLength < 33 || !png.subarray(0, 8).equals(SIGNATURE)) throw new Error('Not a PNG');
+  if (png.byteLength < 33 || !png.subarray(0, 8).equals(PNG_SIGNATURE))
+    throw new Error('Not a PNG');
   if (png.toString('latin1', 12, 16) !== 'IHDR') throw new Error('The PNG has no header');
   return {
     width: png.readUInt32BE(16),
@@ -182,33 +184,4 @@ export function decodePng(file: Uint8Array): RgbaImage {
     }
   }
   return { width, height, pixels };
-}
-
-function chunk(type: string, body: Uint8Array): Buffer {
-  const typed = Buffer.concat([Buffer.from(type, 'latin1'), body]);
-  const framed = Buffer.alloc(8 + typed.byteLength);
-  framed.writeUInt32BE(body.byteLength, 0);
-  typed.copy(framed, 4);
-  framed.writeUInt32BE(crc32(typed), 4 + typed.byteLength);
-  return framed;
-}
-
-/** Encodes an image as an 8-bit RGBA PNG. */
-export function encodePng(image: RgbaImage): Buffer {
-  const header = Buffer.alloc(13);
-  header.writeUInt32BE(image.width, 0);
-  header.writeUInt32BE(image.height, 4);
-  header.writeUInt8(8, 8);
-  header.writeUInt8(COLOR_RGBA, 9);
-  const rowBytes = image.width * 4;
-  const rows = Buffer.alloc((rowBytes + 1) * image.height);
-  for (let row = 0; row < image.height; row += 1) {
-    rows.set(image.pixels.subarray(row * rowBytes, (row + 1) * rowBytes), row * (rowBytes + 1) + 1);
-  }
-  return Buffer.concat([
-    SIGNATURE,
-    chunk('IHDR', header),
-    chunk('IDAT', deflateSync(rows)),
-    chunk('IEND', new Uint8Array()),
-  ]);
 }

@@ -56,8 +56,13 @@ describe('planCommand', () => {
     ]);
     expect((await planCommand('find-tvs', {}, DEV_SERVER)).args).toEqual(['devices']);
     expect(
-      (await planCommand('connect-tv', { device: ' 192.168.1.50 ', passphrase: 'A1b2C3' }, DEV_SERVER))
-        .args,
+      (
+        await planCommand(
+          'connect-tv',
+          { device: ' 192.168.1.50 ', passphrase: 'A1b2C3' },
+          DEV_SERVER,
+        )
+      ).args,
     ).toEqual(['connect', '192.168.1.50', '--passphrase', 'A1b2C3']);
     await expect(
       planCommand('connect-tv', { device: '192.168.1.50', passphrase: '' }, DEV_SERVER),

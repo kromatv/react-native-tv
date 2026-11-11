@@ -51,7 +51,8 @@ export async function fakeKeyServer(body: string, status = 200): Promise<FakeKey
   });
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
   const address = server.address();
-  if (address === null || typeof address === 'string') throw new Error('the key server got no port');
+  if (address === null || typeof address === 'string')
+    throw new Error('the key server got no port');
   return {
     port: address.port,
     requests,

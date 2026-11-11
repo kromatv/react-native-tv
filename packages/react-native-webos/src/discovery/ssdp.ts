@@ -1,4 +1,5 @@
 import { createSocket } from 'node:dgram';
+import { z } from 'zod';
 
 /** One answer to an SSDP search: who sent it, what it answered for and where its UPnP description is. */
 export interface SsdpReply {
@@ -15,7 +16,14 @@ export interface SsdpReply {
 const GROUP = '239.255.255.250'; // NOSONAR: SSDP's multicast group, fixed by UPnP Device Architecture 1.1
 const PORT = 1900;
 const MAX_WAIT_SECONDS = 2;
+const MAX_REPLY_CHARS = 8192;
 const USN_UUID = /^uuid:([0-9A-Za-z-]{1,64})(?:::|$)/;
+const headersSchema = z.object({
+  location: z.url({ protocol: /^https?$/ }).max(2048),
+  server: z.string().max(256).default(''),
+  st: z.string().max(256).default(''),
+  usn: z.string().max(512).default(''),
+});
 /** The service of an LG TV's remote control, which only its Basic device answers a search for. */
 export const SECOND_SCREEN_SEARCH_TARGET = 'urn:lge-com:service:webos-second-screen:1';
 
@@ -26,23 +34,18 @@ export function searchRequest(target: string): Buffer {
   );
 }
 
-/** Reads a search response's headers; null without a LOCATION. */
+/** Reads a search response's headers; null without an HTTP LOCATION. */
 export function parseSsdpReply(message: string, host: string): SsdpReply | null {
-  const headers = new Map<string, string>();
-  for (const line of message.slice(0, 8192).split(/\r?\n/).slice(1)) {
+  const headers: Record<string, string> = {};
+  for (const line of message.slice(0, MAX_REPLY_CHARS).split(/\r?\n/).slice(1)) {
     const separator = line.indexOf(':');
     if (separator > 0)
-      headers.set(line.slice(0, separator).trim().toLowerCase(), line.slice(separator + 1).trim());
+      headers[line.slice(0, separator).trim().toLowerCase()] = line.slice(separator + 1).trim();
   }
-  const location = headers.get('location');
-  if (location === undefined || !/^https?:\/\//.test(location)) return null;
-  return {
-    host,
-    location,
-    server: headers.get('server') ?? '',
-    target: headers.get('st') ?? '',
-    uuid: USN_UUID.exec(headers.get('usn') ?? '')?.[1] ?? null,
-  };
+  const parsed = headersSchema.safeParse(headers);
+  if (!parsed.success) return null;
+  const { location, server, st, usn } = parsed.data;
+  return { host, location, server, target: st, uuid: USN_UUID.exec(usn)?.[1] ?? null };
 }
 
 /**

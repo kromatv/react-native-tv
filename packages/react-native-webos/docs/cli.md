@@ -1,6 +1,6 @@
 # The `rn-webos` CLI
 
-`rn-webos` turns an Expo app into a signed Samsung TV package (`.tpk`), installs
+`rn-webos` turns an Expo app into an LG webOS TV package (`.ipk`), installs
 it on a TV and prints what it logs. Run it from the app's directory, or pass
 `--project <dir>`. Every command that bundles (`bundle`, `package`, `run`,
 `simulator run`) also takes `--entry <file>`, a JavaScript entry to bundle
@@ -9,20 +9,18 @@ instead of the app's `main`, such as one screen under test.
 ```sh
 rn-webos init                            # set the app up for webOS, once
 rn-webos doctor                          # is this machine ready?
-rn-webos package                         # build a signed .tpk
+rn-webos package                         # build an .ipk
 rn-webos run --device 192.168.1.50      # build, install, launch, print logs
 ```
 
 Every command prints one line per step. `--verbose` (`-v`) also prints what the
-underlying tools print (CMake, Ninja, Metro, dotnet). When a
+underlying tools print (CMake, Ninja, Metro, tar). When a
 tool fails, the last lines it printed are shown with the error.
 
-`rn-webos` talks to the TV itself, over sdb's protocol on port 26101, and signs
-packages itself: webOS Studio's `sdb` and `webos` tools are never run. webOS
-Studio is still where the native build's rootstrap and GCC runtime come from,
-and where Samsung's certificates are created, once. A TV takes one sdb connection at a time, so while
-webOS Studio's `sdb` or Device Manager is connected to it, `rn-webos` cannot
-reach it: `sdb disconnect <tv ip>` frees it.
+`rn-webos` talks to the TV itself: SSH on port 9922, the channel Developer
+Mode opens, with the key the TV gives out. LG's `ares-*` commands are never run
+and need not be installed. A package is not signed, and there is no certificate
+to make. What a TV needs, once, is [`rn-webos connect`](#rn-webos-connect).
 
 `rn-webos <command> --help` lists a command's options. In an app, run it with
 the app's package manager: `npx rn-webos`, `bunx rn-webos`, `pnpm exec rn-webos`
@@ -45,7 +43,7 @@ The webOS settings are the props of this package's config plugin in `app.json`
     "plugins": [
       [
         "@kromatv/react-native-webos",
-        { "package": "com.example.myapp", "label": "My App", "privileges": ["internet"] }
+        { "package": "com.example.myapp", "title": "My App", "locales": ["en", "fr"] }
       ]
     ]
   }
@@ -56,27 +54,19 @@ The plugin checks its props whenever Expo reads the config (`npx expo config`,
 `npx expo start`), so a mistake shows there too. It changes nothing in the
 config: Expo generates no webOS project.
 
-Earlier releases read the same fields from `expo.webos`. This release still
-does, and prints a deprecation; the next one will not. Settings in both places
-are an error.
-
 | Field | Default | Meaning |
 |---|---|---|
-| `package` | (required) | The webOS package and app id, reverse-DNS: letters, digits and underscores in each part. |
-| `label` | `expo.name` | The name the TV shows. |
-| `version` | `expo.version` | The package version, `x.y.z` with numbers only. Set it when `expo.version` has a suffix such as `-beta`. |
-| `icon` | `expo.icon`, else a default | A PNG, relative to the app. |
-| `privileges` | `["internet"]` | webOS privileges. A short name expands to `http://webos.org/privilege/<name>`; a full URI is kept as written. |
-| `platform` | `6.0` | The floor: the oldest webOS version the package runs on, `6.0` to `10.0`. One package reaches that version and every later one. See [webos-versions.md](webos-versions.md). |
-| `profile` | the active one | The webOS Studio signing profile whose certificates sign the package. |
-| `locales` | `["en"]` | The locales `Intl` formats in, as BCP 47 tags (`fr`, `pt-BR`). Each adds its ICU data (by language) to the package and FormatJS's data to the bundle; any other locale falls back to the device's, then to the first listed. |
-| `voice` | off | `true`, or `{ "searchUrl": "myapp://search?q={query}" }`: Samsung's voice assistant. See [tv-features.md](tv-features.md#voice). |
-| `preview` | off | `{ "endpoint": "<http or https URL>" }` for a public Smart Hub preview, `{ "refreshMinutes": 30 }` (10 or more) for a personal one the app publishes. See [tv-features.md](tv-features.md#smart-hub-preview). |
-| `resolution` | `1080p` | `4k` asks the window manager for a 3840x2160 UI plane on a 4K panel. See [tv-features.md](tv-features.md#4k-ui). |
+| `package` | (required) | The app id, `id` in `appinfo.json`, and the package's name: lowercase letters, digits, periods and minus signs, two characters or more, starting with a letter or a digit. Not one starting with `com.palm`, `com.webos`, `com.lge` or `com.palmdts`, which LG keeps for its own apps. |
+| `title` | `expo.name` | The name the TV shows, 20 characters or fewer. Set it when `expo.name` is longer. |
+| `version` | `expo.version`, else `1.0.0` | The app version: three numbers `x.y.z`, none with a leading zero. Set it when `expo.version` has a suffix such as `-beta`. |
+| `vendor` | none | The app's owner, as `appinfo.json` names it. |
+| `icon` | `expo.icon`, else a plain square | A PNG, relative to the app, not interlaced. The package's 80x80 `icon.png` and 130x130 `largeIcon.png` are scaled from it; one that is not square is centered on transparency. |
+| `iconColor` | the TV's (white) | The color behind the icon on the launcher, as `appinfo.json` takes it, such as `#202020`. |
+| `splash` | none | A 1920x1080 PNG, relative to the app, shown while the app loads (`splashBackground`). Another size is refused. |
+| `permissions` | none | ACG groups of the Luna calls the app's own native code makes, such as `network.query`. They join the five the runtime always declares in `requiredACG`: `lunabus.query`, `application.launcher`, `settings.query`, `systemconfig.query` and `tts.operation`. webOS TV 26 Re:New refuses a call outside the declared groups. |
+| `locales` | `["en"]` | The locales `Intl` formats in and text is broken into lines for, as BCP 47 tags (`fr`, `pt-BR`). Each adds its ICU data (by language) to the package and FormatJS's data to the bundle; any other locale falls back to the device's, then to the first listed. Japanese, Chinese, Thai, Lao, Khmer and Burmese add their word dictionary, 2 MB for the first two. |
 
-An unknown key is an error, so a typo does not pass silently. expo-video's
-config plugin option `supportsBackgroundPlayback` is read too
-([tv-features.md](tv-features.md#background-audio)).
+An unknown key is an error, so a typo does not pass silently.
 
 ### The Metro config
 
@@ -101,43 +91,32 @@ does not know the `webos` platform, they stop and say to run
 
 | What | Where |
 |---|---|
-| The generated .NET project | `webos/` in the app. It ignores itself (`webos/.gitignore` is `*`), so it never reaches git. Delete it at any time. A `webos/` that holds files and does not ignore itself is the app's own: `rn-webos` refuses to build over it. |
+| The generated app directory | `webos/app/` in the app: `appinfo.json`, the `react-native-webos` executable, the icons, `res/` and an empty `appdata/`. `webos/` ignores itself (`webos/.gitignore` is `*`), so it never reaches git. Delete it at any time. A `webos/` that holds files and does not ignore itself is the app's own: `rn-webos` refuses to build over it. |
 | The bundle | `webos/build/bundle/` (`index.webos.js`, `index.webos.hbc`, `assets/`) |
-| The signed package | `webos/bin/Release/webos80/<package>-<version>.tpk`: every floor builds the shell against WebOSFX API 8 (`webos80`, webOS 6.0, not the webOS version) |
+| The package | `webos/<package>_<version>_arm.ipk` |
 | Third-party licences | `res/THIRD_PARTY_NOTICES.md` in every package |
-| The native runtime | `~/.cache/react-native-webos/runtime/<react-native>-<version>-<arch>-webos<platform>-<key>/`, the key a hash of where this package's `runtime/` and the app's react-native are, so two checkouts or two apps never share a CMake build |
+| The native runtime | `~/.cache/react-native-webos/runtime/<react-native>-<version>-<flavour>-<key>/`, the key a hash of where this package's `runtime/` and the app's react-native are, so two checkouts or two apps never share a CMake build |
 | Hermes host compilers | `~/.cache/react-native-webos/hermes/<version>/` |
-| Linkable sysroots | `~/.cache/react-native-webos/sysroots/` |
-| Source archives | `~/.cache/react-native-webos/downloads/`, shared with CMake |
-| Remote pairing tokens | `~/.local/state/react-native-webos/remote/<tv>.token`, readable by you only, out of the cache so a cache wipe does not unpair; one an older `rn-webos` left in the cache moves there on first use |
-| TVs reached before | `~/.local/state/react-native-webos/devices.json`, most recent first |
-| Author certificates `certificate create-author` makes | `~/.local/state/react-native-webos/certificates/<name>/author.p12` |
-| Certificates `certificate import` copies | `~/SamsungCertificate/<name>/`, where webOS Studio's Certificate Manager puts Samsung's |
+| The SDK TV builds compile against | `~/.cache/react-native-webos/sdk/<version>/`, 470 MB, extracted from the archive in `downloads/webos-sdk/` (360 MB) |
+| ICU data, full and trimmed | `~/.cache/react-native-webos/icu/<version>/` |
+| Source archives and the CA bundle | `~/.cache/react-native-webos/downloads/`, shared with CMake |
+| TVs connected before | `~/.local/state/react-native-webos/devices.json`: each TV's name, address and SSH port, most recent first |
+| The SSH key of each TV | `~/.local/state/react-native-webos/keys/<ip>_<port>.pem`, readable by you only: the key `connect` fetched, without its passphrase. Nothing is written to LG's `~/.webos` or to `~/.ssh` |
+| Remote pairing keys | `~/.local/state/react-native-webos/remote/<tv id>.key`, readable by you only, out of the cache so a cache wipe does not unpair. The id is the TV's own, so the pairing survives a new address |
 
 `RN_WEBOS_CACHE_DIR` moves the cache; `XDG_CACHE_HOME` is honoured too, and
-`XDG_STATE_HOME` moves the tokens and the TV list.
-`WEBOS_SDK_DIR` points at webOS Studio when it is not in `~/webos-studio`,
-`WEBOS_SDK_DATA_DIR` at its data directory (the one holding `profile/profiles.xml`)
-when its `sdk.info` does not name it, and
-`WEBOS_LLVM_DIR` at a clang and lld that are not Homebrew's.
+`XDG_STATE_HOME` moves the keys and the TV list.
+`WEBOS_LLVM_DIR` points at the directory of a clang and lld that are not
+Homebrew's.
 
 ## Targets
 
-A build is for one CPU and one webOS version. Each is chosen in this order:
-
-- **CPU** (`--arch`): the flag, then what the TV reports, then `armv7l`.
-- **webOS version** (`--platform`): the flag, then the plugin's `platform` prop, then
-  `6.0`. It is a floor, not the TV's version: the runtime is linked against
-  that version's rootstrap and the manifest's `api-version` says it, so the
-  package installs on that version and every later one.
-
-Floors run from `6.0` (2021 models) to `10.0`. Below 6.0 Samsung's TVs refuse
-the native libraries an app carries, so a floor or a TV below it is refused
-with a pointer to the web build ([webos-versions.md](webos-versions.md)).
-Building for a floor newer than the TV's version is refused too, since the TV
-could not install it. Each floor needs its rootstrap: `IOT-Headed-<v>-NativeAppDevelopment-CLI`
-for 6.0 to 7.0, `WEBOS-<v>-NativeAppDevelopment-CLI` from 8.0; `rn-webos doctor`
-names the one missing.
+Every build is the same: one 32-bit ARM executable (`armv7-a`, softfp, NEON),
+which is what every webOS TV runs apps as, whatever its kernel. It is linked
+against glibc 2.12.2, older than any TV's, with libstdc++ linked in, so one
+package installs on webOS TV 4.x (2018 models) and every later release. There
+is no `--arch` and no `--platform`. The facts are in
+[webos-native-toolchain.md](reference/webos-native-toolchain.md).
 
 ## Inside `npx expo start`
 
@@ -146,8 +125,8 @@ adds two keys to `npx expo start`, beside Expo's `a` and `i`:
 
 | Key | Does |
 |---|---|
-| **t** | Opens the app on the TV used last, else on the only TV in Developer mode on the network |
-| **shift+t** | Lists the TVs used before, those on the network and the simulator, and opens the app on the one whose number you press; Esc cancels |
+| **t** | Opens the app on the TV used last. With no TV connected yet, it looks for TVs in Developer Mode on the network and says which to `rn-webos connect` |
+| **shift+t** | Lists the TVs connected before and the simulator, and opens the app on the one whose number you press; Esc cancels |
 
 `expo start` prints `› Press t │ open on webOS TV` under its own keys, and both
 lines in the list `?` shows. Opening does what Run on TV does below, with this
@@ -162,10 +141,10 @@ commands:
 | Command | Runs |
 |---|---|
 | Open `@kromatv/react-native-webos` | The plugin's page, below |
-| Run on TV | `rn-webos run --device <ip> --dev-server <this dev server>`, then the app's logs. Leave the address empty for the TV used last |
+| Run on TV | `rn-webos run --device <ip or name> --dev-server <this dev server>`, then the app's logs. Leave the address empty for the TV used last |
 | Run in simulator | `rn-webos simulator run --dev-server <this dev server>`, on the instance `$RN_WEBOS_SIMULATOR_INSTANCE` names, else `default` |
 | Find TVs | `rn-webos devices` |
-| Create certificate | `rn-webos certificate create-author <name>` |
+| Connect TV | `rn-webos connect <ip> --passphrase <code>`: the TV's address and the passphrase its Developer Mode app shows, with Key Server on |
 
 Expo stops a command after ten seconds, so each one starts its work in the
 background and prints the address of the plugin's page,
@@ -202,12 +181,11 @@ export:embed`). A `package.json` script stands beside Expo's own:
 Sets an Expo app up for webOS. Running it again changes nothing.
 
 - **The config plugin.** It lists the plugin in `app.json` with the app's
-  package id, or gives the entry `npx expo install` added by name its props. On
-  a terminal it asks for the id, suggesting the app's `android.package`, else
-  `com.anonymous.<slug>` as `expo prebuild` does; without one it takes the
-  suggestion. `expo.webos` of earlier releases moves into the plugin's props.
-  Expo evaluates an `app.config.*` file, so `init` prints the entry to add to
-  it instead.
+  id, or gives the entry `npx expo install` added by name its props. On a
+  terminal it asks for the id, suggesting the app's `android.package` when
+  webOS takes it (lowercase, no underscore), else `com.anonymous.<slug>` as
+  `expo prebuild` does; without one it takes the suggestion. Expo evaluates an
+  `app.config.*` file, so `init` prints the entry to add to it instead.
 - **The Metro config.** It writes `metro.config.mjs` when the app has none. An
   existing config whose export is a single line is wrapped with `withWebOS`.
   For any other, a JSON one, `package.json`'s `metro` key or a config at the
@@ -223,12 +201,10 @@ Sets an Expo app up for webOS. Running it again changes nothing.
   the package manager's install when it changed anything or the app loads more
   than one `react-native`, and fails, naming each copy and who loads it, unless
   one is left.
-- **The rootstrap.** It names the Package Manager package the app's floor
-  needs, `IOT-Headed-6.0-NativeAppDevelopment-CLI` for the default 6.0.
 
 | Option | |
 |---|---|
-| `--package <id>` | The package id, instead of asking |
+| `--package <id>` | The app id, instead of asking |
 | `--no-install` | Change the files without running the install; `init` prints the command |
 | `--project <dir>` | The app to set up |
 
@@ -239,98 +215,114 @@ npx rn-webos init --package com.example.myapp
 
 ### `rn-webos doctor`
 
-Checks everything a build, a signature and an install need, and prints the
-exact fix for each problem: webOS Studio, its GCC runtime and the rootstrap for
-the target's floor (the app's `platform` prop when run in an app), with the
-Package Manager package it comes in, Homebrew's LLVM (clang and lld), CMake 3.24 or newer, Ninja, the .NET
-SDK, Node.js, the certificates of the active signing profile (opened with their
-passwords, not expired), the TVs reached before (each one
-probed), ccache, and, when run in an app, its config and that it loads one
-`react-native`. Exits 1 when a check
-fails; a warning (no TV answers, no ccache) does not fail it.
+Checks everything a build and an install need, and prints the exact fix for
+each problem: the SDK TV builds compile against (a warning until the first
+build or `rn-webos setup` downloaded it), Homebrew's LLVM (clang and lld),
+CMake 3.24 or newer, Ninja, Node.js, ccache, the TVs connected before (each one
+logged in to: reachable, Developer Mode on, key still accepted), and, when run
+in an app, its config and that it loads one `react-native`. Exits 1 when a
+check fails; a warning (no SDK yet, no TV answers, no ccache) does not fail it.
 
 | Option | |
 |---|---|
-| `--arch <arch>` | The CPU to check a toolchain for (default `armv7l`) |
-| `--platform <version>` | The webOS version to check a rootstrap for (default: the app's `platform` prop when run in an app, else `6.0`) |
 | `--project <dir>` | The app to check |
 
 ### `rn-webos devices`
 
-Finds the Samsung TVs on this machine's networks and probes each one, along
-with every TV `rn-webos` reached before. The scan sends an SSDP search and asks
-each host of the local `/24`s, the ones this machine talked to lately first,
-on Samsung's REST API port (8001) and the sdb port (26101); a Samsung soundbar,
-which answers the same API, is left out. It takes about five seconds.
+Finds the LG TVs on this machine's networks and probes each one, along with
+every TV `rn-webos` was connected to before. The scan sends an SSDP search for
+LG's remote control service and tries each host of the local `/24`s, the ones
+this machine talked to lately first, on the remote control ports (3001, 3000)
+and the Developer Mode SSH port (9922). It asks each TV what it is over its
+remote control service, which needs no pairing and shows nothing on the TV. It
+takes about five seconds.
 
 For each TV it prints:
 
-- **Developer mode**: on or off, and whether the host PC it names is this
-  computer, as the TV's REST API reports it.
-- **sdb**: ready (with the TV's CPU and webOS version), busy (another computer
-  or webOS Studio holds the TV's only sdb connection), or closed.
-- **DUID**: the id a Samsung distributor certificate must list for the TV.
-
-A TV whose sdb answers is remembered, so `run` and `install` find it without
-`--device`.
+- **webOS**: the release the TV reports, with the name LG sells it under
+  (`webOS 26 (11.2.0)`).
+- **Developer Mode**: on when port 9922 is open.
+- **Key Server**: on when port 9991 answers, which is when `connect` can fetch
+  the key. It turns off whenever the TV restarts, and a connected TV does not
+  need it.
+- **rn-webos**: `connected as <name>` when the key `rn-webos` keeps still logs
+  in, else the `connect` command to run, or why the login failed.
 
 | Option | |
 |---|---|
-| `--connect <ip>` | Connect to the TV at this address first, and remember it (port 26101 unless given) |
-| `--no-scan` | Only probe the TVs reached before |
+| `--no-scan` | Only probe the TVs connected before |
 
 ```sh
 rn-webos devices
-rn-webos devices --connect 192.168.1.50
+rn-webos devices --no-scan
 ```
 
-### `rn-webos certificate`
+### `rn-webos connect`
 
-Manages the signing profiles in webOS Studio's `profiles.xml`, which `package`,
-`run` and `install` sign with. webOS Studio is needed once, to obtain Samsung's
-certificates for a TV (Certificate Manager, Samsung Certificate Extension, the
-TV's DUID); everything after that is here.
+Sets a TV up for `run`, `install` and `uninstall`. Do it once per TV, and
+again if the TV ever refuses the key.
 
-| Action | |
-|---|---|
-| `list` (the default) | Every profile, the active one marked, with each certificate's subject, issuer, expiry and, for a distributor, the DUIDs it lists |
-| `use <name>` | Make a profile the active one |
-| `import <name> --author <p12> --distributor <p12>` | Copy Samsung's two `.p12` files to `~/SamsungCertificate/<name>/`, store their passwords where webOS Studio keeps them (the macOS login keychain, else a `.pwd` file only you can read), add the profile and make it active. The passwords come from `RN_WEBOS_AUTHOR_PASSWORD` and `RN_WEBOS_DISTRIBUTOR_PASSWORD`, and are checked first |
-| `create-author <name>` | Make a self-signed author certificate in `~/.local/state/react-native-webos/certificates/<name>/`. A retail Samsung TV refuses it, since Samsung issues the author certificate with the distributor one: use it for packages that are signed again before they are installed, such as a CI build |
+On the TV, first:
 
-`profiles.xml` is copied to `profiles.xml.bak` before each change.
+1. Install the **Developer Mode** app from LG's store and sign in with an LG
+   developer account.
+2. Turn **Dev Mode Status** on. The TV restarts.
+3. Open the app again and turn **Key Server** on. Note the passphrase at the
+   bottom left: six characters, upper and lower case as shown.
+
+Then:
 
 ```sh
-rn-webos certificate list
-RN_WEBOS_AUTHOR_PASSWORD=... RN_WEBOS_DISTRIBUTOR_PASSWORD=... \
-  rn-webos certificate import MyTV --author author.p12 --distributor distributor.p12
-rn-webos certificate use MyTV
+rn-webos connect 192.168.1.50
+rn-webos connect 192.168.1.50 --passphrase A1b2C3 --name living-room
 ```
 
-### `rn-webos install`
-
-Signs any `.tpk` or `.wgt` for a TV, installs it and, with `--launch`, starts
-it: a package from another build, a web app, a release a CI made. The package
-is signed again with the profile, whatever it was signed with, and the install
-stops before sending anything when the distributor certificate does not list
-the TV's DUID.
+`connect` fetches the TV's SSH key from its key server
+(`http://<tv>:9991/webos_rsa`), opens it with the passphrase, logs in once to
+prove it works, and keeps the key with the TV's name and address (see
+[Where things go](#where-things-go)). It asks for the passphrase on a terminal;
+anywhere else pass `--passphrase`. A wrong passphrase is reported as such and
+nothing is kept. Key Server can be turned off afterwards.
 
 | Option | |
 |---|---|
-| `--device, -d <ip>` | The TV (default: the only one reached before that answers) |
-| `--profile <name>`, `--author <p12>`, `--distributor <p12>` | The certificates, as for `package` |
-| `--keep-signature` | Install the package as it is signed |
+| `--passphrase <code>` | The six characters the Developer Mode app shows (default: asked for) |
+| `--name <name>` | What `--device` calls this TV from now on (default: the name it already has, else its model). Letters, digits, `.`, `_` and `-` |
+
+Every command that takes `--device, -d` takes the TV's IP address or this name.
+Without it, `run`, `install` and `uninstall` use the only connected TV that
+answers, and say which ones answer when there are several.
+
+Developer Mode lasts a limited time, which the Developer Mode app shows as the
+remaining session and extends. When it runs out the TV turns Developer Mode off
+on its next restart and removes the apps installed with it; `rn-webos devices`
+and `doctor` then say that the TV no longer accepts SSH.
+
+### `rn-webos install`
+
+Installs any `.ipk` on a TV and, with `--launch`, starts it: a package from
+another build, or a release a CI made. It pushes the file to
+`/media/developer/temp` on the TV (over SFTP, else through `cat` on a TV
+without it), compares its MD5 with the one the TV computes, asks the TV's
+installer for it, follows the installer until it says `installed` or fails
+with its reason, and removes the temporary file either way. An install
+replaces an earlier one of the same app.
+
+`--launch` starts the app the installer read from the package, else the one
+the file name gives when it follows `<app id>_<version>_<architecture>.ipk`.
+
+| Option | |
+|---|---|
+| `--device, -d <ip or name>` | The TV (default: the only connected one that answers) |
 | `--launch` | Launch the app once it is installed |
 
 ```sh
-rn-webos install app.wgt --device 192.168.1.50 --launch
+rn-webos install com.example.myapp_1.0.0_arm.ipk --device 192.168.1.50 --launch
 ```
 
 ### `rn-webos uninstall`
 
-Removes a package and its data from a TV. An update must keep the author
-certificate of the installed package, so a package signed by another author
-installs only once the old one is gone.
+Removes an app and its data from a TV, by its app id.
 
 ```sh
 rn-webos uninstall com.example.myapp --device 192.168.1.50
@@ -338,27 +330,25 @@ rn-webos uninstall com.example.myapp --device 192.168.1.50
 
 ### `rn-webos setup`
 
-Makes a target buildable: compiles the glibc compat archive against the
-rootstrap and mirrors the rootstrap into a sysroot lld can link against.
-`package`, `run` and `build-runtime` do this on their own; run it by hand only
-to prepare a machine ahead of time.
-
-| Option | |
-|---|---|
-| `--arch <arch>` | `armv7l`, `aarch64` or `x86_64` (the emulator) |
-| `--platform <version>` | The webOS version whose rootstrap to use |
+Downloads the SDK a TV build compiles and links against, once: openlgtv's
+`buildroot-nc4` 2026.08, a 360 MB archive checked against its pinned SHA-256.
+It extracts the sysroot, the C++ headers, the static C++ runtime and GCC's own
+files into `~/.cache/react-native-webos/sdk/`, 470 MB, and leaves the archive's
+compilers alone: the build uses this machine's clang and lld. `package`, `run`
+and `build-runtime` do this on their own; run it by hand only to prepare a
+machine ahead of time. It takes no option but `--verbose`.
 
 ### `rn-webos build-runtime`
 
-Compiles `libreact-native-webos.so` (Hermes, React Native's C++ core, the
-webOS host and the app's Expo modules core) against the app's own
-`react-native` and `expo-modules-core`. The first build takes several minutes;
-later ones only rebuild what changed. It also builds the Hermes compilers for
-this machine, once per Hermes version.
+Compiles `react-native-webos`, the executable a package starts: Hermes, React
+Native's C++ core, the host, Skia, SDL and the app's Expo modules core, against
+the app's own `react-native` and `expo-modules-core`. The first build takes
+several minutes; later ones only rebuild what changed. It also builds the
+Hermes compilers for this machine, once per Hermes version.
 
-Takes `--arch`, `--platform` and `--project`. It builds the development
-runtime, the one `run` packages, unless given `--release`: release builds get
-a runtime without the dev server tooling ([decisions](decisions.md)).
+Takes `--project`. It builds the development runtime, the one `run` packages,
+unless given `--release`: release builds get a runtime without the dev server
+tooling ([decisions](decisions.md)).
 
 ### `rn-webos bundle`
 
@@ -379,47 +369,48 @@ before (it leaves a `.rn-webos-bundle` file there). Anything else, such as
 
 ### `rn-webos package`
 
-Builds a signed `.tpk` from scratch or incrementally: the native runtime, the
-bundle, the `webos/` project, the .NET build, then signing. It checks the app's
-`react-native` and Metro config and opens the certificates first, so a second
-copy of `react-native`, a Metro config without `withWebOS`, a missing profile, a
-wrong password or an expired certificate fails in seconds rather than after a
-build.
+Builds an `.ipk` from scratch or incrementally: the native runtime, the bundle,
+the ICU data and the CA bundle, the app directory in `webos/app/`, then the
+package, `webos/<package>_<version>_arm.ipk`. It checks the app's
+`react-native` and Metro config first, so a second copy of `react-native` or a
+Metro config without `withWebOS` fails in seconds rather than after a build.
 
-The certificates come from webOS Studio's `profiles.xml`
-(`~/webos-studio-data/profile/profiles.xml`, or the data directory
-`WEBOS_SDK_DATA_DIR` names): the profile `--profile` or the plugin's `profile` prop
-names, else the active one. Their passwords come from the profile; on macOS,
-webOS Studio keeps them in the login keychain, which `rn-webos` reads.
-`--author` and `--distributor` replace either half with a `.p12` file.
-Samsung issues both halves for a TV, once, through webOS Studio's Certificate
-Manager: a retail TV refuses a self-signed author certificate.
+`rn-webos` writes the package itself, in the layout LG's `ares-package` writes
+([webos-ipk-format.md](reference/webos-ipk-format.md)); `ares-package` is never
+run. A webOS package is not signed. What it holds, under
+`usr/palm/applications/<package>/`:
+
+| Path | |
+|---|---|
+| `appinfo.json` | A native app (`type: "native"`, `main: "react-native-webos"`), from the config plugin's props |
+| `react-native-webos` | The runtime, one 32-bit ARM executable |
+| `icon.png`, `largeIcon.png`, `splash.png` | 80x80 and 130x130, scaled from the app's icon; the splash image when the app has one |
+| `res/` | `index.webos.hbc`, `assets/`, [`react-native-webos.json`](runtime-config.md), `icudt78l.dat`, `cacert.pem`, `app.config` and `THIRD_PARTY_NOTICES.md` |
+| `appdata/` | Empty and world-writable: where the app keeps its data and cache on the TV, which does not let an app write elsewhere in its directory on every release |
+
+`res/cacert.pem` is Mozilla's root certificates as curl publishes them, pinned
+in `runtime/dependencies.json` and checked against its SHA-256. The runtime's
+HTTPS trusts that file and not the TV's own list, which is as old as the TV's
+firmware.
 
 | Option | |
 |---|---|
-| `--device, -d <ip>` | The TV to build for; its CPU and webOS version become the defaults |
-| `--arch <arch>` | Override the CPU |
-| `--platform <version>` | Override the webOS version |
-| `--profile <name>` | Sign with this signing profile |
-| `--author <file.p12>` | Sign with this author certificate instead of the profile's; its password in `RN_WEBOS_AUTHOR_PASSWORD` |
-| `--distributor <file.p12>` | Sign with this distributor certificate instead of the profile's; its password in `RN_WEBOS_DISTRIBUTOR_PASSWORD` |
 | `--dev` | Build for development: the app streams its logs to this computer |
+| `--device, -d <ip>` | With `--dev`, the TV the build is for: the logs go to this computer's address on that TV's network |
 | `--log-host <ip>` | With `--dev`, where the app streams its logs (default: this computer's LAN address, on the TV's subnet when `--device` is given) |
 | `--log-port <port>` | With `--dev`, the port it streams to (default `8099`) |
 | `--dev-server <origin>` | With `--dev`, load the JavaScript from this `expo start` dev server, such as `http://localhost:8081`, instead of packaging it |
 | `--entry <file>` | The entry to bundle (default: the app's `main`) |
 
-`package` makes a release build, the one Samsung's store takes: it streams no
-logs. A development build (`--dev`) carries the log endpoint in
-`res/react-native-webos.json`. Every
-package carries `res/THIRD_PARTY_NOTICES.md`, the licences of what the
-runtime links and the bundle holds
-([`THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md)); add the notices of
-the native libraries your app adds to your own.
+`package` makes a release build: it streams no logs and carries the runtime
+without the dev server tooling. A development build (`--dev`) carries the log
+endpoint in `res/react-native-webos.json`. Every package carries
+`res/THIRD_PARTY_NOTICES.md`, the licences of what the runtime links and the
+bundle holds ([`THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md)); add the
+notices of the native libraries your app adds to your own.
 
 ```sh
 rn-webos package
-rn-webos package --profile Store
 rn-webos package --dev --device 192.168.1.50
 ```
 
@@ -436,10 +427,14 @@ plus:
 | `--no-logs` | Exit once the app is launched |
 | `--dev-server <origin>` | Load the JavaScript from this `expo start` dev server instead of packaging it: see [Develop with `expo start`](#develop-with-expo-start) |
 
-Without `--device`, it uses the only TV reached before that answers. `Install`
-pushes the package to the TV and installs it, replacing any earlier install;
-`Launch` starts it. The log listener starts before the build, so a port already in
-use fails before anything compiles, and nothing the app logs at startup is lost.
+`--device, -d` takes the TV's IP address or the name it was connected under;
+without it, `run` uses the only connected TV that answers. A TV `rn-webos` is
+not connected to is refused before anything compiles, with the
+[`connect`](#rn-webos-connect) command to run. `Install` pushes the package to
+the TV and installs it, replacing any earlier install, and `Launch` starts it,
+both on one SSH login. Launched means the TV accepted the launch, not that the
+app drew. The log listener starts before the build, so a port already in use
+fails before anything compiles, and nothing the app logs at startup is lost.
 
 ```sh
 rn-webos run --device 192.168.1.50
@@ -497,38 +492,46 @@ made before this release names no package and is read whatever the target.
 ### `rn-webos key`
 
 Presses remote keys on a TV, in order, through the TV's network remote: the
-Samsung remote API on port 8002
-([webos-input.md](reference/webos-input.md#13-the-network-remote)). The app in
-front can be any app, not only a development build.
+service LG's phone apps use, on port 3001 (3000 on older TVs)
+([webos-remote-control.md](reference/webos-remote-control.md)). The app in
+front can be any app, not only a development build, and the TV needs neither
+Developer Mode nor `connect`. Its Network settings must allow LG Connect Apps.
 
 ```sh
 rn-webos key Down Down Enter --device 192.168.1.50
-rn-webos key Back --device 192.168.1.50
-rn-webos key KEY_CH_LIST --device 192.168.1.50
+rn-webos key Back
+rn-webos key VOLUMEUP --device living-room
 ```
 
 A key is a name (`up`, `down`, `left`, `right`, `enter`, `back`, `exit`, `info`,
-`play`, `pause`, `playpause`, `stop`, `rewind`, `fastforward`, the four colors,
-`0` to `9`, in any case) or any `KEY_*` code as written. The first time,
-the TV asks its viewer to allow `rn-webos`; the token it then issues is saved
-(see [Where things go](#where-things-go)), so later presses need nobody at the
-TV. A TV that refused is unblocked in its Device Connection Manager.
+`play`, `pause`, `stop`, `rewind`, `fastforward`, the four colors, `0` to `9`,
+in any case) or any of the TV's button names in capitals, as written: `HOME`,
+`MENU`, `VOLUMEUP`, `CHANNELDOWN`. An LG TV has no play/pause toggle, so
+`playpause` is refused: send `play` or `pause`.
+
+**A key is pressed and released at once. The protocol has no way to hold one**,
+so a long press cannot be sent to a TV this way.
+
+The first time, the TV shows a connection request: accept it with the remote.
+The key the TV then issues is saved (see [Where things go](#where-things-go)),
+so later presses need nobody at the TV.
 
 | Option | |
 |---|---|
-| `--device, -d <ip>` | The TV's IP address |
+| `--device, -d <ip or name>` | The TV (default: the TV connected last) |
 
 ### `rn-webos screenshot`
 
 Saves what a development build draws as a PNG: the app captures its own window
-and sends it over its log connection, so it works on a retail TV, which blocks
-system screen capture. It shows the app's UI only, never the video plane. It
+and sends it over its log connection, so it needs nothing from the TV, whose
+own screen capture is closed to a Developer Mode login. It shows the app's UI
+only, never the video plane. It
 goes through the `run` or `logs` already holding the log port, else listens on
 it until the app connects.
 
 | Option | |
 |---|---|
-| `--device, -d <ip>` | The TV whose app to capture (default: the only one connected) |
+| `--device, -d <ip or name>` | The TV whose app to capture (default: the only one connected) |
 | `--out <file.png>` | Where to save it (default `tv/<ip>/screenshot.png` in the cache) |
 | `--port <port>` | The port the app was packaged with (default `8099`) |
 | `--package <id>` | The app to read, by package id (default: the app in `--project` or the current directory, else the only one connected) |
@@ -644,8 +647,8 @@ Every action, and how the simulator works, is in
 
 ## Logs
 
-Retail TVs do not let a developer read the system log, so a development build
-streams JSON lines (`{"level":"info","message":"..."}`) over TCP to the address
+An LG TV does not let a Developer Mode login read the system log, so a
+development build connects out to this computer and streams JSON lines (`{"level":"info","message":"..."}`) over TCP to the address
 in its `react-native-webos.json`. `rn-webos` prints each one as
 `HH:MM:SS level message`, the level colored, a stack trace indented under its
 message. The TV must reach this computer on that port: allow incoming

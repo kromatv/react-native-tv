@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Ecore.h>
+#include "../platform/MainLoop.h"
 
 #include <atomic>
 #include <chrono>
@@ -8,11 +8,12 @@
 
 namespace rnwebos::testing {
 
+/// Runs the main loop from a test: the thread that makes the first one is the
+/// main thread for the whole test binary.
 class MainLoopScope final {
  public:
   MainLoopScope() {
-    static const int initialized = ecore_init();
-    static_cast<void>(initialized);
+    MainLoop::get();
   }
 
   ~MainLoopScope() {
@@ -31,7 +32,7 @@ class MainLoopScope final {
 
  private:
   static void iterate() {
-    ecore_main_loop_iterate();
+    MainLoop::get().iterate(true);
     std::this_thread::sleep_for(std::chrono::milliseconds(1));
   }
 };

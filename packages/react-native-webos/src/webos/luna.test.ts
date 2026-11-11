@@ -67,7 +67,12 @@ describe('lunaCall', () => {
       },
     });
 
-    const calling = lunaCall(opened, 'luna://com.webos.applicationManager/dev/running', {}, running);
+    const calling = lunaCall(
+      opened,
+      'luna://com.webos.applicationManager/dev/running',
+      {},
+      running,
+    );
 
     await expect(calling).rejects.toMatchObject({ reason: 'Denied method call' });
   });
@@ -123,7 +128,13 @@ describe('lunaFollow', () => {
 
     await expect(lunaFollow(opened, install, {}, stop, 5000)).rejects.toThrow('stop');
     await expect(
-      lunaFollow(opened, 'luna://com.webos.appInstallService/dev/remove', {}, () => undefined, 5000),
+      lunaFollow(
+        opened,
+        'luna://com.webos.appInstallService/dev/remove',
+        {},
+        () => undefined,
+        5000,
+      ),
     ).rejects.toMatchObject({ reason: 'No such id' });
   });
 });

@@ -46,7 +46,7 @@ describe('rn-webos logs', () => {
 
     expect(listenForLogs).toHaveBeenCalledWith(8099, expect.anything(), { app: 'com.example.tv' });
     expect(output.stdout()).toContain('for com.example.tv.');
-    await expect(logsCommand.run(['--package', 'tv'], { cwd: dir })).rejects.toThrow(
+    await expect(logsCommand.run(['--package', 'Not An Id'], { cwd: dir })).rejects.toThrow(
       '--package is not a webOS package id',
     );
   });
@@ -96,9 +96,9 @@ describe('rn-webos screenshot', () => {
     expect(readFileSync(join(dir, 'shot.png')).subarray(1, 4).toString()).toBe('PNG');
   });
 
-  it('refuses a --device that is not an address', async () => {
+  it('refuses a --device that is neither an address nor a connected TV', async () => {
     await expect(screenshotCommand.run(['--device', 'kitchen'], { cwd: dir })).rejects.toThrow(
-      "--device must be the TV's IP address, got kitchen",
+      "--device must be the TV's IP address or the name it was connected under, got kitchen",
     );
   });
 });

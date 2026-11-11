@@ -19,7 +19,11 @@ const deviceArgs = z.object({ device: z.string().max(64) }).strict();
 const connectArgs = z
   .object({
     device: z.string().trim().min(1, "enter the TV's IP address").max(64),
-    passphrase: z.string().trim().min(1, 'enter the passphrase the Developer Mode app shows').max(64),
+    passphrase: z
+      .string()
+      .trim()
+      .min(1, 'enter the passphrase the Developer Mode app shows')
+      .max(64),
   })
   .strict();
 

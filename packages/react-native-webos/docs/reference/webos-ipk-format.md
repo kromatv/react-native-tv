@@ -205,6 +205,9 @@ unless minification is off.
 | ares-cli-rs reads the ELF header only for `type` `native` (and for services whose `engine` is `native`): ARM gives `arm`, 386 gives `x86`, anything else is an error unless `--force-arch` is given; mixed architectures are refused. File modes come from the source tree. | S | [acr-validation] 32-40, 80-99; [acr-input] 90-118; [acr-data] 163-169 |
 | LG's comment next to the `i586` mapping: "current emulator opkg is allowing only all, noarch and i586". | S | cli:lib/package.js:961-964 |
 | webosbrew's helper takes the name `<id>_<version>_$ARCH.ipk` from the environment variable `ARCH` and declares that file as what `ares-package` leaves behind. For that to hold with an ARM executable, `ARCH` has to be `arm`. | S, I | [wb-cmake] 15-17, 49-50, 79-81; from section 6 |
+| `e_machine` 40 is the value `elfy` names `arm`, and 183 the one it names `AArch64`. | S | elfy:lib/elfy/constants.js:91, 147 |
+| An empty directory in the app directory is packaged: a directory entry of mode 0777, as every other directory. | I (probe) | a second probe on 2026-11-11: the fixture of `src/package/ipk.fixtures.ts`, whose `appdata` is empty |
+| On that fixture, and on the example app's staged directory with a clang-built ARM executable as `main`, `ares-package --no-minify` and `rn-webos`'s own writer give the same `ar` members, the same `control` fields but `Installed-Size`, and the same tree with the same types, modes and bytes, `packageinfo.json`'s mode apart (0666 from ares, 0644 from `rn-webos`). | I (probe) | `src/package/ipk-ares.test.ts`; the example's package had 23 entries |
 
 ## 10. What the installer does with the package
 

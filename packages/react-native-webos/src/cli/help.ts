@@ -17,7 +17,7 @@ function table(rows: readonly (readonly [string, string])[], paint: Paint): stri
 /** The help `rn-webos` prints with no command, or with `--help`. */
 export function programHelp(commands: readonly Command[], version: string, paint: Paint): string {
   return [
-    `${paint('bold', PROGRAM)} ${version}: build an Expo app into a Samsung TV package, and run it`,
+    `${paint('bold', PROGRAM)} ${version}: build an Expo app into an LG webOS TV package, and run it`,
     '',
     `Usage: ${PROGRAM} <command> [options]`,
     '',

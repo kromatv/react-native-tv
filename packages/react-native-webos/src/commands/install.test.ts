@@ -1,138 +1,106 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  acceptPush,
-  capabilityPayload,
-  fakeTv,
-  TV_CAPABILITIES,
-  type FakeTv,
-  type ServiceHandler,
-  type SyncRequest,
-} from '../sdb/fake-tv.fixtures.ts';
-import { writePkcs12 } from '../signing/pkcs12-write.ts';
-import { testSigner } from '../signing/signing.fixtures.ts';
-import { readZip } from '../signing/zip-read.ts';
-import { writeZip } from '../signing/zip-write.ts';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { captureProcessOutput } from '../fakes.fixtures.ts';
+import { useFakeTvs, useTemporaryState } from '../webos/connected-tv.fixtures.ts';
+import { failedInstall } from '../webos/fake-tv.fixtures.ts';
 import { installCommand } from './install.ts';
 import { uninstallCommand } from './uninstall.ts';
 
-const VARIABLES = ['WEBOS_SDK_DATA_DIR', 'XDG_STATE_HOME'];
-let dir = '';
-let saved: Record<string, string | undefined> = {};
-const tvs: FakeTv[] = [];
+const LAUNCH = `/usr/bin/luna-send-pub -n 1 luna://com.webos.applicationManager//launch '{"id":"com.example.myapp","subscribe":false,"params":{"displayAffinity":0}}'`;
 
-function answer(text: string): ServiceHandler {
-  return (stream) => {
-    stream.write(text);
-    stream.close();
-  };
+let output: ReturnType<typeof captureProcessOutput>;
+const state = useTemporaryState();
+const connect = useFakeTvs();
+
+function ipk(name = 'app.ipk'): string {
+  writeFileSync(join(state(), name), 'an ipk');
+  return name;
 }
 
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'rn-webos-install-'));
-  saved = Object.fromEntries(VARIABLES.map((name) => [name, process.env[name]]));
-  process.env.WEBOS_SDK_DATA_DIR = join(dir, 'data');
-  process.env.XDG_STATE_HOME = join(dir, 'state');
-  vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
-  const author = testSigner('Author');
-  const distributor = testSigner('Distributor');
-  writeFileSync(join(dir, 'a.p12'), writePkcs12(author.key, author.chain, 'pw', 'a'));
-  writeFileSync(join(dir, 'd.p12'), writePkcs12(distributor.key, distributor.chain, 'pw', 'd'));
-  mkdirSync(join(dir, 'data', 'profile'), { recursive: true });
-  writeFileSync(
-    join(dir, 'data', 'profile', 'profiles.xml'),
-    `<profiles active="TV" version="3.1"><profile name="TV">
-<profileitem ca="" distributor="0" key="${join(dir, 'a.p12')}" password="pw" rootca=""/>
-<profileitem ca="" distributor="1" key="${join(dir, 'd.p12')}" password="pw" rootca=""/>
-</profile></profiles>`,
-  );
-  const config = '<widget><webos:application id="AbCdE12345.App" package="AbCdE12345"/></widget>';
-  writeFileSync(
-    join(dir, 'app.wgt'),
-    writeZip([{ name: 'config.xml', directory: false, data: Buffer.from(config) }]),
-  );
+  output = captureProcessOutput();
 });
-
-afterEach(async () => {
-  vi.restoreAllMocks();
-  for (const [name, value] of Object.entries(saved)) {
-    if (value === undefined) delete process.env[name];
-    else process.env[name] = value;
-  }
-  await Promise.all(tvs.splice(0).map((tv) => tv.close()));
-  rmSync(dir, { recursive: true, force: true });
-});
-
-async function tv(requests: SyncRequest[]): Promise<{ tv: FakeTv; pushed: () => Buffer }> {
-  const started = await fakeTv({
-    services: {
-      'capability:': (stream) => {
-        stream.write(capabilityPayload(TV_CAPABILITIES));
-        stream.close();
-      },
-      'sync:': acceptPush(requests),
-      'shell:0 vd_appinstall': answer('app_id[AbCdE12345.App] install completed\n'),
-      'shell:0 execute': answer('... successfully launched pid = 7 with debug 0\r\n'),
-      'shell:0 appuninstall': answer('app_id[AbCdE12345.App] uninstall completed\n'),
-      'shell:0 getduid': answer('ABCDEFGH12345\r\n'),
-    },
-  });
-  tvs.push(started);
-  const pushed = () =>
-    Buffer.concat(
-      requests.filter((request) => request.id === 'DATA').map((request) => request.payload),
-    );
-  return { tv: started, pushed };
-}
 
 describe('rn-webos install', () => {
-  it('signs a widget with the active profile, installs it under its app id and launches it', async () => {
-    const requests: SyncRequest[] = [];
-    const { tv: started, pushed } = await tv(requests);
+  it('installs an .ipk on the only connected TV', async () => {
+    const { tv } = await connect({ name: 'lounge' });
 
-    await installCommand.run(['app.wgt', '--device', `127.0.0.1:${started.port}`, '--launch'], {
-      cwd: dir,
+    await installCommand.run([ipk()], { cwd: state() });
+
+    expect(tv.installed.map(String)).toEqual(['an ipk']);
+    expect(tv.commands).not.toContain(LAUNCH);
+    expect(output.stdout()).toMatch(/TV\s+lounge/);
+  });
+
+  it('launches the app the TV read from the package with --launch, on the same login', async () => {
+    const { tv } = await connect({ name: 'lounge' });
+
+    await installCommand.run([ipk(), '--launch', '--device', 'lounge'], { cwd: state() });
+
+    expect(tv.commands.at(-1)).toBe(LAUNCH);
+    expect(tv.connections).toBe(2);
+    expect(output.stdout()).toMatch(/Launch\s+com\.example\.myapp/);
+  });
+
+  it('reads the app id off the file name when the TV names no package', async () => {
+    const { tv } = await connect({
+      luna: {
+        'com.webos.appInstallService/dev/install': () => [
+          { returnValue: true, subscribed: true },
+          { id: 'com.ares.defaultName', statusValue: 30, details: { state: 'installed' } },
+        ],
+      },
     });
 
-    const names = readZip(pushed()).map((entry) => entry.name);
-    expect(names).toContain('signature1.xml');
-    expect(started.opened).toContain('shell:0 execute AbCdE12345.App');
-    expect(
-      started.opened.some((service) => service.startsWith('shell:0 vd_appinstall AbCdE12345.App ')),
-    ).toBe(true);
+    await installCommand.run([ipk('com.example.myapp_1.0.0_arm.ipk'), '--launch'], {
+      cwd: state(),
+    });
+    const unnamed = installCommand.run([ipk(), '--launch'], { cwd: state() });
+
+    expect(tv.commands).toContain(LAUNCH);
+    await expect(unnamed).rejects.toThrow('the TV did not say which app it holds');
   });
 
-  it('installs a package as it is signed, with --keep-signature', async () => {
-    const requests: SyncRequest[] = [];
-    const { tv: started, pushed } = await tv(requests);
+  it("stops with the TV's reason when it refuses the package", async () => {
+    await connect({
+      luna: { 'com.webos.appInstallService/dev/install': failedInstall('FAILED_IPKG_INSTALL') },
+    });
 
-    await installCommand.run(
-      ['app.wgt', '--device', `127.0.0.1:${started.port}`, '--keep-signature'],
-      { cwd: dir },
+    await expect(installCommand.run([ipk(), '--launch'], { cwd: state() })).rejects.toThrow(
+      'did not install the package: FAILED_IPKG_INSTALL',
     );
-
-    expect(readZip(pushed()).map((entry) => entry.name)).toEqual(['config.xml']);
-    expect(started.opened.some((service) => service.startsWith('shell:0 execute'))).toBe(false);
   });
 
-  it('needs exactly one package', async () => {
-    await expect(installCommand.run([], { cwd: dir })).rejects.toThrow('install needs one package');
+  it('asks for one package', async () => {
+    await expect(installCommand.run([], { cwd: state() })).rejects.toThrow(
+      'install needs one package',
+    );
   });
 });
 
 describe('rn-webos uninstall', () => {
-  it('uninstalls a package by its id, and needs exactly one', async () => {
-    const { tv: started } = await tv([]);
+  it('removes the app from the TV named', async () => {
+    const { tv } = await connect({ name: 'lounge' });
 
-    await uninstallCommand.run(['AbCdE12345', '--device', `127.0.0.1:${started.port}`], {
-      cwd: dir,
+    await uninstallCommand.run(['com.example.myapp', '-d', `127.0.0.1:${tv.port}`], {
+      cwd: state(),
     });
 
-    expect(started.opened).toContain('shell:0 appuninstall AbCdE12345');
-    await expect(uninstallCommand.run([], { cwd: dir })).rejects.toThrow(
-      'uninstall needs one package id',
+    expect(tv.commands).toEqual([
+      `/usr/bin/luna-send-pub -n 1 luna://com.webos.service.tv.systemproperty//getSystemInfo '{"keys":["modelName","sdkVersion","firmwareVersion","boardType","otaId"],"subscribe":false}'`,
+      `/usr/bin/luna-send-pub -i luna://com.webos.appInstallService/dev/remove '{"id":"com.example.myapp","subscribe":true}'`,
+    ]);
+  });
+
+  it('asks for one app id, and refuses one that is not an id', async () => {
+    await connect();
+
+    await expect(uninstallCommand.run([], { cwd: state() })).rejects.toThrow(
+      'uninstall needs one app id',
+    );
+    await expect(uninstallCommand.run(['My_App'], { cwd: state() })).rejects.toThrow(
+      'is not a webOS app id',
     );
   });
 });

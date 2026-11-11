@@ -19,7 +19,6 @@ function ipk(content = 'an ipk'): string {
   return path;
 }
 
-
 useTemporaryState();
 const connect = useFakeTvs();
 
@@ -65,6 +64,20 @@ describe('installApp', () => {
     expect(tv.installed.map(String)).toEqual(['an ipk']);
   });
 
+  it('installs on a TV that cannot check the package, and refuses one that arrived damaged', async () => {
+    const unchecked = await connect({ md5sum: 'missing' });
+    const damaged = await connect({ md5sum: 'wrong' });
+
+    await installApp(unchecked.device, ipk());
+
+    expect(unchecked.tv.installed).toHaveLength(1);
+    await expect(installApp(damaged.device, ipk())).rejects.toThrow(
+      'did not install the package: the package arrived damaged',
+    );
+    expect(damaged.tv.installed).toHaveLength(0);
+    expect(damaged.tv.files.size).toBe(0);
+  });
+
   it("fails with the TV's reason, and still removes the temporary file", async () => {
     const { tv, device } = await connect({
       luna: {
@@ -99,7 +112,11 @@ describe('installApp', () => {
     const { device } = await connect({
       luna: {
         'com.webos.appInstallService/dev/install': () => [
-          { returnValue: false, errorCode: -1, errorText: 'Unknown method "install" for category "/dev"' },
+          {
+            returnValue: false,
+            errorCode: -1,
+            errorText: 'Unknown method "install" for category "/dev"',
+          },
         ],
       },
     });

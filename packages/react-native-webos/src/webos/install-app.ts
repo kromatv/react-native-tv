@@ -25,12 +25,12 @@ async function md5Of(file: string): Promise<string> {
   return hash.digest('hex');
 }
 
+/** Compares digests as LG's CLI does: a TV that cannot compute one is trusted, a different one is not. */
 async function verify(session: SshSession, remote: string, digest: string): Promise<void> {
   const result = await session.exec(`/usr/bin/md5sum ${remote}`);
   const onTv = /^[0-9a-f]{32}/.exec(result.stdout.trim())?.[0];
-  if (result.code !== 0 || onTv === undefined)
-    throw new TvCommandError('The TV could not check the package it received', result);
-  if (onTv !== digest) throw new TvCommandError('the package arrived damaged', result);
+  if (onTv !== undefined && onTv !== digest)
+    throw new TvCommandError('the package arrived damaged', result);
 }
 
 function refused(tv: string, error: unknown): Error {

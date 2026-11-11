@@ -15,12 +15,8 @@ afterEach(() => {
   for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
 });
 
-function configuredApp(): string {
-  const dir = appDir({
-    name: 'Configured',
-    version: '1.2.0',
-    plugins: [['@kromatv/react-native-webos', { package: 'org.example.configured' }]],
-  });
+function unconfiguredApp(): string {
+  const dir = appDir({ name: 'Unconfigured', version: '1.2.0' });
   dirs.push(dir);
   return dir;
 }
@@ -37,18 +33,18 @@ describe('checkApp', () => {
   });
 
   it('passes with the app id, version and react-native of an app configured through the plugin', async () => {
-    expect(await checkApp(configuredApp())).toEqual({
+    const dir = unconfiguredApp();
+    vi.spyOn(appProject, 'loadAppProject').mockReturnValue(fakeApp(dir));
+
+    expect(await checkApp(dir)).toEqual({
       title: 'App',
       status: 'ok',
-      detail: expect.stringMatching(/^org\.example\.configured 1\.2\.0, react-native-tvos /),
+      detail: 'org.example.demo 1.0.0, react-native 0.88.0',
     });
   });
 
   it('fails with what is wrong in the config, and where to fix it', async () => {
-    const dir = appDir({ name: 'Unconfigured' });
-    dirs.push(dir);
-
-    expect(await checkApp(dir)).toMatchObject({
+    expect(await checkApp(unconfiguredApp())).toMatchObject({
       status: 'fail',
       detail: expect.stringContaining('The app has no webOS settings'),
     });

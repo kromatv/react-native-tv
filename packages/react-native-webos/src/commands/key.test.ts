@@ -1,88 +1,107 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { captureProcessOutput } from '../fakes.fixtures.ts';
-import { openRemote, type RemoteSession } from '../remote/remote-session.ts';
-import { readToken, saveToken } from '../remote/remote-token.ts';
+import { fakeSsapTv, type FakeSsapTv } from '../remote/fake-ssap-tv.fixtures.ts';
+import { pressRemoteKeys } from '../remote/press-keys.ts';
+import { useTemporaryState } from '../webos/connected-tv.fixtures.ts';
+import { rememberDevice } from '../webos/known-devices.ts';
 import { keyCommand } from './key.ts';
 
-vi.mock('../remote/remote-session.ts', () => ({ openRemote: vi.fn() }));
-vi.mock('../remote/remote-token.ts', () => ({ readToken: vi.fn(), saveToken: vi.fn() }));
+import { vi } from 'vitest';
 
-const HOST = '192.168.1.50';
+vi.mock('../remote/press-keys.ts', async (importOriginal) => {
+  const original = await importOriginal<typeof import('../remote/press-keys.ts')>();
+  return { ...original, pressRemoteKeys: vi.fn(original.pressRemoteKeys) };
+});
 
-function session(token: string | null): RemoteSession {
-  return { token, press: vi.fn(async () => undefined), close: vi.fn() };
-}
-
+const tvs: FakeSsapTv[] = [];
 let output: ReturnType<typeof captureProcessOutput>;
+useTemporaryState();
+
+/** Sends the command's keys to a fake TV on a free port instead of ports 3001 and 3000. */
+async function tv(): Promise<FakeSsapTv> {
+  const started = await fakeSsapTv();
+  tvs.push(started);
+  const { pressRemoteKeys: press } =
+    await vi.importActual<typeof import('../remote/press-keys.ts')>('../remote/press-keys.ts');
+  vi.mocked(pressRemoteKeys).mockImplementation((host, keys, options) =>
+    press(host, keys, {
+      ...options,
+      ports: { secure: 1, plain: started.port },
+      keyIntervalMs: 0,
+    }),
+  );
+  return started;
+}
 
 beforeEach(() => {
   output = captureProcessOutput();
 });
 
-afterEach(() => {
+afterEach(async () => {
   vi.clearAllMocks();
+  await Promise.all(tvs.splice(0).map((started) => started.close()));
 });
 
 describe('rn-webos key', () => {
-  it('presses the keys with the saved token, then closes the connection', async () => {
-    vi.mocked(readToken).mockReturnValue('12345');
-    const remote = session('12345');
-    vi.mocked(openRemote).mockResolvedValue(remote);
+  it('pairs with a TV it never paired with, then presses the keys in order', async () => {
+    const started = await tv();
 
-    await keyCommand.run(['Down', 'Enter', '--device', HOST], { cwd: '/' });
+    await keyCommand.run(['Down', 'Enter', '--device', '127.0.0.1'], { cwd: '/' });
 
-    expect(openRemote).toHaveBeenCalledWith(
-      expect.objectContaining({ host: HOST, token: '12345' }),
+    expect(started.pointerFrames).toEqual([
+      'type:button\nname:DOWN\n\n',
+      'type:button\nname:ENTER\n\n',
+    ]);
+    expect(output.stdout()).toContain(
+      'rn-webos has not paired with the TV at 127.0.0.1 yet: accept the connection request it shows.',
     );
-    expect(remote.press).toHaveBeenCalledWith(['KEY_DOWN', 'KEY_ENTER']);
-    expect(remote.close).toHaveBeenCalled();
-    expect(saveToken).not.toHaveBeenCalled();
+    expect(output.stdout()).toMatch(/Keys\s+Down Enter/);
   });
 
-  it('pairs first with a TV it never paired with, and keeps the token it issued', async () => {
-    vi.mocked(readToken).mockReturnValue(null);
-    const remote = session('67890');
-    vi.mocked(openRemote).mockResolvedValue(remote);
+  it('uses the key the TV issued the next time, without a prompt', async () => {
+    const started = await tv();
 
-    await keyCommand.run(['Back', '-d', HOST], { cwd: '/' });
+    await keyCommand.run(['Back', '-d', '127.0.0.1'], { cwd: '/' });
+    await keyCommand.run(['1', '-d', '127.0.0.1'], { cwd: '/' });
 
-    expect(openRemote).toHaveBeenCalledTimes(1);
-    expect(openRemote).toHaveBeenCalledWith(expect.objectContaining({ token: null }));
-    expect(saveToken).toHaveBeenCalledWith(HOST, '67890');
-    expect(output.stdout()).toContain('choose Allow when the TV asks');
+    expect(started.frames.filter((frame) => frame.type === 'register')[1]).toMatchObject({
+      payload: { 'client-key': started.issuedKey },
+    });
+    expect(output.stdout().match(/has not paired/g)).toHaveLength(1);
+    expect(started.pointerFrames).toEqual([
+      'type:button\nname:BACK\n\n',
+      'type:button\nname:1\n\n',
+    ]);
   });
 
-  it('keeps a new token the TV issues on a later connection', async () => {
-    vi.mocked(readToken).mockReturnValue('old');
-    vi.mocked(openRemote).mockResolvedValue(session('new'));
+  it('takes the TV connected last without --device, or one by its name', async () => {
+    await tv();
+    await rememberDevice({ name: 'office', host: '10.9.9.9', port: 9922 });
+    await rememberDevice({ name: 'lounge', host: '127.0.0.1', port: 9922 });
 
-    await keyCommand.run(['1', '--device', HOST], { cwd: '/' });
+    await keyCommand.run(['Up'], { cwd: '/' });
+    await keyCommand.run(['Up', '--device', 'lounge'], { cwd: '/' });
 
-    expect(saveToken).toHaveBeenCalledWith(HOST, 'new');
+    expect(vi.mocked(pressRemoteKeys).mock.calls.map(([host]) => host)).toEqual([
+      '127.0.0.1',
+      '127.0.0.1',
+    ]);
   });
 
-  it('closes the connection when a press fails', async () => {
-    vi.mocked(readToken).mockReturnValue('12345');
-    const remote = session('12345');
-    vi.mocked(remote.press).mockRejectedValue(new Error('closed'));
-    vi.mocked(openRemote).mockResolvedValue(remote);
-
-    await expect(keyCommand.run(['Up', '--device', HOST], { cwd: '/' })).rejects.toThrow('closed');
-    expect(remote.close).toHaveBeenCalled();
-  });
-
-  it('asks for the keys to press', async () => {
-    await expect(keyCommand.run(['--device', HOST], { cwd: '/' })).rejects.toThrow(
+  it('asks for the keys to press, and for the TV when none was ever connected', async () => {
+    await expect(keyCommand.run(['--device', '127.0.0.1'], { cwd: '/' })).rejects.toThrow(
       'key needs the keys to press',
     );
-  });
-
-  it('asks for the TV', async () => {
     await expect(keyCommand.run(['Down'], { cwd: '/' })).rejects.toThrow('key needs --device');
+    await expect(keyCommand.run(['Down', '-d', 'kitchen'], { cwd: '/' })).rejects.toThrow(
+      "--device must be the TV's IP address or the name it was connected under, got kitchen",
+    );
   });
 
   it('refuses a key it does not know before it connects', async () => {
-    await expect(keyCommand.run(['Sideways', '--device', HOST], { cwd: '/' })).rejects.toThrow();
-    expect(openRemote).not.toHaveBeenCalled();
+    await expect(
+      keyCommand.run(['Sideways', '--device', '127.0.0.1'], { cwd: '/' }),
+    ).rejects.toThrow('Unknown key Sideways');
+    expect(pressRemoteKeys).not.toHaveBeenCalled();
   });
 });

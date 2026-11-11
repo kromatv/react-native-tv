@@ -37,13 +37,18 @@ class Scene final {
   static constexpr int kBannerOrder = 2500;
   static constexpr int kErrorOrder = 3000;
 
+  /// A scene shown in `window`, drawn by the main loop when it is invalid.
   explicit Scene(HostWindow &window);
+  /// A scene of `size` pixels with no window, which draws only into the
+  /// canvas `drawInto` is given: what the host's tests mount views in.
+  explicit Scene(PixelSize size);
   ~Scene();
 
   Scene(const Scene &) = delete;
   Scene &operator=(const Scene &) = delete;
 
-  HostWindow &window() const;
+  /// The window the scene is shown in, or null for a scene without one.
+  HostWindow *window() const;
   PixelSize size() const;
 
   /// Something changed: the scene is drawn at the next frame.
@@ -70,7 +75,8 @@ class Scene final {
     int order;
   };
 
-  HostWindow &window_;
+  HostWindow *const window_;
+  const PixelSize size_;
   std::vector<Entry> layers_;
   std::function<void(const FrameTiming &)> frameObserver_;
   bool invalid_{true};

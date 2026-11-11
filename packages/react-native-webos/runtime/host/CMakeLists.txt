@@ -68,6 +68,9 @@ if(RN_WEBOS_TESTS)
     file(GLOB_RECURSE _devsupport_test_sources CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/devsupport/*.test.cpp")
     list(APPEND _host_test_sources ${_devsupport_test_sources})
   endif()
+  foreach(_unported IN LISTS RN_WEBOS_UNPORTED RN_WEBOS_UNPORTED_TESTS)
+    list(FILTER _host_test_sources EXCLUDE REGEX "${_unported}")
+  endforeach()
   rn_webos_add_host_tests(rn-webos-host-tests
     SOURCES ${_host_test_sources}
     HOST rn_webos_host
@@ -84,10 +87,12 @@ if(RN_WEBOS_TESTS)
   # builds has them.
   target_sources(rn-webos-host-tests PRIVATE
     "$<FILTER:$<TARGET_OBJECTS:rn_webos_host>,INCLUDE,/fabric/[A-Za-z]+ComponentDescriptors?\\.cpp\\.o>")
-  # react-native-svg's implementation compiles only for an app that uses it
-  # (cmake/Libraries.cmake); its path and viewBox math needs no package.
-  target_sources(rn-webos-host-tests PRIVATE
-    src/svg/PathData.cpp src/svg/SvgPath.cpp src/svg/SvgViewBox.cpp)
+  if(NOT "/svg/" IN_LIST RN_WEBOS_UNPORTED)
+    # react-native-svg's implementation compiles only for an app that uses it
+    # (cmake/Libraries.cmake); its path and viewBox math needs no package.
+    target_sources(rn-webos-host-tests PRIVATE
+      src/svg/PathData.cpp src/svg/SvgPath.cpp src/svg/SvgViewBox.cpp)
+  endif()
   # The full ICU data file ICU's sources ship, for the host's ICU setup to load.
   set_source_files_properties(src/intl/IcuData.test.cpp PROPERTIES
     COMPILE_DEFINITIONS "RN_WEBOS_TEST_ICU_DATA_DIR=\"${icu_SOURCE_DIR}/source/data/in\"")

@@ -10,7 +10,7 @@ const SECOND_SCREEN = 'urn:lge-com:service:webos-second-screen:1';
 const UUID = '6f2c1c1e-8b0a-4c57-9d0e-2a7b3a4f5e61';
 
 describe('ssdp', () => {
-  it('writes the M-SEARCH of UPnP Device Architecture 1.1 for LG\'s remote control service', () => {
+  it("writes the M-SEARCH of UPnP Device Architecture 1.1 for LG's remote control service", () => {
     expect(searchRequest(SECOND_SCREEN).toString()).toBe(
       `M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:1900\r\nMAN: "ssdp:discover"\r\nMX: 2\r\nST: ${SECOND_SCREEN}\r\n\r\n`,
     );

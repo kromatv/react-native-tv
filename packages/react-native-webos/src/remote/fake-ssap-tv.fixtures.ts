@@ -57,11 +57,18 @@ function register(tv: FakeSsapTv, options: FakeSsapTvOptions, client: Client, fr
   const manifest = payload?.manifest;
   if (manifest?.signatures !== undefined) {
     return [
-      { type: 'error', id, error: '403 Pairing rejected: blacklisted certificate detected', payload: {} },
+      {
+        type: 'error',
+        id,
+        error: '403 Pairing rejected: blacklisted certificate detected',
+        payload: {},
+      },
     ];
   }
   const accepted = { type: 'registered', id, payload: { 'client-key': tv.issuedKey } };
-  const known = [...(options.knownKeys ?? []), tv.issuedKey].includes(payload?.['client-key'] ?? '');
+  const known = [...(options.knownKeys ?? []), tv.issuedKey].includes(
+    payload?.['client-key'] ?? '',
+  );
   const prompt = options.prompt ?? 'accept';
   if (known || prompt === 'accept') {
     client.registered = true;

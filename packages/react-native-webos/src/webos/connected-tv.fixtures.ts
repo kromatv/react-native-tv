@@ -25,7 +25,9 @@ export function useTemporaryState(): () => string {
 }
 
 /** Starts fake TVs that `rn-webos` is already connected to, and closes them after each test. */
-export function useFakeTvs(): (options?: FakeTvOptions & { name?: string }) => Promise<ConnectedTv> {
+export function useFakeTvs(): (
+  options?: FakeTvOptions & { name?: string },
+) => Promise<ConnectedTv> {
   const started: FakeTv[] = [];
   afterEach(async () => {
     await Promise.all(started.splice(0).map((tv) => tv.close()));
