@@ -60,3 +60,37 @@ export const openTvConnection: OpenTvConnection = (url, events, timeoutMs) => {
     bufferedAmount: () => socket.bufferedAmount,
   };
 };
+
+/**
+ * Opens a connection and waits for it: rejects with why when it closes first,
+ * or is not open after `timeoutMs`. Later messages and the close go to `events`.
+ */
+export function openedTvConnection(
+  url: string,
+  events: Omit<TvConnectionEvents, 'onOpen'>,
+  timeoutMs: number,
+  open: OpenTvConnection = openTvConnection,
+): Promise<TvConnection> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      connection.close();
+      reject(new Error('the connection timed out'));
+    }, timeoutMs);
+    const connection = open(
+      url,
+      {
+        onOpen: () => {
+          clearTimeout(timer);
+          resolve(connection);
+        },
+        onMessage: (text) => events.onMessage(text),
+        onClosed: (reason) => {
+          clearTimeout(timer);
+          reject(new Error(reason));
+          events.onClosed(reason);
+        },
+      },
+      timeoutMs,
+    );
+  });
+}

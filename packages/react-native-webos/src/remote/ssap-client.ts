@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { openTvConnection, type OpenTvConnection, type TvConnection } from './tv-socket.ts';
+import { openedTvConnection, type OpenTvConnection, type TvConnection } from './tv-socket.ts';
 
 /** The ports of a TV's remote control service: TLS, and the plain one older TVs still answer on. */
 export interface SsapPorts {
@@ -150,33 +150,14 @@ interface Hooks {
   onClosed(reason: string): void;
 }
 
-function connectTo(url: string, options: SsapConnectOptions): Promise<SsapClient> {
-  const open = options.open ?? openTvConnection;
-  return new Promise((resolve, reject) => {
-    const hooks: Hooks = {
-      onMessage: () => undefined,
-      onClosed: (reason) => reject(new SsapSilentError(reason)),
-    };
-    const timer = setTimeout(() => {
-      connection.close();
-      reject(new SsapSilentError('the connection timed out'));
-    }, options.timeoutMs);
-    const connection = open(
-      url,
-      {
-        onOpen: () => {
-          clearTimeout(timer);
-          resolve(client(url, connection, hooks, options.timeoutMs));
-        },
-        onMessage: (text) => hooks.onMessage(text),
-        onClosed: (reason) => {
-          clearTimeout(timer);
-          hooks.onClosed(reason);
-        },
-      },
-      options.timeoutMs,
-    );
-  });
+async function connectTo(url: string, options: SsapConnectOptions): Promise<SsapClient> {
+  const hooks: Hooks = { onMessage: () => undefined, onClosed: () => undefined };
+  const events = {
+    onMessage: (text: string) => hooks.onMessage(text),
+    onClosed: (reason: string) => hooks.onClosed(reason),
+  };
+  const connection = await openedTvConnection(url, events, options.timeoutMs, options.open);
+  return client(url, connection, hooks, options.timeoutMs);
 }
 
 /**

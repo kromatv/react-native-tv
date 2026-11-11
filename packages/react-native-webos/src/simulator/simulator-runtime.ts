@@ -41,8 +41,8 @@ export function appRuntimeKey(app: AppProject): string {
 }
 
 /**
- * Builds `libreact-native-webos.so` and the launcher for the simulator from
- * this package's runtime/, against the app's react-native and with its native
+ * Builds the `react-native-webos` executable for the simulator from this
+ * package's runtime/, against the app's react-native and with its native
  * libraries, in the build those libraries key, and returns the key.
  * Incremental. Apps with the same libraries share the build, so this waits
  * for one already running in it, and calls `onWait` when it does.

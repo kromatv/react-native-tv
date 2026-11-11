@@ -39,8 +39,12 @@ export async function pushFile(
     source.destroy();
     if (!(error instanceof SftpUnavailableError)) throw error;
   }
+  const counted = counting(report);
+  createReadStream(localPath)
+    .on('error', (error) => counted.destroy(error))
+    .pipe(counted);
   const result = await session.exec(`/bin/cat > "${remotePath}"`, {
-    stdin: createReadStream(localPath).pipe(counting(report)),
+    stdin: counted,
     timeoutMs: PUSH_TIMEOUT_MS,
   });
   if (result.code !== 0) throw new TvCommandError(`The TV did not store ${remotePath}`, result);

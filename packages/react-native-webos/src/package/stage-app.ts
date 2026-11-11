@@ -19,9 +19,8 @@ export const RESOURCE_DIR = 'res';
 /** The CA bundle the runtime's TLS trusts, in the resource directory. */
 export const CA_BUNDLE_FILE = 'cacert.pem';
 
-// LG's Flutter tool ships this empty directory, world-writable in the package,
-// because an app does not own its install directory on a TV; the host keeps the
-// app's data and cache under it (docs/reference/webos-tv-platform.md, section 3.1).
+// An app does not own its install directory on a TV, so LG's Flutter tool ships this
+// empty world-writable one for its data (docs/reference/webos-tv-platform.md, section 3.1).
 const APP_DATA_DIR = 'appdata';
 
 interface AppDirInputs {

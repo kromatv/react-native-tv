@@ -35,6 +35,9 @@ export class SshConnectError extends Error {
 /** The TV has no SFTP subsystem for this login, so a file goes through `cat` instead. */
 export class SftpUnavailableError extends Error {}
 
+/** A command the TV did not finish: it outlasted its timeout, or the connection dropped under it. */
+export class TvSilentError extends Error {}
+
 /** A TV's SSH server and the key it gave out. */
 export interface SshTarget extends TvAddress {
   readonly privateKey: string;
@@ -109,7 +112,8 @@ function lineSplitter(onLine: (line: string) => void): (chunk: string) => void {
   let pending = '';
   return (chunk) => {
     const lines = (pending + chunk).split(/\r?\n/);
-    pending = lines.pop() ?? '';
+    const rest = lines.pop() ?? '';
+    pending = rest.length > MAX_OUTPUT_BYTES ? '' : rest;
     for (const line of lines) onLine(line);
   };
 }
@@ -120,10 +124,11 @@ function runOnChannel(channel: ClientChannel, options: ExecOptions): Promise<Exe
     let stderr = '';
     let code: number | null = null;
     let ending = false;
+    const timeoutMs = options.timeoutMs ?? EXEC_TIMEOUT_MS;
     const timer = setTimeout(() => {
       channel.close();
-      reject(new Error(`the TV did not finish within ${options.timeoutMs ?? EXEC_TIMEOUT_MS} ms`));
-    }, options.timeoutMs ?? EXEC_TIMEOUT_MS);
+      reject(new TvSilentError(`the TV did not finish within ${timeoutMs / 1000} s`));
+    }, timeoutMs);
     const end = () => {
       if (ending) return;
       ending = true;
@@ -177,7 +182,8 @@ function session(client: Client): SshSession {
     exec: (command, options = {}) =>
       new Promise((resolve, reject) => {
         client.exec(command, (error, channel) => {
-          if (error) reject(error);
+          if (error)
+            reject(new TvSilentError(`the connection to the TV dropped: ${error.message}`));
           else runOnChannel(channel, options).then(resolve, reject);
         });
       }),
@@ -208,7 +214,11 @@ export async function openSshSession(
   const socket = await openSocket(target);
   return new Promise((resolve, reject) => {
     const client = new ssh2.Client();
+    const closedEarly = () =>
+      reject(new SshConnectError('silent', 'the TV closed the connection before the login'));
+    client.once('close', closedEarly);
     client.once('ready', () => {
+      client.off('close', closedEarly);
       client.removeAllListeners('error');
       client.on('error', () => undefined);
       resolve(session(client));

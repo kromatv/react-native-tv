@@ -17,9 +17,8 @@ const TRIM_VERSION = 3;
 const BREAK_TREE = 'brkitr';
 const LOCALE_TREES = new Set(['', 'coll', 'curr', 'zone', BREAK_TREE]);
 const ROOT_BREAK_RULES = ['char.brk', 'word.brk', 'line.brk'];
-// ICU breaks words, and for some of these lines, by dictionary in the
-// languages written without spaces; `brkitr/root.res` names the file per script
-// (docs/reference/skia-rendering.md, section 5).
+// ICU breaks words, and for some of these lines, by dictionary; `brkitr/root.res`
+// names the file per script (docs/reference/skia-rendering.md, section 5).
 const DICTIONARIES: Readonly<Record<string, string>> = {
   ja: 'cjdict.dict',
   zh: 'cjdict.dict',

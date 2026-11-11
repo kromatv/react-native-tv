@@ -48,8 +48,8 @@ function octal(value: number, size: number): string {
 }
 
 function header(path: string, entry: TarEntry, mtime: number): Buffer {
-  // opkg reads plain ustar only, so LG's own packager refuses a name outside
-  // ASCII (docs/reference/webos-ipk-format.md, section 4).
+  // LG's own packager refuses a name outside ASCII, because opkg does not read
+  // every POSIX tar (docs/reference/webos-ipk-format.md, section 4).
   if (!/^[\x20-\x7e]+$/.test(path)) {
     throw new FixableError(
       `${entry.path} has a character outside ASCII, which a webOS package cannot hold`,

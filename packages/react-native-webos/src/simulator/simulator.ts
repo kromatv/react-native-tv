@@ -24,13 +24,13 @@ import {
 import { instanceEnv, type SimulatorInstance } from './instance.ts';
 import { isWithin, mountRoot, requireNarrowMount } from './mount-root.ts';
 
-/** The VM definition, guest scripts, shims, launcher and viewer. */
+/** The VM definition, guest scripts and viewer. */
 export const SIMULATOR_DIR = fileURLToPath(new URL('../../simulator', import.meta.url));
 
 /** What {@link ensureVm} had to do. */
 export type VmPreparation = 'created' | 'started' | 'running';
 
-/** A lifecycle event the launcher delivers to the app, as a TV would. */
+/** A lifecycle event the simulator delivers to the app, as a TV would. */
 export type LifecycleCommand = 'pause' | 'resume' | 'exit';
 
 export function guestScript(name: string): string {
@@ -182,24 +182,46 @@ export async function sendLifecycle(
 }
 
 export async function openUrl(task: Task, instance: SimulatorInstance, url: string): Promise<void> {
-  await sendControl(task, instance, 'open-url', url);
+  await sendControl(task, instance, 'open-url', [url]);
+}
+
+/** What the remote's pointer does: where it goes, its button, its wheel. */
+export type PointerCommand =
+  | { readonly type: 'move'; readonly x: number; readonly y: number }
+  | { readonly type: 'down' | 'up' | 'leave' }
+  | { readonly type: 'wheel'; readonly notches: number };
+
+/** Moves the remote's pointer in `instance`, presses its button or turns its wheel. */
+export async function sendPointer(
+  task: Task,
+  instance: SimulatorInstance,
+  commands: readonly PointerCommand[],
+): Promise<void> {
+  for (const command of commands) {
+    if (command.type === 'move') {
+      await sendControl(task, instance, 'pointer-move', [String(command.x), String(command.y)]);
+    } else if (command.type === 'wheel') {
+      await sendControl(task, instance, 'pointer-wheel', [String(command.notches)]);
+    } else {
+      await sendControl(task, instance, `pointer-${command.type}`, []);
+    }
+  }
 }
 
 /**
- * Hands the app in `instance` what only a TV's own services send: a Smart Hub
- * tile press (`tile <url>`) or a voice command as the shell builds it
- * (`voice <json>`).
+ * Writes one line to the control channel of the app in `instance`: the command
+ * and its arguments, which `runtime/host/src/platform/SimulatorControl.h` lists.
  */
 export async function sendControl(
   task: Task,
   instance: SimulatorInstance,
-  command: 'open-url' | 'tile' | 'voice',
-  argument: string,
+  command: string,
+  args: readonly string[],
 ): Promise<void> {
-  if (/[\r\n]/.test(argument)) {
+  if ([command, ...args].some((word) => /[\r\n]/.test(word))) {
     throw new UsageError(`The ${command} argument cannot hold a line break`, 'simulator');
   }
-  await runInstanceScript(task, instance, 'control', [command, argument]);
+  await runInstanceScript(task, instance, 'control', [command, ...args]);
 }
 
 /** Prints the log of the app in `instance` to this terminal, and follows it when asked. */

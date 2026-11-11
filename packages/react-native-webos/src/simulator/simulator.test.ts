@@ -176,8 +176,8 @@ describe('the guest scripts of an instance', () => {
   });
 
   it('refuses a control argument holding a line break', async () => {
-    await expect(sendControl(recordingTask(), instance, 'tile', 'a\nb')).rejects.toThrow(
-      'The tile argument cannot hold a line break',
+    await expect(sendControl(recordingTask(), instance, 'open-url', ['a\nb'])).rejects.toThrow(
+      'The open-url argument cannot hold a line break',
     );
     expect(lima.guestRun).not.toHaveBeenCalled();
   });

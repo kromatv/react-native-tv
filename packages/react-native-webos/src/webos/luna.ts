@@ -121,7 +121,7 @@ export async function lunaFollow<T>(
     return state.outcome !== null;
   };
   const result = await session.exec(lunaCommand('-i', uri, params), { timeoutMs, onLine });
-  if (state.outcome === null) throw silent(uri, result);
+  if (state.outcome === null) throw new TvCommandError(`${uri} stopped before it finished`, result);
   if ('error' in state.outcome) throw state.outcome.error;
   return state.outcome.value;
 }

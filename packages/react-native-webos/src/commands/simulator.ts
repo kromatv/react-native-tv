@@ -34,8 +34,9 @@ import {
   printLog,
   requireRunningVm,
   saveScreenshot,
-  sendControl,
   sendLifecycle,
+  sendPointer,
+  type PointerCommand,
   startApp,
   stopSimulator,
 } from '../simulator/simulator.ts';
@@ -48,6 +49,9 @@ const DEFAULT_LOG_LINES = 200;
 const MAX_LOG_LINES = 100_000;
 
 const lineCountSchema = z.coerce.number().int().nonnegative().max(MAX_LOG_LINES);
+const coordinateSchema = z.coerce.number().int().min(0).max(8192);
+const pointSchema = z.tuple([coordinateSchema, coordinateSchema]);
+const wheelSchema = z.coerce.number().min(-100).max(100);
 
 const OPTIONS = {
   instance: {
@@ -114,6 +118,15 @@ function lineCount(value: string | undefined): number {
   const parsed = lineCountSchema.safeParse(value);
   if (parsed.success) return parsed.data;
   throw new UsageError(`--lines must be a whole number of lines, got ${value}`, 'simulator');
+}
+
+function pointerMove(words: readonly string[]): { type: 'move'; x: number; y: number } {
+  const parsed = pointSchema.safeParse(words);
+  if (parsed.success) return { type: 'move', x: parsed.data[0], y: parsed.data[1] };
+  throw new UsageError(
+    `The pointer takes x and y in screen pixels, got ${words.join(' ')}`,
+    'simulator',
+  );
 }
 
 function requirePositionals(invocation: Invocation, what: string): readonly string[] {
@@ -189,25 +202,40 @@ const ACTIONS: Readonly<Record<string, Action>> = {
       url,
     );
   },
-  tile: (invocation) => {
-    const [url = ''] = requirePositionals(invocation, 'a URL, e.g. `tile myapp://item/42`');
+  pointer: (invocation) => {
+    const words = requirePositionals(
+      invocation,
+      'where the pointer goes, in screen pixels, e.g. `pointer 960 540`',
+    );
+    const move = pointerMove(words);
     return inRunningVm(
       invocation.reporter,
-      'Smart Hub tile',
-      (task) => sendControl(task, invocation.instance, 'tile', url),
-      url,
+      'Pointer',
+      (task) => sendPointer(task, invocation.instance, [move]),
+      `${move.x}, ${move.y}`,
     );
   },
-  voice: (invocation) => {
-    const [json = ''] = requirePositionals(
-      invocation,
-      `a command, e.g. \`voice '{"type":"pause"}'\``,
+  click: (invocation) => {
+    const move = invocation.positionals.length > 0 ? [pointerMove(invocation.positionals)] : [];
+    const commands: PointerCommand[] = [...move, { type: 'down' }, { type: 'up' }];
+    return inRunningVm(invocation.reporter, 'Click', (task) =>
+      sendPointer(task, invocation.instance, commands),
     );
+  },
+  wheel: (invocation) => {
+    const [notches = ''] = requirePositionals(
+      invocation,
+      'how far the wheel turns, e.g. `wheel -3` to scroll down three notches',
+    );
+    const parsed = wheelSchema.safeParse(notches);
+    if (!parsed.success) {
+      throw new UsageError(`wheel takes a number of notches, got ${notches}`, 'simulator');
+    }
     return inRunningVm(
       invocation.reporter,
-      'Voice',
-      (task) => sendControl(task, invocation.instance, 'voice', json),
-      json,
+      'Wheel',
+      (task) => sendPointer(task, invocation.instance, [{ type: 'wheel', notches: parsed.data }]),
+      notches,
     );
   },
   perf: ({ flags, reporter, instance, context }) =>
@@ -283,11 +311,11 @@ export const simulatorCommand: Command = {
     'rn-webos simulator run --dev-server http://localhost:8081  load the bundle from `expo start`, with Fast Refresh',
     'rn-webos simulator view                 open the live screen of the running app',
     'rn-webos simulator screenshot --out shot.png',
-    'rn-webos simulator key Down Down Enter  Up Down Left Right Enter Back Exit Play Pause Stop ...',
+    'rn-webos simulator key Down Down Enter  Up Down Left Right Enter Back Play Pause Stop Red ...',
+    'rn-webos simulator key Enter:800        hold a key for 800 ms',
+    "rn-webos simulator pointer 960 540      move the remote's pointer; click presses its button, wheel -3 scrolls",
     'rn-webos simulator pause                send the app to the background; resume brings it back',
     'rn-webos simulator open-url myapp://item/42',
-    'rn-webos simulator tile myapp://item/42 open the app as a Smart Hub tile press does',
-    `rn-webos simulator voice '{"type":"selectTitle","title":"Dune"}'  a voice command, as the TV shell sends it`,
     'rn-webos simulator restart              start the app again, without rebuilding',
     'rn-webos simulator build                rebuild the native runtime only',
     'rn-webos simulator clean                remove the runtime builds no instance runs',

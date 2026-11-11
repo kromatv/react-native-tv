@@ -11,7 +11,7 @@ import {
 } from './ssap-client.ts';
 import { sayHello } from './ssap-hello.ts';
 import { REGISTER_MANIFEST } from './ssap-manifest.ts';
-import { openTvConnection, type OpenTvConnection, type TvConnection } from './tv-socket.ts';
+import { openedTvConnection, type OpenTvConnection, type TvConnection } from './tv-socket.ts';
 
 const POINTER_SOCKET = 'ssap://com.webos.service.networkinput/getPointerInputSocket';
 const REGISTER_ID = 'register_0';
@@ -104,18 +104,8 @@ async function register(client: SsapClient, tvId: string, options: OpenRemoteOpt
 }
 
 function openPointer(url: string, options: OpenRemoteOptions): Promise<TvConnection> {
-  const open = options.open ?? openTvConnection;
-  return new Promise((resolve, reject) => {
-    const connection = open(
-      url,
-      {
-        onOpen: () => resolve(connection),
-        onMessage: () => undefined,
-        onClosed: (why) => reject(new Error(why)),
-      },
-      options.timeoutMs,
-    );
-  });
+  const events = { onMessage: () => undefined, onClosed: () => undefined };
+  return openedTvConnection(url, events, options.timeoutMs, options.open);
 }
 
 async function pointerSocket(client: SsapClient, options: OpenRemoteOptions) {

@@ -109,7 +109,7 @@ describe('exec', () => {
       { timeoutMs: 50 },
     );
 
-    await expect(hanging).rejects.toThrow('did not finish within 50 ms');
+    await expect(hanging).rejects.toThrow('the TV did not finish within 0.05 s');
     session.close();
   });
 });

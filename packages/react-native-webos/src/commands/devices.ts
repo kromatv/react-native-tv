@@ -1,9 +1,11 @@
 import { COMMON_OPTIONS, parseCommandArgs, type Command } from '../cli/command.ts';
 import { Reporter } from '../cli/reporter.ts';
-import { probeTv, type TvProbe } from '../discovery/probe-tv.ts';
-import { scanForTvs } from '../discovery/scan-tvs.ts';
-import { readKnownDevices } from '../webos/known-devices.ts';
-import { printTv, unseenTv } from './devices-report.ts';
+import { probeTv } from '../discovery/probe-tv.ts';
+import { scanForTvs, type FoundTv } from '../discovery/scan-tvs.ts';
+import { tcpOpen } from '../discovery/tcp-probe.ts';
+import { KEY_SERVER_PORT } from '../webos/key-server.ts';
+import { readKnownDevices, type KnownDevice } from '../webos/known-devices.ts';
+import { printTv } from './devices-report.ts';
 
 const OPTIONS = {
   'no-scan': {
@@ -15,9 +17,24 @@ const OPTIONS = {
 
 const plural = (count: number) => `${count} LG ${count === 1 ? 'TV' : 'TVs'}`;
 
-/** A TV the scan missed still has Developer Mode on when `rn-webos` logs in to it. */
-function withLogin(tv: TvProbe): TvProbe {
-  return tv.connection.state === 'ready' ? { ...tv, developerMode: true } : tv;
+const PROBE_TIMEOUT_MS = 1000;
+
+/** A TV `rn-webos` was connected to that the scan did not find, with what its two Developer Mode ports say. */
+async function unseenTv(tv: KnownDevice): Promise<FoundTv> {
+  const [developerMode, keyServer] = await Promise.all([
+    tcpOpen(tv.host, tv.port, PROBE_TIMEOUT_MS),
+    tcpOpen(tv.host, KEY_SERVER_PORT, PROBE_TIMEOUT_MS),
+  ]);
+  return {
+    host: tv.host,
+    name: '',
+    model: '',
+    id: null,
+    webosVersion: null,
+    developerMode,
+    keyServer,
+    sshPort: tv.port,
+  };
 }
 
 /** `rn-webos devices`: finds the LG TVs on the network and the ones connected before, and probes each. */
@@ -40,7 +57,7 @@ export const devicesCommand: Command = {
           );
     const hosts = new Set(found.map((tv) => tv.host));
     const known = (await readKnownDevices()).filter((tv) => !hosts.has(tv.host));
-    const candidates = [...found, ...known.map((tv) => unseenTv(tv.host, tv.port))];
+    const candidates = [...found, ...(await Promise.all(known.map(unseenTv)))];
     if (candidates.length === 0) {
       reporter.line('No LG TV found.');
       reporter.note(
@@ -50,7 +67,7 @@ export const devicesCommand: Command = {
     }
     const probes = await reporter.step(
       'Probe',
-      async () => (await Promise.all(candidates.map(probeTv))).map(withLogin),
+      () => Promise.all(candidates.map(probeTv)),
       (tvs) =>
         `${tvs.filter((tv) => tv.connection.state === 'ready').length} of ${tvs.length} connected`,
     );

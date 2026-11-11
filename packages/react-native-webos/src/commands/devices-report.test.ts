@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { probeTv, type ConnectionState } from '../discovery/probe-tv.ts';
 import { scanForTvs, type FoundTv } from '../discovery/scan-tvs.ts';
+import { tcpOpen } from '../discovery/tcp-probe.ts';
 import { captureProcessOutput } from '../fakes.fixtures.ts';
 import { useTemporaryState } from '../webos/connected-tv.fixtures.ts';
 import { rememberDevice } from '../webos/known-devices.ts';
@@ -8,6 +9,7 @@ import { devicesCommand } from './devices.ts';
 
 vi.mock('../discovery/scan-tvs.ts', () => ({ scanForTvs: vi.fn() }));
 vi.mock('../discovery/probe-tv.ts', () => ({ probeTv: vi.fn() }));
+vi.mock('../discovery/tcp-probe.ts', () => ({ tcpOpen: vi.fn(async () => false) }));
 
 const INFO = { modelName: 'OLED65C25LB', sdkVersion: '11.2.0', firmwareVersion: '43.21.74' };
 
@@ -72,6 +74,10 @@ describe('rn-webos devices report', () => {
       expect(output.stdout()).toContain(text);
     }
     expect(vi.mocked(probeTv).mock.calls.map(([tv]) => tv.host)).toContain('10.0.0.6');
+    expect(vi.mocked(tcpOpen).mock.calls.map(([host, port]) => `${host}:${port}`)).toEqual([
+      '10.0.0.6:9922',
+      '10.0.0.6:9991',
+    ]);
   });
 
   it('counts one TV as one', async () => {

@@ -1,7 +1,7 @@
 import type { Reporter } from '../cli/reporter.ts';
 import type { TvProbe } from '../discovery/probe-tv.ts';
 import { webosVersionName } from '../discovery/webos-version.ts';
-import { addressText, DEVELOPER_SSH_PORT } from '../webos/device-address.ts';
+import { addressText } from '../webos/device-address.ts';
 
 function developerMode(tv: TvProbe): string {
   if (tv.developerMode) return 'on';
@@ -31,18 +31,4 @@ export function printTv(reporter: Reporter, tv: TvProbe): void {
   reporter.field('Developer Mode', developerMode(tv));
   reporter.field('Key Server', keyServer(tv));
   reporter.field('rn-webos', connection(tv));
-}
-
-/** A TV `rn-webos` was connected to that the scan did not find, to probe all the same. */
-export function unseenTv(host: string, port = DEVELOPER_SSH_PORT) {
-  return {
-    host,
-    name: '',
-    model: '',
-    id: null,
-    webosVersion: null,
-    developerMode: false,
-    keyServer: false,
-    sshPort: port,
-  };
 }

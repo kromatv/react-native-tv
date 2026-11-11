@@ -2,198 +2,173 @@
 
 The choices react-native-webos is built on, why, and what each one commits the
 code to. Change one only by changing this file in the same change. Facts behind
-them are in [`reference/`](reference/README.md).
+them are in [`reference/`](reference/README.md). The package is a port of
+react-native-tizen: a decision that reads the same there is the same decision.
 
-## A .NET app that loads a native library
+## A native executable in an `.ipk`, and no shell
 
-Samsung's store accepts web apps and .NET apps only. A small C# app (`shell/`)
-starts, calls `rn_webos_initialize()` before the app framework starts EFL, then
-loads `libreact-native-webos.so`, which holds Hermes, React Native's C++ core and
-the host, and draws its own window. flutter-webos ships the same way.
+A webOS native app is an ELF the app manager starts in a jail, named by `main`
+in `appinfo.json`. The package's one executable, `react-native-webos`, holds
+Hermes, React Native's C++ core, the host, Skia, SDL and ICU, and opens its own
+window. Nothing loads it: where Samsung's store forced react-native-tizen behind
+a .NET app, webOS needs no shell, so the host itself parses the launch
+parameters, registers with the app manager and talks to the TV's services.
 
-Consequence: publishing in the store needs a Seller Office partner group, since
-Samsung reserves signing native libraries to partners
-([webos-tv-platform.md](reference/webos-tv-platform.md)). Developer Mode works
-with a Public certificate.
+Consequence: who may publish a native app in LG's store is LG's decision, and
+its public pages name web apps only; LG's own Flutter tool produces native
+packages for webOS 26. Until LG says otherwise, a package runs on a TV in
+Developer Mode and is distributed as homebrew is
+([webos-tv-platform.md](reference/webos-tv-platform.md), section 1). No
+document here may promise LG Content Store.
 
-## LLVM, a static GCC runtime, the oldest rootstrap
+## Skia draws, SDL opens the window
 
-The runtime is compiled with clang and linked with lld against a mirror of the
-package's floor rootstrap (6.0 by default, glibc 2.30), with GCC 14's libstdc++
-linked statically and the glibc symbols it needs beyond 2.30 (three, and
-`_dl_find_object` on aarch64 and x86_64) supplied by a hidden shim. One build
-then runs on every newer TV. Samsung's own GCC for macOS needs Intel Homebrew
-libraries, and lld rejects the rootstrap's stubs as shipped, hence the mirror
-(`runtime/cmake/toolchain/webos.cmake`, `src/sysroot/`). webOS Studio publishes
-no TV rootstrap: floors 6.0 to 7.0 link against IoT Headed, the profile with
-armv7 and aarch64 rootstraps, and 8.0 on against the unified `webos` profile
-(`src/webos/target.ts`).
+webOS has no UI toolkit a native app may link: it gives an app a Wayland
+surface and OpenGL ES. The host draws every view with Skia (Ganesh on OpenGL
+ES 2 or 3, milestone m157, built from pinned sources by Skia's own GN build)
+and lays out text with SkParagraph, so the engine that measures a paragraph is
+the one that draws it. The window, the OpenGL context, remote keys, the
+pointer and the on-screen keyboard come from SDL 3, webosbrew's fork, linked
+statically: the TV's own SDL is a different library on each webOS release, and
+webOS moves its Wayland protocol requests between releases, which the fork
+already handles ([webos-window-input.md](reference/webos-window-input.md),
+sections 4 to 6; [skia-rendering.md](reference/skia-rendering.md)).
 
-## webOS 6.0 is the floor; older TVs get a web build
+Consequence: Skia is built once per machine and target, outside any one
+runtime build (`RN_WEBOS_SKIA_ROOT`), because it takes minutes and does not
+depend on the app. The simulator runs the same Skia and the same SDL source,
+on X11 and Mesa. Skia's API moves between milestones: a name is looked up in
+the pinned source, never remembered.
 
-A package names its floor (the plugin's `platform` prop, default `6.0`) and
-one `.tpk` per CPU runs on that webOS and every later one: 2021 to 2026 TVs.
-Below 6.0 Samsung's TVs refuse the native libraries an app carries, the wall
-flutter-webos hit, and the runtime would also lose glibc, curl and EFL
-symbols; the facts and the cost of each step lower are in
-[webos-versions.md](webos-versions.md). The shell is compiled against WebOSFX
-API 8 whatever the floor, and the manifest's `api-version` is the floor. TV
-features that need a newer webOS check the TV's version at run time and say
-why they are off.
+## One scene, redrawn when it changes
 
-Consequence: 2015 to 2020 TVs need a react-native-web build packaged as a
-`.wgt`, a second Seller Office application released to those model groups. It
-is designed in [webos-versions.md](webos-versions.md), not built. On webOS 6.0
-the SVG views call nine Evas VG functions that 6.0 exports but did not publish.
+A mounted view is plain state: its box, its transform, what it shows. Nothing
+is drawn until a view changes; the next display frame then walks the views and
+draws the whole scene, back to front, culling what the clip rejects
+(`render/Scene`, `views/ComponentView`). A view's opacity goes into its paint
+when it draws one thing, and into a layer only when it draws several. There is
+no retained object graph to keep in step, which is what most of
+react-native-tizen's view code does for Evas.
+
+Consequence: a frame's cost is the visible views, so a view must not allocate,
+decode or lay out while drawing: images decode off the main thread, a
+paragraph is laid out once and kept. Repainting only what changed waits for a
+measurement on a TV ([skia-rendering.md](reference/skia-rendering.md),
+section 7).
+
+## The host owns the main loop
+
+One loop on the main thread waits on SDL's events, runs tasks posted from
+other threads, timers, and one tick per display frame while something asks for
+frames (`platform/MainLoop`). The main thread alone touches the window, the
+scene and the views. JavaScript runs on its own thread; Fabric lays out there
+and measures text there, under the text engine's lock.
+
+## Clang, lld and the openlgtv sysroot; one 32-bit build
+
+Every webOS TV release runs apps as 32-bit ARM with the soft-float calling
+convention, even on a 64-bit kernel. The runtime is compiled with the
+machine's own clang and lld against the sysroot of the openlgtv toolchain
+(glibc 2.12), with libstdc++ and libgcc linked statically, so one build runs
+on every release above the floor
+([webos-native-toolchain.md](reference/webos-native-toolchain.md)). LG's own
+NDK cannot be redistributed and targets webOS 26 only.
+
+Consequence: what the TV's libraries do not offer under one name on every
+release is compiled in: curl with mbedTLS and a CA bundle the package ships,
+ICU, and everything Skia needs. Only the libraries the reference lists as
+present on every release are linked from the TV. A build is checked against
+firmware symbol data before it is called a TV build.
+
+## webOS 4 is the floor
+
+The lowest release the facts support without extra work is webOS TV 4.x, the
+2018 models: below it the TV's Wayland library lacks a call the client code
+needs and the jail misbehaves. The floor is measured, not assumed: the build's
+checker reports the lowest release on which every library and symbol the
+executable needs exists.
 
 ## ICU inside the runtime, FormatJS for the rest of `Intl`
 
-Every app gets `Intl` and Unicode-correct strings. webOS 9 ships ICU 74 and
-webOS 10 ICU 76 (different sonames), and Hermes calls ICU's C++ API, which ICU
-only promises across releases after a recompile, so the TV's ICU is not linked.
-The runtime compiles ICU 78.3 from source into `libreact-native-webos.so`, its
-symbols hidden, and builds Hermes' Unicode layer and Intl on it: collation, case
-mapping and normalization of every string, `localeCompare`, `Intl.Collator`,
-`Intl.DateTimeFormat`, `Intl.getCanonicalLocales` and `toLocaleString` on dates.
-Hermes' ICU backend has no `PluralRules` or `RelativeTimeFormat` on any platform,
-a stub `NumberFormat`, and `toLocaleUpperCase` that returns the word "uppered":
-the runtime replaces the case mapping with ICU's (`runtime/intl/CaseMapping.cpp`),
-and every webOS bundle carries FormatJS's `PluralRules`, `NumberFormat` (with
-`Number.prototype.toLocaleString`) and `RelativeTimeFormat`, forced over
-Hermes' own, defaulting to the locale Hermes resolves for the device
-(`react-native-overrides/intl/`).
-
-ICU's data is not linked. Each package ships `icudt78l.dat` in `res/`, trimmed to
-the languages the config plugin's `locales` prop names (default `["en"]`): the main, collation,
-currency and time-zone-name data of each language and its regional variants,
-root, and the shared tables. The host points ICU at it before Hermes starts. A
-device whose language the app does not list formats in the first listed
-language, alphabetically.
-
-| | `en` | `en`, `fr` | 12 languages |
-|---|---|---|---|
-| `icudt78l.dat` in `res/` | 2.49 MB | 2.58 MB | 4.61 MB |
-| FormatJS in the bytecode bundle | +226 KB | +285 KB | +820 KB |
-
-| Runtime | without ICU | with ICU |
-|---|---|---|
-| armv7 TV build, stripped | 9.02 MB | 11.34 MB (+1.05 MB gzipped) |
-| aarch64 simulator build, stripped | 8.65 MB | 11.31 MB |
-
-In the simulator, loading FormatJS with `en` and `fr` data takes 1.1 ms at
-startup, and the first ICU collation and date format 2.0 ms (five starts each).
-KROMA's French and English calls give Node 26.5's strings (ICU 78.3) but one:
-English times keep ICU's U+202F before AM/PM where Node prints a space.
-
-Rejected:
-
-- **Hermes' ICU backend alone**: no `PluralRules` or `RelativeTimeFormat`, and
-  its `NumberFormat` formats with `std::to_string`.
-- **The TV's ICU**: one soname per year, C++ ABI not kept across releases.
-- **FormatJS alone, Hermes without ICU**: FormatJS has no `Collator`; Hermes'
-  lite tables compare by code unit, leave non-ASCII case and `normalize()`
-  untouched and print "dateFormat not implemented"; FormatJS's `DateTimeFormat`
-  needs 0.8 MB of time zone data to show local time.
-
-Not covered: `formatToParts` of `DateTimeFormat` (Hermes returns one part),
-`Intl.ListFormat`, `DisplayNames`, `Segmenter`, `Locale` and
-`supportedValuesOf`; an app that needs them adds FormatJS's polyfill. Facts and
-sources: [intl.md](reference/intl.md).
+As in react-native-tizen: the runtime compiles ICU from source, statically,
+symbols hidden, and each package ships an `icudt<version>l.dat` trimmed to the
+app's locales; Hermes' Intl and Unicode functions run on it, and every bundle
+carries FormatJS's `PluralRules`, `NumberFormat` and `RelativeTimeFormat` over
+Hermes' gaps ([intl.md](reference/intl.md)). On webOS the same ICU also breaks
+text into lines for Skia, so the data keeps ICU's break rules and the
+dictionaries of the app's scripts.
 
 ## `Platform.OS === 'webos'`, with Android's sources underneath
 
-A bundle for the `webos` platform resolves every module as Android would, React
-Native's Android sources being the closest to a TV, then takes a `.webos.*` file
-beside the one found. Metro is never asked for the `webos` platform itself,
-since Expo's resolver throws for a platform it does not know
-(`expo-modules-autolinking/src/platforms/index.ts:57-73`). Apps can tell webOS
-apart, as they can Windows or macOS. The price is the code that compares
-`Platform.OS` with `'android'` or `'ios'`: `'webos'` matches neither. File by
-file, webOS takes one branch. Where the Android one matters, this package
-overrides the file (`react-native-overrides/`: `Alert`, the ScrollView and Image
-view configs); where the iOS one works once its module answers, the host serves
-that module (`LinkingManager`, `AccessibilityManager`). `TextInput.js` and
-`TextInputState.js` choose the whole component by `Platform.OS`, so the Babel
-transformer reads `Platform.OS` as `'android'` in those two files alone
-(`src/metro/webos-android-branch.ts`) and webOS draws Android's
-`AndroidTextInput`. `Platform.select` reads
-`webos`, then `android`, then `native`, then `default`, at run time and when
-Expo inlines it at build time (`withWebOS` wraps the Babel transformer for
-that). Third-party libraries may still need a `webos` branch.
+A bundle for the `webos` platform resolves every module as Android would,
+React Native's Android sources being the closest to a TV, then takes a
+`.webos.*` file beside the one found. Metro is never asked for the `webos`
+platform itself, since Expo's resolver throws for a platform it does not know.
+Apps can tell webOS apart, as they can Windows or macOS. The price is the code
+that compares `Platform.OS` with `'android'` or `'ios'`: `'webos'` matches
+neither. Where the Android branch matters, this package overrides the file
+(`react-native-overrides/`); `Platform.select` reads `webos`, then `android`,
+then `native`, then `default`.
 
 ## Remote presses arrive as tvOS reports them
 
 `useTVEventHandler` receives one event per press with `eventKeyAction: 1`, at
 its release, and a key held 300 ms sends `long<Key>` with `0` when the hold
-starts and `1` when it ends. Only the keys tvOS reports holds for (select, the
-arrows, play/pause) hold that way; any other key held is one press. The TV's
-repeats of a held key never reach the app. That is what app code written for
-non-Android TVs, KROMA's among them, expects. While a `<TextInput>` has the
-keyboard, keys go to it first, and a key it uses is never a remote event. Back goes to `BackHandler`
-(`hardwareBackPress`) once, at its release; when nothing handles it the app
-exits. While a `Modal` is mounted, Back goes to the last one mounted as
-`onRequestClose` instead, and `BackHandler` hears nothing, as on Android.
+starts and `1` when it ends. Only the keys tvOS reports holds for hold that
+way. The TV's repeats of a held key never reach the app. While a `<TextInput>`
+has the keyboard, keys go to it first. Back goes to `BackHandler`
+(`hardwareBackPress`) once, at its release, or to the last `Modal` mounted as
+`onRequestClose`.
+
+Consequence: Back reaches an app only because its surface claims it; Exit and
+Home are never claimed, so the TV can always close the app. Keys are matched
+on SDL's scancodes, and on the Linux key code where SDL has none
+([webos-window-input.md](reference/webos-window-input.md), section 15).
+
+## The pointer is a mouse
+
+LG's remote has a pointer, and an app that ignores it feels broken on an LG
+TV. It reaches the app as a mouse: moving it sends W3C pointer enter and leave
+events, which `Pressable` reports as `onHoverIn` and `onHoverOut`; its button
+sends touches, which React Native's responder system turns into presses; its
+wheel scrolls the nearest scroll view. react-native-tizen has no counterpart.
+
+Consequence: there is still no native focus engine: `focusable`,
+`hasTVPreferredFocus` and `TVFocusGuideView` do nothing, and an app keeps its
+focused item in state. An app that wants the pointer to move that focus does
+it in `onHoverIn`.
 
 ## Fatal JavaScript errors
 
-A development build shows a native red error screen with the stack, even before
-React rendered anything, and Back closes the app. A release build logs the error
-and exits, as React Native does on Android and iOS; a TV left on a black screen
-is worse. Both paths a fatal error takes, the runtime's error handler before the
-bundle ran and `ExceptionsManager` after, end there.
+A development build shows a native red error screen with the stack, even
+before React rendered anything, and Back closes the app. A release build logs
+the error and exits.
 
 ## A development runtime and a release runtime
 
-`libreact-native-webos.so` comes in two flavours, as React Native's Android
-libraries come in debug and release variants. A development build (`rn-webos
-run`, `package --dev`, the simulator) gets the development runtime: it carries
-`runtime/host/devsupport/`, which talks to a dev server when the runtime config
-has a `bundleUrl` (the packager socket, Fast Refresh, reload, LogBox, the
-loading banner), and Hermes built with its debugger, which React Native
-DevTools needs. A release build (`run --release`, `package`) gets a runtime
-compiled without any of it, so a store package carries none of that code and
-pays nothing for it at run time: Hermes' debugger alone makes every JavaScript
-call check for a debugger request. CMake's `RN_WEBOS_DEVELOPMENT` picks the
-flavour, turning on Hermes' debugger and React Native's
-`REACT_NATIVE_DEBUG_OPTIMIZED` as Android's `debugOptimized` variant does, and
-each flavour has its own build directory.
-
-Consequence: a machine that makes both kinds of build compiles the runtime
-twice. A development build pointed at `npx expo start` behaves as an Android
-device does under it ([reference](reference/react-native-dev-tooling.md)).
+The executable comes in two flavours. A development build carries
+`runtime/host/devsupport/`, which talks to a dev server when the runtime
+config has a `bundleUrl`, and Hermes built with its debugger. A release build
+is compiled without any of it. CMake's `RN_WEBOS_DEVELOPMENT` picks the
+flavour, and each has its own build directory.
 
 ## Logs travel over the network
 
-Retail TVs keep no readable system log. A development build streams every log
-line, and native crash reports, to `rn-webos` over TCP.
+A retail TV shows a developer no log of a native app. A development build
+streams every log line, and native crash reports, to `rn-webos` over TCP.
 
 ## One logical 1920x1080 screen
 
-Apps lay out for 1920x1080, whatever the window the TV gives the app, and the
-host scales to it. TV apps are designed for that size; a TV that hands the app a
-smaller surface still shows the same layout.
-
-Consequence: the surface's `pointScaleFactor` is the largest scale at which
-1920x1080 fits the window (2/3 in 1280x720), `Dimensions` reports 1920x1080 with
-that scale, and every view, text and image is drawn at it. A window that is not
-16:9 leaves the extra strip black.
-
-## Rendering with Evas objects
-
-Every mounted view is an Evas smart object holding its background and its
-children, moved in canvas coordinates. Text is an Evas textblock, measured with
-the same engine that draws it. The window asks for the GPU, and font sizes are
-pixels (`EVAS_FONT_DPI=72`).
+Apps lay out for 1920x1080, whatever surface the TV gives the app, and the
+host scales to it. A UHD TV gives an app a 1920x1080 surface; a Full HD model
+gives 1280x720, where the point scale is 2/3.
 
 ## Expo on webOS
 
-`globalThis.expo` is installed from expo-modules-core's own C++, and Expo modules
-for webOS are written in C++ and registered with `RN_WEBOS_EXPO_MODULE`. The
-global `fetch` is `expo/fetch`, as on Android and iOS, served by the host's
-`ExpoFetchModule`. React Native's own `fetch` works too, since the host serves
-`BlobModule` and `FileReaderModule`: without them whatwg-fetch reads every body
-as an ArrayBuffer and decodes it one byte per character
-(`whatwg-fetch/fetch.js:202-210`), so UTF-8 text arrives as Latin-1.
+`globalThis.expo` is installed from expo-modules-core's own C++, and Expo
+modules for webOS are written in C++ and registered with
+`RN_WEBOS_EXPO_MODULE`. The global `fetch` is `expo/fetch`, served by the
+host's `ExpoFetchModule`; React Native's own `fetch` works too.
 
 ## Everything registers itself
 
@@ -208,115 +183,65 @@ central list.
 A package with a `codegenConfig` is compiled into the runtime: its codegen C++
 output, plus a webOS implementation the package declares (`"webos": { "cmake":
 ... }` in its package.json) or, failing that, one this package bundles under
-`runtime/host/src/<dir>` with a `library.json`. A library with neither still lays
-out. Each compiles as an OBJECT library linked into `libreact-native-webos.so`,
-so its registrations survive the link. See [native-modules.md](native-modules.md).
+`runtime/host/src/<dir>` with a `library.json`. See
+[native-modules.md](native-modules.md).
 
-## TV services: the shell talks to Samsung, the host decides
+## The TV's services are Luna calls, made by the host
 
-Samsung's voice service and Smart Hub preview are reached through .NET APIs
-and message ports, so the shell (`shell/VoiceChannel.cs`,
-`shell/PreviewPublisher.cs`) speaks to them and nothing else: every decision
-(which player obeys "pause", which view "select Dune" presses, where a search
-goes) is the host's (`runtime/host/src/tv/`), reached through the C API, so the
-simulator's launcher can stand in for the shell (`rn-webos simulator voice`,
-`tile`). An app turns each one on in the config plugin's props and imports it from
-`@kromatv/react-native-webos/voice` or `/preview`: TurboModules and
-`DeviceEventEmitter` from `react-native`, so they need neither Expo nor a
-platform check, and answer "not available" on Android, iOS and the web.
+The app manager, the settings, the media pipeline and the rest of webOS answer
+JSON calls on the Luna bus. The host reaches it through LG's `libhelpers.so.2`,
+which every release has, opened at run time (`platform/LunaBus`), so nothing
+links a library whose C++ interface changes between releases. Samsung's voice
+service and Smart Hub preview, which react-native-tizen wraps, have no
+counterpart here.
 
-Consequence: these features rest on unpublished Samsung protocols and
-assemblies (facts in [webos-tv-app-integration.md](reference/webos-tv-app-integration.md)
-and [webos-smart-hub-preview.md](reference/webos-smart-hub-preview.md)), and a
-store build must clear them with Samsung's content manager first; a release
-`rn-webos package` says so.
-
+Consequence: in the simulator the bus is absent, and whatever depends on it
+answers as on a TV that refuses the call.
 
 ## The CLI reaches the TV itself
 
-`rn-webos` speaks sdb's wire protocol to the TV's daemon on port 26101 (`src/sdb/`):
-the handshake, `capability:`, a `sync:` push and the TV's `0 vd_appinstall` and
-`0 execute` commands, as webOS Studio's `sdb` sends them on the same TV
-([sdb-protocol.md](reference/sdb-protocol.md)). webOS Studio's `sdb` is never
-run, and with no sdb server on the machine, `rn-webos` remembers the TVs it
-reached in its state directory.
+`rn-webos` talks to a TV in Developer Mode over SSH, with the key the TV's own
+key server hands out, and runs the Luna commands an install, a launch and a
+removal take; it presses remote keys over the TV's second-screen protocol. LG's
+`ares-*` commands are never run
+([webos-device-protocol.md](reference/webos-device-protocol.md),
+[webos-remote-control.md](reference/webos-remote-control.md)).
 
-Consequence: each command opens its own connection and closes it, because the
-TV takes one at a time; while webOS Studio is connected to a TV, `rn-webos`
-cannot reach it, and says so. Only the commands seen on hardware are sent, so
-another model year that answers differently fails with the TV's own words
-rather than a guess at a fallback.
+## Packages are written in TypeScript, and not signed
 
-## Packages are signed in TypeScript, with Samsung's certificates
-
-`rn-webos` signs the `.tpk` itself (`src/signing/`): the author signature and the
-distributor signature `webos package -t tpk` writes, byte for byte, from the
-certificates of a webOS Studio profile or of `.p12` files given on the command
-line. PKCS#12 is read in TypeScript, RC2 included, because Node's OpenSSL 3 has
-none and Samsung encrypts its certificates with it.
-
-Consequence: the one part of webOS Studio a TV still needs is Samsung's
-Certificate Manager, used once, since a retail TV takes an author and a
-distributor only from Samsung's chains: a self-signed author is refused on
-hardware ([webos-package-signing.md](reference/webos-package-signing.md)
-section 5). Where webOS Studio and webOS's validator disagree, a file named like
-a signature below the package root, the package follows the validator: the TV
-refused webOS Studio's package and installed this one.
+`rn-webos` writes the `.ipk` itself: an `ar` archive of a control file and a
+data tree, as LG's CLI lays it out
+([webos-ipk-format.md](reference/webos-ipk-format.md)). A webOS package carries
+no signature, so the certificates, profiles and passwords of react-native-tizen
+have no counterpart.
 
 ## Everything webOS has a Node API
 
-What `rn-webos` does to a TV is exported from `@kromatv/react-native-webos/webos`
-(`src/webos/index.ts`): the sdb client, discovery, signing, PKCS#12 and the
-profiles, with their types. Another tool, such as a deployer for a web app's
-`.wgt`, imports it instead of carrying its own copy, and the CLI commands are
-thin layers over the same functions.
-
-Consequence: that entry point is public API under semver, documented in
-[webos-api.md](webos-api.md); a breaking change to an export is a breaking
-release.
+What `rn-webos` does to a TV is exported from
+`@kromatv/react-native-webos/webos`, and the CLI commands are thin layers over
+the same functions. That entry point is public API under semver.
 
 ## Expo sees a config plugin and a dev tools plugin
 
 The webOS settings are the props of this package's config plugin
-(`app.plugin.js`), so `npx expo install` adds it to `app.json` by itself and
-`expo config` checks it. The package is also a dev tools plugin
-(`expo-module.config.json`): `npx expo start` lists Run on TV, Run in simulator,
-Find TVs and Create certificate under shift+m, and serves a page of their
-progress and logs. A development build those commands make loads its bundle
-from that dev server. Facts in [expo-cli-integration.md](reference/expo-cli-integration.md).
-
-Consequence: Expo kills a command after ten seconds, so each one starts a
-detached job and returns at once. Expo has no `run:webos`, no webOS key and no
-webOS in `prebuild` or `export`, so `rn-webos` keeps its own commands, and an
-app adds a `"webos": "rn-webos run"` script beside Expo's. `expo.webos` is read
-for one more release, with a deprecation. A config plugin cannot add a platform
-to Metro, so `withWebOS` still wraps the app's Metro config, but nobody writes
-it by hand: `npx rn-webos init` writes `metro.config.mjs` and the plugin's
-props, and every build checks the Metro config before anything else.
+(`app.plugin.js`), and the package is also a dev tools plugin
+(`expo-module.config.json`): `npx expo start` lists Run on TV, Run in
+simulator and Find TVs. Expo has no `run:webos`, so `rn-webos` keeps its own
+commands. A config plugin cannot add a platform to Metro, so `withWebOS` wraps
+the app's Metro config; `npx rn-webos init` writes it.
 
 ## The package ships JavaScript, and the CLI runs on Node
 
-Node refuses to strip types from a file under `node_modules`, and everything a
-consumer's machine loads from this package goes through Node: Expo's Metro
-config loader, Metro's transform workers and the `rn-webos` bin. So
 `bun run build` compiles `src/` to `dist/` with `tsc`, one file per source at
-the same depth, which keeps every path taken from `import.meta.url` (the
-package root, `react-native-overrides/`, `runtime/`, `shell/`, `simulator/`)
-right in both trees. `exports` and `bin` point at `dist/`, and `prepare` builds
-it, so neither `npm pack` nor `npm publish` can ship a stale or missing build.
-Bun runs `prepare` on every `bun install` too, so a checkout has `dist/`, and
-the example lists `../app.plugin.js` as an app lists the package's plugin.
-`react-native-overrides/` and the app API under `src/api/` reach the app
-through Metro, which compiles TypeScript under `node_modules` with the app's
-Babel preset; the overrides ship as TypeScript, the API compiled with its
-declarations.
+the same depth; `exports` and `bin` point at `dist/`, and `prepare` builds it.
+The CLI uses Node's APIs only. No source may use a Bun API, and a file that
+finds another through `import.meta.url` must keep the same depth under `src/`
+and `dist/`.
 
-The CLI uses Node's APIs only, so its `bin` runs on Node 22.13 or newer, the
-floor Expo 58 and React Native 0.88 already set, with no Bun on the user's
-machine; Bun runs it too. Contributors run the sources (`bun src/cli/main.ts`)
-and the example loads `src/` by relative path, so nothing is built during
-development.
+## Nothing is verified on a TV yet
 
-Consequence: no source may use a Bun API, and a file that finds another
-through `import.meta.url` must keep the same depth under `src/` and `dist/`.
-CI builds `dist/` and runs the compiled CLI with Node.
+The port was made without an LG TV: every platform fact comes from
+documentation or source, and every behaviour was checked in the simulator
+only. Each reference file lists what a TV must settle, and a claim becomes
+"verified on hardware" only with the TV's model, year and webOS version beside
+it.

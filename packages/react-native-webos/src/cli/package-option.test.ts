@@ -38,7 +38,7 @@ describe('targetPackage', () => {
     });
 
     expect(targetPackage(undefined, dir(true), 'perf')).toBeNull();
-    expect(() => targetPackage('tv', dir(false), 'perf')).toThrow(
+    expect(() => targetPackage('TV App', dir(false), 'perf')).toThrow(
       '--package is not a webOS package id',
     );
   });

@@ -16,6 +16,13 @@ describe('splitActionArgs', () => {
     });
   });
 
+  it('takes a negative number as a positional', () => {
+    expect(splitActionArgs(['-3', '--verbose'])).toEqual({
+      positionals: ['-3'],
+      options: ['--verbose'],
+    });
+  });
+
   it('takes a deep link with a query as one positional', () => {
     expect(splitActionArgs(['myapp://item/42?ref=home']).positionals).toEqual([
       'myapp://item/42?ref=home',

@@ -1,14 +1,15 @@
 # webOS TV simulator
 
-A virtual Samsung TV on an Apple silicon Mac. `rn-webos simulator` builds the
-same runtime a TV runs (the host in `runtime/host`, Hermes, Fabric, Expo
-Modules, drawn with EFL and Evas) for aarch64 Linux, runs the app on a
-1920x1080 screen in a local VM, and lets you watch it, drive it with a remote,
-read its logs and debug its crashes. It runs headless, for scripts and agents,
-or with a live screen in the browser.
+A virtual LG TV on an Apple silicon Mac. `rn-webos simulator` builds the same
+runtime a TV runs (the host in `runtime/host`, Hermes, Fabric, Expo Modules,
+drawn with Skia in a window SDL opens) for aarch64 Linux, runs the app on a
+1920x1080 screen in a local VM, and lets you watch it, drive it with a remote
+and its pointer, read its logs and debug its crashes. It runs headless, for
+scripts and agents, or with a live screen in the browser.
 
-Samsung's TV emulator is x86_64 only and Apple silicon cannot run 32-bit ARM, so
-the simulator is a native aarch64 Linux VM under Apple's own hypervisor.
+LG's own webOS TV Simulator runs web apps only, and Apple silicon cannot run
+the 32-bit ARM code a TV runs, so the simulator is a native aarch64 Linux VM
+under Apple's own hypervisor.
 
 ## Quick start
 
@@ -19,8 +20,8 @@ rn-webos simulator run          # headless: build, bundle, start, print the logs
 rn-webos simulator run --gui    # the same, and open the live screen and remote
 ```
 
-The first `run` creates the VM (Ubuntu 26.04, a few minutes) and compiles React
-Native for it (about 20 minutes). After that, `run` rebuilds only what changed
+The first `run` creates the VM (Ubuntu 26.04, a few minutes) and compiles Skia
+and React Native for it (about 20 minutes). After that, `run` rebuilds only what changed
 and takes seconds. Ctrl+C stops printing logs; the app keeps running for the
 commands below.
 
@@ -50,11 +51,9 @@ everything the tools inside print. Every action takes `--instance <name>` (see
 | `run` | Creates or starts the VM, builds the runtime, bundles the app with Metro and Hermes, starts it and prints its logs. `--bundle <file.hbc>` starts a ready bundle instead; `--no-logs` returns once the app is up; `--level` works as for `rn-webos run`. The logs come in on the instance's own port; `--log-port` picks another. |
 | `view` | Opens the live screen and remote of the running app. |
 | `screenshot [--out <file.png>]` | Saves the screen as a PNG and prints the path. Default `~/.cache/react-native-webos/simulator/<instance>/screenshot.png`. |
-| `key <key>...` | Presses remote keys in order: `key Down Down Enter`. |
+| `key <key>...` | Presses remote keys in order: `key Down Down Enter`. `<key>:<milliseconds>` holds one: `key Enter:800`. |
 | `pause`, `resume` | Sends the app to the background and back: `AppState` changes as on a TV. |
 | `open-url <url>` | Delivers a deep link, as the TV does when another app opens this one. |
-| `tile <url>` | Delivers a deep link as a Smart Hub preview tile press does: `SmartHubPreview.launchedFromTile` turns true. The simulator has no Smart Hub, so `SmartHubPreview.set` answers `published: false`. |
-| `voice <json>` | Hands the app one voice command as the TV's shell builds it after Samsung's voice service (`'{"type":"selectTitle","title":"Dune"}'`, `'{"type":"skip","seconds":30}'`, `'{"type":"search","utterance":"blade runner"}'`), and logs the app state and content context it would answer. The simulator has no voice service, so `Voice.isAvailable` stays false. |
 | `restart` | Starts the staged app again, without rebuilding. |
 | `build` | Rebuilds the app's native runtime only, after a change in `runtime/`; `restart` then runs it. Apps with the same native libraries share it (see [Runtime builds](#runtime-builds)). |
 | `logs [-f] [-n <lines>]` | Prints the app's stdout and stderr, and follows them with `-f`. |
@@ -67,22 +66,28 @@ everything the tools inside print. Every action takes `--instance <name>` (see
 
 ### Remote keys
 
-`key` and the live screen send the X keysym a Samsung remote produces, so the
-host reads the key name it gets on a TV (see `runtime/host/src/input`):
+`key` hands the app the key event the TV's remote sends, through the app's
+control channel rather than the X server, so a key takes the same path as on a
+TV and can be held for an exact time (see `runtime/host/src/input`):
 
-| Key | Keysym |
+| Key | What the app receives |
 | --- | --- |
-| `Left` `Right` `Up` `Down` | the same |
-| `Enter` (or `Ok`, `Select`) | `Return` |
-| `Back`, `Exit`, `Info` | `XF86Back`, `XF86Exit`, `XF86Info` |
-| `Play` `Pause` `PlayPause` `Stop` | `XF86AudioPlay` `XF86AudioPause` `XF86AudioPlayPause` `XF86AudioStop` |
-| `Rewind` `FastForward` `Previous` | `XF86AudioRewind` `XF86AudioNext` `XF86AudioPrev` |
-| `Red` `Green` `Yellow` `Blue` | `XF86Red` `XF86Green` `XF86Yellow` `XF86Blue` |
+| `Left` `Right` `Up` `Down` | the arrow keys |
+| `Enter` (or `Ok`, `Select`) | Return |
+| `Back` | the remote's Back key |
+| `Play` `Pause` `PlayPause` `Stop` `Record` | the media keys |
+| `Rewind` `FastForward` `Previous` `Next` | the transport keys |
+| `ChannelUp` `ChannelDown` `Guide` `Info` | the same |
+| `Red` `Green` `Yellow` `Blue` | the colour keys |
+| `0` to `9`, `Backspace`, `Escape`, `Tab` | the same |
 
-`FastForward` sends `XF86AudioNext`, as a Samsung remote's fast forward does. A
-TV's next and previous chapter keys have no X keysym, so the simulator has no
-`next`. Any other name goes through as a keysym, so `key Escape` presses Escape. When
-Back leaves the app at its root screen, as on a TV, `restart` starts it again.
+The app logs a name it does not know and ignores it. Exit and Home never reach
+an app on a TV, so the simulator has neither: `stop` ends the app. When Back
+leaves the app at its root screen, as on a TV, `restart` starts it again.
+
+The live screen takes the keyboard instead: the arrows, Enter, Esc or
+Backspace (Back), Space (Play), F1 to F4 for the colour keys, F5 for Info, and
+the mouse as the remote's pointer.
 
 ## Several instances
 
@@ -178,7 +183,7 @@ keeps it warm, so running one app after the other rebuilds neither.
   screen's top-left corner. No command sets it yet: start the instance's
   launcher by hand from `limactl shell rn-webos-sim`, with the variables
   `guest/instance.sh` exports.
-- **A debugger.** The runtime is built `RelWithDebInfo`.
+- **A debugger.** The runtime is built `RelWithDebInfo`; Skia is built optimized, without debug information.
   `limactl shell rn-webos-sim` opens a shell in the VM, where
   `gdb -p $(cat ~/rn-webos-simulator/instances/<instance>/app.pid)` attaches to
   the running app.
@@ -199,16 +204,14 @@ rn-webos simulator build && rn-webos simulator restart
 | Piece | What it does |
 | --- | --- |
 | [`lima.yaml`](lima.yaml) | The VM: Ubuntu 26.04 LTS for aarch64 under Apple's Virtualization framework (Lima `vz`), 8 CPUs, 12 GiB. It mounts the app's project root read-only and the `react-native-webos` cache writable, both at their Mac paths, so a build sees the same absolute paths. |
-| [`guest/`](guest) | The scripts the CLI runs in the VM. `provision.sh` installs the toolchain, EFL, Xvfb, matchbox, x11vnc, noVNC and systemd-coredump, and runs again only when it changes. |
-| [`../runtime/cmake/Simulator.cmake`](../runtime/cmake/Simulator.cmake) | With `-DRN_WEBOS_SIMULATOR=ON`, the runtime builds natively on Linux: `WebOSNativeAPI` and `target_link_webos_libraries()` come from Ubuntu's EFL and libcurl plus the shims, so `runtime/host` builds unchanged. |
-| [`shims/`](shims) | The webOS APIs Linux has no equivalent for: `dlog` writes to stderr, `system_info` answers as a 1920x1080 webOS 9.0 TV named `Simulator` (or at `RN_WEBOS_SIMULATOR_SCREEN_SIZE`, such as `1280x720`), `app_get_data_path` and `app_get_cache_path` return the instance's own directories in the VM, `app_get_resource_path` the staged app, `ui_app_exit` quits the main loop, `eext_win_keygrab_set` succeeds (the window always has the focus). |
-| [`launcher/`](launcher) | Replaces the TV's .NET shell (`../shell`): starts Elementary, creates the host once the main loop runs, and reads `pause`, `resume`, `open-url`, `tile`, `voice` and `exit` from a control FIFO. |
+| [`guest/`](guest) | The scripts the CLI runs in the VM. `provision.sh` installs the toolchain, GN, Mesa, SDL's X11 headers, Xvfb, matchbox, x11vnc, noVNC and systemd-coredump, and runs again only when it changes. |
+| [`../runtime/cmake/Simulator.cmake`](../runtime/cmake/Simulator.cmake) | With `-DRN_WEBOS_SIMULATOR=ON`, the runtime builds natively on Linux: the OpenGL ES a TV's sysroot provides comes from Mesa, and SDL, built from the same source as for a TV, opens an X11 window instead of a webOS surface. `runtime/host` builds unchanged. |
+| The app itself | The same `react-native-webos` executable as on a TV. It takes its directories from the environment (`RN_WEBOS_RESOURCE_DIR`, `RN_WEBOS_APP_DATA_DIR`), and a simulator build reads `pause`, `resume`, `open-url`, `exit`, remote keys and pointer moves from a control FIFO (`runtime/host/src/platform/SimulatorControl.h`). The TV's Luna bus does not exist here, so what depends on it answers as on a TV that refuses the call. |
 | [`viewer/`](viewer) | The live screen: a page served by websockify in the VM, drawing the screen with noVNC from x11vnc, with the remote beside it. Lima forwards its port to the Mac. |
 | [`../src/simulator/`](../src/simulator) | The CLI side: it drives the VM through `limactl`, stages the bundle as a TV package's `res` directory, and reads what the guest scripts report. |
 
 Each instance's screen is Xvfb with matchbox, a kiosk window manager that
-shows the app fullscreen and focused as a TV's compositor does; Elementary
-stops drawing a window no window manager has shown. Builds stay on the VM's
+shows the app fullscreen and focused as a TV's compositor does. Builds stay on the VM's
 disk under `~/rn-webos-simulator/build`, behind ccache, and each instance's
 files under `~/rn-webos-simulator/instances/<instance>`, with the key of the
 build it runs in `runtime`.
@@ -224,13 +227,13 @@ build it runs in `runtime`.
 
 ## Limits
 
-- **Not pixel identical to a TV.** Ubuntu's EFL 1.28 renders in software, with
-  DejaVu and Noto fonts. A TV runs Samsung's EFL on Wayland with its own fonts
-  and GPU, so anti-aliasing, font metrics and colour can differ, and a text bug
-  in Samsung's EFL does not reproduce here.
-- **No Samsung-only APIs.** Only the shims above exist, and `system_info` knows
-  a handful of keys. A host change that links another webOS library fails the
-  configure, naming it, until it has a shim. No AVPlay, no Smart Hub, no voice.
+- **Close to a TV, not identical.** Skia, SkParagraph and the views are the
+  same code, so layout and drawing match; the fonts (DejaVu and Noto here, LG's
+  on a TV) and the OpenGL ES driver (Mesa's software renderer here, the TV's
+  GPU there) differ, so font metrics and timings do.
+- **No webOS services.** There is no Luna bus: no app manager, no settings
+  service, no media pipeline. Video shows a placeholder where the picture goes.
+- **No on-screen keyboard.** Text reaches a field through the control channel.
 - **aarch64, not armv7l.** 64-bit pointers and ARMv8 atomics: a bug that only
   shows on a 32-bit TV does not reproduce here. The runtime links Ubuntu's
   shared libstdc++ and newer glibc, where a TV build carries its own libstdc++.

@@ -16,7 +16,7 @@ vi.mock('../simulator/simulator.ts', () => ({
   printLog: vi.fn(),
   requireRunningVm: vi.fn(),
   saveScreenshot: vi.fn(async (_instance: unknown, path: string) => path),
-  sendControl: vi.fn(),
+  sendPointer: vi.fn(),
   sendLifecycle: vi.fn(),
   startApp: vi.fn(async () => 4242),
   stopSimulator: vi.fn(),
@@ -107,24 +107,30 @@ describe('rn-webos simulator', () => {
     expect(mock()).toHaveBeenCalled();
   });
 
-  it('opens a deep link, a tile and a voice command', async () => {
+  it('opens a deep link', async () => {
     await simulate('open-url', 'app://a');
-    await simulate('tile', 'app://b');
-    await simulate('voice', '{"type":"pause"}');
 
     expect(simulator.openUrl).toHaveBeenCalledWith(expect.anything(), expect.anything(), 'app://a');
-    expect(simulator.sendControl).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.anything(),
-      'tile',
-      'app://b',
-    );
-    expect(simulator.sendControl).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.anything(),
-      'voice',
-      '{"type":"pause"}',
-    );
+  });
+
+  it("moves the remote's pointer, clicks and turns its wheel", async () => {
+    await simulate('pointer', '960', '540');
+    await simulate('click', '100', '200');
+    await simulate('click');
+    await simulate('wheel', '-3');
+
+    const sent = vi.mocked(simulator.sendPointer).mock.calls.map((call) => call[2]);
+    expect(sent).toEqual([
+      [{ type: 'move', x: 960, y: 540 }],
+      [{ type: 'move', x: 100, y: 200 }, { type: 'down' }, { type: 'up' }],
+      [{ type: 'down' }, { type: 'up' }],
+      [{ type: 'wheel', notches: -3 }],
+    ]);
+  });
+
+  it('refuses a pointer position that is not two pixel numbers', async () => {
+    await expect(simulate('pointer', 'left')).rejects.toThrow('The pointer takes x and y');
+    await expect(simulate('wheel', 'down')).rejects.toThrow('wheel takes a number of notches');
   });
 
   it('asks open-url for its URL', async () => {

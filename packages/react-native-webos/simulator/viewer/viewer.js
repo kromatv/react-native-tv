@@ -1,5 +1,8 @@
 import RFB from './core/rfb.js';
 
+// What the remote's buttons type in the simulator's X server. SDL has no
+// scancode for the X keysyms of the colour and Info keys, so those are the
+// function keys the host maps to them in a simulator build.
 const KEYSYMS = {
   up: 0xff52,
   down: 0xff54,
@@ -7,8 +10,7 @@ const KEYSYMS = {
   right: 0xff53,
   enter: 0xff0d,
   back: 0x1008ff26,
-  exit: 0x100810ae,
-  info: 0x10081166,
+  info: 0xffc2,
   play: 0x1008ff14,
   pause: 0x1008ff31,
   stop: 0x1008ff15,
@@ -16,10 +18,10 @@ const KEYSYMS = {
   fastForward: 0x1008ff97,
   previous: 0x1008ff16,
   next: 0x1008ff17,
-  red: 0x1008ffa3,
-  green: 0x1008ffa4,
-  yellow: 0x1008ffa5,
-  blue: 0x1008ffa6,
+  red: 0xffbe,
+  green: 0xffbf,
+  yellow: 0xffc0,
+  blue: 0xffc1,
 };
 
 const KEYBOARD = {

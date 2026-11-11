@@ -5,6 +5,7 @@ import { LunaError, TvCommandError } from './luna.ts';
 import {
   openSshSession,
   SshConnectError,
+  TvSilentError,
   type SshFailure,
   type SshSession,
 } from './ssh-session.ts';
@@ -65,10 +66,16 @@ export async function onDevice<T>(
   }
 }
 
-/** What the TV said when a command or a luna call failed, for a hint. */
+function lastLine(output: string): string {
+  const lines = output.split(/\r?\n/).filter((line) => line.trim() !== '');
+  return lines.at(-1)?.trim().slice(0, 300) ?? '';
+}
+
+/** What the TV said, or that it stopped saying anything, when a command or a luna call failed; null for any other error. */
 export function tvSaid(error: unknown): string | null {
   if (error instanceof LunaError) return error.reason;
-  if (error instanceof TvCommandError)
-    return error.output === '' ? error.message : `${error.message}: ${error.output}`;
-  return null;
+  if (error instanceof TvSilentError) return error.message;
+  if (!(error instanceof TvCommandError)) return null;
+  const said = lastLine(error.output);
+  return said === '' ? error.message : `${error.message}: ${said}`;
 }
