@@ -34,8 +34,7 @@ std::shared_ptr<MediaSession> currentMediaSession();
 
 /// Pauses every playing session that may not stay active in the background, as
 /// expo-video does on Android when the app is backgrounded, and logs the ones
-/// that keep playing. `mediaCategoryDeclared` is whether the app declared that
-/// it plays while hidden.
-void pauseMediaSessionsForBackground(bool mediaCategoryDeclared);
+/// that keep playing: webOS keeps a hidden app running.
+void pauseMediaSessionsForBackground();
 
 } // namespace rnwebos

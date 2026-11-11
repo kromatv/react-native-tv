@@ -97,4 +97,7 @@ if(RN_WEBOS_TESTS)
   # and for every test that lays out text (src/text/TextEngineData.test.cpp).
   target_compile_definitions(rn-webos-host-tests PRIVATE
     "RN_WEBOS_TEST_ICU_DATA_DIR=\"${icu_SOURCE_DIR}/source/data/in\"")
+  # Skia's own test fonts, a static and a variable one.
+  set_source_files_properties(src/text/VariableFont.test.cpp expo/modules/ExpoFontLoaderModule.test.cpp PROPERTIES
+    COMPILE_DEFINITIONS "RN_WEBOS_TEST_FONT_DIR=\"${RN_WEBOS_SKIA_SOURCE_DIR}/resources/fonts\"")
 endif()

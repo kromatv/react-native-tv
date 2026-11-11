@@ -94,18 +94,19 @@ void ReactHost::createInstance() {
           .exitApp =
               [weakHost = weakHost_] {
                 runOnMainThread([weakHost] {
-                  if (auto host = weakHost.lock()) (*host)->exit();
+                  if (auto host = weakHost.lock()) (*host)->leave();
                 });
               },
           .isActive = isActive_,
           .reportFatalError = [weakHost = weakHost_](const ErrorReport &report) { reportFatalError(weakHost, report); },
-          .launchUrl = launchUrl_,
+          .launch = launch_,
           .showAlert =
               [weakHost = weakHost_](AlertRequest request) {
                 runOnMainThread([weakHost, request = std::move(request)]() mutable {
                   if (auto host = weakHost.lock()) (*host)->alertDialog_->show(std::move(request));
                 });
               },
+          .luna = &LunaBus::get(),
       },
       instance_->createJSCallInvoker());
 

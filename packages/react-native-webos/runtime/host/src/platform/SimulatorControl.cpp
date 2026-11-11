@@ -7,6 +7,7 @@
 
 #include <SDL3/SDL.h>
 #include <fcntl.h>
+#include <folly/json.h>
 #include <poll.h>
 #include <sys/eventfd.h>
 #include <unistd.h>
@@ -160,6 +161,15 @@ void runPointerCommand(std::string_view command, std::string_view arguments) {
   SDL_PushEvent(&event);
 }
 
+void runRelaunch(const SimulatorControl::Host &host, std::string_view json) {
+  try {
+    const auto parameters = json.empty() ? folly::dynamic(folly::dynamic::object()) : folly::parseJson(json);
+    if (parameters.isObject()) return host.relaunch(parameters);
+  } catch (const std::exception &) {
+  }
+  log(LogLevel::Warning, "The parameters of a relaunch are a JSON object, not: " + std::string(json));
+}
+
 void runCommand(const SimulatorControl::Host &host, std::string_view line) {
   const auto [command, arguments] = splitWord(line);
   if (command.starts_with("pointer-")) return runPointerCommand(command, arguments);
@@ -170,6 +180,7 @@ void runCommand(const SimulatorControl::Host &host, std::string_view line) {
   if (command == "text") return commitText(arguments);
   if (command == "compose") return compose(arguments);
   if (command == "keyboard") return sendKeyboardState(arguments);
+  if (command == "relaunch") return runRelaunch(host, arguments);
   if (command.starts_with("key")) return runKeyCommand(command, arguments);
   log(LogLevel::Warning, "Unknown simulator command: " + std::string(line));
 }

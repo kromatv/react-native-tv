@@ -1,6 +1,5 @@
 #include "DeviceInfoModule.h"
 
-#include "DeviceProfile.h"
 #include "TurboModuleTest.test.h"
 
 #include <doctest/doctest.h>

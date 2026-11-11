@@ -1,19 +1,11 @@
-#include "../AppDirectories.h"
 #include "../ExpoModuleRegistry.h"
 #include "../FileIo.h"
 #include "../ModuleDefinition.h"
 
 #include "logging/Log.h"
-#include "network/Digest.h"
-#include "text/AppFonts.h"
-#include "text/FontInstances.h"
-#include "threading/MainThread.h"
-
-#include <Evas.h>
+#include "text/TextEngine.h"
 
 #include <filesystem>
-#include <fstream>
-#include <iterator>
 #include <mutex>
 #include <set>
 
@@ -23,30 +15,15 @@ namespace {
 
 namespace fs = std::filesystem;
 
-std::string contentsOf(const fs::path &file) {
-  std::ifstream in(file, std::ios::binary);
-  return {std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>()};
-}
-
-// fontconfig scans a directory when it is appended, so each font gets a
-// directory of its own and is in it before Evas learns the path. A variable
-// font is registered as its static weights only, never beside them.
 void registerFontFile(const std::string &family, const std::string &uri) {
   const auto source = localPathOf(uri);
   if (!source || !fs::is_regular_file(*source)) {
     throw CodedError("ERR_FONT_SOURCE", "No font file for " + family + " at " + uri);
   }
-  const auto key = md5Hex(family + "\n" + md5Hex(contentsOf(*source)));
-  const auto directory = fs::path(appDirectories().cache) / "ExpoFontLoader" / key;
-  fs::create_directories(directory);
-  auto files = writeWeightInstances(*source, directory);
-  if (files.empty()) {
-    files.push_back(directory / fs::path(*source).filename());
-    fs::copy_file(*source, files.back(), fs::copy_options::overwrite_existing);
+  if (registerAppFont(family, {fs::path(*source)}) == 0) {
+    throw CodedError("ERR_FONT_FILE", "The file for " + family + " at " + uri + " is not a font");
   }
-  registerAppFontFiles(family, files);
-  runOnMainThreadSync([&directory] { evas_font_path_global_append(directory.c_str()); });
-  log(LogLevel::Debug, "Loaded the font " + family + " from " + directory.string());
+  log(LogLevel::Debug, "Loaded the font " + family + " from " + *source);
 }
 
 class ExpoFontLoaderModule final : public Module {

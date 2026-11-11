@@ -13,7 +13,8 @@ namespace rnwebos {
 
 struct AlertRequest;
 struct ErrorReport;
-class LaunchUrl;
+class LaunchState;
+class LunaBus;
 
 /// What the platform's TurboModules need from the host, handed to each as it
 /// is created. Every function may be called from any thread, and does nothing
@@ -25,8 +26,10 @@ struct ModuleContext {
   std::function<void()> exitApp;
   std::shared_ptr<std::atomic<bool>> isActive;
   std::function<void(const ErrorReport &report)> reportFatalError;
-  std::shared_ptr<const LaunchUrl> launchUrl;
+  std::shared_ptr<const LaunchState> launch;
   std::function<void(AlertRequest request)> showAlert;
+  /// The TV's Luna bus; null where a module is made without one, as in a test.
+  LunaBus *luna{nullptr};
 };
 
 } // namespace rnwebos

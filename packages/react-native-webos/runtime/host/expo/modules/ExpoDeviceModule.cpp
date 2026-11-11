@@ -1,6 +1,5 @@
 #include "../ExpoModuleRegistry.h"
 #include "../ModuleDefinition.h"
-#include "DeviceName.h"
 
 #include <sys/utsname.h>
 #include <unistd.h>
@@ -40,8 +39,8 @@ class ExpoDeviceModule final : public Module {
     const std::optional<std::string> none;
     return ModuleDefinition("ExpoDevice")
         .constant("isDevice", [] { return true; })
-        .constant("brand", [] { return std::string("Samsung"); })
-        .constant("manufacturer", [] { return std::string("Samsung"); })
+        .constant("brand", [] { return std::string("LG"); })
+        .constant("manufacturer", [] { return std::string("LG Electronics"); })
         .constant("modelId", [none] { return none; })
         .constant("modelName", [&device] { return device.modelName; })
         .constant("designName", [none] { return none; })
@@ -56,7 +55,7 @@ class ExpoDeviceModule final : public Module {
         .constant("osInternalBuildId", [&device] { return device.buildString; })
         .constant("osBuildFingerprint", [none] { return none; })
         .constant("platformApiLevel", [] { return std::optional<int>(); })
-        .constant("deviceName", [&device] { return tvDeviceName(device.modelName); })
+        .constant("deviceName", [&device] { return device.modelName; })
         .asyncFunction("getDeviceTypeAsync", [] { return kDeviceTypeTv; })
         .asyncFunction("getUptimeAsync", [] { return uptimeMilliseconds(); })
         .asyncFunction("isRootedExperimentalAsync", [] { return false; })

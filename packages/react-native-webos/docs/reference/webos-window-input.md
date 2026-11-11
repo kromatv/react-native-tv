@@ -87,6 +87,11 @@ what SDL makes of them ([sdl2] SDL_waylandwebos.c 183 to 232, **R**):
 | Kodi subscribes to `luna://com.webos.service.applicationmanager/registerApp` with `{}` and goes fullscreen on `relaunch` | R | [kodi] WinSystemWaylandWebOS.cpp 35, 64 to 72, 196 to 209 |
 | Registration "is what lets SDL learn about relaunch and close requests, and about screensaver and power state changes" | D | [sdl3] SDL_hints.h 4461 to 4477 |
 | With LG's own SDL, a missing `APPID` makes registration fail with "Invalid appId specified" and SDL falls back to plain Wayland | R | [jf] window.c 128 to 134 |
+| The SDL3 fork registers in `SDL_Init`, before any window, and unregisters in `SDL_Quit`. With `SDL_WEBOS_REGISTER_APP` off it makes none of its three Luna subscriptions: not the registration, not the screen saver requests, not the power state. Nothing else in SDL reads the power state | R | [sdl3] SDL.c 371 to 386, 748; SDL_webos_init.c 97 to 117, 147 to 160 |
+| On `relaunch` the SDL3 fork calls `SDL_RaiseWindow` on its first window, which on webOS is `set_state(3)`: "asking the shell for fullscreen is what brings a backgrounded app back to the front". On `close` (interface 2) it sends `SDL_EVENT_QUIT`. It reads no other field of the message | R | [sdl3] SDL_webos_init.c 222 to 280; SDL_waylandwindow.c 2386 to 2393 |
+| Screen saver: the TV asks each registered client before it starts the saver, and SDL answers `ack`, "it may start", false while SDL's screen saver is disabled. `SDL_DisableScreenSaver` and `SDL_EnableScreenSaver` flip that switch and, on webOS, nothing else: the Wayland driver then tries D-Bus and `zwp_idle_inhibit_manager_v1`, which the TV's compositor does not list (section 1). SDL disables the screen saver when video starts unless `SDL_VIDEO_ALLOW_SCREENSAVER` is set, so an SDL app refuses every screen saver by default | R, I | [sdl3] SDL_webos_init.c 307 to 345; SDL_video.c 731 to 733, 4620 to 4658; SDL_waylandwindow.c 3346 to 3381 |
+| Surface state in the SDL3 fork: minimized sends `SDL_EVENT_WINDOW_MINIMIZED`, then `SDL_EVENT_WILL_ENTER_BACKGROUND` and `SDL_EVENT_DID_ENTER_BACKGROUND` (`state_about_to_change` sent the first of the two once already); fullscreen after a lower state sends `SDL_EVENT_WINDOW_RESTORED`, `SDL_EVENT_WILL_ENTER_FOREGROUND` and `SDL_EVENT_DID_ENTER_FOREGROUND`, the first fullscreen of a new window included; `close` empties the event queue, then sends `SDL_EVENT_WINDOW_CLOSE_REQUESTED`. Each change also goes to libhelpers (`HProcessAppState`), "the app-state broadcast the media pipeline listens on" | R | [sdl3] SDL_waylandwebos.c 37 to 102; SDL_webos_libs.c 59 to 62 |
+| SDL turns SIGINT and SIGTERM into `SDL_EVENT_QUIT` at its next event pump, not when the signal arrives: its handler only sets a flag | R | [sdl3] src/events/SDL_quit.c 47 to 60, 166 to 172 |
 
 ## 4. The webOS protocols move between releases
 
@@ -374,7 +379,15 @@ every dump, [fw] **R**); low-latency media goes through NDL DirectAudio
   root enough to get the exit popup (6.0 and later) and the Home launcher (5.0
   and earlier), as it is for LG's web app manager?
 - May a store or developer mode app call `applicationManager/launch` for
-  `com.webos.app.home`?
+  `com.webos.app.home`, or does it answer -104, "Cannot launch a privileged app
+  on development mode from developer apps path"? With Home shown that way, is
+  the app left running behind it, and does LG's QA accept that for "must display
+  the Home screen" on webOS 23 to 25?
+- Does the TV's app manager deliver `relaunch`, `pause` and `close` to the host's
+  own registration as OSE's does, and is `tvpower`'s screen saver request
+  reachable without SDL's registration?
+- How long does the host take to stop on a TV after `close` or SIGTERM? The
+  simulator stops React Native in 16 to 41 ms; the TV allows one second.
 - Does the compositor deliver Back to the app or to the keyboard while the panel
   is up?
 - Does a second activation raise the panel while a USB keyboard is attached?
@@ -485,21 +498,62 @@ Event names are those `RemoteKeyMap.cpp` already emits ([rn-host]).
 key already down, is never a new press. The 400 ms repeat delay of webOS 7 sits
 above the 300 ms hold timer, so the timer, not the repeat, starts a hold.
 
-### Back, Exit, relaunch
+### Back at the root
 
-- Back: claim it while React Native can use it. When nothing handles the press
-  and React Native calls `exitApp`, do what LG asks at the entry page: open Home
-  with the `applicationManager/launch` call moonlight-tv uses, and quit if that
-  call is refused. Also try the web app manager's way, setting the hint false
-  while no `BackHandler` listener and no Modal exists, so the system itself
-  answers Back at the root. A TV decides which of the two passes LG's checklist.
-- Exit and Home: never claimed. A held Back then closes the app from outside:
-  shut down cleanly on `SDL_EVENT_QUIT` and `SDL_EVENT_WINDOW_CLOSE_REQUESTED`.
-- Background: `SDL_EVENT_DID_ENTER_BACKGROUND` and `_FOREGROUND` drive
-  `AppState`, and every held key is released, as on focus loss today.
-- Relaunch: SDL raises the window but drops the payload. A deep link needs the
-  host's own subscription to the app manager, or `SDL_WEBOS_REGISTER_APP` false
-  and the whole registration in the host.
+Back is claimed for as long as the app runs. When no `BackHandler` listener
+takes a press, React Native calls `exitApp`, which is also what
+`BackHandler.exitApp()` calls: the host cannot tell the two apart, and answers
+both in one function, `leaveOnBackAtRoot` (`platform/BackAtRoot.h`).
+
+| Behaviour | What it does | For | Against |
+|-----------|--------------|-----|---------|
+| `ShowHome`, the default | Asks the app manager to launch `com.webos.app.home` with `{"launchType":"homeKey"}`, as moonlight-tv does; the app keeps running behind Home. Ends the app when the bus is missing or the call is refused | LG's checklist: Back on the entry page "must display the Home screen (webOS23 - webOS25 only)". It is what the web platform did on webOS 5 and earlier | Whether an app outside homebrew may launch Home is not known (section 13). LG's Back guide asks for an exit popup on webOS 6 and later, which this does not show |
+| `Exit` | Ends the app | Needs nothing from the TV | The TV then shows what it shows when an app closes, which may be the last input and not Home |
+| Hand Back to the system: `SDL_WEBOS_ACCESS_POLICY_KEYS_BACK` false at the root, the way LG's web app manager does it | The system answers Back itself: exit popup on webOS 6 and later, Home before | It is LG's own mechanism, and the only one that can show the system's exit popup | Not built: React Native tells the host only after a press went unhandled, so the system would answer the next press, not this one. It needs the app to say when it is at its root. On webOS 26 a Flutter app, which cannot claim Back, gets the exit popup on every press (`webos-tv-platform.md`, section 3.5) |
+
+A TV must confirm, for each webOS generation the package supports: that
+`launch` of Home succeeds from an app installed in Developer Mode and from a
+store app, that the app is alive behind Home afterwards, and which of the
+behaviours LG's QA accepts. Until then `kBackAtRoot` is the one line to change.
+
+### Lifecycle
+
+- **The host registers the app, SDL does not** (`SDL_WEBOS_REGISTER_APP` off,
+  `platform/AppRegistration.h`). The app manager keeps one registration per app
+  and OSE's two generations disagree on a second one: the first replaces the
+  earlier call without telling it, today's refuses the later call
+  (`webos-tv-platform.md`, section 3.3). A second subscription beside SDL's
+  would therefore either silence SDL or never hear anything, and which one a
+  TV does cannot be read anywhere. One registration, made by the host, has
+  neither problem, and what SDL did with its own is four small things the host
+  now does: raise the window on `relaunch`, quit on `close`, answer the screen
+  saver requests, and nothing with the power state.
+- Registration goes out before the window opens, well inside the three seconds
+  the app manager gives. The interface is the one the launch argument names,
+  else 2, which `rn-webos` writes into `appinfo.json`; when the app manager
+  answers that the app declares the other one, the host registers again under
+  it, once.
+- Relaunch: the host raises the window (`SDL_RaiseWindow`), keeps the
+  parameters for `getLaunchParameters`, emits `webOSRelaunch` with them, and
+  emits `url` when they carry a `contentTarget`. `Linking.getInitialURL` stays
+  the deep link of the first launch.
+- Background and foreground: `SDL_EVENT_DID_ENTER_BACKGROUND` and the app
+  manager's `pause` both pause the app (`AppState` background, every held key
+  released, players that may not play hidden paused);
+  `SDL_EVENT_DID_ENTER_FOREGROUND` resumes it. A relaunch does not resume by
+  itself: the surface's return to fullscreen does. `SDL_EVENT_WINDOW_FOCUS_LOST`
+  releases held keys without pausing.
+- Leaving: the app manager's `close`, `SDL_EVENT_QUIT` and
+  `SDL_EVENT_WINDOW_CLOSE_REQUESTED` end the main loop, and the host stops
+  React Native and returns from `main`. SIGTERM and SIGINT are blocked in every
+  thread and taken by one that waits for them (`platform/TerminationSignals.h`),
+  so the main loop ends at once instead of at SDL's next event pump; a second
+  signal ends the process. Exit and Home are never claimed: a held Back closes
+  the app from outside.
+- Screen saver: allowed (`SDL_VIDEO_ALLOW_SCREENSAVER`): it is what keeps a
+  still image from marking the panel. The host answers the TV's requests
+  itself (`platform/ScreenSaver.h`) from SDL's switch, which expo-keep-awake
+  flips with `SDL_DisableScreenSaver` and `SDL_EnableScreenSaver`.
 
 ### Text input
 

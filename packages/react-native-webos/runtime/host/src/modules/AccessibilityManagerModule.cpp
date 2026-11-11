@@ -2,9 +2,18 @@
 
 #include "PlatformModuleRegistry.h"
 
+#include <utility>
+
 namespace rnwebos {
 
 namespace {
+
+constexpr const char *kGetSystemSettings = "luna://com.webos.settingsservice/getSystemSettings";
+
+folly::dynamic audioGuidanceRequest(bool subscribe) {
+  return folly::dynamic::object("category", "option")("keys", folly::dynamic::array("audioGuidance"))(
+      "subscribe", subscribe);
+}
 
 void answerOff(facebook::jsi::Runtime &runtime, const facebook::jsi::Function &onSuccess) {
   onSuccess.call(runtime, false);
@@ -12,10 +21,28 @@ void answerOff(facebook::jsi::Runtime &runtime, const facebook::jsi::Function &o
 
 } // namespace
 
+std::optional<bool> audioGuidanceOf(const folly::dynamic &reply) {
+  const auto *settings = reply.isObject() ? reply.get_ptr("settings") : nullptr;
+  const auto *guidance = settings != nullptr && settings->isObject() ? settings->get_ptr("audioGuidance") : nullptr;
+  if (guidance == nullptr || !guidance->isString()) return std::nullopt;
+  return guidance->getString() == "on";
+}
+
 AccessibilityManagerModule::AccessibilityManagerModule(
     std::shared_ptr<facebook::react::CallInvoker> jsInvoker,
-    const ModuleContext &)
-    : NativeAccessibilityManagerCxxSpec(std::move(jsInvoker)) {}
+    const ModuleContext &context)
+    : NativeAccessibilityManagerCxxSpec(std::move(jsInvoker)), luna_(context.luna) {
+  if (luna_ == nullptr || !context.emitDeviceEvent) return;
+  // The first reply is the setting as it is: only a later, different one is a change.
+  auto last = std::make_shared<std::optional<bool>>();
+  audioGuidance_ = luna_->subscribe(
+      kGetSystemSettings, audioGuidanceRequest(true), [last, emit = context.emitDeviceEvent](const folly::dynamic &reply) {
+        const auto enabled = audioGuidanceOf(reply);
+        if (!enabled) return;
+        const auto previous = std::exchange(*last, enabled);
+        if (previous.has_value() && previous != enabled) emit("screenReaderChanged", *enabled);
+      });
+}
 
 void AccessibilityManagerModule::getCurrentBoldTextState(
     facebook::jsi::Runtime &runtime,
@@ -67,10 +94,14 @@ void AccessibilityManagerModule::getCurrentReduceTransparencyState(
 }
 
 void AccessibilityManagerModule::getCurrentVoiceOverState(
-    facebook::jsi::Runtime &runtime,
-    Callback onSuccess,
+    facebook::jsi::Runtime &,
+    facebook::react::AsyncCallback<bool> onSuccess,
     Callback) {
-  answerOff(runtime, onSuccess);
+  const bool asked = luna_ != nullptr &&
+      luna_->call(kGetSystemSettings, audioGuidanceRequest(false), [onSuccess](const folly::dynamic &reply) {
+        onSuccess.call(audioGuidanceOf(reply).value_or(false));
+      });
+  if (!asked) onSuccess.call(false);
 }
 
 void AccessibilityManagerModule::setAccessibilityContentSizeMultipliers(

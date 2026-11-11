@@ -1,31 +1,23 @@
-import { useEffect, useState } from 'react';
-import { Alert, BackHandler, StyleSheet, Text, View, useTVEventHandler } from 'react-native';
+import { useState } from 'react';
+import { StyleSheet, Text, View, useTVEventHandler } from 'react-native';
 import { AlertsScreen } from './alerts-screen.tsx';
+import { BackgroundScreenOrNotice } from './background-screen-or-notice.tsx';
+import { DeepLinkScreen } from './deep-link-screen.tsx';
+import { DeviceScreen } from './device-screen.tsx';
 import { LifecycleScreen } from './lifecycle-screen.tsx';
 import { ScreenSizeScreen } from './screen-size-screen.tsx';
 
 const SCREENS = [
   { title: 'Lifecycle', Screen: LifecycleScreen },
+  { title: 'Device', Screen: DeviceScreen },
+  { title: 'Deep links', Screen: DeepLinkScreen },
   { title: 'Alerts and errors', Screen: AlertsScreen },
   { title: 'Screen and 4K', Screen: ScreenSizeScreen },
+  { title: 'Background audio', Screen: BackgroundScreenOrNotice },
 ] as const;
-
-function useExitOnBack() {
-  useEffect(() => {
-    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      Alert.alert('Leave the example?', undefined, [
-        { text: 'Stay', style: 'cancel' },
-        { text: 'Leave', onPress: () => BackHandler.exitApp() },
-      ]);
-      return true;
-    });
-    return () => subscription.remove();
-  }, []);
-}
 
 export function PlatformScreens() {
   const [index, setIndex] = useState(0);
-  useExitOnBack();
   useTVEventHandler((event) => {
     if (event.eventKeyAction !== 1) return;
     if (event.eventType === 'right')

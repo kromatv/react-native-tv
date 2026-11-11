@@ -2,6 +2,7 @@
 
 #include "../logging/Log.h"
 #include "FallbackFontManager.h"
+#include "VariableFont.h"
 
 #include "include/core/SkFontMgr.h"
 #include "include/core/SkTypeface.h"
@@ -67,7 +68,9 @@ int registerAppFont(const std::string &family, const std::vector<std::filesystem
       log(LogLevel::Warning, "Not a font Skia can read: " + file.string());
       continue;
     }
-    shared.app->registerTypeface(std::move(typeface), SkString(family.c_str()));
+    for (auto &instance : weightInstances(std::move(typeface))) {
+      shared.app->registerTypeface(std::move(instance), SkString(family.c_str()));
+    }
     ++registered;
   }
   if (registered > 0) {

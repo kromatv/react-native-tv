@@ -137,6 +137,10 @@ and `title`, checks the file against its schema, and fills `version` with
 | Today's OSE SAM merges both: the params object plus `event`, `reason`, `appId`, `nid`, `@system_native_app`. | D-ose | [sam] `NativeContainer.cpp` L115-120 |
 | That the TV's jailer hands this string to `main` unchanged as `argv[1]`. | I | from the command lines above; the jailer is closed |
 | `params` come from `launch`: `{"id": "<appId>", "params": {...}}`, called by the launcher, another app, a service or `ares-launch`. | D | [lg-appmgr], [lg-lcm] |
+| LG's public pages name no launch parameter for a deep link. Its events page says of `webOSLaunch` only "This event is fired when an app is launched", and staff answer questions about deep links with "webOS TV partner resources are protected by a non-disclosure agreement". | D | [lg-events], [forum-24869], [forum-28146] |
+| OSE's app manager documents the parameter: for the YouTube app, `"params":{ "contentTarget" : "https://www.youtube.com/tv?v=9bZkp7q19f0"}`. | D-ose | [ose-sam-api], `launch` |
+| On TVs, LG's Home and Search open a card or a search result by launching the app with the `deeplinkingParams` of its `appinfo.json`, `$CONTENTID` replaced: `{"contentTarget":"$CONTENTID"}` for Netflix, Prime Video and YouTube (Disney+ adds `"handledBy":"app"`). An app with no template gets a bare `contentTarget`, and so does the remote control service's `contentId`. Seen on a G3 (webOS 9.2.2), a 50QNED87T6B (10.2.2) and a 43UM7100PLB (4.10.2). | D-3p | [glasshouse] `docs/development/TV-RESEARCH.md` L1042-1049, L1098-1101, L1868-1871, L1887-1893 |
+| So `contentTarget` is the deep link of a launch, and it may be a content id of the app's own as well as a URL. | I | from the three rows above |
 
 ### 3.3 Registering with SAM
 
@@ -164,6 +168,8 @@ L473-581, L831-862; `src/core/lifecycle/app_life_manager.cpp` L789-850;
 | Kodi registers version 2 at `luna://com.webos.service.applicationmanager/registerApp` and on `relaunch` goes fullscreen again. | D-3p | [kodi] `xbmc/windowing/wayland/WinSystemWaylandWebOS.cpp` L35, L196-209 |
 | SAM finds the caller by the application id of the message, else by the sender's service name. | D-ose | [sam1] `src/core/base/lsutils.cpp` L65-74 |
 | The registration is a subscription that stays open: every later event is one more reply to it. | D-ose | [sam1] `nativeapp_life_handler.cpp` L667-688 |
+| An app has one registration. The first OSE app manager replaces it when the app registers again: the earlier call gets no further event and is not told. Today's refuses the second call with "The app is already registered". Which of the two a TV does is not known. | D-ose | [sam1] `nativeapp_life_handler.cpp` L606-624, L831-843; [sam] `src/base/RunningApp.cpp` L154-160 |
+| A `relaunch` carries the caller's `params` as `parameters`: `{"message":"relaunch","parameters":{...},"returnValue":true}` under interface 1, and with `event`, `reason` and `appId` under interface 2. | D-ose | [sam1] `nativeapp_life_handler.cpp` L312-317, L473-480 |
 | Started from a shell, without `APPID`, an SDL app fails to register without an error at the call, and its window is never created. | D-3p | [wb] `gdb.md`, [sdl] `SDL_waylandwebos.c` L139-142 |
 | Today's OSE SAM: both method names reach one handler; events are `registered`, `relaunch`, `pause`, `close` with `returnValue`, `subscribed`, `event`, `appId`, `parameters`, `reason`; `registerApp` belongs to ACG `application.operation`. | D-ose | [sam] `src/bus/service/ApplicationManager.cpp` L164-165, L412-441, `src/base/RunningApp.h` L272-280, [ose-sam-api] |
 | Today's OSE SAM closes a registered app with the `close` event and an unregistered one with SIGTERM to its process group; either way SIGKILL follows after 1 s and repeats. Other transitions get 10 s. | D-ose | [sam] `PolicyManager.cpp` L78-103, `src/base/RunningApp.cpp` L243-255, L264-280, `RunningApp.h` L310-311, `src/util/NativeProcess.cpp` |
@@ -212,6 +218,8 @@ const char *LSMessageGetPayload(LSMessage *message);
 | A subscription is an `LSCall` whose payload has `"subscribe": true`; it lives until `LSCallCancel`. `LSCallOneReply` "only accepts one response and does not need to be canceled". | D-ose | [ose-ls2] |
 | `libluna-service2.so.3` exports all of these in every firmware sample from webOS 1.2 to 11.2 (library 3.6.0 to 3.21.2). `LSRegisterApplicationService` appears in 3.x; `LSRegisterPubPriv` is gone in 11.2. | I | computed from [wb-fwdata] |
 | Homebrew ports do not call it directly: they load LG's `libhelpers.so.2` and use `HLunaServiceCall(uri, payload, HContext *)`, whose context has `callback`, `multiple` (subscription) and `pub` (public bus). The library is in every sample, 1.2 to 11.2. | D-3p, I | [wu] `include/webos-helpers/libhelpers.h`, [sdl] `src/core/webos/SDL_webos_libs.c` L71; presence computed from [wb-fwdata] |
+| "HLunaServiceCall() hangs for good when libhelpers can't make its luna bridge, e.g. for a binary without an ls2 role": it retries under a lock it already holds. SDL makes the bridge first, by calling `HLunaServiceBridge::instance()` (`_ZN18HLunaServiceBridge8instanceEv`), and gives up Luna calls when that returns null. | D-3p | [sdl3] `src/core/webos/SDL_webos_libs.c` L90-116 |
+| libhelpers starts a GLib main loop thread of its own on first use, delivers every reply on it, and cannot stop it, so the library is never unloaded. | D-3p | [sdl3] `SDL_webos_libs.c` L49-51, `SDL_webos_luna.c` L114-116 |
 
 ### 4.2 Identity and permissions
 
@@ -234,14 +242,17 @@ Device Unique ID from 3.x ([lg-luna]). D
 
 | Need | Call and payload | Reply | ACG | Source |
 |---|---|---|---|---|
-| Model, firmware, version | `luna://com.webos.service.tv.systemproperty/getSystemInfo` `{"keys":["modelName","firmwareVersion","sdkVersion","UHD","boardType"]}` | each key as a string: `"sdkVersion":"1.05.00"`, `"UHD":"true"`; `boardType` is `<chipset>_<standard>_<country>` | `systemconfig.query` | D [lg-sysprop] |
-| Language, country | `luna://com.webos.settingsservice/getSystemSettings` `{"keys":["localeInfo"]}` or `{"category":"option","keys":["country","smartServiceCountryCode2"]}`; `subscribe` allowed | `settings.localeInfo.locales.UI` such as `en-GB`, plus `TV`, `FMT`, `STT`, `AUD`; `country` alpha-3, `smartServiceCountryCode2` alpha-2 | `settings.query` | D [lg-settings] |
+| Model, firmware, version | `luna://com.webos.service.tv.systemproperty/getSystemInfo` `{"keys":["modelName","firmwareVersion","sdkVersion","UHD","boardType"]}` | each key as a string: `{"returnValue":true,"modelName":"WEBOS1","firmwareVersion":"3.00.00","UHD":"true","sdkVersion":"1.05.00"}`; `boardType` is `<chipset>_<standard>_<country>`. "If you used a wrong key or error occurs, no result data will be returned for that key." A failure is `{"returnValue":false,"errorCode":"ERROR_06","errorText":"Invalid argument."}` | `systemconfig.query` | D [lg-sysprop] |
+| Language, country | `luna://com.webos.settingsservice/getSystemSettings` `{"keys":["localeInfo"]}` or `{"category":"option","keys":["country","smartServiceCountryCode2"]}`; `subscribe` allowed | `{"method":"getSystemSettings","settings":{"localeInfo":{"locales":{"UI":"en-GB","TV":"en-GB","FMT":"en-GB","NLP":"en-GB","STT":"fr-FR","AUD":"fr-FR","AUD2":"en-GB"},"clock":"locale","keyboards":["en"],"timezone":""}},"returnValue":true}`; `country` alpha-3, `smartServiceCountryCode2` alpha-2. An unknown key answers `errorText` "There is no matched result from DB." | `settings.query` | D [lg-settings] |
+| Audio guidance (the screen reader) | the same call with `{"category":"option","keys":["audioGuidance"]}`; webOS TV 3.0 or higher | `{"subscribed":false,"category":"option","method":"getSystemSettings","settings":{"audioGuidance":"off"},"returnValue":true}` | `settings.query` | D [lg-settings] |
+| The name the viewer gave the TV | LG documents no key for it: the settings keys are `localeInfo`, `country`, `smartServiceCountryCode2`, `audioGuidance` and the caption settings | | | D [lg-settings] |
+| Brand, manufacturer | no call: LG's web library reports `brandName` "LG" and `manufacturer` "LG Electronics" as constants beside `sdkVersion`, "The webOS TV SDK version in X.X.X format" | | | D [lg-webosjs] |
 | Network | `luna://com.palm.connectionmanager/getStatus` `{"subscribe":true}`. On webOS TV 3.x subscribe through `luna://com.webos.service.connectionmanager`, the name LG's Flutter plugins use | `isInternetConnectionAvailable`, `wired` and `wifi` with `state`, `ipAddress`, `onInternet` | `network.query` | D [lg-conn], [fwp] `packages/webos_service_bridge/README.md` |
 | Device id | `luna://com.webos.service.sm/deviceid/getIDs` `{"idType":["LGUDID"]}`; webOS 3.0 or later; needs the user's consent | `idList: [{"idType":"LGUDID","idValue":"..."}]` | `deviceinfo.query` | D [lg-devid] |
 | Time zone | `luna://com.palm.systemservice/time/getSystemTime` | `utc`, `localtime`, `offset`, `timezone`, `TZ` | `time.query` | D [lg-time] |
 | Open a URL or app | `luna://com.webos.applicationManager/launch` `{"id":"com.webos.app.browser","params":{"target":"https://..."}}` | `returnValue`, or `errorCode` (-101 app not found) | `application.launcher` | D [lg-appmgr], [lg-acg]; D-3p [sdl] `src/misc/webos/SDL_sysurl.c` L27-43 |
 | Own appinfo | `luna://com.webos.applicationManager/getAppInfo` `{"id":"<appId>"}` | `appInfo` | not listed | D-3p [sdl] `SDL_webos_init.c` L143-160 |
-| Screen saver | LG documents no call: the saver stays off during full screen video, and `screenSaverProperties` stretches it. Homebrew subscribes to `luna://com.webos.service.tvpower/power/registerScreenSaverRequest` `{"subscribe":true,"clientName":"<id>.wakelock"}` and answers each event at `.../responseScreenSaverRequest` with `{"clientName":...,"ack":false,"timestamp":<same>}` to refuse | events carry `timestamp` | not listed | D [lg-saver]; D-3p [sdl] `SDL_webos_init.c` L243-304 |
+| Screen saver | LG documents no call: the saver stays off during full screen video, and `screenSaverProperties` stretches it. Homebrew subscribes to `luna://com.webos.service.tvpower/power/registerScreenSaverRequest` `{"subscribe":true,"clientName":"<id>.wakelock"}` and answers each event at `.../responseScreenSaverRequest` with `{"clientName":...,"ack":false,"timestamp":<same>}` to refuse, `"ack":true` to let it start | events carry `timestamp`; one without is not a request | not listed | D [lg-saver]; D-3p [sdl] `SDL_webos_init.c` L243-304, [sdl3] `SDL_webos_init.c` L282-345 |
 | Panel size | `luna://com.webos.service.panelcontroller/getPanelResolution` `{}` | `width`, `height` | not listed | D-3p [sdl] `src/core/webos/SDL_webos_panelinfo.c` L11-52 |
 
 ## 5. Model year, version and ABI
@@ -350,6 +361,10 @@ release), so they are D-3p for the image named in the last column.
    system for the exit popup? LG's rule differs by version (3.5) and LG's own
    Flutter runtime cannot intercept Back yet.
 7. Does `handlesRelaunch` change anything for a native app on a TV?
+   Does a TV's app manager send `relaunch` with `parameters` to a registered
+   native app, and does it replace or refuse a second registration (3.3)?
+   Does an app need `deeplinkingParams` in its `appinfo.json` for LG's Home and
+   Search to hand it a `contentTarget` (3.2)?
 8. Is "webOS 26 Re:New" firmware 11.2 and later? The NDK is 11.2.0 and a
    stock Flutter app showed no window on a retail 11.0.1 "webOS TV Lite"
    ([fw-8], unanswered).
@@ -390,7 +405,11 @@ release), so they are D-3p for the image named in the last column.
    call `registerApp` within 3 s of start, map `relaunch` parameters to
    `Linking`, `pause` and the surface state to `AppState`, and exit within 1 s
    of `close`. Handle SIGTERM too: it is what an unregistered or version 1
-   process gets.
+   process gets. The host makes the one registration an app has, in SDL's
+   place (`webos-window-input.md`, section 15). The deep link of a launch or a
+   relaunch is its `contentTarget`: `Linking.getInitialURL` answers the first,
+   a `url` event delivers the others, and `webOSRelaunch` carries every
+   relaunch's parameters whole.
 7. **The host needs a GLib main context** for luna-service2 replies, on every
    release, next to the Wayland loop.
 8. **Back is opt-in**: set `_WEBOS_ACCESS_POLICY_KEYS_BACK`, feed
@@ -401,8 +420,20 @@ release), so they are D-3p for the image named in the last column.
 10. **Keep the one logical 1920x1080 screen.** It is the surface LG gives on
     UHD panels; on Full HD models the surface is 1280x720, so the host scales.
 11. **Logs travel over the network or a file under `appdata/`**, as in
-    react-native-tizen: system logs are closed on retail TVs.
+    react-native-tizen: system logs are closed on retail TVs. The host does
+    not write to PmLogLib for the same reason: nobody with a retail TV can
+    read what it would log (3.1).
 12. **Budget the binary**: under 1 GB of developer storage on small models.
+13. **The device, as JavaScript sees it**, comes from one `getSystemInfo` and
+    one `getSystemSettings` sent before the window opens and waited for at most
+    half a second in all. `Platform.constants` has `Model` (`modelName`),
+    `Release` (`sdkVersion`, the webOS TV platform version), `Fingerprint`
+    (`firmwareVersion`), `Brand` "LG", `Manufacturer` "LG Electronics" and
+    `uiMode` "tv". `Platform.Version` is `sdkVersion` as a number, the major
+    plus a hundredth per minor (10.02 for `10.2.0`, 4.1 for `4.10.0`), since
+    minors reach two digits. The menu language is `I18nManager`'s
+    `localeIdentifier` and ICU's default locale. The TV's name has no
+    documented source: `deviceName` is the model.
 
 ## Sources
 
@@ -432,6 +463,8 @@ from shallow clones at the commits below.
 [lg-luna]: https://webostv.developer.lge.com/develop/references/luna-service-introduction
 [lg-appmgr]: https://webostv.developer.lge.com/develop/references/application-manager
 [lg-sysprop]: https://webostv.developer.lge.com/develop/references/tv-device-information
+[lg-events]: https://webostv.developer.lge.com/develop/references/webos-event
+[lg-webosjs]: https://webostv.developer.lge.com/develop/references/webostvjs-webos
 [lg-settings]: https://webostv.developer.lge.com/develop/references/settings-service
 [lg-conn]: https://webostv.developer.lge.com/develop/references/connection-manager
 [lg-devid]: https://webostv.developer.lge.com/develop/references/device-unique-id
@@ -448,6 +481,8 @@ from shallow clones at the commits below.
 [forum-27101]: https://forum.webostv.developer.lge.com/t/time-to-switch-your-toolchains-to-64-bit/27101
 [forum-28079]: https://forum.webostv.developer.lge.com/t/request-for-early-access-to-lg-flutter-sdk-for-webos-tv-app-development/28079
 [forum-28525]: https://forum.webostv.developer.lge.com/t/28525
+[forum-24869]: https://forum.webostv.developer.lge.com/t/how-to-implement-deep-linking-and-add-content-to-lg-webos-tv/24869
+[forum-28146]: https://forum.webostv.developer.lge.com/t/how-to-implement-deep-linking-in-webos-tv-app-so-content-from-lg-home-search-opens-and-plays-movie-automatically/28146
 [fw]: https://github.com/lg-flutter-webos/flutter-webos/tree/950398131830e9bd5dc91e588c3db8f5c42322be
 [fw-org]: https://github.com/lg-flutter-webos
 [fw-8]: https://github.com/lg-flutter-webos/flutter-webos/issues/8
@@ -472,6 +507,8 @@ from shallow clones at the commits below.
 [wb-caniroot]: https://github.com/webosbrew/caniroot/tree/e32332def2b6ce08e42485aa14c933542692c22c
 [wu]: https://github.com/webosbrew/webos-userland/tree/00a5f8721e15d5c10030b99b2f3e73e0c527bcce
 [sdl]: https://github.com/webosbrew/SDL-webOS/tree/ba4c86af391d1524d3ff0cb61dc3b10035933239
+[sdl3]: https://github.com/webosbrew/SDL-webOS/tree/f599b850f9b1347cebdbb9a806999ddd170ab661
+[glasshouse]: https://github.com/rorygallagher2024/glasshouse/tree/567a17796de50052091f95524e02c455ce5b6b21
 [nc4]: https://github.com/openlgtv/buildroot-nc4/tree/322ff04e625a7927338c2ac5f3d02cd0511c9b90
 [nc4-glibc]: https://github.com/openlgtv/glibc/blob/fe819f0414e6385206dc8682c20d681ee0eb5998/version.h
 [kodi]: https://github.com/xbmc/xbmc/tree/383db99b78d5c81453fa3fd5783334b17d9ac984

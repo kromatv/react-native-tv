@@ -1,6 +1,7 @@
 #include "WebOSVersion.h"
 
 #include <charconv>
+#include <optional>
 
 namespace rnwebos {
 
@@ -17,18 +18,13 @@ std::optional<int> leadingNumber(std::string_view &text) {
 
 } // namespace
 
-std::optional<WebOSVersion> parseWebOSVersion(std::string_view text) {
+double platformVersionNumber(std::string_view text) {
   const auto major = leadingNumber(text);
-  if (!major.has_value() || text.empty() || text.front() != '.') return std::nullopt;
+  if (!major.has_value() || text.empty() || text.front() != '.') return 0;
   text.remove_prefix(1);
   const auto minor = leadingNumber(text);
-  if (!minor.has_value()) return std::nullopt;
-  return WebOSVersion{.major = *major, .minor = *minor};
-}
-
-double platformVersionNumber(std::string_view text) {
-  const auto version = parseWebOSVersion(text);
-  return version ? version->major + version->minor / 10.0 : 0;
+  if (!minor.has_value() || *minor > 99) return 0;
+  return *major + *minor / 100.0;
 }
 
 } // namespace rnwebos

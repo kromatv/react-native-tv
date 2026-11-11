@@ -32,8 +32,8 @@ class AppConfig final {
 
 ModuleContext tv() {
   ModuleContext host;
-  host.device.modelName = "QE55Q80";
-  host.device.platformVersion = "9.0";
+  host.device.modelName = "OLED65C25LB";
+  host.device.platformVersion = "10.2.0";
   return host;
 }
 
@@ -43,8 +43,8 @@ TEST_CASE("ExponentConstants describes a bare app on a TV, with no manifest when
   testing::ExpoTestRuntime expo(tv());
   expo.eval("globalThis.C = expo.modules.ExponentConstants");
   CHECK(expo.json("[C.manifest, C.executionEnvironment, C.statusBarHeight, C.deviceName, C.systemFonts]") ==
-        R"([null,"bare",0,"QE55Q80",[]])");
-  CHECK(expo.json("[C.systemVersion, C.debugMode, C.isHeadless]") == R"(["9.0",false,false])");
+        R"([null,"bare",0,"OLED65C25LB",[]])");
+  CHECK(expo.json("[C.systemVersion, C.debugMode, C.isHeadless]") == R"(["10.2.0",false,false])");
   CHECK(expo.settle("C.getWebViewUserAgentAsync()") == "null");
   const std::regex uuid(R"("[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}")");
   const auto session = expo.json("C.sessionId");

@@ -23,7 +23,7 @@ facebook::jsi::Object PlatformConstantsModule::getConstants(facebook::jsi::Runti
   folly::dynamic constants = folly::dynamic::object("isTesting", false)("reactNativeVersion", std::move(version))(
       "Version", platformVersionNumber(device_.platformVersion))("Release", device_.platformVersion)(
       "Serial", "unknown")("Fingerprint", device_.buildString)("Model", device_.modelName)("uiMode", "tv")(
-      "Brand", "Samsung")("Manufacturer", "Samsung");
+      "Brand", "LG")("Manufacturer", "LG Electronics");
   return facebook::jsi::valueFromDynamic(runtime, constants).asObject(runtime);
 }
 

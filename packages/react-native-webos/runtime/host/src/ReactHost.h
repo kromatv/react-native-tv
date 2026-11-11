@@ -9,10 +9,13 @@
 #include "input/PointerInput.h"
 #include "input/RemotePresses.h"
 #include "modules/DeviceProfile.h"
-#include "modules/LaunchUrl.h"
+#include "modules/LaunchState.h"
 #include "modules/TurboModuleProvider.h"
 #include "modules/dialog/AlertDialog.h"
+#include "platform/AppRegistration.h"
 #include "platform/HostWindow.h"
+#include "platform/LaunchParameters.h"
+#include "platform/ScreenSaver.h"
 #include "platform/SimulatorControl.h"
 #include "render/Scene.h"
 #include "text/SkiaTextMeasurer.h"
@@ -23,6 +26,7 @@
 #include <react/runtime/TimerManager.h>
 
 #include <atomic>
+#include <chrono>
 #include <memory>
 #include <string>
 
@@ -35,8 +39,9 @@ class DevSupport;
 /// on the main thread.
 class ReactHost final {
  public:
-  /// Reads the config in `resourceDir` and starts the app; throws std::runtime_error when it cannot.
-  explicit ReactHost(const std::string &resourceDir);
+  /// Reads the config in `resourceDir` and starts the app the TV launched with
+  /// `launch`; throws std::runtime_error when it cannot.
+  explicit ReactHost(const std::string &resourceDir, const LaunchParameters &launch = {});
   ~ReactHost();
 
   ReactHost(const ReactHost &) = delete;
@@ -52,6 +57,14 @@ class ReactHost final {
   /// Delivers a URI the app is opened with while it runs, as a `url` event.
   void openUrl(const std::string &url);
 
+  /// Takes the parameters the TV launches the running app again with: shows
+  /// the app, emits `webOSRelaunch`, and delivers their deep link as a `url` event.
+  void relaunch(const folly::dynamic &parameters);
+
+  /// Leaves the app the way Back does on its first screen, which is also what
+  /// `BackHandler.exitApp` asks for.
+  void leave();
+
   /// Ends the main loop, which closes the app.
   void exit();
 
@@ -59,7 +72,9 @@ class ReactHost final {
   void handleEvent(const SDL_Event &event);
 
  private:
-  void start();
+  void start(const LaunchParameters &launch);
+  void registerApp(const LaunchParameters &launch);
+  void readDevice(const DeviceProfileRequest &request, std::chrono::steady_clock::time_point deadline);
   void stop();
   void createWindow();
   void createInstance();
@@ -89,9 +104,11 @@ class ReactHost final {
   const HostConfig config_;
   DeviceProfile device_{readDeviceProfile()};
   std::shared_ptr<std::atomic<bool>> isActive_{std::make_shared<std::atomic<bool>>(true)};
-  std::shared_ptr<LaunchUrl> launchUrl_{std::make_shared<LaunchUrl>()};
+  std::shared_ptr<LaunchState> launch_{std::make_shared<LaunchState>()};
   std::shared_ptr<ReactHost *> lifetime_;
   const std::weak_ptr<ReactHost *> weakHost_;
+  std::unique_ptr<AppRegistration> registration_;
+  std::unique_ptr<ScreenSaver> screenSaver_;
   std::unique_ptr<HostWindow> window_;
   std::unique_ptr<Scene> scene_;
   std::shared_ptr<SkiaTextMeasurer> textMeasurer_;

@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # (Re)starts the instance's staged app on its own virtual 1920x1080 screen and
 # returns once its window is up. The app's output goes to $APP_LOG, a crash to
-# systemd-coredump. Every other instance keeps running.
+# systemd-coredump. Every other instance keeps running. An argument, or
+# RN_WEBOS_SIMULATOR_LAUNCH_PARAMS, is the JSON a TV's app manager would launch
+# the app with, passed as its last argument.
 set -euo pipefail
 # shellcheck source=SCRIPTDIR/instance.sh
 source "$(dirname "${BASH_SOURCE[0]}")/instance.sh"
@@ -78,6 +80,7 @@ start_display
 rm -f "$CONTROL_FIFO"
 mkfifo -m 600 "$CONTROL_FIFO"
 ulimit -c unlimited
-start_daemon "$APP_PID_FILE" "$APP_LOG" "$LAUNCHER" "$INSTANCE_DIR"
+launch_params="${1:-${RN_WEBOS_SIMULATOR_LAUNCH_PARAMS:-}}"
+start_daemon "$APP_PID_FILE" "$APP_LOG" "$LAUNCHER" "$INSTANCE_DIR" ${launch_params:+"$launch_params"}
 wait_for_window
 cat "$APP_PID_FILE"
