@@ -1,6 +1,11 @@
 #include "SvgGradient.h"
 
+#include "include/core/SkPoint.h"
+#include "include/core/SkTileMode.h"
+#include "include/effects/SkGradient.h"
+
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 
@@ -8,88 +13,95 @@ namespace rnwebos::svg {
 
 namespace {
 
-constexpr double kTiny = 1e-9;
+constexpr float kTiny = 1e-6F;
+// SVG 1.1 moves a focal point outside the circle onto it; just inside keeps Skia's cone a disc.
+constexpr float kFarthestFocus = 0.99F;
 
-std::vector<GradientStop> withOpacity(const std::vector<GradientStop> &stops, double opacity) {
-  std::vector<GradientStop> faded = stops;
-  for (auto &stop : faded) stop.color.alpha *= opacity;
-  return faded;
+struct Ramp {
+  std::vector<SkColor4f> colors;
+  std::vector<float> offsets;
+
+  SkGradient gradient() const {
+    return {SkGradient::Colors(colors, offsets, SkTileMode::kClamp), SkGradient::Interpolation{}};
+  }
+};
+
+Ramp rampOf(const std::vector<GradientStop> &stops) {
+  Ramp ramp;
+  ramp.colors.reserve(stops.size());
+  ramp.offsets.reserve(stops.size());
+  for (const auto &stop : stops) {
+    ramp.colors.push_back(stop.color);
+    ramp.offsets.push_back(stop.offset);
+  }
+  return ramp;
 }
 
-Affine gradientSpace(const GradientDefinition &definition, const Bounds &bounds) {
+SkMatrix gradientSpace(const GradientDefinition &definition, const SkRect &bounds) {
   if (definition.userSpace) return definition.transform;
-  return Affine::translation(bounds.x, bounds.y) * Affine::scaling(bounds.width, bounds.height) * definition.transform;
+  auto space = SkMatrix::ScaleTranslate(bounds.width(), bounds.height(), bounds.left(), bounds.top());
+  space.preConcat(definition.transform);
+  return space;
 }
 
-double resolveX(const Length &length, const GradientDefinition &definition, double viewportWidth) {
-  return length.resolve(definition.userSpace ? viewportWidth : 1);
+SkPoint resolvePoint(const Length &x, const Length &y, const GradientDefinition &definition, SkSize viewport) {
+  if (!definition.userSpace) return {x.resolve(1), y.resolve(1)};
+  return {x.resolve(viewport.width()), y.resolve(viewport.height())};
 }
 
-double resolveY(const Length &length, const GradientDefinition &definition, double viewportHeight) {
-  return length.resolve(definition.userSpace ? viewportHeight : 1);
-}
-
-ResolvedPaint linear(const GradientDefinition &d, const Affine &m, double width, double height, std::vector<GradientStop> stops) {
-  const Point from{.x = resolveX(d.x1, d, width), .y = resolveY(d.y1, d, height)};
-  const Point to{.x = resolveX(d.x2, d, width), .y = resolveY(d.y2, d, height)};
-  const auto dx = to.x - from.x;
-  const auto dy = to.y - from.y;
-  const auto lengthSquared = dx * dx + dy * dy;
-  const auto determinant = m.a * m.d - m.b * m.c;
-  if (lengthSquared < kTiny || std::abs(determinant) < kTiny) return stops.back().color;
-  const auto wx = (m.d * dx - m.b * dy) / determinant / lengthSquared;
-  const auto wy = (m.a * dy - m.c * dx) / determinant / lengthSquared;
-  const auto reach = wx * wx + wy * wy;
-  const auto start = m.apply(from);
-  return GradientPaint{
-      .start = start,
-      .end = {.x = start.x + wx / reach, .y = start.y + wy / reach},
-      .stops = std::move(stops),
+GradientPaint linear(const GradientDefinition &definition, const SkMatrix &space, SkSize viewport) {
+  const std::array<SkPoint, 2> points{
+      resolvePoint(definition.x1, definition.y1, definition, viewport),
+      resolvePoint(definition.x2, definition.y2, definition, viewport),
   };
+  if (SkPoint::Distance(points[0], points[1]) < kTiny) return definition.stops.back().color;
+  return SkShaders::LinearGradient(points.data(), rampOf(definition.stops).gradient(), &space);
 }
 
-ResolvedPaint radial(const GradientDefinition &d, const Affine &m, double width, double height, std::vector<GradientStop> stops) {
-  const auto diagonal = d.userSpace ? std::sqrt((width * width + height * height) / 2) : 1;
-  const auto radius = std::sqrt(std::max(0.0, d.rx.resolve(diagonal) * d.ry.resolve(diagonal)));
-  const auto scale = std::sqrt(std::abs(m.a * m.d - m.b * m.c));
-  if (radius * scale < kTiny) return stops.back().color;
-  return GradientPaint{
-      .radial = true,
-      .center = m.apply({.x = resolveX(d.cx, d, width), .y = resolveY(d.cy, d, height)}),
-      .focal = m.apply({.x = resolveX(d.fx, d, width), .y = resolveY(d.fy, d, height)}),
-      .radius = radius * scale,
-      .stops = std::move(stops),
-  };
+GradientPaint radial(const GradientDefinition &definition, const SkMatrix &space, SkSize viewport) {
+  const float diagonal = definition.userSpace
+      ? std::sqrt((viewport.width() * viewport.width() + viewport.height() * viewport.height()) / 2)
+      : 1;
+  const float rx = definition.rx.resolve(diagonal);
+  const float ry = definition.ry.resolve(diagonal);
+  if (rx < kTiny || ry < kTiny) return definition.stops.back().color;
+  const auto center = resolvePoint(definition.cx, definition.cy, definition, viewport);
+  const auto focal = resolvePoint(definition.fx, definition.fy, definition, viewport);
+  auto unitCircle = space;
+  unitCircle.preTranslate(center.x(), center.y());
+  unitCircle.preScale(rx, ry);
+  SkPoint focus{(focal.x() - center.x()) / rx, (focal.y() - center.y()) / ry};
+  const auto ramp = rampOf(definition.stops);
+  if (focus.length() < kTiny) return SkShaders::RadialGradient({0, 0}, 1, ramp.gradient(), &unitCircle);
+  if (focus.length() > kFarthestFocus) focus.setLength(kFarthestFocus);
+  return SkShaders::TwoPointConicalGradient(focus, 0, {0, 0}, 1, ramp.gradient(), &unitCircle);
 }
 
 } // namespace
 
 std::vector<GradientStop> gradientStops(const std::vector<float> &gradient) {
   std::vector<GradientStop> stops;
-  double last = 0;
+  float last = 0;
   for (std::size_t i = 0; i + 1 < gradient.size(); i += 2) {
-    const auto offset = std::clamp(static_cast<double>(gradient[i]), last, 1.0);
+    const auto offset = std::clamp(gradient[i], last, 1.0F);
     const auto argb = static_cast<std::uint32_t>(static_cast<std::int64_t>(std::llround(gradient[i + 1])));
-    stops.push_back({.offset = offset, .color = rgbaFromArgb(argb)});
+    stops.push_back({.offset = offset, .color = colorFromArgb(argb)});
     last = offset;
   }
   return stops;
 }
 
-ResolvedPaint resolveGradient(
-    const GradientDefinition &definition,
-    const Bounds &bounds,
-    const Affine &toPixels,
-    double viewportWidth,
-    double viewportHeight,
-    double opacity) {
+GradientPaint gradientPaint(const GradientDefinition &definition, const SkRect &bounds, SkSize viewport) {
   if (definition.stops.empty()) return {};
-  auto stops = withOpacity(definition.stops, opacity);
-  if (stops.size() == 1) return stops.front().color;
-  if (!definition.userSpace && (bounds.width <= 0 || bounds.height <= 0)) return {};
-  const auto m = toPixels * gradientSpace(definition, bounds);
-  if (definition.radial) return radial(definition, m, viewportWidth, viewportHeight, std::move(stops));
-  return linear(definition, m, viewportWidth, viewportHeight, std::move(stops));
+  if (definition.stops.size() == 1) return definition.stops.front().color;
+  if (!definition.userSpace && (bounds.width() <= 0 || bounds.height() <= 0)) return {};
+  const auto space = gradientSpace(definition, bounds);
+  if (!space.invert()) return definition.stops.back().color;
+  auto paint = definition.radial ? radial(definition, space, viewport) : linear(definition, space, viewport);
+  if (const auto *shader = std::get_if<sk_sp<SkShader>>(&paint); shader != nullptr && !*shader) {
+    return definition.stops.back().color;
+  }
+  return paint;
 }
 
 } // namespace rnwebos::svg

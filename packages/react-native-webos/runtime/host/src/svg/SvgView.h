@@ -1,40 +1,32 @@
 #pragma once
 
 #include "../views/ComponentView.h"
-#include "SvgCanvas.h"
-#include "SvgNodeView.h"
-#include "SvgViewBox.h"
+#include "SvgRootNode.h"
 
-#include <Ecore.h>
-
-#include <memory>
+#include <utility>
 
 namespace rnwebos::svg {
 
-/// `<Svg>`: one Evas VG object, clipped to the view, that its nodes paint into
-/// in canvas pixels. Any change in the subtree, and a new size or scale,
-/// schedules a single repaint on the main loop, after the Fabric transaction
-/// that caused it; a move repaints nothing.
+/// `<Svg>`: draws the tree of its nodes onto the canvas, clipped to the
+/// view's box. User units are layout points, scaled to pixels after the
+/// viewBox transform.
 class SvgView : public ComponentView {
  public:
-  SvgView(Evas *evas, facebook::react::Tag tag);
-  ~SvgView() override;
+  SvgView(Scene &scene, facebook::react::Tag tag);
 
   void updateProps(const facebook::react::Props::Shared &props) override;
 
-  /// Points to this view for exactly as long as it lives, for its nodes to
-  /// keep as a weak pointer.
-  std::shared_ptr<SvgView *const> handle() const;
-  /// Paints again once, on the main loop, after the Fabric transaction under way.
-  void scheduleRedraw() noexcept;
-
  protected:
-  void layoutMembers() override;
+  void drawContent(SkCanvas &canvas, float alpha) override;
+  void drawChildren(SkCanvas &canvas) override;
+  void didChangeChildren() override;
   virtual void readProps(const facebook::react::Props &props) = 0;
 
+  /// Takes the props the drawing depends on. The others, such as the view's
+  /// own opacity or transform while they animate, leave the drawing as it is.
   template <typename Props>
   void readSvgProps(const Props &props) {
-    viewBox_ = {
+    SvgViewBox viewBox{
         .minX = props.minX,
         .minY = props.minY,
         .width = props.vbWidth,
@@ -42,19 +34,15 @@ class SvgView : public ComponentView {
         .align = props.align,
         .meetOrSlice = props.meetOrSlice,
     };
-    color_ = rgbaFromColor(props.color).value_or(Rgba{});
+    const auto color = colorFromProp(props.color);
+    if (viewBox == root_.viewBox && color == root_.color) return;
+    root_.viewBox = std::move(viewBox);
+    root_.color = color;
+    root_.invalidate();
   }
 
  private:
-  static void onRedrawJob(void *data);
-  void redraw();
-
-  SvgCanvas canvas_;
-  SvgViewBox viewBox_;
-  Rgba color_;
-  Ecore_Job *job_{nullptr};
-  PixelRect painted_;
-  std::shared_ptr<SvgView *const> handle_;
+  RootNode root_;
 };
 
 } // namespace rnwebos::svg

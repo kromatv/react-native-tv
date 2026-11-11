@@ -14,9 +14,6 @@ if(RN_WEBOS_DEVELOPMENT)
   list(APPEND _host_sources ${_devsupport_sources})
 endif()
 list(FILTER _host_sources EXCLUDE REGEX "/src/main\\.cpp$")
-foreach(_unported IN LISTS RN_WEBOS_UNPORTED)
-  list(FILTER _host_sources EXCLUDE REGEX "${_unported}")
-endforeach()
 # React Native's cross-platform TextInput props. Its Android props, shadow node
 # and state need Android's serializable props or Java, so host/src/fabric has
 # its own.
@@ -68,9 +65,6 @@ if(RN_WEBOS_TESTS)
     file(GLOB_RECURSE _devsupport_test_sources CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/devsupport/*.test.cpp")
     list(APPEND _host_test_sources ${_devsupport_test_sources})
   endif()
-  foreach(_unported IN LISTS RN_WEBOS_UNPORTED RN_WEBOS_UNPORTED_TESTS)
-    list(FILTER _host_test_sources EXCLUDE REGEX "${_unported}")
-  endforeach()
   rn_webos_add_host_tests(rn-webos-host-tests
     SOURCES ${_host_test_sources}
     HOST rn_webos_host
@@ -87,12 +81,12 @@ if(RN_WEBOS_TESTS)
   # builds has them.
   target_sources(rn-webos-host-tests PRIVATE
     "$<FILTER:$<TARGET_OBJECTS:rn_webos_host>,INCLUDE,/fabric/[A-Za-z]+ComponentDescriptors?\\.cpp\\.o>")
-  if(NOT "/svg/" IN_LIST RN_WEBOS_UNPORTED)
-    # react-native-svg's implementation compiles only for an app that uses it
-    # (cmake/Libraries.cmake); its path and viewBox math needs no package.
-    target_sources(rn-webos-host-tests PRIVATE
-      src/svg/PathData.cpp src/svg/SvgPath.cpp src/svg/SvgViewBox.cpp)
-  endif()
+  # react-native-svg's views compile only for an app that uses the package
+  # (cmake/Libraries.cmake); the nodes they feed, which do the drawing, need
+  # no package.
+  file(GLOB _svg_node_sources CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/svg/*.cpp")
+  list(FILTER _svg_node_sources EXCLUDE REGEX "(Views?|ComponentDescriptors|\\.test)\\.cpp$")
+  target_sources(rn-webos-host-tests PRIVATE ${_svg_node_sources})
   # The full ICU data file ICU's sources ship, for the host's ICU setup to load
   # and for every test that lays out text (src/text/TextEngineData.test.cpp).
   target_compile_definitions(rn-webos-host-tests PRIVATE

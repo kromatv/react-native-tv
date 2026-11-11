@@ -73,7 +73,6 @@ configure_runtime() {
     -DEXPO_MODULES_JSI_DIR="${EXPO_MODULES_JSI_DIR:-}"
     -DRN_WEBOS_LIBRARIES_FILE="${RN_WEBOS_LIBRARIES_FILE:-}"
     -DRN_WEBOS_SKIA_ROOT="$SKIA_DIR"
-    -DRN_WEBOS_UNPORTED="${RN_WEBOS_UNPORTED:-}"
   )
   local stamp="$RUNTIME_BUILD_DIR/.rn-webos-simulator-configure"
   # Checkouts share a build directory per key: without the source tree in the

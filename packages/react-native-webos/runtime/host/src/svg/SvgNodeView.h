@@ -3,49 +3,48 @@
 #include "../views/ComponentView.h"
 #include "SvgNode.h"
 
-#include <memory>
 #include <span>
+#include <vector>
 
 namespace rnwebos::svg {
 
-class SvgView;
-
-/// A react-native-svg element mounted inside an `<Svg>`. It paints nothing
-/// itself: the `<Svg>` walks its nodes into one Evas VG object, and a node asks
-/// it to paint again when its props change, when it is mounted, unmounted or
-/// destroyed, so the `<Svg>` a node leaves paints without it.
+/// A react-native-svg element mounted inside an `<Svg>`: the view that keeps
+/// one node of the tree the `<Svg>` draws in step with Fabric. It draws
+/// nothing itself.
 class SvgNodeView : public ComponentView {
  public:
-  SvgNodeView(Evas *evas, facebook::react::Tag tag);
-  ~SvgNodeView() override;
+  using ComponentView::ComponentView;
 
-  void updateProps(const facebook::react::Props::Shared &props) override;
+  virtual Node &node() = 0;
 
-  /// Appends what this node and its subtree paint, unless it is `display="none"`.
-  void draw(Drawing &drawing, const DrawContext &parent) const;
+  void draw(SkCanvas &canvas) override;
 
  protected:
-  void didMount() override;
-  void willUnmount() override;
-  virtual void readProps(const facebook::react::Props &props) = 0;
-  virtual void drawContent(Drawing &drawing, const DrawContext &context) const = 0;
+  void didChangeChildren() override;
+};
 
-  template <typename Props>
-  void readRenderable(const Props &props) {
-    node_ = readNodeAttributes(props);
-    paint_ = readPaint(props);
+/// The nodes of `views`, in order. A view that is no node (an element with no
+/// implementation here) is left out with its subtree.
+std::vector<Node *> nodesOf(std::span<ComponentView *const> views);
+
+/// The view of the elements whose props `read` turns into a `NodeType`.
+template <typename NodeType, typename Props, void (*read)(NodeType &, const Props &)>
+class SvgNodeViewOf final : public SvgNodeView {
+ public:
+  using SvgNodeView::SvgNodeView;
+
+  Node &node() override {
+    return node_;
+  }
+
+  void updateProps(const facebook::react::Props::Shared &props) override {
+    ComponentView::updateProps(props);
+    read(node_, static_cast<const Props &>(*props));
+    node_.invalidate();
   }
 
  private:
-  void requestRedraw() noexcept;
-
-  NodeAttributes node_;
-  Paint paint_;
-  std::weak_ptr<SvgView *const> owner_;
+  NodeType node_;
 };
-
-/// Paints the nodes among `children` in order. A child that is no node (`<Defs>`,
-/// a gradient, anything not drawn in place) is skipped with its subtree.
-void drawChildren(std::span<ComponentView *const> children, Drawing &drawing, const DrawContext &context);
 
 } // namespace rnwebos::svg

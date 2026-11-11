@@ -14,8 +14,6 @@ endif()
 
 option(RN_WEBOS_SIMULATOR "Build for the Linux simulator in ../simulator instead of a TV" OFF)
 option(RN_WEBOS_TESTS "Build the host's tests, rn-webos-host-tests (simulator builds only)" OFF)
-set(RN_WEBOS_UNPORTED "" CACHE STRING "Regular expressions of host sources left out while the port is brought up")
-set(RN_WEBOS_UNPORTED_TESTS "" CACHE STRING "Regular expressions of host tests left out while the port is brought up")
 option(RN_WEBOS_COVERAGE "Instrument the host and its tests for llvm-cov" OFF)
 # A development runtime talks to a dev server (host/devsupport) and has Hermes'
 # debugger; a release one carries neither. The simulator only runs development builds.

@@ -56,8 +56,6 @@ function definitions(build: TestBuild): string[] {
     `-DEXPO_MODULES_CORE_DIR=${build.expoModulesCoreDir}`,
     `-DEXPO_MODULES_JSI_DIR=${build.expoModulesJsiDir}`,
     `-DRN_WEBOS_SKIA_ROOT=${build.skiaRoot}`,
-    `-DRN_WEBOS_UNPORTED=${process.env.RN_WEBOS_UNPORTED ?? ''}`,
-    `-DRN_WEBOS_UNPORTED_TESTS=${process.env.RN_WEBOS_UNPORTED_TESTS ?? ''}`,
   ];
 }
 

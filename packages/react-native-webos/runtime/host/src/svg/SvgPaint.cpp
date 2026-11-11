@@ -14,7 +14,7 @@ constexpr int kSolidColorBrush = 0;
 constexpr int kReferenceBrush = 1;
 constexpr int kCurrentColorBrush = 2;
 
-constexpr std::array<std::pair<std::string_view, PaintAttribute>, 9> kPropNames{{
+constexpr std::array<std::pair<std::string_view, PaintAttribute>, 11> kPropNames{{
     {"fill", PaintAttribute::Fill},
     {"fillOpacity", PaintAttribute::FillOpacity},
     {"fillRule", PaintAttribute::FillRule},
@@ -24,15 +24,17 @@ constexpr std::array<std::pair<std::string_view, PaintAttribute>, 9> kPropNames{
     {"strokeLinecap", PaintAttribute::StrokeLinecap},
     {"strokeLinejoin", PaintAttribute::StrokeLinejoin},
     {"strokeMiterlimit", PaintAttribute::StrokeMiterlimit},
+    {"strokeDasharray", PaintAttribute::StrokeDasharray},
+    {"strokeDashoffset", PaintAttribute::StrokeDashoffset},
 }};
 
-constexpr std::array<std::pair<std::string_view, double>, 7> kUnitsInUserUnits{{
+constexpr std::array<std::pair<std::string_view, float>, 7> kUnitsInUserUnits{{
     {"", 1},
     {"px", 1},
     {"pt", 1.25},
     {"pc", 15},
-    {"mm", 3.543307},
-    {"cm", 35.43307},
+    {"mm", 3.543307F},
+    {"cm", 35.43307F},
     {"in", 90},
 }};
 
@@ -66,14 +68,20 @@ void copyAttribute(Paint &to, const Paint &from, PaintAttribute attribute) {
     case StrokeMiterlimit:
       to.strokeMiterlimit = from.strokeMiterlimit;
       return;
+    case StrokeDasharray:
+      to.strokeDasharray = from.strokeDasharray;
+      return;
+    case StrokeDashoffset:
+      to.strokeDashoffset = from.strokeDashoffset;
+      return;
     case Count:
       return;
   }
 }
 
-std::optional<Rgba> rgbaFromNumber(const folly::dynamic &value) {
+std::optional<SkColor4f> colorFromNumber(const folly::dynamic &value) {
   if (!value.isNumber()) return std::nullopt;
-  return rgbaFromArgb(static_cast<std::uint32_t>(static_cast<std::int64_t>(value.asDouble())));
+  return colorFromArgb(static_cast<std::uint32_t>(static_cast<std::int64_t>(value.asDouble())));
 }
 
 std::string_view trimmed(std::string_view text) {
@@ -86,7 +94,7 @@ std::string_view trimmed(std::string_view text) {
 std::optional<Length> lengthFromString(std::string_view text) {
   text = trimmed(text);
   if (!text.empty() && text.front() == '+') text.remove_prefix(1);
-  double value = 0;
+  float value = 0;
   const auto [end, error] = std::from_chars(text.data(), text.data() + text.size(), value);
   if (error != std::errc{}) return std::nullopt;
   const auto unit = trimmed(text.substr(static_cast<std::size_t>(end - text.data())));
@@ -99,8 +107,12 @@ std::optional<Length> lengthFromString(std::string_view text) {
 
 } // namespace
 
-double Length::resolve(double reference) const {
+float Length::resolve(float reference) const {
   return percent ? value * reference / 100 : value;
+}
+
+float Length::fractionOf(float reference) const {
+  return (percent ? value / 100 : value) * reference;
 }
 
 Paint inheritPaint(const Paint &own, const Paint &parent) {
@@ -125,7 +137,7 @@ PaintAttributes paintAttributesFromPropList(const std::vector<std::string> &prop
 
 Brush brushFromProp(const folly::dynamic &value) {
   using enum Brush::Kind;
-  if (const auto color = rgbaFromNumber(value)) return {.kind = Color, .color = *color};
+  if (const auto color = colorFromNumber(value)) return {.kind = Color, .color = *color};
   if (!value.isObject()) return {};
   const auto *type = value.get_ptr("type");
   if (type == nullptr || !type->isNumber()) return {};
@@ -138,30 +150,43 @@ Brush brushFromProp(const folly::dynamic &value) {
   }
   if (kind != kSolidColorBrush) return {};
   const auto *payload = value.get_ptr("payload");
-  const auto color = payload == nullptr ? std::nullopt : rgbaFromNumber(*payload);
+  const auto color = payload == nullptr ? std::nullopt : colorFromNumber(*payload);
   if (!color) return {};
   return {.kind = Color, .color = *color};
 }
 
 std::optional<Length> lengthFromProp(const folly::dynamic &value) {
-  if (value.isNumber()) return Length{.value = value.asDouble()};
+  if (value.isNumber()) return Length{.value = static_cast<float>(value.asDouble())};
   if (value.isString()) return lengthFromString(value.getString());
   return std::nullopt;
 }
 
-Rgba rgbaFromArgb(std::uint32_t argb) {
+std::vector<Length> lengthsFromProp(const folly::dynamic &value) {
+  std::vector<Length> lengths;
+  if (!value.isArray()) {
+    if (const auto single = lengthFromProp(value)) lengths.push_back(*single);
+    return lengths;
+  }
+  lengths.reserve(value.size());
+  for (const auto &entry : value) {
+    if (const auto length = lengthFromProp(entry)) lengths.push_back(*length);
+  }
+  return lengths;
+}
+
+SkColor4f colorFromArgb(std::uint32_t argb) {
   return {
-      .red = static_cast<double>((argb >> 16) & 0xff) / 255,
-      .green = static_cast<double>((argb >> 8) & 0xff) / 255,
-      .blue = static_cast<double>(argb & 0xff) / 255,
-      .alpha = static_cast<double>((argb >> 24) & 0xff) / 255,
+      static_cast<float>((argb >> 16) & 0xff) / 255,
+      static_cast<float>((argb >> 8) & 0xff) / 255,
+      static_cast<float>(argb & 0xff) / 255,
+      static_cast<float>((argb >> 24) & 0xff) / 255,
   };
 }
 
-std::optional<Rgba> rgbaFromColor(const facebook::react::SharedColor &color) {
+std::optional<SkColor4f> colorFromProp(const facebook::react::SharedColor &color) {
   if (!color) return std::nullopt;
   const auto components = facebook::react::colorComponentsFromColor(color);
-  return Rgba{.red = components.red, .green = components.green, .blue = components.blue, .alpha = components.alpha};
+  return SkColor4f{components.red, components.green, components.blue, components.alpha};
 }
 
 } // namespace rnwebos::svg

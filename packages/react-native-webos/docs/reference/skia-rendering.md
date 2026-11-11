@@ -31,6 +31,7 @@ this file was built or run: section 10 says what the first build has to confirm.
 | `vcpkg:` | `https://github.com/microsoft/vcpkg/blob/master/ports/skia/portfile.cmake`, read 2026-11-11 |
 | GN-ref | GN reference, `https://gn.googlesource.com/gn/+/main/docs/reference.md` |
 | `icu:` | ICU 78.3 source, the archive pinned in `runtime/dependencies.json`, `icu/source/<path>` |
+| `rnsvg:` | react-native-svg 15.16.0, the npm package, `<path>:<line>` |
 | GCC-status, GCC-abi | `https://gcc.gnu.org/onlinedocs/libstdc++/manual/status.html`, `.../abi.html` |
 | EGL-damage, EGL-age, EGL-interval | `https://registry.khronos.org/EGL/extensions/KHR/EGL_KHR_swap_buffers_with_damage.txt`, `.../EXT/EGL_EXT_buffer_age.txt`, `https://registry.khronos.org/EGL/sdk/docs/man/html/eglSwapInterval.xhtml` |
 
@@ -362,6 +363,61 @@ anything:
 | The eleven CSS gradients of `example/src/screens/gradients` beside the same CSS in headless Chrome 157 (`--disable-gpu`, 1920x1080): nine are within 3 levels a channel on every pixel, most within 1. The two rounded ones differ only in the anti-aliased corner pixels. `linear-gradient(to right, #ff5252, 20%, #3d5afe)` differs by up to 19 levels: Chrome's own curve is further from the formula than the host's | obs |
 | `example/src/screens/bench`, a 1000-row FlatList scrolling one row every 50 ms: 36 views drawn in a frame of about 550 mounted. Walking the views and recording their draws took 0.20 to 0.25 ms a frame with a fixed 256 px slack around unclipped parents, and 0.11 to 0.19 ms with the kept subtree bounds; flushing and swapping took 1.6 to 7.7 ms, so the difference is within what other load on the VM moves | obs |
 
+## 12. react-native-svg
+
+What the package sends a native side, all `src` in `rnsvg:src/`:
+
+| Fact | Source |
+| --- | --- |
+| A paint is a brush: `{type: 0, payload}` a processed color, `{type: 1, brushRef}` for `url(#id)`, `{type: 2}` `currentColor`, 3 and 4 `context-fill` and `context-stroke`, `null` for `none`. An element without a `fill` prop sends black | `lib/extract/extractBrush.ts:7-48`, `lib/extract/extractFill.ts:11-25` |
+| `fillRule`: evenodd 0, nonzero 1. `strokeLinecap`: butt 0, round 1, square 2. `strokeLinejoin`: miter 0, round 1, bevel 2. An odd `strokeDasharray` arrives doubled | `lib/extract/extractFill.ts:6-9`, `lib/extract/extractStroke.ts:6-16`, `:56-66` |
+| `propList` names the presentation props an element sets itself: what tells "set" from "default" when a child inherits | `lib/extract/extractProps.ts:93-95`, `lib/extract/extractFill.ts:20-32` |
+| `<Svg>` wraps its children in one `<G>` that takes its fill, stroke and font props; `color` stays on the root. Off Android the root is `RNSVGSvgView` | `elements/Svg.tsx:190-215` |
+| A viewBox arrives as `minX`, `minY`, `vbWidth`, `vbHeight`, `align` (default `xMidYMid`) and `meetOrSlice` (meet 0, slice 1, none 2) | `lib/extract/extractViewBox.ts:5-9`, `:56-63` |
+| A gradient's stops arrive as `gradient`, pairs of offset and `(color & 0x00ffffff) \| (alpha << 24)`, in a `std::vector<Float>`. JavaScript's bit operations give a signed 32-bit number, so an opaque stop is a small negative one a `float` holds exactly, and so is a fully transparent one; any other alpha needs more than 24 bits and loses the low bits of its blue | `lib/extract/extractGradient.ts:72-107`; `Float` is `float` in React Native's `graphics/platform/cxx/react/renderer/graphics/Float.h:18` |
+| Units are 0 for `objectBoundingBox`, 1 for `userSpaceOnUse`. `<Mask>`: `x`, `y` `0%`, `width`, `height` `100%`, `maskUnits` 0, `maskContentUnits` 1, `maskType` luminance 0 or alpha 1. `<Pattern>`: the same box, `patternUnits` 0, `patternContentUnits` 1, and its transform both as `matrix` and as `patternTransform`. `<Use>`: `x`, `y`, `width`, `height` 0 | `lib/units.ts:1-4`, `elements/Mask.tsx:34-39`, `:58-61`, `lib/maskType.ts`, `elements/Pattern.tsx:28-33`, `:58-61`, `elements/Use.tsx:24-29` |
+| `clipRule` arrives as 0, evenodd, unless the app writes `nonzero`: the prop's codegen default is 0 and JavaScript sends it only when set | `lib/extract/extractProps.ts:140-142`, `fabric/GroupNativeComponent.ts:17` |
+| A string child of `<Text>` becomes a `<TSpan>` with `content`; the font props arrive as one `font` object, and `x`, `y`, `dx`, `dy` as lists | `lib/extract/extractText.tsx:120-180` |
+| Every element's shadow node fills its parent absolutely, so a node's layout says nothing of what it draws | `rnsvg:common/cpp/react/renderer/components/rnsvg/RNSVGLayoutableShadowNode.cpp:22-34` |
+
+How Android, whose sources a webOS bundle falls back to, draws what SVG and the
+package leave open, all `src` in `rnsvg:android/src/main/java/com/horcrux/svg/`:
+
+| Fact | Source |
+| --- | --- |
+| A node clips to its clip path's children joined into one even-odd path for `clipRule` 0, and to their union for 1 | `VirtualView.java:71-72`, `:351-370` |
+| A `<Use>` translates by `x`, `y`, then draws its target through the target's own matrix, with the use's props as what the target inherits. A `<Symbol>` is fitted into the use's `width` by `height` by its viewBox, and draws nothing without a viewBox | `UseView.java:74-90`, `SymbolView.java:67-80` |
+
+Skia's side, all `src`:
+
+| Fact | Source |
+| --- | --- |
+| An `SkPath` has no `moveTo` or `lineTo`: `SkPathBuilder` builds a path and `detach` hands it over. Its fill type can still be set | `sk:include/core/SkPathBuilder.h#L38`, `#L129`; `sk:include/core/SkPath.h#L726` |
+| After `close`, the next segment starts a contour at the last move point, which is SVG's rule for a command after `Z` | `sk:include/core/SkPathBuilder.h#L1030-L1036` |
+| `arcTo(r, xAxisRotate, largeArc, sweep, xy)` is SVG's arc, in conics: it scales radii too small to reach the end point and draws a line for a zero radius. It also draws a line to an end point equal to the start, where SVG leaves the segment out. `SkPathDirection::kCW` is SVG's sweep flag 1 | `sk:include/core/SkPathBuilder.h#L656-L680`, `sk:src/core/SkPathBuilder.cpp#L569-L585` |
+| Start points, which dashes count from: `SkPath::Oval(rect, dir, 1)` starts at the rightmost point, `SkPath::RRect(rrect, dir, 0)` on the top edge after the top-left corner, `SkPath::Rect(rect, dir, 0)` at the top-left corner | `sk:include/core/SkPathBuilder.h#L702-L725`, `#L745-L756`, `#L796-L800`; `sk:src/core/SkPathMakers.h#L68-L88` |
+| `SkParsePath::FromSVGString` gives no path at all for data with an error; SVG keeps the path up to the error | `sk:src/utils/SkParsePath.cpp#L126-L135`, `#L232` |
+| `SkDashPathEffect::Make` returns null unless the intervals are an even count of at least two, none negative, with a positive sum: the stroke is then solid, as SVG wants for those lists | `sk:src/utils/SkDashPath.cpp#L474-L487`, `sk:src/effects/SkDashPathEffect.cpp#L397-L402` |
+| The gradient shaders take a local matrix and interpolate unpremultiplied unless told otherwise, which Skia's own SVG module leaves as is | `sk:include/effects/SkGradient.h#L69`, `#L146-L177` |
+| Skia's SVG module applies `opacity` as paint alpha to a leaf with a fill or a stroke but not both, and with a `saveLayer` otherwise. It masks with a layer filtered by `SkLumaColorFilter`, composed with the content by `kSrcIn`, and names the order that spares a layer, which the host uses: the content first, then the mask in a layer whose paint has the filter and `kDstIn` | `sk:modules/svg/src/SkSVGRenderContext.cpp#L287-L311`, `#L380-L396`; `sk:modules/svg/src/SkSVGMask.cpp#L52-L63` |
+| `SkOpBuilder` joins paths with `kUnion_SkPathOp`; `SkPicture::makeShader` repeats a picture as a tile | `sk:include/pathops/SkPathOps.h#L115-L130`, `sk:include/core/SkPicture.h#L249-L253` |
+| Finishing a recording optimizes it: `SaveLayer`, one draw, `Restore` becomes that draw with the layer's alpha. `drawPicture` rejects a picture of more than one op by its cull rect, then plays it | `sk:src/core/SkPictureRecorder.cpp#L57-L66`, `sk:src/core/SkRecordOpts.cpp#L156-L193`, `#L269-L288`; `sk:src/core/SkCanvas.cpp#L2885-L2908`, `sk:src/core/SkCanvasPriv.h#L115` |
+| `SkImages::DeferredFromPicture` makes an image that is drawn from the picture when first used. `drawImage` reaches a canvas subclass as `onDrawImageRect2` | `sk:include/core/SkImage.h#L120-L157`, `sk:src/core/SkCanvas.cpp#L2379-L2400` |
+| Ganesh's software path renderer keeps a mask texture per path, only while the matrix preserves axis alignment and more than half the path is visible, keyed by the matrix's 2x2 part and 8 bits of fractional offset. Its small-path renderer needs shader derivatives and paths within 73 units and 324 pixels | `sk:src/gpu/ganesh/ops/SoftwarePathRenderer.cpp#L303-L304`, `#L321-L333`, `#L338-L366`; `sk:src/gpu/ganesh/ops/SmallPathRenderer.cpp#L97-L101`, `#L717`, `#L760-L761` |
+| `FontCollection::findTypefaces` falls back to the collection's default families when none of the asked ones exists | `sk:modules/skparagraph/src/FontCollection.cpp#L138-L183` |
+
+Observed in the simulator on 2026-11-11 (Mesa 26.0.8 llvmpipe, OpenGL ES 3.2,
+1920x1080), never on a TV:
+
+| Fact | How |
+| --- | --- |
+| `example/src/screens/svg`: 16 Tabler outline icons, sizes, stroke widths and colors, `currentColor`, circle, ellipse, rounded rect, line caps, polyline joins, polygon, group opacity as one layer, transforms, arcs and curves, viewBox slice and none, dashes, both fill rules, a clip path, both clip rules, a luminance mask, `Use` and `Symbol`, text with anchors and spans, a pattern, a radial gradient with a focal point, and the focus row's recolor, resize, mount and unmount, all look as their SVG source asks | screenshots read after each change |
+| `example/src/screens/gradients`: linear and radial gradients as fills and a stroke, in bounding-box and user-space units, look as their SVG source asks | screenshot |
+| CPU time per frame on the svg screen, 50 `<Svg>` views: drawing them takes 0.46 to 0.59 ms walking the node trees, 0.45 to 0.53 ms playing recorded pictures, 0.21 to 0.28 ms once still pictures are images. The whole process spends 40 to 44, 36 to 42 and 19 to 25 ms | a build with `clock_gettime` around `SvgView::drawContent` (thread CPU) and around a frame (process CPU), redrawing continuously, 200-frame averages, the three ways switched at run time; the VM's load average was 6 to 18 |
+| The same on a grid of 240 Tabler icons: 1.15 to 1.65, 1.23 to 1.85 and 1.09 to 1.44 ms; the whole process 53 to 76, 70 to 76 and 20 to 44 ms | the same build |
+| A screen drawn from pictures and the same screen drawn from images differ in 809 pixels, by 4 of 255 at most | two screenshots compared |
+| Which of Ganesh's path renderers a TV's driver gets, and so what a path costs there each frame | unk: log Ganesh's path renderer per draw on a TV |
+
 ## What this means for react-native-webos
 
 **Pin.** Skia `chrome/m157` at
@@ -523,3 +579,13 @@ dirty frame is redrawn in full and the damage is passed to the compositor as a
 hint when the extension exists; repainting only the damage waits for
 `EGL_EXT_buffer_age` and a measurement on a TV. The simulator runs the same
 code on Mesa, and tests draw into a raster `SkSurface`.
+
+**react-native-svg.** Its views keep a tree of plain nodes in step with Fabric,
+and `<Svg>` draws the tree: `runtime/host/src/svg`. A shape keeps the `SkPath`
+built from its props until they change, so Ganesh's caches keyed by the path
+stay valid. The tree is walked once into an `SkPicture`, played until a node
+reports a change; a picture played three frames in a row at whole pixels is
+kept as an image of at most 512x512, one textured rectangle a frame, and
+played again under a scale, a rotation or a fractional offset. Section 11 has
+the rules it takes from the package, from Android and from Skia, and what was
+measured.
