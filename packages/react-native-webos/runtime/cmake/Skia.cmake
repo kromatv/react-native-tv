@@ -11,7 +11,7 @@ set(RN_WEBOS_SKIA_TARGET_ARGS "" CACHE STRING
   "GN arguments for the target, one per list item; a toolchain file sets them for a TV")
 set(RN_WEBOS_SKIA_CFLAGS "" CACHE STRING "Compiler flags Skia's own sources need for the target")
 
-find_program(RN_WEBOS_GN gn REQUIRED)
+include("${CMAKE_CURRENT_LIST_DIR}/Gn.cmake")
 find_program(RN_WEBOS_NINJA NAMES ninja ninja-build REQUIRED)
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 find_package(Git REQUIRED)
