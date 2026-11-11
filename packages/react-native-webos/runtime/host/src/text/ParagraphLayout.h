@@ -32,4 +32,14 @@ ParagraphLayout layOutParagraph(
     facebook::react::Float maximumWidth,
     facebook::react::Float scale);
 
+/// Lays `text` out as `layOutParagraph` does, then, when its lines are not
+/// left-aligned, in the box it will be shown in: as wide as its widest line,
+/// at least `minimumWidth`. Centered text then sits where that box puts it.
+ParagraphLayout layOutParagraphInBox(
+    const facebook::react::AttributedString &text,
+    const facebook::react::ParagraphAttributes &attributes,
+    facebook::react::Float minimumWidth,
+    facebook::react::Float maximumWidth,
+    facebook::react::Float scale);
+
 } // namespace rnwebos

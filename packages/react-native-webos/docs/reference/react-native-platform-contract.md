@@ -166,8 +166,30 @@ hook in the core, throttled per view. doc: `Scheduler.cpp:155-157`,
 
 | Component | State the host reads | State the host writes | Source |
 |-----------|----------------------|-----------------------|--------|
-| Paragraph | Attributed string and paragraph attributes. | None. | doc: `RC/renderer/components/text/ParagraphShadowNode.h` |
+| Paragraph | Attributed string and paragraph attributes, and the prepared layout (see Text layout). | None. | doc: `RC/renderer/components/text/ParagraphShadowNode.h` |
 | ScrollView | `contentOffset`, content bounding rect. | The live `contentOffset` after every scroll, through `state->updateState`. The core uses it for `getContentOriginOffset`, so `measure` inside a ScrollView is only right if the host writes it. | doc: `RC/renderer/components/scrollview/ScrollViewState.h:26-56`, `ScrollViewShadowNode.cpp:61-79`, `RN/React/Fabric/Mounting/ComponentViews/ScrollView/RCTScrollViewComponentView.mm:684-705` |
+
+### Text layout
+
+How often a paragraph is laid out is the platform's choice, made at compile
+time by what its `TextLayoutManager` declares.
+
+| Fact | Tag | Source |
+|------|-----|--------|
+| A `TextLayoutManager` that declares a type `PreparedTextLayout`, `prepareLayout(attributedString, paragraphAttributes, layoutContext, layoutConstraints)` returning it and `measurePreparedLayout(layout, layoutContext, layoutConstraints)` returning a `TextMeasurement` satisfies `TextLayoutManagerWithPreparedTextLayout`. | doc | `RC/renderer/textlayoutmanager/TextLayoutManagerExtended.h:21-37` |
+| With that and the feature flag `enablePreparedTextLayout`, `ParagraphShadowNode::measureContent` prepares a layout for every set of constraints Yoga asks about, measures it and keeps it in the node. | doc | `RC/renderer/components/text/ParagraphShadowNode.cpp:222-266` |
+| `layout` then looks for the kept layout whose measured size equals the node's content size before pixel rounding, prepares one for exactly that size when none fits (Yoga knew the size, or a minimum size changed it), and puts it in the state as `measuredLayout`, when `ParagraphState` has a constructor that takes it. | doc | `ParagraphShadowNode.cpp:185-208`, `:300-340` |
+| A new state is made only when the measured size, the attributed string or the paragraph attributes changed. | doc | `ParagraphShadowNode.cpp:145-166` |
+| The flag is off by default, on every release channel. | doc | `RC/featureflags/ReactNativeFeatureFlagsDefaults.h:200-202` |
+| Android's `ParagraphState` carries `measuredLayout`; the one for C++ platforms (`platform/cxx`) has the string, the attributes and the layout manager only. | doc | `RC/renderer/components/text/platform/android/react/renderer/components/text/ParagraphState.h:57-72`, `.../platform/cxx/react/renderer/components/text/ParagraphState.h` |
+| The key React Native gives a cache of prepared layouts compares the fragments' whole text attributes, colors too, where the measure cache's key compares only what changes a size. | doc | `RC/renderer/textlayoutmanager/TextMeasureCache.h:89-97`, `:283-288`, against `:270-275` |
+| Baseline alignment and `onTextLayout` need `measureLines(attributedStringBox, paragraphAttributes, size)`; the baseline is the first line's `ascender`. Without it the core logs "Baseline alignment is not supported by the current platform" and answers 0. | doc | `TextLayoutManagerExtended.h:58-66`, `ParagraphShadowNode.cpp:276-297`, `RC/renderer/textlayoutmanager/TextMeasureCache.h:33-39` |
+
+The host takes this path (`runtime/platform/react/renderer/`): its
+`TextLayoutManager` prepares through the host's measurer, its `ParagraphState`
+replaces the `cxx` one by coming first on `rrc_text`'s include path, and
+`HostFeatureFlags.cpp` turns the flag on. A paragraph is then shaped once, on
+the thread that lays the tree out, and its view plays what that recorded.
 
 ### Commands
 

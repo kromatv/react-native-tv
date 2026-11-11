@@ -27,4 +27,29 @@ TextMeasurement TextLayoutManager::measure(
   return measurement;
 }
 
+TextLayoutManager::PreparedTextLayout TextLayoutManager::prepareLayout(
+    const AttributedString &attributedString,
+    const ParagraphAttributes &paragraphAttributes,
+    const TextLayoutContext &layoutContext,
+    const LayoutConstraints &layoutConstraints) const {
+  return preparedTextCache_.get(
+      {.attributedString = attributedString,
+       .paragraphAttributes = paragraphAttributes,
+       .layoutConstraints = layoutConstraints,
+       .pointScaleFactor = layoutContext.pointScaleFactor},
+      [this, &attributedString, &paragraphAttributes, &layoutConstraints, &layoutContext] {
+        return measurer_->prepare(
+            attributedString, paragraphAttributes, layoutConstraints, layoutContext.pointScaleFactor);
+      });
+}
+
+TextMeasurement TextLayoutManager::measurePreparedLayout(
+    const PreparedTextLayout &layout,
+    const TextLayoutContext &,
+    const LayoutConstraints &layoutConstraints) const {
+  auto measurement = layout->measurement;
+  measurement.size = layoutConstraints.clamp(measurement.size);
+  return measurement;
+}
+
 } // namespace facebook::react

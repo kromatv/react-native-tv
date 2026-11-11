@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <optional>
 
 namespace rnwebos {
 
@@ -68,17 +69,24 @@ float widthLimit(Float maximumWidth, Float scale) {
   return std::max(1.0f, std::floor(static_cast<float>(pixels)));
 }
 
-} // namespace
+// The width of the box a paragraph laid out within `limit` ends up in: its
+// widest line's, at least the minimum.
+float boxWidth(Paragraph &paragraph, Float minimumWidth, Float scale, float limit) {
+  const auto least = std::min(limit, std::ceil(static_cast<float>(std::max<Float>(0, minimumWidth) * scale)));
+  return std::clamp(std::ceil(std::max(0.0f, paragraph.getLongestLine())), std::max(1.0f, least), limit);
+}
 
-ParagraphLayout layOutParagraph(
+ParagraphLayout layOut(
     const facebook::react::AttributedString &text,
     const facebook::react::ParagraphAttributes &attributes,
+    std::optional<Float> minimumWidth,
     Float maximumWidth,
     Float scale) {
   const auto pixelScale = scale > 0 ? scale : 1;
   auto &engine = textEngine();
   std::lock_guard lock(engine.mutex);
-  auto builder = ParagraphBuilder::make(paragraphStyle(text, attributes), engine.fonts, engine.unicode);
+  const auto style = paragraphStyle(text, attributes);
+  auto builder = ParagraphBuilder::make(style, engine.fonts, engine.unicode);
   std::size_t attachmentCount = 0;
   for (const auto &fragment : text.getFragments()) {
     if (fragment.isAttachment()) {
@@ -100,7 +108,13 @@ ParagraphLayout layOutParagraph(
   }
   ParagraphLayout layout;
   layout.paragraph = builder->Build();
-  layout.paragraph->layout(widthLimit(maximumWidth, pixelScale));
+  const auto limit = widthLimit(maximumWidth, pixelScale);
+  layout.paragraph->layout(limit);
+  // Left-aligned lines sit the same in any box; the others move with its width.
+  if (minimumWidth && style.effective_align() != TextAlign::kLeft) {
+    const auto box = boxWidth(*layout.paragraph, *minimumWidth, pixelScale, limit);
+    if (box < limit) layout.paragraph->layout(box);
+  }
   // SkParagraph answers a huge negative longest line for a text with no glyphs.
   layout.size = {
       .width = std::ceil(std::max(0.0f, layout.paragraph->getLongestLine())) / pixelScale,
@@ -115,6 +129,25 @@ ParagraphLayout layOutParagraph(
     }
   }
   return layout;
+}
+
+} // namespace
+
+ParagraphLayout layOutParagraph(
+    const facebook::react::AttributedString &text,
+    const facebook::react::ParagraphAttributes &attributes,
+    Float maximumWidth,
+    Float scale) {
+  return layOut(text, attributes, std::nullopt, maximumWidth, scale);
+}
+
+ParagraphLayout layOutParagraphInBox(
+    const facebook::react::AttributedString &text,
+    const facebook::react::ParagraphAttributes &attributes,
+    Float minimumWidth,
+    Float maximumWidth,
+    Float scale) {
+  return layOut(text, attributes, minimumWidth, maximumWidth, scale);
 }
 
 } // namespace rnwebos

@@ -4,6 +4,11 @@
 #include <doctest/doctest.h>
 
 #include <folly/dynamic.h>
+#include <react/featureflags/ReactNativeFeatureFlags.h>
+#include <react/featureflags/ReactNativeFeatureFlagsDefaults.h>
+#include <react/renderer/components/text/ParagraphShadowNode.h>
+
+#include <memory>
 
 #include <string>
 #include <utility>
@@ -16,6 +21,13 @@ namespace {
 using facebook::react::LayoutConstraints;
 using facebook::react::Size;
 using testing::laidOutSize;
+
+class PreparedTextFlags final : public facebook::react::ReactNativeFeatureFlagsDefaults {
+ public:
+  bool enablePreparedTextLayout() override {
+    return true;
+  }
+};
 
 constexpr LayoutConstraints kTwiceTheScreen{
     .minimumSize = {.width = 0, .height = 0},
@@ -41,6 +53,30 @@ TEST_CASE("every core component has its own descriptor under its React name") {
     CAPTURE(viewName);
     CHECK(componentName == components.descriptor(viewName).getComponentName());
   }
+}
+
+TEST_CASE("a paragraph's state carries the layout its shadow node prepared while the flag is on") {
+  using facebook::react::ReactNativeFeatureFlags;
+  ReactNativeFeatureFlags::dangerouslyForceOverride(std::make_unique<PreparedTextFlags>());
+  testing::Components components;
+  const auto paragraph = components.create("RCTText", folly::dynamic::object());
+
+  laidOutSize(paragraph);
+  const auto &state = static_cast<const facebook::react::ParagraphShadowNode &>(*paragraph).getStateData();
+  ReactNativeFeatureFlags::dangerouslyReset();
+
+  CHECK(state.measuredLayout.preparedTextLayout != nullptr);
+}
+
+TEST_CASE("a paragraph's state carries no layout while the flag is off") {
+  facebook::react::ReactNativeFeatureFlags::dangerouslyReset();
+  testing::Components components;
+  const auto paragraph = components.create("RCTText", folly::dynamic::object());
+
+  laidOutSize(paragraph);
+
+  const auto &state = static_cast<const facebook::react::ParagraphShadowNode &>(*paragraph).getStateData();
+  CHECK(state.measuredLayout.preparedTextLayout == nullptr);
 }
 
 TEST_CASE("a Modal lays out at the logical screen's size from its first layout") {

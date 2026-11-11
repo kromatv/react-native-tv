@@ -16,6 +16,12 @@ class WebOSFeatureFlags final : public facebook::react::ReactNativeFeatureFlagsO
     return true;
   }
 
+  // One layout per paragraph: its shadow node prepares it and ParagraphView
+  // plays it (docs/reference/react-native-platform-contract.md, Text layout).
+  bool enablePreparedTextLayout() override {
+    return true;
+  }
+
   // The remote's pointer hovers: Pressable reads it from W3C pointer events.
   bool shouldPressibilityUseW3CPointerEventsForHover() override {
     return true;

@@ -14,6 +14,7 @@ TEST_CASE("overrideFeatureFlagsOnce turns on the OSS Stable flags and the C++ an
 
   CHECK(ReactNativeFeatureFlags::cxxNativeAnimatedEnabled());
   CHECK(ReactNativeFeatureFlags::useNativeViewConfigsInBridgelessMode());
+  CHECK(ReactNativeFeatureFlags::enablePreparedTextLayout());
   ReactNativeFeatureFlags::dangerouslyReset();
 }
 

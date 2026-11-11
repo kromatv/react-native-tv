@@ -81,4 +81,56 @@ TEST_CASE("TextLayoutManager measures again for another width or another scale")
   CHECK(measurer->calls == 3);
 }
 
+TEST_CASE("TextLayoutManager prepares a paragraph once for the same text, box and scale, and clamps its size") {
+  const auto measurer = std::make_shared<CountingMeasurer>();
+  const auto context = std::make_shared<ContextContainer>();
+  context->insert(TextMeasurer::contextKey, std::shared_ptr<const TextMeasurer>(measurer));
+  const TextLayoutManager manager(context);
+  const auto text = paragraphWithAttachment();
+  LayoutConstraints constraints{};
+  constraints.maximumSize = {.width = 200, .height = 100};
+  const TextLayoutContext layoutContext{.pointScaleFactor = 2};
+
+  const auto first = manager.prepareLayout(text, {}, layoutContext, constraints);
+  const auto second = manager.prepareLayout(text, {}, layoutContext, constraints);
+  const auto atAnotherScale = manager.prepareLayout(text, {}, {.pointScaleFactor = 1}, constraints);
+  const auto measurement = manager.measurePreparedLayout(first, layoutContext, constraints);
+
+  REQUIRE(first != nullptr);
+  CHECK(second == first);
+  CHECK(atAnotherScale != first);
+  CHECK(measurer->calls == 2);
+  CHECK(first->measurement.size == Size{.width = 300, .height = 40});
+  CHECK(measurement.size == Size{.width = 200, .height = 40});
+  REQUIRE(measurement.attachments.size() == 1);
+  CHECK(measurement.attachments[0].frame == kAttachmentFrame);
+}
+
+TEST_CASE("TextLayoutManager prepares text again when only its color differs, which measures the same") {
+  const auto measurer = std::make_shared<CountingMeasurer>();
+  const auto context = std::make_shared<ContextContainer>();
+  context->insert(TextMeasurer::contextKey, std::shared_ptr<const TextMeasurer>(measurer));
+  const TextLayoutManager manager(context);
+  const auto colored = [](SharedColor color) {
+    TextAttributes attributes;
+    attributes.foregroundColor = color;
+    AttributedString string;
+    string.appendFragment({.string = "Hello", .textAttributes = attributes, .parentShadowView = {}});
+    return string;
+  };
+  const auto white = colored(colorFromRGBA(255, 255, 255, 255));
+  const auto red = colored(colorFromRGBA(255, 0, 0, 255));
+  LayoutConstraints constraints{};
+  constraints.maximumSize = {.width = 200, .height = 100};
+  const TextLayoutContext layoutContext{.pointScaleFactor = 1};
+
+  manager.measure(AttributedStringBox(white), {}, layoutContext, constraints);
+  manager.measure(AttributedStringBox(red), {}, layoutContext, constraints);
+  const auto preparedWhite = manager.prepareLayout(white, {}, layoutContext, constraints);
+  const auto preparedRed = manager.prepareLayout(red, {}, layoutContext, constraints);
+
+  CHECK(measurer->calls == 3);
+  CHECK(preparedRed != preparedWhite);
+}
+
 } // namespace facebook::react

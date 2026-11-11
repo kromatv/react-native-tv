@@ -15,3 +15,7 @@ target_link_libraries(react_renderer_textlayoutmanager PUBLIC
   react_renderer_core react_renderer_debug react_renderer_graphics react_renderer_mapbuffer
   react_renderer_mounting react_renderer_telemetry react_utils yoga)
 target_compile_reactnative_options(react_renderer_textlayoutmanager PRIVATE)
+
+# rrc_text takes ParagraphState from React Native's `cxx` platform, which has
+# no prepared layout, unless this directory comes first on its include path.
+target_include_directories(rrc_text BEFORE PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")

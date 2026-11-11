@@ -9,6 +9,8 @@ namespace rnwebos {
 void ParagraphView::updateState(const facebook::react::State::Shared &state) {
   if (!state) return;
   paragraph_ = std::static_pointer_cast<const facebook::react::ParagraphShadowNode::ConcreteState>(state);
+  prepared_ = std::dynamic_pointer_cast<const PreparedParagraph>(
+      paragraph_->getData().measuredLayout.preparedTextLayout);
   layout_ = {};
   invalidate();
 }
@@ -37,6 +39,12 @@ void ParagraphView::drawContent(SkCanvas &canvas, float) {
   if (!paragraph_) return;
   const auto rect = contentRect();
   if (rect.width <= 0) return;
+  if (prepared_ && prepared_->scale == pointScale()) {
+    SkAutoCanvasRestore restore(&canvas, true);
+    canvas.translate(static_cast<float>(rect.x), static_cast<float>(rect.y));
+    prepared_->picture->playback(&canvas);
+    return;
+  }
   if (!layout_.paragraph) {
     const auto scale = pointScale();
     const auto &data = paragraph_->getData();
