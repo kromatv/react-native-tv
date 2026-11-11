@@ -20,12 +20,11 @@ Only the latest release. Fixes ship in the next release, with no backports.
 
 In scope:
 
-- the native runtime in `runtime/`, which runs on the TV: its networking, image
-  loading and bundle loading
-- the .NET shell in `shell/`
-- the `rn-webos` CLI in `src/`, which runs build tools, talks to TVs over sdb and
-  listens for a development build's logs
-- the packages it generates and signs
+- the native runtime in `runtime/`, which runs on the TV: its networking and
+  TLS, image loading and bundle loading
+- the `rn-webos` CLI in `src/`, which runs build tools, talks to TVs over SSH
+  and the remote control service, and listens for a development build's logs
+- the packages it generates
 - the simulator in `simulator/`
 
 Out of scope:
@@ -33,16 +32,17 @@ Out of scope:
 - the log stream of a development build. It is plain TCP to the address in the
   package's `react-native-webos.json`, on purpose, for a TV on your own network.
   A `--release` build carries no log endpoint.
-- bugs in webOS, Samsung's firmware, webOS Studio, Hermes, React Native or Expo
-  themselves. Report those upstream. Tell us too if this package makes one
-  reachable.
+- bugs in webOS, LG's firmware, Skia, SDL, libcurl, Mbed TLS, Hermes, React
+  Native or Expo themselves. Report those upstream. Tell us too if this package
+  makes one reachable.
 - findings that need a compromised development machine or physical access to the
   TV
 - scanner output with no demonstrated impact
 
-## Signing material
+## A TV's key
 
-Your Samsung certificate and its passwords live in webOS Studio's security
-profiles and never in this repository or a generated `webos/` project. A report
-showing that `rn-webos` leaks them into a package, a log or the cache is in
-scope.
+The SSH key a TV gives out, and the token it issues when the remote control
+service is paired, are kept in `~/.local/state/react-native-webos`, readable by
+you only, and never in this repository, a package or the cache. The passphrase
+of the Developer Mode app is kept nowhere. A report showing that `rn-webos`
+leaks any of them into a package, a log or the cache is in scope.

@@ -10,30 +10,22 @@ only Bun. Building and running an app needs the rest. macOS on Apple silicon is
 the only host verified so far.
 
 - [Bun](https://bun.sh) 1.4 or newer. CI runs the version in `.bun-version`.
-- [webOS Studio](https://developer.webos.org/development/webos-studio/download).
-  From its Package Manager, install `IOT-Headed-6.0-NativeAppDevelopment-CLI`,
-  the rootstrap for the default floor, webOS 6.0, `NativeToolchain-Gcc-14.2`, the
-  GCC runtime the runtime links against, and the Samsung Certificate Extension.
-  Each other floor needs its own rootstrap package (`IOT-Headed-<v>-...` for 6.0
-  to 7.0, `WEBOS-<v>-...` from 8.0); `bun src/cli/main.ts doctor --platform <v>`
-  names it. Set `WEBOS_SDK_DIR` if it is not in
-  `~/webos-studio`. Its `sdb` and `webos` tools are not used: `rn-webos` speaks
-  to the TV and signs packages itself.
 - Homebrew's LLVM and lld, which cross-compile the runtime, plus the build tools:
 
   ```sh
-  brew install llvm lld cmake ninja dotnet ccache
+  brew install llvm lld cmake ninja ccache
   ```
 
-  CMake must be 3.24 or newer and the .NET SDK 6.0 or newer. ccache is optional.
-  Set `WEBOS_LLVM_DIR` to use a clang and lld that are not Homebrew's.
+  CMake must be 3.24 or newer. ccache is optional. Set `WEBOS_LLVM_DIR` to use
+  a clang and lld that are not Homebrew's. Skia's build also needs Python 3,
+  which macOS has, and GN, which the build downloads when none is installed.
+- The SDK TV builds compile against, openlgtv's: `rn-webos` downloads it into
+  the cache on the first build, or ahead of time with `setup`. Nothing of LG's
+  is installed: `rn-webos` reaches the TV and writes packages itself, and a
+  webOS package is not signed.
 - Node.js, which runs Expo's CLI when the app is bundled. `npx expo start` in
   the example needs 22.18 or newer: its Metro config imports `withWebOS` from
   `src/`, so Node must strip TypeScript types on its own.
-- A Samsung certificate profile, once: in webOS Studio, Tools, Certificate
-  Manager, create a Samsung profile with your TV's DUID and make it the active
-  profile. Samsung issues its author and distributor certificates; `rn-webos`
-  reads them from that profile.
 - For the simulator: [Lima](https://lima-vm.io) 2.0 or newer (`brew install
   lima`) and about 8 GB of free disk.
 
@@ -59,10 +51,8 @@ bun src/cli/main.ts doctor --project example
 bun src/cli/main.ts setup
 ```
 
-`setup` compiles the glibc compat archive against the rootstrap and mirrors the
-rootstrap into a sysroot lld can link against. `package`, `run` and
-`build-runtime` do this on their own, so run it by hand only to prepare a machine
-ahead of time.
+`setup` downloads the SDK. `package`, `run` and `build-runtime` do this on
+their own, so run it by hand only to prepare a machine ahead of time.
 
 ## The loop
 
@@ -104,23 +94,28 @@ ahead of time.
    [`simulator/README.md`](simulator/README.md) has every action and the
    simulator's limits.
 
-4. Check it on a TV. On the TV, open Apps, type `12345` on the remote, turn
-   Developer mode on with your computer's IP address, and restart the TV. Then:
+4. Check it on a TV. On the TV, install the Developer Mode app from LG's
+   store, sign in with an LG developer account, turn Dev Mode Status on, and
+   after the restart turn Key Server on. Then:
 
    ```sh
-   bun src/cli/main.ts devices --connect 192.168.1.50
+   bun src/cli/main.ts connect 192.168.1.50
    bun src/cli/main.ts run --project example --device 192.168.1.50
    ```
 
-   `run` packages the app, installs it, launches it and prints its logs until
-   Ctrl+C. Retail TVs block the system log, so a development build streams its
-   logs to the CLI over TCP: allow incoming connections if the firewall asks.
+   `connect` asks for the passphrase the Developer Mode app shows. `run`
+   packages the app, installs it, launches it and prints its logs until
+   Ctrl+C. A Developer Mode login cannot read the TV's system log, so a
+   development build streams its logs to the CLI over TCP: allow incoming
+   connections if the firewall asks. A TV build that never reached a TV is
+   checked against firmware symbol data instead:
+   `bun scripts/check-tv-binary.ts example/webos/app/react-native-webos`.
 
 [`docs/cli.md`](docs/cli.md) documents every command and option.
 
 ## Platform facts
 
-Code that depends on how webOS, EFL, React Native or Expo behave follows
+Code that depends on how webOS, Skia, SDL, React Native or Expo behave follows
 [`docs/reference/`](docs/reference/README.md). If the fact you need is not there,
 find it in the official documentation, the SDK headers or a project that ships
 on the platform, and add it to the reference, cited, in the same pull request.
@@ -203,9 +198,9 @@ To choose the next version, end a squash commit's body with `Release-As: 1.0.0`.
 - Add the app to the bypass list of the `release tags` ruleset, which lets only
   admins create `v*` tags.
 - npm only lets a package that exists name a trusted publisher, so the first
-  version, `0.1.0-alpha.0`, was published by hand. Then
+  version, `0.1.0-alpha.0`, is published by hand. Then
   `npm trust github --file release.yml --repo kromatv/react-native-webos --env npm --allow-publish`
-  made the workflow its only publisher, and `npm access set mfa=publish` makes
+  makes the workflow its only publisher, and `npm access set mfa=publish` makes
   the package refuse tokens. No npm token is stored in GitHub.
 - The `npm` environment deploys from `main` only.
 - Make `Conventional title` a required check in the `main` ruleset.
