@@ -9,7 +9,6 @@ using testing::canonical;
 using testing::createVideoPlayer;
 using testing::eventCount;
 using testing::ExpoTestRuntime;
-using testing::kNoPlayer;
 using testing::lastEvent;
 
 TEST_CASE("ExpoVideo answers that webOS has no picture in picture and no video cache") {
@@ -20,17 +19,83 @@ TEST_CASE("ExpoVideo answers that webOS has no picture in picture and no video c
   CHECK(expo.settle("expo.modules.ExpoVideo.clearVideoCacheAsync()") == "undefined");
 }
 
-TEST_CASE("a VideoPlayer opening a source loads, then reports the error a TV without a player gives") {
+TEST_CASE("a VideoPlayer opening a source loads it, then is ready to play with what the stream holds") {
   ExpoTestRuntime expo;
-  const auto native = createVideoPlayer(expo, "{ uri: 'https://example.com/a.mp4', headers: { 'User-Agent': 'TV', X: 5 } }");
+  const auto native = createVideoPlayer(
+      expo, "{ uri: 'https://example.com/a.mp4#sim:load=0.05&duration=42&size=1280x720', headers: { 'User-Agent': 'TV', X: 5 } }");
   REQUIRE(native != nullptr);
-  CHECK(native->webosPlayer() != nullptr);
+  CHECK(native->mediaPlayer() != nullptr);
   CHECK(expo.json("player.status") == "\"loading\"");
   REQUIRE(awaitEvents(expo, "statusChange"));
+  CHECK(lastEvent(expo, "statusChange") == R"([{"oldStatus":"loading","status":"readyToPlay"}])");
+  CHECK(expo.json("events.map(([n]) => n)") ==
+        R"(["sourceLoad","availableAudioTracksChange","availableSubtitleTracksChange","audioTrackChange","videoTrackChange","statusChange"])");
+  CHECK(canonical(expo, "[player.status, player.playing, player.duration, player.videoTrack.size, player.audioTrack.id,"
+                        " player.availableAudioTracks.map(track => track.language), player.availableSubtitleTracks.length]") ==
+        R"(["readyToPlay",false,42,{"height":720,"width":1280},"audio-0",["en","fr"],1])");
+}
+
+TEST_CASE("a source the pipeline cannot open ends in the error status, with the pipeline's reason") {
+  ExpoTestRuntime expo;
+  createVideoPlayer(expo, "'https://example.com/missing.mp4#sim:load=0&error=202'");
+  REQUIRE(awaitEvents(expo, "statusChange"));
   CHECK(lastEvent(expo, "statusChange") ==
-        std::string(R"([{"error":{"message":")") + kNoPlayer + R"("},"oldStatus":"loading","status":"error"}])");
-  CHECK(expo.json("player.status") == "\"error\"");
-  CHECK(expo.json("player.playing") == "false");
+        R"([{"error":{"message":"The TV cannot open the source: media not found (202): simulated"},)"
+        R"("oldStatus":"loading","status":"error"}])");
+  CHECK(expo.json("[player.status, player.playing]") == R"(["error",false])");
+}
+
+TEST_CASE("a VideoPlayer plays, pauses, seeks and reaches the end of its stream, and plays it again") {
+  ExpoTestRuntime expo;
+  createVideoPlayer(expo, "'https://example.com/a.mp4#sim:load=0&duration=1'");
+  REQUIRE(awaitEvents(expo, "statusChange"));
+  expo.eval("player.timeUpdateEventInterval = 0.1; player.play();");
+  REQUIRE(awaitEvents(expo, "playingChange"));
+  CHECK(lastEvent(expo, "playingChange") == R"([{"isPlaying":true,"oldIsPlaying":false}])");
+  REQUIRE(awaitEvents(expo, "timeUpdate", 2));
+  CHECK(expo.eval("player.currentTime > 0 && player.currentTime <= 1 && player.bufferedPosition === 1").getBool());
+
+  expo.eval("player.pause();");
+  REQUIRE(awaitEvents(expo, "playingChange", 2));
+  expo.eval("player.currentTime = 0.6;");
+  CHECK(expo.json("player.currentTime") == "0.6");
+  REQUIRE(awaitEvents(expo, "statusChange", 3));
+  CHECK(expo.json("events.filter(([n]) => n === 'statusChange').map(([, e]) => e.status)") ==
+        R"(["readyToPlay","loading","readyToPlay"])");
+  CHECK(expo.json("[player.currentTime, player.playing]") == "[0.6,false]");
+
+  expo.eval("player.play();");
+  REQUIRE(awaitEvents(expo, "playToEnd"));
+  REQUIRE(awaitEvents(expo, "playingChange", 4));
+  CHECK(expo.json("[player.currentTime, player.playing, player.status]") == R"([1,false,"readyToPlay"])");
+
+  expo.eval("player.replay();");
+  REQUIRE(awaitEvents(expo, "playToEnd", 2));
+  CHECK(eventCount(expo, "playingChange") >= 6);
+}
+
+TEST_CASE("a looping VideoPlayer starts over at the end and keeps playing") {
+  ExpoTestRuntime expo;
+  createVideoPlayer(expo, "'https://example.com/a.mp4#sim:load=0&duration=0.4'");
+  REQUIRE(awaitEvents(expo, "statusChange"));
+  expo.eval("player.loop = true; player.play();");
+  REQUIRE(awaitEvents(expo, "playToEnd", 2));
+  CHECK(expo.json("player.playing") == "true");
+  CHECK(eventCount(expo, "playingChange") == 1);
+}
+
+TEST_CASE("a VideoPlayer switches audio tracks and turns the pipeline's subtitles on and off") {
+  ExpoTestRuntime expo;
+  createVideoPlayer(expo, "'https://example.com/a.mp4#sim:load=0&audio=en+fr&text=en+de'");
+  REQUIRE(awaitEvents(expo, "statusChange"));
+  expo.eval("player.audioTrack = player.availableAudioTracks[1]; player.subtitleTrack = { language: 'de' };");
+  REQUIRE(awaitEvents(expo, "subtitleTrackChange"));
+  CHECK(expo.json("[player.audioTrack.id, player.subtitleTrack.id]") == R"(["audio-1","text-1"])");
+  CHECK(expo.json("(([, e]) => [e.audioTrack.language, e.oldAudioTrack.language])("
+                  "events.filter(([n]) => n === 'audioTrackChange').at(-1))") == R"(["fr","en"])");
+  expo.eval("player.subtitleTrack = null;");
+  REQUIRE(awaitEvents(expo, "subtitleTrackChange", 2));
+  CHECK(expo.json("player.subtitleTrack") == "null");
 }
 
 TEST_CASE("a VideoPlayer without a source starts idle") {

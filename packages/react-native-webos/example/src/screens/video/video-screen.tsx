@@ -15,6 +15,7 @@ const ACTIONS = [
   'Backdrop behind the video',
   'Content fit',
   'Box size',
+  'Move the box with a transform',
   'Play / pause',
   'Seek +30 s',
   'Seek -10 s',
@@ -75,6 +76,7 @@ export function VideoScreen() {
   const [backdrop, setBackdrop] = useState(false);
   const [fit, setFit] = useState<VideoContentFit>('contain');
   const [small, setSmall] = useState(false);
+  const [moved, setMoved] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [focus, setFocus] = useState(0);
   const probing = useRef(false);
@@ -120,6 +122,8 @@ export function VideoScreen() {
         return setFit((current) => next(FITS, current));
       case 'Box size':
         return setSmall((current) => !current);
+      case 'Move the box with a transform':
+        return setMoved((current) => !current);
       case 'Play / pause':
         return player.playing ? player.pause() : player.play();
       case 'Seek +30 s':
@@ -159,7 +163,7 @@ export function VideoScreen() {
 
   const error = report.error ? ` (${report.error})` : '';
   const lines = [
-    `Backdrop: ${backdrop ? 'purple, opaque' : 'none'} · Fit: ${fit} · Box: ${small ? 'square, lower' : 'large 16:9'}`,
+    `Backdrop: ${backdrop ? 'purple, opaque' : 'none'} · Fit: ${fit} · Box: ${small ? 'square, lower' : 'large 16:9'}${moved ? ', moved' : ''}`,
     `Source ${sample + 1}/${SAMPLES.length}: ${SAMPLES[sample]!.name}`,
     `Status: ${report.status}${error} · ${report.playing ? 'playing' : 'not playing'}`,
     `Time: ${seconds(report.time)} of ${seconds(report.duration)} · buffered ${seconds(report.buffered)}`,
@@ -186,7 +190,14 @@ export function VideoScreen() {
           ))}
         </View>
       </View>
-      <View style={[styles.box, small ? styles.small : styles.large, backdrop && styles.backdrop]}>
+      <View
+        style={[
+          styles.box,
+          small ? styles.small : styles.large,
+          backdrop && styles.backdrop,
+          moved && styles.moved,
+        ]}
+      >
         <VideoView
           ref={view}
           player={player}
@@ -224,4 +235,5 @@ const styles = StyleSheet.create({
   large: { left: 720, top: 200, width: 1168, height: 664 },
   small: { left: 760, top: 460, width: 528, height: 528 },
   backdrop: { backgroundColor: '#5b2a86' },
+  moved: { transform: [{ translateX: 200 }, { translateY: -120 }, { scale: 0.6 }] },
 });

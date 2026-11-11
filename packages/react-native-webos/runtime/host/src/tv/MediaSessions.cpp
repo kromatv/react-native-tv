@@ -42,6 +42,10 @@ Snapshot snapshot() {
 
 MediaSession::~MediaSession() = default;
 
+void MediaSession::appForegroundChanged(bool) {
+  // A session without a pipeline has nobody to tell.
+}
+
 void addMediaSession(const std::shared_ptr<MediaSession> &session) {
   auto &state = registry();
   std::lock_guard lock(state.mutex);
@@ -68,6 +72,7 @@ void pauseMediaSessionsForBackground() {
   int paused = 0;
   int kept = 0;
   for (const auto &session : snapshot().live) {
+    session->appForegroundChanged(false);
     if (!session->isPlaying()) continue;
     if (session->staysActiveInBackground()) {
       ++kept;
@@ -78,6 +83,10 @@ void pauseMediaSessionsForBackground() {
   }
   if (paused > 0) log(LogLevel::Info, std::format("Background: paused {} player(s)", paused));
   if (kept > 0) log(LogLevel::Info, std::format("Background: {} player(s) stay active", kept));
+}
+
+void resumeMediaSessionsForForeground() {
+  for (const auto &session : snapshot().live) session->appForegroundChanged(true);
 }
 
 } // namespace rnwebos

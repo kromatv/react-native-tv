@@ -27,8 +27,12 @@ bool VideoPlayer::setSubtitlesEnabled(bool enabled) {
     if (tracks.empty()) return false;
     if (enabled) index = tracks.front().index;
   }
-  command([index](WebOSPlayer &webos) { webos.selectTrack(TrackKind::Text, index); });
+  command([index](MediaPlayer &media) { media.selectTrack(TrackKind::Text, index); });
   return true;
+}
+
+void VideoPlayer::appForegroundChanged(bool foreground) {
+  command([foreground](MediaPlayer &media) { media.setForeground(foreground); });
 }
 
 } // namespace rnwebos::expo

@@ -20,6 +20,9 @@ class MediaSession {
   virtual void seekTo(double seconds) = 0;
   /// Shows the first subtitle track, or none; false when the media has none to show.
   virtual bool setSubtitlesEnabled(bool enabled) = 0;
+  /// The app left the foreground, or came back to it: a session tells its
+  /// pipeline, which then may or may not give its decoder to another app.
+  virtual void appForegroundChanged(bool foreground);
 };
 
 /// Makes `session` known to the TV until it is destroyed.
@@ -33,8 +36,13 @@ void markMediaSessionActive(const MediaSession *session);
 std::shared_ptr<MediaSession> currentMediaSession();
 
 /// Pauses every playing session that may not stay active in the background, as
-/// expo-video does on Android when the app is backgrounded, and logs the ones
-/// that keep playing: webOS keeps a hidden app running.
+/// expo-video does on Android when the app is backgrounded, logs the ones
+/// that keep playing (webOS keeps a hidden app running), and tells every
+/// session the app is hidden.
 void pauseMediaSessionsForBackground();
+
+/// Tells every session the app is the one the user sees again. Nothing
+/// resumes by itself.
+void resumeMediaSessionsForForeground();
 
 } // namespace rnwebos

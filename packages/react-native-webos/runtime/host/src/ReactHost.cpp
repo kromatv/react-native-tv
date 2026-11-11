@@ -173,6 +173,7 @@ void ReactHost::pause() {
 }
 
 void ReactHost::resume() {
+  resumeMediaSessionsForForeground();
   setActive(true);
   scene_->invalidate();
 }

@@ -72,6 +72,12 @@ and later. S [UL: StarfishMediaAPIs.h:79-86], [SS4S: modules/webos/smp/CMakeList
 | On a TV the Developer Mode installer writes `/var/palm/ls2-dev/roles/pub/<appId>.json` with those names, keyed on the binary's exact path. No `requiredPermissions` entry is needed for playback | S-report [PLX-D:446-455] (webOS 4.5), [NUV:1867] (C9, 4.10), [JWN-N] |
 | So the client registers with `LSRegister("com.webos.media.client.<suffix>", ...)`. Another name is refused: `-1027 Invalid permissions`, or `Denied method call` on the first `load` | S-report [NUV:1862-1880], [PLX: rust-modules/play-uri/src/register_ladder.rs:5-11] |
 | `uMediaClient` registers as `com.webos.media.client.<uid>` by itself | S [UMS: src/media_client/uMediaClient.cpp:36,72-79] |
+| LG's `libhelpers.so.2` cannot register that name: `HLunaServiceCall(uri, payload, HContext *)` is its one way to call, and `HContext` holds a callback, user data, a `multiple` and a `pub` flag and a token, no handle and no name | S [UL: include/webos-helpers/libhelpers.h:26-65] |
+| So a named client calls luna-service2 itself. A process that has `libhelpers.so.2` has it loaded: `libluna-service2.so.3` and `libglib-2.0.so.0` are in the `needed` list of `libhelpers.so.2.0.0` on each of the 14 firmware images | S [FW: `<firmware>/libhelpers.so.2.0.0.json`] |
+| The calls a named client needs: `LSErrorInit`, `LSErrorFree`, `LSRegister(name, &handle, &error)`, `LSGmainContextAttach(handle, context, &error)`, `LSCall` and `LSCallOneReply(handle, uri, payload, callback, context, &token, &error)`, `LSCallCancel(handle, token, &error)`, `LSMessageGetPayload(message)`, `LSUnregister(handle, &error)`. `LSError` is `{int error_code; char *message; const char *file; int line; const char *func; void *padding; unsigned long magic;}`; the callback is `bool (*)(LSHandle *, LSMessage *, void *)`; a token is an `unsigned long` | S [LS2H:159-169, 312-313, 357, 383, 422, 450, 509-554] |
+| GLib's side of it: `g_main_context_new`, `g_main_loop_new(context, is_running)`, `g_main_loop_run`, `g_main_loop_quit`, `g_main_context_invoke(context, function, data)`, whose function returns a `gboolean` | S [GLIBH:202, 490-498, 679-688, 990-992]. I, from GLib's documentation as remembered and not opened here: `g_main_context_invoke` runs the function on the thread that iterates the context, which is why the host makes every luna-service2 call through it |
+| plx-native tries the named client first and an anonymous one (`LSRegister(NULL)`) second; its user's 5.4.2 set ended on the named client | S [PLX: rust-modules/play-uri/src/register_ladder.rs:1-17]; S-report [PLX-U:26] |
+| nuvio registers `com.webos.media.client.<its app id>`, then the same name with `.<pid>` when the first is refused | S [NUV:1862-1890], [NUV: src/app_id.h:13-15] |
 | `com.webos.service.tv.display` (`setDisplayWindow`, `setCustomDisplayWindow`) refuses that identity: "Not permitted to send" | S-report [NUV:524-531] (C9) |
 | Whether a store install or a Homebrew Channel install gets the same role file | U. [PLX-D:461-467] names two jail profiles chosen by install prefix; no source records the second one's role file |
 | `StarfishMediaAPIs`' constructor calls `exit(0)` when the process does not match the role's `exeName` | S-report [NUV-R:352-354] (C9). Kodi and Moonlight construct it from installed apps without that problem (I from their shipping) |
@@ -86,11 +92,11 @@ rust-modules/platform/src/webos.rs:792-833, webos/ls2/uri.rs:129-149].
 | Method | Payload | Known |
 |--------|---------|-------|
 | `load` | `{"uri":U,"type":"media","payload":{...}}`, answers `{"returnValue":true,"mediaId":M}` | S [UMS: src/server/uMediaserver.cpp:397-498], [PLX-P:88-102], [NUV:2612-2643] |
-| `subscribe` | `{"mediaId":M}`; plx-native adds `"subscribe":true` | S [UMS: uMediaserver.cpp:810-973], [PLX-P:218-220] |
+| `subscribe` | `{"mediaId":M}`; plx-native adds `"subscribe":true`. OSE adds the caller with `LSSubscriptionAdd` whatever the payload says, and answers `{"subscription":true}` | S [UMS: uMediaserver.cpp:810-973, src/ums_connector/UMSConnector_impl.cpp:605-628], [PLX-P:218-220] |
 | `play`, `pause`, `unload` | `{"mediaId":M}` | S [UMS: uMediaClient.cpp:869-953] |
 | `seek` | `{"mediaId":M,"position":<ms>}` | S [UMS: uMediaClient.cpp:930-936] |
 | `setPlayRate` | `{"mediaId":M,"playRate":1.5,"audioOutput":true}` | S [UMS: uMediaClient.cpp:1004-1011], [NUV:3924] |
-| `setVolume` | `{"mediaId":M,"volume":0..100,"ease":{...}}` | S [UMS: uMediaClient.cpp:1189-1200] |
+| `setVolume` | `{"mediaId":M,"volume":0..100,"ease":{"duration":<ms>,"type":"Linear"}}`; the other ease types are `InCubic` and `OutCubic` | S [UMS: uMediaClient.cpp:1189-1200, include/public/uMediaTypes.h:55-62] |
 | `notifyForeground`, `notifyBackground` | `{"connectionId":M}` | S [UMS: uMediaClient.cpp:961-977] |
 | `selectTrack` | `{"mediaId":M,"type":"audio" or "text","index":n}` | S [PLX-P:227-231], [NUV:3771]. Not in OSE's method list, so TV only |
 | `setSubtitleEnable`, `setSubtitleSource` | `{"mediaId":M,"enable":bool}`; `{"mediaId":M,"uri":U,"preferredEncodings":["UTF-8"]}` | S [NUV:3885-3896], [PLX-P:232-234]. TV only |
@@ -198,6 +204,7 @@ TV's capture service never contain the picture. S [FL: README.md], S-report
 | The exported item sits at z -1 under the app's surface content, and the compositor's punch-through item writes transparent pixels there with blending off. Anything the app draws opaque still covers the video | S [LSM-F:292-293, 1262-1274], [LSM: modules/weboscompositor/foreign/punchthroughelement.h:43-69] |
 | The pipeline imports the window by id and attaches the punch-through; the app never does | S [WEXT:59-66, 148-165], [LSM-F:1595-1640] |
 | SDL's wrappers: `const char *SDL_webOSCreateExportedWindow(SDL_webOSExportedWindowType)`, `SDL_bool SDL_webOSSetExportedWindow(const char *id, SDL_Rect *src, SDL_Rect *dst)`, `SDL_webOSDestroyExportedWindow(const char *id)`. The first waits up to one second for the id | S [SDL: include/SDL_system.h:634-658, src/video/wayland/SDL_waylandwebos_foreign.c:92-216]. SDL is not needed: the protocol works alone (S [KODI-W]; S-report [JWN-N]) |
+| SDL 3, the fork's `webOS-3.4.x` line this package bundles: the same functions return `bool`, sit under `SDL_PLATFORM_WEBOS` (defined when `__WEBOS__` is, which the fork's CMake makes a public definition of its target when built with `-DWEBOS=ON`), and take `SDL_WEBOS_EXPORTED_WINDOW_TYPE_VIDEO` for a video plane. `Create` exports the surface of the current GL window and keeps the id in a 32-byte buffer until `Destroy`. `SetExportedWindow` with a null `src` or `dst` sends the whole window's rectangle, since "wl_webos_exported takes no null regions" | S [SDL3: include/SDL3/SDL_system.h:834-961, src/video/wayland/SDL_waylandwebos_foreign.c:34-43, 92-106, 155-259, CMakeLists.txt:2223] |
 | Order used by the apps that ship: create the window, set its rectangle, then load with the id | S-report [NUV:2797-2807] |
 | LG's plugin hides the hole while the rectangle moves and sets the exported rectangle again 100 ms after the last move | S [FL: lib/video_player_webos.dart:72, 100-135]. I: the plane does not follow the UI frame by frame |
 | Graphics are 1920x1080 on UHD models and video is 3840x2160; `"resolution"` in `appinfo.json` can select 1280x720 | D [LG-RES]. Some models grant a 3840x2160 graphics surface (S-report [NUV-E:4-9]) |
@@ -264,7 +271,8 @@ uMediaserver.cpp:810-973, src/media_client/uMediaClient.cpp:202-684].
 |------|---------------|-------|
 | Prepared | `{"loadCompleted":{"mediaId":M}}`. The web engine and LG's plugin call `play` from here | S [UMS: uMediaserver.cpp:830], [CHR:479-533] |
 | Duration, seekable, track lists | `sourceInfo`: `container`, `seekable`, `programInfo[0].duration` (ms), `numAudioTracks`, `audioTrackInfo[]` (`language`, `codec`, `channels`, `sampleRate`, `bitRate`), `videoTrackInfo[]` (`codec`, `width`, `height`, `frameRate`, `bitRate`), `numSubtitleTracks`, `subtitleType`, `subtitleTrackInfo[]` (`language`) | S [UMS: uMediaserver.cpp:845-898], [FL-P:551-577] |
-| `sourceInfo` gaps | The web engine treats HLS, Smooth Streaming and Widevine source info as insufficient; a set can leave out an audio track it cannot decode | S [CHR:1070-1076]; S-report [NUV:1988] |
+| `sourceInfo` shape | On OSE the duration and the track lists are inside `programInfo[0]`, beside `numVideoTracks`; `container`, `seekable` and `mediaId` are at the top. LG's plugin reads them from `programInfo[0]` too | S [UMS: uMediaserver.cpp:845-898], [FL-P:551-577] |
+| `sourceInfo` gaps | The web engine treats HLS, Smooth Streaming and Widevine source info as insufficient; a set can leave out an audio track it cannot decode. The pipeline sends "a placeholder sourceInfo whose programInfo[0] has all-zero duration/track counts before the real event", and `videoInfo` "can land before sourceInfo" | S [CHR:1070-1076], [FL-P:562-566, 589-593]; S-report [NUV:1988] |
 | Video size, HDR | `videoInfo`: `width`, `height`, `frameRate`, `bitRate`, `hdrType`, `SEI`, `VUI` | S [UMS: uMediaserver.cpp:911-949], [FL-P:578-599]. U whether it repeats on a rendition change |
 | Position | `{"currentTime":{"currentTime":<ms>,"mediaId":M}}`. OSE's pipeline sends it on a 200 ms timer; "about every 200 ms" on a C9 | S [UMS: uMediaserver.cpp:834], [GMP: src/player/UriPlayer.cpp:32,79]; S-report [NUV:1003-1004] |
 | Position, polled | `NDL_MediaGetCurrentPosition()`; `StarfishMediaAPIs::getCurrentPlaytime()` | S [FL-A:470], [UL: StarfishMediaAPIs.h:47] |
@@ -324,8 +332,17 @@ in and JSON events out: an in-process fake behind the same interface answers
 pictures need GStreamer in the VM: OSE's URI pipeline is a `playbin` whose
 state changes, position timer and `GST_MESSAGE_BUFFERING` map onto those
 events (S [GMP: src/player/UriPlayer.cpp:340-476, 552]), with frames pulled
-from an `appsink` into a texture drawn in the view's rectangle. All I; none of
-it is built.
+from an `appsink` into a texture drawn in the view's rectangle. All I.
+
+What is built is simpler: the host's player talks to a backend interface, and
+where no Luna bus answers the backend is `SimulatedPlayer`, a clock that plays
+a made-up stream (a minute of 1080p, or what a `#sim:` fragment of the URI
+asks for) and reports loading, position every 200 ms, buffering around a
+seek, the end and injected errors. Its plane is a test picture composited
+under the scene with `SkBlendMode::kDstOver`, so it shows only where the app
+left its pixels transparent, as the TV's plane does. A fake `com.webos.media`
+exists in the tests alone, where it replays the JSON of section 4 to
+`LunaMediaPlayer`. Nothing decodes a picture.
 
 ## Open questions
 
@@ -406,7 +423,8 @@ in "no" and an app cannot carry its token in the URL or a cookie.
 
 ### What the host's player calls become
 
-The Tizen player's calls are in `runtime/host/expo/modules/video/` [RNW].
+The Tizen player's calls are in react-native-tizen's
+`runtime/host/expo/modules/video/`, which [RNW] was ported from.
 
 | Tizen call | webOS |
 |------------|-------|
@@ -421,10 +439,48 @@ The Tizen player's calls are in `runtime/host/expo/modules/video/` [RNW].
 | completed, error, interrupted callbacks | `endOfStream`, `error`; the interrupt has no known event |
 | `player_get_video_size`, `_video_stream_info`, `_codec_info`, video stream changed | `videoInfo`, `sourceInfo.videoTrackInfo` |
 | `player_get_track_count`, `_track_language_code`, `_current_track`, `player_select_track` | `sourceInfo` track lists, `selectTrack`, `trackSelected` |
-| `player_set_subtitle_updated_cb` and the host's `SubtitleOverlay` | `setSubtitleEnable`: the TV draws. The overlay stays only if cue text can be had |
+| `player_set_subtitle_updated_cb` and the host's `SubtitleOverlay` | `setSubtitleEnable`: the TV draws. The overlay is gone; a `subtitleData` event, if a TV sends one, is logged as an open question |
 | `player_set_streaming_user_agent`, `_cookie` | `httpHeader.userAgent`, `.cookies`, plus `referer` |
 | `player_set_playback_rate`, `_volume`, `_mute`, `_looping` | `setPlayRate`; `setVolume`, mute as volume 0; `seek` to 0 and `play` on `endOfStream` |
 | `player_set_streaming_buffering_time`, `_max_adaptive_variant_limit` | `bufferControl` and `adaptiveStreaming.maxWidth`, `maxHeight`, both at load |
+
+### What is built
+
+In `runtime/host/expo/modules/video/` [RNW]. None of it has run on a TV.
+
+| Part | File | Does |
+|------|------|------|
+| Backend interface | `PlayerBackend.h` | load, unload, play, pause, seek, rate, volume, track, foreground; reports through `PlayerBackendListener` |
+| TV backend | `LunaMediaPlayer*.cpp`, `LunaMediaEvents.*`, `LunaMediaUnload.*` | the sequence above over a `LunaConnection`: `load`, `notifyForeground`, `subscribe`, then the events. A load waits for the `unloadCompleted` of the media before it, or 1.5 s |
+| Bus | `platform/LunaClient.*`, `PlayerBackends.cpp` | registers `com.webos.media.client.<APPID>.<pid>` through luna-service2 on a thread of its own, once per process, never unregistered; falls back to the app's own `libhelpers` connection |
+| Plane | `ExportedWindowPlane.*` | one exported window per player, made at its first load with the whole window as its rectangle, then placed at the view's rectangle on screen; the source is the `contentFit` crop in frame pixels once `videoInfo` or `sourceInfo` gave the size |
+| Hole | `VideoView.*`, `VideoWindow.*` | the view clears its box with `SkBlendMode::kClear`, and the scene is cleared to transparent while a view shows a player. Fullscreen clears the whole window above every view |
+| Player | `MediaPlayer*.cpp` | what a pipeline does not do: one seek in flight, play held until ready, looping by `seek` to 0 and `play` at `endOfStream`, progress ticks, a pause the pipeline makes by itself taken over |
+| Open questions | `PipelineQuestions.*` | every guess below, in one file |
+
+The package still has to write `"transparent": true` into `appinfo.json`
+(section 2); without it the hole shows black.
+
+What the code guesses, each logged at debug level as `[video n] open
+question: ...` when playback meets it:
+
+| Guess | Open question |
+|-------|---------------|
+| The bus name carries the app id and the process id; a refusal falls back to the app's own connection, which the TV may deny at `load` | 1 |
+| `mediaTransportType: "HLS"` beside `option` when the URI contains `m3u8`, nothing for a file | 2 |
+| `subscribe` carries `"subscribe": true` | none: OSE ignores it, plx-native sends it |
+| The destination rectangle is the view's box in window pixels; the plane moves at every drawn frame in which the box moved | 3, 4 |
+| `playing` and `paused` are waited for 1.5 s, `seekDone` 3 s, `trackSelected` 1 s after the call was accepted, then assumed | 5 |
+| `pause` at `endOfStream`, so that a replay is `seek` then `play` from a paused pipeline | 5 |
+| `setPlayRate` with `audioOutput: true` at every rate | 7 |
+| Subtitles are the pipeline's: `selectTrack` then `setSubtitleEnable` | 8 |
+| An `unloadCompleted` nobody asked for means the TV took the pipeline: the player fails with it | 9 |
+| Headers other than User-Agent, Cookie and Referer are dropped with a warning | 10 |
+| `bufferRange.endTime` is seconds | section 4 |
+| `sourceInfo` after `loadCompleted` reports the media a second time; `loadCompleted` without one makes the player ready with no duration | section 4 |
+| Errors 101, 210, 700, 701, 61441 and 61442 leave the media playing; every other one ends it and unloads | section 4 |
+| `minBufferForPlayback` is not sent: `bufferControl` counts bytes | section 1.3 |
+| Hiding the plane is the view no longer clearing its hole; no rectangle is sent for it | section 2 |
 
 ### Risks
 
@@ -468,4 +524,7 @@ The Tizen player's calls are in `runtime/host/expo/modules/video/` [RNW].
 | PLX, PLX-U, PLX-P, PLX-D, PLX-C | [GLinnik21/plx-native](https://github.com/GLinnik21/plx-native/tree/f8f6dbb75c783de7c790608653e212a14c2ec66c) at `f8f6dbb`: `docs/uri-mode.md`, `rust-modules/play-uri/src/uri_protocol.rs`, `docs/distribution.md`, `docs/compatibility.md`. Its author's set is an LG 49SM9000PLA on 4.5; other sets are its users' reports |
 | NUV, NUV-H, NUV-E, NUV-R | [iqui27/nuvio-native-legacy](https://github.com/iqui27/nuvio-native-legacy/tree/7cac4f25d11931b56c41cfefb952e4e183c45c1a) at `7cac4f2`: `src/video.c`, `src/video.h`, `src/video_escala.h`, `README.md`. Its author's set is an LG C9 on 4.10; other sets are its users' reports |
 | JWN-N, JWN-M | [HookedBehemoth/jellyfin-webos-native](https://github.com/HookedBehemoth/jellyfin-webos-native/tree/c64e6ba0db) at `c64e6ba`: `docs/ndl.md`, `docs/multimedia.md` |
-| RNW | this repository: `runtime/host/expo/modules/video/` (the Tizen player this port replaces), `docs/reference/tizen-media-playback.md` |
+| SDL3 | [webosbrew/SDL-webOS](https://github.com/webosbrew/SDL-webOS/tree/release-3.4.16-webos.5) at tag `release-3.4.16-webos.5`, branch `webOS-3.4.x` |
+| LS2H | [webosose/luna-service2](https://github.com/webosose/luna-service2/blob/5bc38aa348b35f5799f1bf9ed7c6cb513bc5f702/include/public/luna-service2/lunaservice.h) at `5bc38aa`, `include/public/luna-service2/lunaservice.h`; the openlgtv toolchain's sysroot ships the same declarations |
+| GLIBH | `glib-2.0/glib/gmain.h` in the sysroot of the openlgtv toolchain, release 2026.08 |
+| RNW | this repository: `runtime/host/expo/modules/video/`. The Tizen player it was ported from is react-native-tizen's directory of the same name |

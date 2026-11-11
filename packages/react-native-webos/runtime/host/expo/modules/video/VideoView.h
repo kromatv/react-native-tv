@@ -4,22 +4,20 @@
 
 #include "../../views/ExpoView.h"
 
-#include <Ecore.h>
-
 #include <memory>
 
 namespace rnwebos::expo {
 
-class SubtitleOverlay;
 class VideoPlayer;
 
-/// expo-video's `VideoView`. The video is on the overlay plane under the
-/// window, so the view only places it: its box in window pixels becomes the
-/// player's ROI, fitted by `contentFit`, and a transparent hole over the box
-/// lets the plane show. Main thread only.
+/// expo-video's `VideoView`. The video is on a hardware plane under the
+/// app's graphics, so the view only places it and lets it show: its box on
+/// screen becomes the plane's destination, fitted by `contentFit`, and it
+/// clears its box to transparent, the hole the plane shows through
+/// (docs/reference/webos-media-playback.md, section 2). Main thread only.
 class VideoView final : public ExpoView {
  public:
-  VideoView(Evas *evas, facebook::react::Tag tag);
+  VideoView(Scene &scene, facebook::react::Tag tag);
   ~VideoView() override;
 
   void setPlayer(const folly::dynamic &value);
@@ -32,24 +30,26 @@ class VideoView final : public ExpoView {
   void stopPictureInPicture();
 
  protected:
-  void layoutMembers() override;
+  void drawContent(SkCanvas &canvas, float alpha) override;
+  int contentLayers() const override;
+  void layoutContent() override;
+  void didMount() override;
+  void willUnmount() override;
 
  private:
+  class FullscreenHole;
+
   void present();
-  void showHoles(bool shown, bool mapped);
+  void withdraw();
   void detachPlayer();
   void setShown(bool shown);
-  void followScreenRect(bool follow);
   PixelRect windowRect() const;
 
-  Evas_Object *const hole_;
-  Evas_Object *topHole_{nullptr};
-  std::unique_ptr<SubtitleOverlay> subtitle_;
+  std::unique_ptr<FullscreenHole> fullscreenHole_;
   std::shared_ptr<VideoPlayer> player_;
   ContentFit fit_{ContentFit::Contain};
   bool fullscreen_{false};
   bool shown_{false};
-  Ecore_Animator *screenTracker_{nullptr};
   PixelRect screen_;
   std::shared_ptr<VideoView *> alive_;
 };

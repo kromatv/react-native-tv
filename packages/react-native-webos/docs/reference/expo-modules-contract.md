@@ -348,7 +348,7 @@ so pin the `@expo/config-plugins` range they were tested on.
 | P3 | `reloadAppAsync` | Rejects with `ERR_UNAVAILABLE` | A host reload path |
 | P3 | Streaming fetch | `HttpEngine` hands over the body whole, so `expo/fetch` streams one chunk and `start()` settles at the end of the transfer | Incremental callbacks in the engine |
 | P4 | Linking third-party webOS modules | Section 5 | Autolinking search, CMake, generated provider |
-| Done | `ExpoDevice`, `ExpoFontLoader`, `ExpoKeepAwake`, `ExpoImage`, `FileSystem`, `ExponentConstants`, `ExpoFetchModule`, `ExpoBlur` views, `ExpoVideo` (`webos-media-playback.md` section 7); shared objects, classes with accessors, async functions, events, Expo views and their methods | | `runtime/host/expo/` |
+| Done | `ExpoDevice`, `ExpoFontLoader`, `ExpoKeepAwake`, `ExpoImage`, `FileSystem`, `ExponentConstants`, `ExpoFetchModule`, `ExpoBlur` views, `ExpoVideo` (`webos-media-playback.md`, "What is built"); shared objects, classes with accessors, async functions, events, Expo views and their methods | | `runtime/host/expo/` |
 
 ### Bugs in the current Expo runtime
 

@@ -1,11 +1,9 @@
 #pragma once
 
+#include "LunaConnection.h"
 #include "LunaTransport.h"
 
-#include <folly/dynamic.h>
-
 #include <chrono>
-#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -18,17 +16,8 @@ namespace rnwebos {
 /// connection and thread (docs/reference/webos-tv-platform.md, section 4): the
 /// library is opened at run time, and where it is missing, as in the
 /// simulator, the bus is unavailable and every call says so. Any thread.
-class LunaBus final {
+class LunaBus final : public LunaConnection {
  public:
-  /// Called on the main thread with one reply, parsed.
-  using Reply = std::function<void(const folly::dynamic &reply)>;
-
-  /// A subscription, which ends when this is destroyed.
-  class Subscription {
-   public:
-    virtual ~Subscription() = default;
-  };
-
   /// The reply of one call, which may still be on its way.
   class PendingReply {
    public:
@@ -41,16 +30,14 @@ class LunaBus final {
 
   /// A bus over another transport than the TV's, for tests.
   explicit LunaBus(std::unique_ptr<LunaTransport> transport);
-  ~LunaBus();
+  ~LunaBus() override;
 
   LunaBus(const LunaBus &) = delete;
   LunaBus &operator=(const LunaBus &) = delete;
 
-  bool isAvailable() const;
+  bool isAvailable() const override;
 
-  /// Sends one call. `onReply` gets its one reply; without it the reply is
-  /// dropped. False when the bus is unavailable or refuses the call.
-  bool call(const std::string &uri, const folly::dynamic &payload, Reply onReply = {});
+  bool call(const std::string &uri, const folly::dynamic &payload, Reply onReply = {}) override;
 
   /// Sends one call and returns at once: the reply is kept for whoever waits
   /// for it, on any thread. Null when the bus is unavailable or refuses the call.
@@ -64,10 +51,8 @@ class LunaBus final {
       const folly::dynamic &payload,
       std::chrono::milliseconds timeout = std::chrono::milliseconds(2000));
 
-  /// Sends a call that is answered more than once (`"subscribe": true` in
-  /// `payload` is the caller's to set). `onReply` gets every reply until the
-  /// subscription is destroyed. Null when the bus is unavailable or refuses.
-  std::unique_ptr<Subscription> subscribe(const std::string &uri, const folly::dynamic &payload, Reply onReply);
+  std::unique_ptr<Subscription> subscribe(
+      const std::string &uri, const folly::dynamic &payload, Reply onReply) override;
 
  private:
   const std::unique_ptr<LunaTransport> transport_;

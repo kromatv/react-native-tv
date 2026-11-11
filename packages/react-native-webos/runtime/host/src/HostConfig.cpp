@@ -70,7 +70,6 @@ HostConfig loadHostConfig(const std::string &resourceDir) {
       .logEndpoint = optionalLogEndpoint(config),
       .development = optionalBool(config, "development"),
       .resourceDir = resourceDir,
-      .backgroundMedia = optionalBool(config, "backgroundMedia"),
   };
 }
 

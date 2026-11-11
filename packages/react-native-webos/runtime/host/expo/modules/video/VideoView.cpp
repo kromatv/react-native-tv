@@ -1,6 +1,5 @@
 #include "VideoView.h"
 
-#include "SubtitleOverlay.h"
 #include "VideoPlayer.h"
 #include "VideoWindow.h"
 
@@ -9,6 +8,8 @@
 
 #include "logging/Log.h"
 
+#include "include/core/SkPaint.h"
+
 #include <format>
 #include <stdexcept>
 
@@ -16,40 +17,40 @@ namespace rnwebos::expo {
 
 namespace {
 
-constexpr int kFullscreenLayer = 2000;
+constexpr int kFullscreenOrder = Scene::kDialogOrder - 1;
 
 class UnsupportedFeatureError : public std::runtime_error {
  public:
   using std::runtime_error::runtime_error;
 };
 
-Evas_Object *transparentHole(Evas *evas) {
-  auto *hole = evas_object_rectangle_add(evas);
-  evas_object_color_set(hole, 0, 0, 0, 0);
-  evas_object_render_op_set(hole, EVAS_RENDER_COPY);
-  return hole;
-}
-
 } // namespace
 
-VideoView::VideoView(Evas *evas, facebook::react::Tag tag)
-    : ExpoView(evas, tag),
-      hole_(transparentHole(evas)),
-      subtitle_(std::make_unique<SubtitleOverlay>(evas)),
-      alive_(std::make_shared<VideoView *>(this)) {
-  addMember(hole_, true);
-  evas_object_hide(hole_);
-  addMember(subtitle_->object(), false);
-  subtitle_->clear();
-}
+/// Clears the whole window above every view while the video is fullscreen.
+class VideoView::FullscreenHole final : public SceneLayer {
+ public:
+  explicit FullscreenHole(Scene &scene) : scene_(scene) {
+    scene_.addLayer(*this, kFullscreenOrder);
+  }
+
+  ~FullscreenHole() override {
+    scene_.removeLayer(*this);
+  }
+
+  void draw(SkCanvas &canvas) override {
+    canvas.clear(SK_ColorTRANSPARENT);
+  }
+
+ private:
+  Scene &scene_;
+};
+
+VideoView::VideoView(Scene &scene, facebook::react::Tag tag)
+    : ExpoView(scene, tag), alive_(std::make_shared<VideoView *>(this)) {}
 
 VideoView::~VideoView() {
-  followScreenRect(false);
   alive_.reset();
   detachPlayer();
-  subtitle_.reset();
-  if (topHole_ != nullptr) evas_object_del(topHole_);
-  evas_object_del(hole_);
 }
 
 void VideoView::setPlayer(const folly::dynamic &value) {
@@ -85,34 +86,65 @@ void VideoView::startPictureInPicture() {
   throw UnsupportedFeatureError("Picture in picture is not supported on webOS");
 }
 
-void VideoView::stopPictureInPicture() {}
+void VideoView::stopPictureInPicture() {
+  // Never started: webOS has no picture in picture.
+}
 
-void VideoView::layoutMembers() {
-  ExpoView::layoutMembers();
+void VideoView::layoutContent() {
   present();
 }
 
+void VideoView::didMount() {
+  present();
+}
+
+void VideoView::willUnmount() {
+  withdraw();
+}
+
+int VideoView::contentLayers() const {
+  return 1;
+}
+
+// An ancestor that scrolls or animates moves the view without telling it: the
+// plane is placed again in the first frame drawn after the box moved on screen.
+void VideoView::drawContent(SkCanvas &canvas, float) {
+  if (!shown_ || fullscreen_) return;
+  const auto size = pixelSize();
+  SkPaint hole;
+  hole.setBlendMode(SkBlendMode::kClear);
+  canvas.drawRect(SkRect::MakeWH(static_cast<float>(size.width), static_cast<float>(size.height)), hole);
+  if (screenRect() != screen_) present();
+}
+
 PixelRect VideoView::windowRect() const {
-  PixelRect window;
-  evas_output_size_get(evas(), &window.width, &window.height);
-  return window;
+  const auto size = scene().size();
+  return {.x = 0, .y = 0, .width = size.width, .height = size.height};
 }
 
 void VideoView::present() {
-  const auto &box = canvasRect();
-  setGeometry(hole_, box);
-  subtitle_->place(fullscreen_ ? windowRect() : box, pointScale());
-  const std::shared_ptr<WebOSPlayer> webos = player_ ? player_->webosPlayer() : nullptr;
-  const bool showing = webos != nullptr && webos->hasDisplay() && box.width > 0 && box.height > 0;
-  setShown(showing);
+  const auto media = player_ ? player_->mediaPlayer() : nullptr;
   screen_ = screenRect();
-  showHoles(showing, screen_ != box);
-  if (!webos) return;
+  const bool showing =
+      parent() != nullptr && media != nullptr && media->hasDisplay() && screen_.width > 0 && screen_.height > 0;
+  setShown(showing);
+  if (showing && fullscreen_) {
+    if (!fullscreenHole_) fullscreenHole_ = std::make_unique<FullscreenHole>(scene());
+  } else {
+    fullscreenHole_.reset();
+  }
+  invalidate();
+  if (!media) return;
+  if (!showing) {
+    media->withdraw(this);
+    return;
+  }
   const auto window = windowRect();
   const std::weak_ptr<VideoView *> alive = alive_;
-  webos->present(
+  media->present(
       this,
       Presentation{
+          .scene = &scene(),
           .view = fullscreen_ ? window : screen_,
           .window = window,
           .fit = fit_,
@@ -124,60 +156,24 @@ void VideoView::present() {
               [alive] {
                 if (auto view = alive.lock()) (*view)->present();
               },
-          .onSubtitle =
-              [alive](const std::string &text, unsigned long milliseconds) {
-                if (auto view = alive.lock()) (*view)->subtitle_->show(text, milliseconds);
-              },
       });
 }
 
-void VideoView::showHoles(bool shown, bool mapped) {
-  if (shown && !fullscreen_ && !mapped) {
-    evas_object_show(hole_);
-  } else {
-    evas_object_hide(hole_);
-  }
-  const bool onTop = shown && (fullscreen_ || mapped);
-  if (onTop && topHole_ == nullptr) topHole_ = transparentHole(evas());
-  if (topHole_ == nullptr) return;
-  if (!onTop) {
-    evas_object_hide(topHole_);
-    return;
-  }
-  evas_object_layer_set(topHole_, fullscreen_ ? kFullscreenLayer : 0);
-  setGeometry(topHole_, fullscreen_ ? windowRect() : screen_);
-  evas_object_raise(topHole_);
-  evas_object_show(topHole_);
+void VideoView::withdraw() {
+  if (player_ && player_->mediaPlayer()) player_->mediaPlayer()->withdraw(this);
+  fullscreenHole_.reset();
+  setShown(false);
 }
 
 void VideoView::detachPlayer() {
-  if (player_ && player_->webosPlayer()) player_->webosPlayer()->withdraw(this);
-  if (subtitle_) subtitle_->clear();
+  withdraw();
   player_.reset();
-  setShown(false);
 }
 
 void VideoView::setShown(bool shown) {
   if (shown == shown_) return;
   shown_ = shown;
-  followScreenRect(shown);
-  videoViewShown(shown);
-}
-
-void VideoView::followScreenRect(bool follow) {
-  if (!follow) {
-    if (screenTracker_ != nullptr) ecore_animator_del(screenTracker_);
-    screenTracker_ = nullptr;
-    return;
-  }
-  if (screenTracker_ != nullptr) return;
-  screenTracker_ = ecore_animator_add(
-      [](void *data) -> Eina_Bool {
-        auto *view = static_cast<VideoView *>(data);
-        if (view->screenRect() != view->screen_) view->present();
-        return ECORE_CALLBACK_RENEW;
-      },
-      this);
+  videoViewShown(scene(), shown);
 }
 
 RN_WEBOS_EXPO_VIEW(ViewDefinition<VideoView>("ExpoVideo", "VideoView")

@@ -26,8 +26,6 @@ struct HostConfig {
   std::optional<LogEndpoint> logEndpoint;
   bool development;
   std::string resourceDir;
-  /// expo-video's `supportsBackgroundPlayback`: players may keep playing while the app is hidden.
-  bool backgroundMedia;
 };
 
 /// `react-native-webos.json` is missing, too large, or has a bad field, which the message names.

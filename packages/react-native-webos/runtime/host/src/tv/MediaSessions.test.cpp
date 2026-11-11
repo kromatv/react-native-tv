@@ -30,8 +30,15 @@ class FakeSession final : public MediaSession {
   bool setSubtitlesEnabled(bool) override {
     return false;
   }
+  void appForegroundChanged(bool foreground) override {
+    foreground_ = foreground;
+  }
+  bool isForeground() const {
+    return foreground_;
+  }
 
  private:
+  bool foreground_{true};
   bool playing_;
   bool staysActive_;
 };
@@ -86,6 +93,23 @@ TEST_CASE("pauseMediaSessionsForBackground pauses the only player when it may no
   pauseMediaSessionsForBackground();
 
   CHECK_FALSE(player->isPlaying());
+}
+
+TEST_CASE("every session hears that the app went to the background, and that it came back") {
+  const auto playing = std::make_shared<FakeSession>(true, true);
+  const auto idle = std::make_shared<FakeSession>(false, false);
+  addMediaSession(playing);
+  addMediaSession(idle);
+
+  pauseMediaSessionsForBackground();
+  CHECK_FALSE(playing->isForeground());
+  CHECK_FALSE(idle->isForeground());
+
+  resumeMediaSessionsForForeground();
+  CHECK(playing->isForeground());
+  CHECK(idle->isForeground());
+  CHECK(playing->isPlaying());
+  CHECK_FALSE(idle->isPlaying());
 }
 
 } // namespace rnwebos

@@ -314,7 +314,7 @@ export function Player({ uri }: { uri: string }) {
 The TV draws video on its own plane, under the UI, so `rn-webos screenshot`
 shows the video's area transparent. What expo-video does on webOS, call by
 call, is in
-[the media reference](docs/reference/webos-media-playback.md#7-what-react-native-webos-implements).
+[the media reference](docs/reference/webos-media-playback.md#what-is-built).
 
 ### Voice
 
