@@ -91,6 +91,10 @@ if(RN_WEBOS_TESTS)
   file(GLOB _svg_node_sources CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/svg/*.cpp")
   list(FILTER _svg_node_sources EXCLUDE REGEX "(Views?|ComponentDescriptors|\\.test)\\.cpp$")
   target_sources(rn-webos-host-tests PRIVATE ${_svg_node_sources})
+  if(RN_WEBOS_COVERAGE)
+    set_source_files_properties(${_svg_node_sources} PROPERTIES
+      COMPILE_OPTIONS "-fprofile-instr-generate;-fcoverage-mapping")
+  endif()
   # The full ICU data file ICU's sources ship, for the host's ICU setup to load
   # and for every test that lays out text (src/text/TextEngineData.test.cpp).
   target_compile_definitions(rn-webos-host-tests PRIVATE
