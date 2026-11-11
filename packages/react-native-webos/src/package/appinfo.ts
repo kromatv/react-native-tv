@@ -23,6 +23,17 @@ export const appInfoSchema = z.looseObject({
   main: z.string().min(1),
 });
 
+/** What of an app, beyond its config, decides fields of its `appinfo.json`. */
+export interface AppInfoTraits {
+  readonly hasSplash: boolean;
+  /**
+   * The app can show a video. The TV plays one on a plane under the app's
+   * window and shows it only through a window declared `transparent`
+   * (docs/reference/webos-media-playback.md, section 2).
+   */
+  readonly showsVideo: boolean;
+}
+
 /**
  * The `appinfo.json` of an app: a native executable that registers with the
  * app manager through `registerApp`, lifecycle interface 2, and asks to be
@@ -31,7 +42,7 @@ export const appInfoSchema = z.looseObject({
  */
 export function appInfo(
   config: WebOSAppConfig,
-  hasSplash: boolean,
+  { hasSplash, showsVideo }: AppInfoTraits,
 ): Readonly<Record<string, unknown>> {
   return {
     id: config.packageId,
@@ -44,6 +55,7 @@ export function appInfo(
     largeIcon: LARGE_ICON_FILE,
     ...(config.iconColor === undefined ? {} : { iconColor: config.iconColor }),
     ...(hasSplash ? { splashBackground: SPLASH_FILE } : {}),
+    ...(showsVideo ? { transparent: true } : {}),
     nativeLifeCycleInterfaceVersion: 2,
     handlesRelaunch: true,
     requiredACG: config.permissions,

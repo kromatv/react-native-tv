@@ -458,8 +458,9 @@ In `runtime/host/expo/modules/video/` [RNW]. None of it has run on a TV.
 | Player | `MediaPlayer*.cpp` | what a pipeline does not do: one seek in flight, play held until ready, looping by `seek` to 0 and `play` at `endOfStream`, progress ticks, a pause the pipeline makes by itself taken over |
 | Open questions | `PipelineQuestions.*` | every guess below, in one file |
 
-The package still has to write `"transparent": true` into `appinfo.json`
-(section 2); without it the hole shows black.
+`rn-webos` writes `"transparent": true` into the `appinfo.json` of an app that
+depends on `expo-video` (`src/package/stage-app.ts`, section 2); without it
+the hole shows black.
 
 What the code guesses, each logged at debug level as `[video n] open
 question: ...` when playback meets it:

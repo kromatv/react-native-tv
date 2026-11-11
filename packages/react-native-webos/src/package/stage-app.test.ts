@@ -129,6 +129,18 @@ describe('stageAppDir', () => {
     expect(existsSync(join(dir, 'splash.png'))).toBe(true);
   });
 
+  it('declares the window transparent for an app that depends on expo-video, and for no other', async () => {
+    const plain = await stageAppDir(inputs());
+    expect(json(join(plain, 'appinfo.json'))).not.toHaveProperty('transparent');
+
+    const video = join(root, 'node_modules', 'expo-video');
+    mkdirSync(video, { recursive: true });
+    writeFileSync(join(video, 'package.json'), '{"name":"expo-video","version":"58.0.12"}');
+    const withVideo = await stageAppDir(inputs());
+
+    expect(json(join(withVideo, 'appinfo.json'))).toMatchObject({ transparent: true });
+  });
+
   it('writes the runtime config of a release build, and of a development build with its log endpoint', async () => {
     const release = await stageAppDir(inputs());
     expect(json(join(release, 'res', 'react-native-webos.json'))).toEqual({

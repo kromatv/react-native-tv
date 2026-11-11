@@ -1,5 +1,6 @@
 import { chmod, copyFile, cp, mkdir, rm, writeFile } from 'node:fs/promises';
 import { basename, join } from 'node:path';
+import { findPackage } from '../app/app-packages.ts';
 import type { AppProject } from '../app/app-project.ts';
 import { claimWebOSDir } from '../app/webos-dir.ts';
 import { BYTECODE_FILE, type AppBundle } from '../bundle/bundle-app.ts';
@@ -22,6 +23,8 @@ export const CA_BUNDLE_FILE = 'cacert.pem';
 // An app does not own its install directory on a TV, so LG's Flutter tool ships this
 // empty world-writable one for its data (docs/reference/webos-tv-platform.md, section 3.1).
 const APP_DATA_DIR = 'appdata';
+
+const VIDEO_PACKAGE = 'expo-video';
 
 interface AppDirInputs {
   readonly app: AppProject;
@@ -75,7 +78,10 @@ export async function stageAppDir(inputs: AppDirInputs): Promise<string> {
   await copyFile(inputs.runtime, executable);
   await chmod(executable, 0o755);
   await writeResources(inputs, join(dir, RESOURCE_DIR));
-  const info = appInfo(app.config, hasSplash);
+  const info = appInfo(app.config, {
+    hasSplash,
+    showsVideo: findPackage(app.root, VIDEO_PACKAGE) !== null,
+  });
   await writeFile(join(dir, APPINFO_FILE), `${JSON.stringify(info, null, 2)}\n`);
   return dir;
 }
