@@ -51,6 +51,8 @@ on a TV. Hermes is `hermes-v260318099.0.4`, ICU 78.3, FormatJS as pinned in
 | Samsung builds ICU without symbol renaming: `u_strToUpper` and `icu::TimeZone::createDefault()` carry no version, so the two releases differ by soname and ABI, not by symbol name. | O | `llvm-nm -D` on both rootstraps' `libicuuc.so` and `libicui18n.so`, 2026-11-03 |
 | Loading whichever `libicuuc.so.*` a TV has would serve a C caller across both years, but not Hermes, whose C++ calls ICU requires to be recompiled per release. | I | the two rows above and [icu-design] |
 | Which `LANG` and `TZ` a TV gives an app process, and whether `/etc/localtime` names the zone, is not documented. | I | not found in Samsung's or webOS's docs, 2026-11-03 |
+| The language of the TV's menus is `settings.localeInfo.locales.UI` of the settings service, a BCP 47 tag such as `en-GB`; the same object has `FMT`, the locale of formats, and a `timezone` that LG's example leaves empty. | D | `webos-tv-platform.md`, section 4.3 |
+| React Native's `I18nManager` reads the locale once, when its module loads, and has no listener for a change of it. | S | `Libraries/ReactNative/I18nManager.js:15-29` of React Native 0.88 |
 | flutter-webos ships ICU data in the package's `res/`. | D | [ft-package](https://github.com/flutter-webos/flutter-webos/blob/master/lib/build_targets/package.dart) |
 
 ## What this means
@@ -63,8 +65,11 @@ on a TV. Hermes is `hermes-v260318099.0.4`, ICU 78.3, FormatJS as pinned in
   Hermes' ICU resolves it, becomes their default.
 - A trimmed data file must keep the `curr` tree with the main, `coll` and `zone`
   trees of each language, or Hermes crashes on the first date it formats.
-- Until a TV's `LANG` and time zone are verified, `new Intl.DateTimeFormat()`
-  without a locale and every local time may differ between TVs.
+- The host asks the TV for its menu language at start and makes it ICU's
+  default locale before JavaScript runs (`useDeviceLocale`), falling back to
+  the process's `LANG` when the TV does not answer in time. It does not follow
+  a change of language while the app runs: React Native could not be told.
+- Until a TV's time zone is verified, every local time may differ between TVs.
 
 [icu-data]: https://unicode-org.github.io/icu/userguide/icu_data/
 [icu-design]: https://unicode-org.github.io/icu/userguide/icu/design.html
