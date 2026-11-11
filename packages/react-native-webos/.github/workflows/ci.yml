@@ -139,6 +139,16 @@ jobs:
           restore-keys: |
             native-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('runtime/dependencies.json', 'bun.lock') }}-
             native-${{ runner.os }}-${{ runner.arch }}-
+      # A pull request keeps its own compiled objects between pushes: main's
+      # cache alone leaves every push to compile again whatever its changes touch.
+      - id: pull-request-ccache
+        if: github.event_name == 'pull_request'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ccache
+          key: ccache-pull-${{ github.event.pull_request.number }}-${{ github.sha }}
+          restore-keys: |
+            ccache-pull-${{ github.event.pull_request.number }}-
       - run: ccache --zero-stats
       - name: Compile the runtime
         run: bun scripts/compile-simulator-runtime.ts example
@@ -160,6 +170,11 @@ jobs:
             ~/rn-webos-simulator/build/hermes-host
             ~/rn-webos-simulator/build/skia
           key: ${{ steps.native-cache.outputs.cache-primary-key }}
+      - if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ccache
+          key: ${{ steps.pull-request-ccache.outputs.cache-primary-key }}
 
   sonar:
     name: SonarCloud
