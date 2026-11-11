@@ -52,4 +52,16 @@ TextMeasurement TextLayoutManager::measurePreparedLayout(
   return measurement;
 }
 
+LinesMeasurements TextLayoutManager::measureLines(
+    const AttributedStringBox &attributedStringBox,
+    const ParagraphAttributes &paragraphAttributes,
+    const Size &size) const {
+  const auto &attributedString = attributedStringBox.getValue();
+  return lineMeasureCache_.get(
+      {.attributedString = attributedString, .paragraphAttributes = paragraphAttributes, .size = size},
+      [this, &attributedString, &paragraphAttributes, &size] {
+        return measurer_->measureLines(attributedString, paragraphAttributes, size);
+      });
+}
+
 } // namespace facebook::react

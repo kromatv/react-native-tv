@@ -49,11 +49,19 @@ class TextLayoutManager {
       const TextLayoutContext &layoutContext,
       const LayoutConstraints &layoutConstraints) const;
 
+  /// Declaring this is what makes `onTextLayout` and baseline alignment work
+  /// (same section).
+  LinesMeasurements measureLines(
+      const AttributedStringBox &attributedStringBox,
+      const ParagraphAttributes &paragraphAttributes,
+      const Size &size) const;
+
  private:
   static constexpr int kPreparedTextCacheSize = 256;
 
   std::shared_ptr<const ContextContainer> contextContainer_;
   TextMeasureCache textMeasureCache_{kSimpleThreadSafeCacheSizeCap};
+  LineMeasureCache lineMeasureCache_{kSimpleThreadSafeCacheSizeCap};
   SimpleThreadSafeCache<PreparedTextCacheKey, PreparedTextLayout, kPreparedTextCacheSize> preparedTextCache_;
   std::shared_ptr<const TextMeasurer> measurer_;
 };

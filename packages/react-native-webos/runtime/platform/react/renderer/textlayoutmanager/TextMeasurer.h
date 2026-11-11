@@ -48,6 +48,16 @@ class TextMeasurer {
     return std::make_shared<const PreparedText>(
         measure(attributedString, paragraphAttributes, layoutConstraints.maximumSize, pointScaleFactor));
   }
+
+  /// The lines of the paragraph laid out `size.width` points wide, for
+  /// `onTextLayout` and baseline alignment. React Native gives no scale here;
+  /// a measurer that knows no lines gives none, and the baseline is then 0.
+  virtual LinesMeasurements measureLines(
+      const AttributedString & /*attributedString*/,
+      const ParagraphAttributes & /*paragraphAttributes*/,
+      Size /*size*/) const {
+    return {};
+  }
 };
 
 } // namespace facebook::react

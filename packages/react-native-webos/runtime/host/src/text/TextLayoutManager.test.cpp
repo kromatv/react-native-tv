@@ -1,5 +1,6 @@
 #include <react/renderer/textlayoutmanager/TextLayoutManager.h>
 
+#include <react/renderer/textlayoutmanager/TextLayoutManagerExtended.h>
 #include <react/renderer/textlayoutmanager/TextMeasurer.h>
 
 #include <doctest/doctest.h>
@@ -25,7 +26,13 @@ class CountingMeasurer final : public TextMeasurer {
     return measurement;
   }
 
+  LinesMeasurements measureLines(const AttributedString &, const ParagraphAttributes &, Size size) const override {
+    ++lineCalls;
+    return {LineMeasurement("Hello", {.origin = {}, .size = {.width = size.width, .height = 24}}, 5, 14, 19, 10)};
+  }
+
   mutable int calls{0};
+  mutable int lineCalls{0};
   mutable Float maximumWidth{0};
   mutable Float scale{0};
 };
@@ -104,6 +111,24 @@ TEST_CASE("TextLayoutManager prepares a paragraph once for the same text, box an
   CHECK(measurement.size == Size{.width = 200, .height = 40});
   REQUIRE(measurement.attachments.size() == 1);
   CHECK(measurement.attachments[0].frame == kAttachmentFrame);
+}
+
+TEST_CASE("TextLayoutManager measures a paragraph's lines once for a size, for onTextLayout and the baseline") {
+  const auto measurer = std::make_shared<CountingMeasurer>();
+  const auto context = std::make_shared<ContextContainer>();
+  context->insert(TextMeasurer::contextKey, std::shared_ptr<const TextMeasurer>(measurer));
+  const TextLayoutManager manager(context);
+  const AttributedStringBox text(paragraphWithAttachment());
+
+  const auto lines = manager.measureLines(text, {}, {.width = 200, .height = 100});
+  manager.measureLines(text, {}, {.width = 200, .height = 100});
+  manager.measureLines(text, {}, {.width = 300, .height = 100});
+
+  CHECK(TextLayoutManagerExtended::supportsLineMeasurement());
+  CHECK(measurer->lineCalls == 2);
+  REQUIRE(lines.size() == 1);
+  CHECK(LineMeasurement::baseline(lines) == 19);
+  CHECK(lines[0].frame.size.width == 200);
 }
 
 TEST_CASE("TextLayoutManager prepares text again when only its color differs, which measures the same") {

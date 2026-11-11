@@ -1,5 +1,6 @@
 #include "ReactHost.h"
 
+#include "mounting/LogicalScreen.h"
 #include "platform/AppPaths.h"
 #include "platform/MainLoop.h"
 #include "views/ModalHostView.h"
@@ -19,7 +20,9 @@ void ReactHost::createWindow() {
   }
   scene_ = std::make_unique<Scene>(*window_);
   keyboardFocus_ = std::make_unique<KeyboardFocus>(*scene_);
-  textMeasurer_ = std::make_shared<SkiaTextMeasurer>();
+  textMeasurer_ = std::make_shared<SkiaTextMeasurer>(pointScaleFactor(
+      {.width = static_cast<facebook::react::Float>(size.width),
+       .height = static_cast<facebook::react::Float>(size.height)}));
   errorScreen_ = std::make_unique<ErrorScreen>(*scene_);
   alertDialog_ = std::make_unique<AlertDialog>(*scene_);
 }

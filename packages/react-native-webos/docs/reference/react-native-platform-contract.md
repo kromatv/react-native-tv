@@ -199,7 +199,11 @@ The host takes this path (`runtime/platform/react/renderer/`): its
 `TextLayoutManager` prepares through the host's measurer, its `ParagraphState`
 replaces the `cxx` one by coming first on `rrc_text`'s include path, and
 `HostFeatureFlags.cpp` turns the flag on. A paragraph is then shaped once, on
-the thread that lays the tree out, and its view plays what that recorded.
+the thread that lays the tree out, and its view plays what that recorded. It
+declares `measureLines` too (`host/text/ParagraphLines.cpp`): a line's
+`ascender` is its baseline's distance under its own top, so Yoga aligns on the
+first line's real baseline. `measureLines` gets no pixel scale from the core;
+the host's measurer keeps the surface's.
 
 ### Commands
 
