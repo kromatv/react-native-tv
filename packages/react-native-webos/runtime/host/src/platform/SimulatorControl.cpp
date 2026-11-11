@@ -51,9 +51,8 @@ void pressKey(Key key, std::chrono::milliseconds length) {
   MainLoop::get().addTimer(length, [key] { sendKey(key, false); });
 }
 
-// SDL owns the text of the events it makes; the text of this one has to
-// outlive its dispatch, which the loop does in its next turn before it runs
-// what was posted.
+// SDL frees the text of its own events only: this one's is kept until the
+// loop has dispatched it, which it does before it runs what was posted.
 void sendText(SDL_EventType type, std::string_view text) {
   const auto kept = std::make_shared<const std::string>(text);
   SDL_Event event{};

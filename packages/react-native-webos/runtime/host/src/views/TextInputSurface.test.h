@@ -13,6 +13,7 @@
 #include <react/renderer/runtimescheduler/RuntimeScheduler.h>
 #include <react/utils/ContextContainer.h>
 
+#include <algorithm>
 #include <functional>
 #include <memory>
 #include <string>
@@ -189,6 +190,23 @@ class TextInputSurface final {
        .runtimeScheduler = runtimeScheduler_,
        .runtimeExecutor = executor(),
        .bridgelessBindingsExecutor = executor()}};
+};
+
+using Events = std::vector<std::string>;
+
+inline bool has(const Events &events, const std::string &event) {
+  return std::ranges::find(events, event) != events.end();
+}
+
+/// A surface whose field has the keyboard, with the events of getting there dropped.
+class FocusedField final {
+ public:
+  explicit FocusedField(const std::string &props = "{}") : surface(props) {
+    surface.command("focus");
+    surface.takeEvents();
+  }
+
+  TextInputSurface surface;
 };
 
 } // namespace rnwebos::testing

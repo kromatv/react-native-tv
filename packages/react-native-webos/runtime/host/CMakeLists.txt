@@ -95,6 +95,8 @@ if(RN_WEBOS_TESTS)
   endif()
   # The full ICU data file ICU's sources ship, for the host's ICU setup to load.
   set_source_files_properties(
-    src/intl/IcuData.test.cpp src/views/TextInputLayer.test.cpp src/views/TextInputView.test.cpp PROPERTIES
+    src/intl/IcuData.test.cpp
+    src/views/TextInputKeys.test.cpp src/views/TextInputLayer.test.cpp src/views/TextInputView.test.cpp
+    PROPERTIES
     COMPILE_DEFINITIONS "RN_WEBOS_TEST_ICU_DATA_DIR=\"${icu_SOURCE_DIR}/source/data/in\"")
 endif()

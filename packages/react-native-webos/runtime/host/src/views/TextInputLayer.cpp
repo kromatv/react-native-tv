@@ -89,8 +89,8 @@ bool TextInputLayer::ensureLaidOut() {
       layout_ = layOutParagraph(text_, attributes_, std::numeric_limits<facebook::react::Float>::infinity(), scale_);
       auto &paragraph = *layout_.paragraph;
       const auto unbroken = std::max(paragraph.getMaxIntrinsicWidth(), paragraph.getLongestLine());
-      // One pixel more than the text needs: SkParagraph breaks a line that
-      // only just fits, and a single line would lose what follows the break.
+      // A pixel of room: a line laid out at exactly its own width could break
+      // on rounding, and a single line draws nothing after a break.
       textWidth_ = std::max(boxWidth, static_cast<int>(std::ceil(unbroken)) + 1);
       const std::lock_guard lock(textEngine().mutex);
       paragraph.layout(static_cast<float>(textWidth_));
