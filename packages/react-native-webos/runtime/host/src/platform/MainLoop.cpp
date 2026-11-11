@@ -46,7 +46,8 @@ struct MainLoop::State {
   EventHandler eventHandler;
   WaitObserver waitObserver;
   Clock::duration framePeriod{std::chrono::nanoseconds(16'666'667)};
-  Clock::time_point lastFrame{};
+  // The earliest the next frame may start.
+  Clock::time_point nextFrame{};
 
   void wake() {
     if (waking.exchange(true)) return;
@@ -91,9 +92,15 @@ struct MainLoop::State {
     }
   }
 
-  void runFrame() {
+  // Counted from a timer's late wake, every period stretched: 51 frames a second for 60.
+  // A frame over a period late was held by the display's swap, so the next starts at once.
+  void runPacedFrame() {
     const auto now = Clock::now();
-    lastFrame = now;
+    nextFrame = std::max(nextFrame + framePeriod, now);
+    runFrame(now);
+  }
+
+  void runFrame(Clock::time_point now) {
     frameRequested.store(false);
     std::vector<Id> ids;
     ids.reserve(frameCallbacks.size());
@@ -220,7 +227,7 @@ void MainLoop::iterate(bool frame) {
   state.pumpEvents(0);
   state.runPosted();
   state.runTimers();
-  if (frame) state.runFrame();
+  if (frame) state.runFrame(Clock::now());
 }
 
 int MainLoop::run() {
@@ -231,8 +238,7 @@ int MainLoop::run() {
     auto wakeAt = state.nextTimer();
     // A swap that waits for the display paces the frames by itself; where it
     // returns at once, as under Xvfb, the frame period does.
-    const auto frameAt = state.lastFrame + state.framePeriod;
-    if (state.wantsFrame()) wakeAt = std::min(wakeAt, frameAt);
+    if (state.wantsFrame()) wakeAt = std::min(wakeAt, state.nextFrame);
     bool hasPosted = false;
     {
       std::lock_guard lock(state.mutex);
@@ -242,7 +248,7 @@ int MainLoop::run() {
     state.pumpEvents(timeout);
     state.runPosted();
     state.runTimers();
-    if (state.wantsFrame() && Clock::now() >= state.lastFrame + state.framePeriod) state.runFrame();
+    if (state.wantsFrame() && Clock::now() >= state.nextFrame) state.runPacedFrame();
   }
   return state.exitCode.load();
 }

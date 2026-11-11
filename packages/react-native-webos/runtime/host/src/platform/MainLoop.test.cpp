@@ -6,6 +6,7 @@
 
 #include <SDL3/SDL.h>
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <thread>
@@ -171,6 +172,40 @@ TEST_CASE("MainLoop draws a requested frame after the frame's callbacks, and ret
 
   CHECK(exitCode == 7);
   CHECK(order == std::vector<const char *>{"callback", "render"});
+}
+
+TEST_CASE("MainLoop keeps running frames a period apart, however late its timer wakes it") {
+  const MainLoopScope scope;
+  auto &loop = MainLoop::get();
+  const auto period = loop.framePeriod();
+  constexpr std::chrono::microseconds kPeriod{10'400};
+  constexpr std::size_t kFrames = 60;
+  loop.setFramePeriod(kPeriod);
+  std::vector<MainLoop::Clock::time_point> times;
+  const auto callback = loop.addFrameCallback([&times, &loop](MainLoop::Clock::time_point frameTime) {
+    times.push_back(frameTime);
+    if (times.size() == kFrames) loop.quit();
+  });
+
+  loop.run();
+  loop.removeFrameCallback(callback);
+  loop.setFramePeriod(period);
+
+  REQUIRE(times.size() == kFrames);
+  std::vector<double> gaps;
+  for (std::size_t index = 1; index < times.size(); ++index) {
+    gaps.push_back(std::chrono::duration<double, std::milli>(times[index] - times[index - 1]).count());
+  }
+  // Another process on a busy machine holds a frame up now and then: the
+  // longest tenth of the gaps is left out.
+  std::ranges::sort(gaps);
+  gaps.resize(gaps.size() - gaps.size() / 10);
+  double total = 0;
+  for (const double gap : gaps) total += gap;
+  const double typicalGap = total / static_cast<double>(gaps.size());
+  CAPTURE(typicalGap);
+  CHECK(typicalGap < 10.7);
+  CHECK(typicalGap > 9.0);
 }
 
 TEST_CASE("MainLoop wakes from its wait for a task posted by another thread, and tells its wait observer") {

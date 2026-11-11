@@ -68,12 +68,13 @@ HostWindow::HostWindow(const std::string &title, PixelSize size) {
   createSurface();
   log(LogLevel::Info,
       std::format(
-          "Rendering with Skia on {} ({}), SDL {} driver, {}x{}",
+          "Rendering with Skia on {} ({}), SDL {} driver, {}x{} at {:.2f} Hz",
           glString(GL_VERSION),
           glString(GL_RENDERER),
           SDL_GetCurrentVideoDriver(),
           size_.width,
-          size_.height));
+          size_.height,
+          refreshRate()));
 }
 
 HostWindow::~HostWindow() {
