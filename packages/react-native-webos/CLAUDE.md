@@ -64,6 +64,10 @@ or `bun ../src/cli/main.ts` from `example/`.
   `delete` the VM, and expect `build` to wait while another agent builds the
   same app's libraries: apps with the same native libraries share a runtime
   build, so your `restart` runs the last one anyone built of it.
+- LG's own webOS TV Simulator cannot stand in for either: it loads an app's
+  `main` as a web page, and this app's `main` is an ARM executable
+  (`docs/reference/webos-tv-platform.md`, section 1.3; tried with version
+  1.5.0 on 2026-11-11, the page stays empty).
 - The real TV is the final check: `rn-webos run --device <name>` from an app,
   on a TV in Developer Mode. A retail TV shows an app no log, so the app streams
   its logs to `rn-webos`.
