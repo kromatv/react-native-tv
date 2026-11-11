@@ -1,12 +1,15 @@
 #pragma once
 
+#include "../render/RasterTarget.test.h"
 #include "ComponentView.h"
 
 #include <react/renderer/components/view/ViewProps.h>
 #include <react/renderer/graphics/Color.h>
 
 #include <memory>
+#include <string>
 #include <utility>
+#include <vector>
 
 namespace rnwebos::testing {
 
@@ -43,5 +46,42 @@ inline void place(
   view.updateProps(props);
   view.updateLayout(metrics);
 }
+
+/// A view that records what it is asked to draw, in order.
+class RecordingView final : public ComponentView {
+ public:
+  RecordingView(Scene &scene, facebook::react::Tag tag, std::vector<std::string> &drawn)
+      : ComponentView(scene, tag), drawn_(drawn) {}
+
+ protected:
+  void drawContent(SkCanvas &, float) override {
+    drawn_.push_back("content " + std::to_string(tag()));
+  }
+  void drawOverChildren(SkCanvas &) override {
+    drawn_.push_back("over " + std::to_string(tag()));
+  }
+
+ private:
+  std::vector<std::string> &drawn_;
+};
+
+/// A 400x300 scene with a root view over it, drawn on a transparent target.
+struct Screen {
+  static constexpr PixelSize kSize{.width = 400, .height = 300};
+
+  Scene scene{kSize};
+  RasterTarget target{kSize};
+  ComponentView root{scene, 1};
+
+  Screen() {
+    place(root, viewProps([](facebook::react::ViewProps &) {}), frameAt(0, 0, kSize.width, kSize.height));
+    root.mountAsRoot(Scene::kSurfaceOrder);
+  }
+
+  void draw() {
+    scene.setTransparent(true);
+    scene.drawInto(target.canvas());
+  }
+};
 
 } // namespace rnwebos::testing
