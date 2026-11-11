@@ -37,8 +37,7 @@ TEST_CASE_FIXTURE(ResourceDirectory, "loadHostConfig reads every field") {
   const auto config = load(R"({
     "appKey": "main", "packageId": "org.example.tv", "bundleFile": "index.bundle",
     "bundleUrl": "http://10.0.0.2:8081/index.bundle",
-    "log": {"host": "10.0.0.2", "port": 9100}, "development": true, "resolution": "4k",
-    "backgroundMedia": true, "voice": {"searchUrl": "app://search?q={query}"}
+    "log": {"host": "10.0.0.2", "port": 9100}, "development": true, "backgroundMedia": true
   })");
 
   CHECK(config.appKey == "main");
@@ -49,27 +48,30 @@ TEST_CASE_FIXTURE(ResourceDirectory, "loadHostConfig reads every field") {
   CHECK(config.logEndpoint->host == "10.0.0.2");
   CHECK(config.logEndpoint->port == 9100);
   CHECK(config.development);
-  CHECK(config.uhd);
   CHECK(config.backgroundMedia);
-  CHECK(config.voice);
-  CHECK(config.voiceSearchUrl == "app://search?q={query}");
   CHECK(config.resourceDir == path.string());
 }
 
 TEST_CASE_FIXTURE(ResourceDirectory, "loadHostConfig defaults every optional field") {
   const auto config = load(
-      R"({"appKey": "main", "bundleFile": "index.bundle", "bundleUrl": null, "log": null, "development": null, "voice": null})");
+      R"({"appKey": "main", "bundleFile": "index.bundle", "bundleUrl": null, "log": null, "development": null, "backgroundMedia": null})");
   const auto bare = load(R"({"appKey": "main", "bundleFile": "index.bundle"})");
 
   CHECK_FALSE(config.bundleUrl.has_value());
   CHECK_FALSE(config.logEndpoint.has_value());
   CHECK_FALSE(config.development);
-  CHECK_FALSE(config.uhd);
-  CHECK_FALSE(config.voice);
-  CHECK_FALSE(config.voiceSearchUrl.has_value());
+  CHECK_FALSE(config.backgroundMedia);
   CHECK(bare.packageId.empty());
-  CHECK_FALSE(bare.voice);
-  CHECK_FALSE(bare.voiceSearchUrl.has_value());
+  CHECK_FALSE(bare.bundleUrl.has_value());
+  CHECK_FALSE(bare.logEndpoint.has_value());
+  CHECK_FALSE(bare.development);
+  CHECK_FALSE(bare.backgroundMedia);
+}
+
+TEST_CASE_FIXTURE(ResourceDirectory, "loadHostConfig ignores a field it does not know") {
+  const auto config = load(R"({"appKey": "main", "bundleFile": "index.bundle", "resolution": "4k", "voice": {}})");
+
+  CHECK(config.appKey == "main");
 }
 
 TEST_CASE_FIXTURE(ResourceDirectory, "loadHostConfig names what is wrong") {
@@ -80,15 +82,17 @@ TEST_CASE_FIXTURE(ResourceDirectory, "loadHostConfig names what is wrong") {
   CHECK_THROWS_AS(load(R"({"appKey": "", "bundleFile": "index.bundle"})"), HostConfigError);
   CHECK_THROWS_AS(load(R"({"bundleFile": "index.bundle"})"), HostConfigError);
   CHECK_THROWS_AS(load(R"({"appKey": "main", "bundleFile": 1})"), HostConfigError);
+  CHECK_THROWS_AS(load("{" + required + R"(, "packageId": 7})"), HostConfigError);
   CHECK_THROWS_AS(load("{" + required + R"(, "log": {"host": "10.0.0.2", "port": "9100"}})"), HostConfigError);
   CHECK_THROWS_AS(load("{" + required + R"(, "bundleUrl": 8081})"), HostConfigError);
   CHECK_THROWS_AS(load("{" + required + R"(, "development": "yes"})"), HostConfigError);
+  CHECK_THROWS_AS(load("{" + required + R"(, "backgroundMedia": 1})"), HostConfigError);
   CHECK_THROWS_AS(load("{" + required + R"(, "log": {"host": "10.0.0.2", "port": 0}})"), HostConfigError);
   CHECK_THROWS_AS(load("{" + required + R"(, "log": {"host": "10.0.0.2", "port": 70000}})"), HostConfigError);
+  CHECK_THROWS_AS(load("{" + required + R"(, "log": {"host": "", "port": 9100}})"), HostConfigError);
   CHECK_THROWS_AS(load("{" + required + R"(, "log": 9100})"), HostConfigError);
-  CHECK_THROWS_AS(load("{" + required + R"(, "voice": true})"), HostConfigError);
-  CHECK_THROWS_AS(load("{" + required + R"(, "resolution": "8k"})"), HostConfigError);
   CHECK_THROWS_AS(load("{" + required + R"(, "padding": ")" + std::string(70 * 1024, 'x') + "\"}"), HostConfigError);
+  CHECK_THROWS_WITH(load(R"({"appKey": "main"})"), "react-native-webos.json: `bundleFile` must be a non-empty string");
 }
 
 } // namespace rnwebos
