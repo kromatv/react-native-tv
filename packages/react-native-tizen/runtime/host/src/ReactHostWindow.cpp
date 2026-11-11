@@ -4,6 +4,10 @@
 #include "tv/ScreenSize.h"
 #include "views/ModalHostView.h"
 
+#include <efl_extension.h>
+
+#include <string>
+
 namespace rntizen {
 
 void ReactHost::createWindow() {
@@ -22,9 +26,18 @@ void ReactHost::routeInput() {
       window_,
       [this](const RemoteEvent &event) { onRemoteEvent(event); },
       [this](const Ecore_Event_Key &key, bool isDown) {
+        if (key.key != nullptr && tv_.micButton->handleKey(key.key, isDown)) return true;
         return !overlays_.errorScreen->isShown() && !overlays_.alertDialog->isShown() &&
                keyboardFocus_->handleKey(key, isDown);
       });
+  tv_.micButton->setGrab([window = window_](bool grabbed) {
+    const std::string key(kMicButtonKey);
+    if (grabbed) {
+      eext_win_keygrab_set(window, key.c_str());
+    } else {
+      eext_win_keygrab_unset(window, key.c_str());
+    }
+  });
 }
 
 void ReactHost::startSurface() {

@@ -8,6 +8,7 @@ const none: TvFeatures = {
   resolution: '1080p',
   backgroundMedia: false,
   pictureInPicture: false,
+  speechRecognition: false,
 };
 
 describe('featureNotes', () => {

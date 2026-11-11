@@ -153,7 +153,10 @@ Tizen TV surface shows a now-playing card to a third-party app (D by absence,
 | The TV's framework carries `Tizen.TV.Service.VoiceInteraction` 1.0.8.0, found by `Type.GetType` from the shell | H |
 | `PrivilegeChecker.CheckVoiceInteractionPrivilege()`, called by reflection from a TPK holding `voicecontrol` and `microphone`, returns without throwing: the class would accept the app | H |
 | `MessagePort.Send` to `com.samsung.tv.vif`, port `com.port.vif.voiceinteraction`, succeeds, so the voice service and its port exist; the `register` message is sent | H |
-| Which thread the message port's callbacks run on, and what each utterance sends | U: needs someone speaking (see Verify, step 10) |
+| The message port's callbacks run on the main thread | H: 2024 The Frame (GQ75LS03DAUXZG), Tizen 9.0 |
+| With the app in front, each utterance first sends `ACTION_REQUEST_DEFAULT_VIEW_SIZE`, a command the shell does not know and answers `not_support`; `ACTION_REQUEST_APP_CONTEXT` never came | H: same TV |
+| Over eight utterances asking for a search, in French, the app received one command, `ACTION_MEDIA_SET_ZOOM` with `in`, and no search | H: same TV |
+| What else each utterance sends, and whether answering the view size request changes what follows | U: see Verify, step 10 |
 
 ### The protocol the shell speaks
 
@@ -174,7 +177,7 @@ until Verify, step 10.
 
 | Where the user is | Route | For KROMA |
 |---|---|---|
-| Inside the app | Bixby, then the voice service, then a search command with `title` = "Blade Runner" (U, Verify step 10); the web API has no search callback (D) | possible: the app searches its own server and plays |
+| Inside the app | Bixby, then the voice service, then a search command with `title` = "Blade Runner" (U, Verify step 10); the web API has no search callback (D); on The Frame no search command arrived (H, above) | not seen: recognize the speech in the app instead (below) |
 | Inside the app, the title on screen | `onrequestcontentcontext` returns the visible titles, `ontitleselection("Blade Runner")` picks one (6.5+) | possible |
 | Home screen or another app | Samsung's search app and Samsung's server catalog (U) | no documented route for a self-hosted library: [vi] defines no launch path for an app that is not running (D); "open KROMA" by voice is a consumer feature with no developer page (U) |
 | Playing | `onplay`, `onpause`, `onskipforward(30)`, `onsetplayposition(4800)`, `onchangesubtitlemode` in the web API's names | possible; play, pause, fast forward and rewind may also arrive as remote keys when the app does not answer (D, [vi]) |
@@ -197,6 +200,20 @@ Built; the developer's guide is [`../tv-features.md`](../tv-features.md#voice).
 | Selection | `src/tv/ContentContext.cpp` | every visible view with an `accessibilityLabel`, in reading order; positions are the views' centers in points of the 1920x1080 screen (I: the unit is undocumented). "select Dune" matches the label ignoring case and punctuation, then by prefix, then by substring, and sends a touch start and end to that view, which runs a `Pressable`'s `onPress` (seen in the simulator) |
 | Search | `src/tv/VoiceController.cpp`, `src/tv/SearchUrl.cpp` | to the `search` listeners, else `searchUrl` filled and opened as a `url` event |
 | `@kromatv/react-native-tizen/voice` | `src/api/voice.ts` | `Voice.isAvailable`, `setScreen`, `addListener('search' \| 'command')` over the `RNTizenVoice` TurboModule and `DeviceEventEmitter`; payloads parsed with zod; nothing on other platforms |
+
+### Speech recognition instead of the assistant
+
+An app can hear the user itself: Tizen's STT engine works in a store-signable
+app, and grabbing the mic button keeps the assistant out of the way
+([tizen-input.md](tizen-input.md), section 9, all H on The Frame). The search
+then needs no unpublished protocol: `stt.h` is public native API and
+`recorder` a Public privilege (D, the rootstrap's `stt.h` and privilege list).
+
+| Piece | Where | Does |
+|---|---|---|
+| expo-speech-recognition's config plugin | `src/config/tv-features.ts` | turns `speechRecognition` on, which adds `http://tizen.org/privilege/recorder` and writes `speechRecognition` into the runtime config |
+| `ExpoSpeechRecognition` | `runtime/host/expo/modules/speech/` | expo-speech-recognition's native module on `libstt.so`, opened with `dlopen` so a TV or the simulator without it still loads the runtime; one client for the process, prepared on the main thread when JavaScript first asks for the module ([expo-modules-contract.md](expo-modules-contract.md), Speech recognition) |
+| `MicButton` | `runtime/host/src/input/MicButton.cpp`, `src/tv/MicButtonModule.cpp`, `src/api/mic-button.ts` | grabs `XF86BTVoice` while JavaScript has a listener and sends its down and up as `rnTizenMicButton` events; a pause sends `pressOut` for a held button, a reload drops every listener |
 
 ## Verify on a TV
 

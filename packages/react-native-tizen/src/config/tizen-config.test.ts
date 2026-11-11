@@ -27,6 +27,7 @@ describe('resolveTizenConfig', () => {
         resolution: '1080p',
         backgroundMedia: false,
         pictureInPicture: false,
+        speechRecognition: false,
       },
       deprecation: EXPO_TIZEN_DEPRECATION,
     });

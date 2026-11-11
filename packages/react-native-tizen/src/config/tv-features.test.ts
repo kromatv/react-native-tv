@@ -105,3 +105,33 @@ describe('expo-video config plugin options', () => {
     expect(config.features).toMatchObject({ backgroundMedia: false, pictureInPicture: false });
   });
 });
+
+describe('expo-speech-recognition config plugin', () => {
+  it('turns speech recognition on and asks for the recorder privilege', () => {
+    const config = resolveTizenConfig(expo({}, { plugins: ['expo-speech-recognition'] }));
+
+    expect(config.features.speechRecognition).toBe(true);
+    expect(config.privileges).toEqual([
+      'http://tizen.org/privilege/internet',
+      'http://tizen.org/privilege/recorder',
+    ]);
+  });
+
+  it('turns it on when the plugin has options for Android and iOS', () => {
+    const config = resolveTizenConfig(
+      expo(
+        {},
+        { plugins: [['expo-speech-recognition', { microphonePermission: 'Search by voice' }]] },
+      ),
+    );
+
+    expect(config.features.speechRecognition).toBe(true);
+  });
+
+  it('leaves it off without the plugin', () => {
+    const config = resolveTizenConfig(expo({}, { plugins: ['expo-font'] }));
+
+    expect(config.features.speechRecognition).toBe(false);
+    expect(config.privileges).toEqual(['http://tizen.org/privilege/internet']);
+  });
+});

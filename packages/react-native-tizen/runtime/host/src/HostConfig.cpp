@@ -89,6 +89,7 @@ HostConfig loadHostConfig(const std::string &resourceDir) {
       .backgroundMedia = optionalBool(config, "backgroundMedia"),
       .voice = config.get_ptr("voice") != nullptr && config.get_ptr("voice")->isObject(),
       .voiceSearchUrl = voiceSearchUrl(config),
+      .speechRecognition = optionalBool(config, "speechRecognition"),
   };
 }
 

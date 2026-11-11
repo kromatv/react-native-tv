@@ -1,6 +1,6 @@
 # TV features
 
-Four Samsung TV integrations an app turns on in `app.json`. Each is off until
+Five Samsung TV integrations an app turns on in `app.json`. Each is off until
 asked for, and the same `app.json` and code still build for Android, iOS and
 the web: the keys are props of the `@kromatv/react-native-tizen` config plugin, and the JavaScript API answers
 "not available" everywhere but on a Samsung TV.
@@ -8,6 +8,7 @@ the web: the keys are props of the `@kromatv/react-native-tizen` config plugin, 
 | Feature | Turn it on | Import |
 |---|---|---|
 | [Voice](#voice) | `voice` prop | `@kromatv/react-native-tizen/voice` |
+| [Speech recognition](#speech-recognition) | expo-speech-recognition's config plugin | `expo-speech-recognition`, `@kromatv/react-native-tizen/mic-button` |
 | [Smart Hub preview](#smart-hub-preview) | `preview` prop | `@kromatv/react-native-tizen/preview` |
 | [Background audio](#background-audio) | expo-video's config plugin | nothing new |
 | [4K UI](#4k-ui) | `resolution` prop | nothing new |
@@ -101,6 +102,87 @@ before shipping voice to the store.
 
 In the simulator `Voice.isAvailable` is `false`: there is no Samsung voice
 service to register with.
+
+On a 2024 The Frame, no spoken search reached an app in front
+([the reference](reference/tizen-tv-app-integration.md#3-voice)). For a search
+box, [speech recognition](#speech-recognition) is the route that works.
+
+## Speech recognition
+
+`expo-speech-recognition` works on Tizen with the code you write for Android
+and iOS: the runtime implements its native module on Tizen's speech-to-text
+engine.
+
+```sh
+npx expo install expo-speech-recognition
+```
+
+```json
+{ "expo": { "plugins": ["expo-speech-recognition", ["@kromatv/react-native-tizen", { "package": "com.example.myapp" }]] } }
+```
+
+Listing the plugin is what turns it on: `rn-tizen package` adds the privilege
+`http://tizen.org/privilege/recorder`, Public, so a development certificate
+signs it.
+
+The engine hears the Smart Remote's microphone, and only while the remote's
+microphone button is held: start a session with the button down and stop it
+when it comes up. `MicButton` gives the app that button:
+
+```ts
+import { ExpoSpeechRecognitionModule } from 'expo-speech-recognition';
+import { MicButton } from '@kromatv/react-native-tizen/mic-button';
+
+const pressIn = MicButton.addListener('pressIn', () => ExpoSpeechRecognitionModule.start({ interimResults: true }));
+const pressOut = MicButton.addListener('pressOut', () => ExpoSpeechRecognitionModule.stop());
+```
+
+While at least one `MicButton` listener is registered the app holds the button:
+Samsung's assistant stays closed, `pressIn` arrives when the button goes down
+and `pressOut` when it comes up. Remove the last listener and the button opens
+the assistant again, which also means the `voice` prop's commands cannot be
+spoken while the app holds it. `MicButton.isAvailable` is `true` on a Samsung TV;
+a basic remote has no microphone button. Off Tizen, `MicButton` does nothing.
+
+| Option | On a TV |
+|---|---|
+| `lang` | A BCP 47 tag; the TV's own language when left out. A tag the engine lacks falls back to its default when it speaks the same language (`fr-CA` gets `fr-FR`), else to another region of it, else the session ends with `language-not-supported` |
+| `interimResults` | Words as they are recognized, `isFinal: false` |
+| `maxAlternatives` | Honoured; the engine has sent one alternative so far |
+| `continuous` | Not supported: a session is one utterance |
+| Every other option | An Android or iOS setting, ignored |
+
+A session sends `start` and `audiostart` when recording begins, `speechstart`
+and `speechend` on Tizen 5.5 and later, `result` (`confidence` is 0 and
+`segments` empty: the engine reports neither), `nomatch` for a final result
+with nothing heard, `error`, `audioend`, and `end` once.
+
+| `error` | From the engine |
+|---|---|
+| `no-speech` | `STT_ERROR_NO_SPEECH`, or an operation failure Samsung's engine reports for silence: `voice_engine.error.no_speech` when the button was released before a word, `voice_engine.error.reg_fail` when the remote sent no sound at all |
+| `speech-timeout` | `STT_ERROR_RECORDING_TIMED_OUT` |
+| `network` | `STT_ERROR_OUT_OF_NETWORK`, `STT_ERROR_TIMED_OUT` |
+| `not-allowed` | `STT_ERROR_PERMISSION_DENIED`, or the plugin is not listed |
+| `audio-capture` | `STT_ERROR_RECORDER_BUSY` |
+| `language-not-supported` | `STT_ERROR_INVALID_LANGUAGE`, or no language matches `lang` |
+| `service-not-allowed` | No engine on the TV, `STT_ERROR_NOT_SUPPORTED`, `STT_ERROR_ENGINE_NOT_FOUND` |
+| `interrupted` | `STT_ERROR_SERVICE_RESET` |
+| `busy` | The engine is between states |
+| `aborted` | `abort()` |
+| `client` | Any other operation failure; `message` is the engine's |
+
+`isRecognitionAvailable()` is `true` with the plugin listed on a TV with the
+engine. `getSupportedLocales()` lists the engine's languages once it is ready,
+with no `installedLocales`. The permission functions answer `granted` with the
+plugin listed and `denied` without, and never ask: the engine took a 2024
+Samsung TV's microphone with no prompt. `supportsOnDeviceRecognition()` and `supportsRecording()` are
+`false`, the Android and iOS service and audio session functions answer as
+Android answers iOS's, and `androidTriggerOfflineModelDownload` rejects.
+
+The engine and the privilege are public Tizen API, so speech recognition needs
+no Seller Office clearance, unlike `voice`. In the simulator there is no engine:
+`isRecognitionAvailable()` is `false` and `start()` ends with
+`service-not-allowed`.
 
 ## Smart Hub preview
 

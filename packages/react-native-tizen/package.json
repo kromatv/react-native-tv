@@ -37,6 +37,10 @@
       "types": "./dist/api/voice.d.ts",
       "default": "./dist/api/voice.js"
     },
+    "./mic-button": {
+      "types": "./dist/api/mic-button.d.ts",
+      "default": "./dist/api/mic-button.js"
+    },
     "./preview": {
       "types": "./dist/api/preview.d.ts",
       "default": "./dist/api/preview.js"

@@ -33,6 +33,8 @@ struct HostConfig {
   /// `expo.tizen.voice` is set.
   bool voice;
   std::optional<std::string> voiceSearchUrl;
+  /// expo-speech-recognition's config plugin is listed: the manifest declares the `recorder` privilege.
+  bool speechRecognition;
 };
 
 /// `react-native-tizen.json` is missing, too large, or has a bad field, which the message names.

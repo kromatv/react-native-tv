@@ -8,6 +8,7 @@ const features: TvFeatures = {
   resolution: '1080p',
   backgroundMedia: false,
   pictureInPicture: false,
+  speechRecognition: false,
 };
 const app = { packageId: 'org.example.app', features };
 
@@ -21,6 +22,7 @@ describe('runtimeConfig', () => {
       log: { host: '192.168.1.20', port: 8099 },
       resolution: '1080p',
       backgroundMedia: false,
+      speechRecognition: false,
     });
   });
 
@@ -32,6 +34,7 @@ describe('runtimeConfig', () => {
       development: false,
       resolution: '1080p',
       backgroundMedia: false,
+      speechRecognition: false,
     });
   });
 
@@ -48,12 +51,14 @@ describe('runtimeConfig', () => {
         preview: { kind: 'personal', refreshMinutes: 30 },
         resolution: '4k',
         backgroundMedia: true,
+        speechRecognition: true,
       },
     });
 
     expect(config).toMatchObject({
       resolution: '4k',
       backgroundMedia: true,
+      speechRecognition: true,
       voice: { searchUrl: 'myapp://search?q={query}' },
       preview: { kind: 'personal', refreshMinutes: 30, service: 'org.example.app.preview' },
     });

@@ -61,9 +61,12 @@ For an Expo app, Tizen is one more platform. The same project and the same
 - **Samsung TV features.** Voice commands and voice search, Smart Hub preview
   tiles, background audio, and a 3840x2160 UI plane on TVs that grant one. Each
   is one prop in `app.json`.
+- **Speech recognition.** `expo-speech-recognition` hears the Smart Remote's
+  microphone, with the same code as on Android and iOS, and `MicButton` hands
+  the app the remote's mic button so a hold-to-talk search needs no assistant.
 - **Expo modules.** `expo-image`, `expo-video`, `expo-file-system`,
-  `expo-font`, `expo-blur`, `expo-device`, `expo-constants`, `expo-keep-awake`
-  and `expo/fetch` have Tizen implementations.
+  `expo-font`, `expo-blur`, `expo-device`, `expo-constants`, `expo-keep-awake`,
+  `expo-speech-recognition` and `expo/fetch` have Tizen implementations.
 - **Native libraries.** A library with a `codegenConfig` compiles into the
   runtime. react-native-svg ships with a Tizen implementation.
 - **`Intl`.** ICU 78.3 is compiled in, with its data trimmed to the locales you
@@ -334,6 +337,41 @@ export function useVoiceSearch(openSearch: (query: string) => void) {
   }, [openSearch]);
 }
 ```
+
+### Speech recognition
+
+Install `expo-speech-recognition` and list its plugin in `app.json`, as on
+Android and iOS; `rn-tizen` adds the `recorder` privilege it needs. Recognition
+hears the Smart Remote's microphone while its button is held, so take the
+button with `MicButton`: while a listener is registered, Samsung's assistant
+stays closed and each press reaches the app as it happens.
+
+```tsx
+import { ExpoSpeechRecognitionModule, useSpeechRecognitionEvent } from 'expo-speech-recognition';
+import { MicButton } from '@kromatv/react-native-tizen/mic-button';
+import { useEffect, useState } from 'react';
+
+export function useHoldToTalk() {
+  const [transcript, setTranscript] = useState('');
+
+  useEffect(() => {
+    const pressIn = MicButton.addListener('pressIn', () =>
+      ExpoSpeechRecognitionModule.start({ interimResults: true }),
+    );
+    const pressOut = MicButton.addListener('pressOut', () => ExpoSpeechRecognitionModule.stop());
+    return () => {
+      pressIn.remove();
+      pressOut.remove();
+    };
+  }, []);
+
+  useSpeechRecognitionEvent('result', (event) => setTranscript(event.results[0]?.transcript ?? ''));
+  return transcript;
+}
+```
+
+`lang` defaults to the TV's own language; [tv-features.md](docs/tv-features.md#speech-recognition)
+lists the events, the errors and what each option does on a TV.
 
 ### Smart Hub preview
 

@@ -133,6 +133,10 @@ keyboard, keys go to it first, and a key it uses is never a remote event. Back g
 (`hardwareBackPress`) once, at its release; when nothing handles it the app
 exits. While a `Modal` is mounted, Back goes to the last one mounted as
 `onRequestClose` instead, and `BackHandler` hears nothing, as on Android.
+The Smart Remote's microphone button is the one key outside this: while
+JavaScript listens to `MicButton`, the app holds the button and its down and up
+go there as they happen, never as remote events, because a hold-to-talk search
+has to start listening when the button goes down.
 
 ## Fatal JavaScript errors
 

@@ -25,6 +25,7 @@ const config: TizenAppConfig = {
     resolution: '1080p',
     backgroundMedia: false,
     pictureInPicture: false,
+    speechRecognition: false,
   },
   deprecation: null,
 };

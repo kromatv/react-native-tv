@@ -12,6 +12,12 @@ export const PERSONAL_PREVIEW_PRIVILEGES = [
   'http://tizen.org/privilege/appmanager.launch',
 ] as const;
 
+/** What Tizen's speech-to-text engine asks of an app that records the remote's microphone. */
+export const SPEECH_RECOGNITION_PRIVILEGES = ['http://tizen.org/privilege/recorder'] as const;
+
+/** The config plugin that turns speech recognition on, as on Android and iOS. */
+export const SPEECH_RECOGNITION_PLUGIN = 'expo-speech-recognition';
+
 /** Samsung takes one personal preview update per 10 minutes. */
 export const MIN_PREVIEW_REFRESH_MINUTES = 10;
 
@@ -88,6 +94,8 @@ export interface TvFeatures {
   readonly backgroundMedia: boolean;
   /** expo-video's config plugin asked for `supportsPictureInPicture`, which Tizen cannot do. */
   readonly pictureInPicture: boolean;
+  /** expo-speech-recognition's config plugin is listed. */
+  readonly speechRecognition: boolean;
 }
 
 const pluginEntrySchema = z.union([z.string(), z.tuple([z.string()]).rest(z.unknown())]);
@@ -112,6 +120,15 @@ function expoVideoOptions(plugins: unknown): z.infer<typeof expoVideoOptionsSche
   return {};
 }
 
+function listsPlugin(plugins: unknown, name: string): boolean {
+  if (!Array.isArray(plugins)) return false;
+  return plugins.some((entry) => {
+    const parsed = pluginEntrySchema.safeParse(entry);
+    if (!parsed.success) return false;
+    return (typeof parsed.data === 'string' ? parsed.data : parsed.data[0]) === name;
+  });
+}
+
 function voiceConfig(voice: z.infer<typeof voiceConfigSchema> | undefined): VoiceConfig | null {
   if (voice === undefined) return null;
   return { searchUrl: voice === true ? null : (voice.searchUrl ?? null) };
@@ -125,7 +142,7 @@ function previewConfig(
   return { kind: 'personal', refreshMinutes: preview.refreshMinutes };
 }
 
-/** The TV features the Tizen settings and expo-video's config plugin options turn on. */
+/** The TV features the Tizen settings and the config plugins of expo-video and expo-speech-recognition turn on. */
 export function resolveTvFeatures(
   tizen: {
     readonly voice?: z.infer<typeof voiceConfigSchema>;
@@ -141,6 +158,7 @@ export function resolveTvFeatures(
     resolution: tizen.resolution ?? '1080p',
     backgroundMedia: video.supportsBackgroundPlayback === true,
     pictureInPicture: video.supportsPictureInPicture === true,
+    speechRecognition: listsPlugin(plugins, SPEECH_RECOGNITION_PLUGIN),
   };
 }
 
@@ -149,5 +167,6 @@ export function featurePrivileges(features: TvFeatures): readonly string[] {
   return [
     ...(features.voice === null ? [] : VOICE_PRIVILEGES),
     ...(features.preview?.kind === 'personal' ? PERSONAL_PREVIEW_PRIVILEGES : []),
+    ...(features.speechRecognition ? SPEECH_RECOGNITION_PRIVILEGES : []),
   ];
 }

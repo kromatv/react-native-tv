@@ -24,6 +24,7 @@ const runtimeConfigSchema = z.object({
   resolution: z.enum(['1080p', '4k']),
   backgroundMedia: z.boolean(),
   voice: z.object({ searchUrl: z.string().min(1).optional() }).optional(),
+  speechRecognition: z.boolean(),
   preview: z
     .object({
       kind: z.enum(['public', 'personal']),
@@ -62,7 +63,7 @@ export function runtimeConfig(
   config: Pick<TizenAppConfig, 'packageId' | 'features'>,
   bundleUrl?: string,
 ): RuntimeConfig {
-  const { voice, resolution, backgroundMedia } = config.features;
+  const { voice, resolution, backgroundMedia, speechRecognition } = config.features;
   return runtimeConfigSchema.parse({
     appKey: 'main',
     packageId: config.packageId,
@@ -75,6 +76,7 @@ export function runtimeConfig(
     ...(voice === null
       ? {}
       : { voice: voice.searchUrl === null ? {} : { searchUrl: voice.searchUrl } }),
+    speechRecognition,
     ...previewFields(config),
   });
 }

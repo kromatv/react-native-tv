@@ -6,6 +6,7 @@
 #include "diagnostics/PerfMonitor.h"
 #include "fabric/SurfacePresenter.h"
 #include "input/KeyboardFocus.h"
+#include "input/MicButton.h"
 #include "input/RemoteInput.h"
 #include "modules/DeviceProfile.h"
 #include "modules/LaunchUrl.h"
@@ -93,6 +94,7 @@ class ReactHost final {
   struct TvServices {
     std::shared_ptr<TvState> state;
     std::unique_ptr<VoiceController> voice;
+    std::shared_ptr<MicButton> micButton;
   };
 
   struct Overlays {

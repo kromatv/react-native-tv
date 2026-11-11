@@ -168,11 +168,16 @@ Tizen's repeat timer also builds a repeat's `keyname` from the modified symbol
 | Fact | Tag | Source |
 |------|-----|--------|
 | The Smart Remote mic button reaches the app as `XF86BTVoice`, ungrabbed | H | |
-| Whether the TV also opens its assistant on that press, or on a long press | unknown | |
+| Ungrabbed, a press opens Samsung's assistant over the app: with the `voice` prop, the voice service sends the app `ACTION_REQUEST_DEFAULT_VIEW_SIZE` each time | H: 2024 The Frame (GQ75LS03DAUXZG), Tizen 9.0 | |
+| A topmost grab (`eext_win_keygrab_set(window, "XF86BTVoice")`, no privilege) keeps the assistant closed while the app's window is in front; the app then gets the key's down when the button goes down and its up when it comes up, with no repeat in between | H: same TV | |
 | Samsung's documented voice API is JavaScript only: `webapis.voiceinteraction` (`setCallback`, `listen`; `onnavigation`, `onselection`, `onplay`, `onpause`, `onrewind`, `onfastforward`; `ontitleselection` from 6.5 receives "the string input via voice"); privilege `http://developer.samsung.com/privilege/voicecontrol`, `required_version` 6.0; no `onsearch` | D | [sam-voice] |
 | No voice API is documented for .NET or native TV apps | D (absence) | [sam-net], [sam-voice] |
 | `webapis.microphone` (`getMicrophones`, `enableDevice`) needs `http://developer.samsung.com/privilege/microphone`; that privilege is in the SDK's TV web list | D | [sam-mic]; `platforms/tizen-9.0/tv-samsung/privileges/privilege-wrt.properties:8` |
 | Tizen's native `voice_control.h` and `stt.h` ship in the 9.0 rootstrap, privilege `http://tizen.org/privilege/recorder`; whether a store app may use them on a Samsung TV is not documented | D, then unknown | `voice_control.h:88`, `stt.h:386` |
+| `libstt.so` works in an app signed with a Public development profile that declares `recorder`: engine `org.tizen.stt-client`, default language `fr_FR` on a French TV, 23 languages, `STT_RECOGNITION_TYPE_FREE` and `FREE.PARTIAL` supported, `SEARCH` not; free dictation also sends partial results | H: same TV | |
+| It hears the Smart Remote's microphone only while the mic button is held, grabbed or not. A session with the button never pressed fails after about 5 s with `STT_ERROR_OPERATION_FAILED` and the message `voice_engine.error.reg_fail`; one stopped before a word, with `voice_engine.error.no_speech` | H: same TV | |
+| `AudioManager.GetConnectedDevices()` lists a `BuiltinMic` input, and `AudioCapture` with the default policy records a plugged-in USB webcam's microphone; the remote's microphone is not among the audio devices | H: same TV | |
+| While the assistant is open it takes the speech engine: a session running when the assistant answered out loud ended at once | H: same TV | |
 
 ## 10. Text input and the on-screen keyboard
 
@@ -246,7 +251,7 @@ Match on `key`. Anything absent passes through unhandled.
 | `XF86Red` `XF86Green` `XF86Yellow` `XF86Blue` | `red` `green` `yellow` `blue` |
 | `0` to `9` | `0` to `9` |
 | `BackSpace` | `delete` |
-| `XF86BTVoice` | `voice` (Tizen only: no react-native-tvos platform emits it) |
+| `XF86BTVoice` | `voice` (Tizen only: no react-native-tvos platform emits it); while JavaScript listens to `MicButton`, `pressIn` and `pressOut` instead, and no remote event |
 | Left unhandled on purpose | `XF86Exit`, `XF86Home`, `XF86SysMenu`, volume, mute, `XF86PowerOff` |
 
 ### Grab list
@@ -259,8 +264,9 @@ Topmost, with `eext_win_keygrab_set`, once the window exists: `XF86Back`
 `XF86SimpleMenu` `XF86Caption` `XF86Red` `XF86Green` `XF86Yellow` `XF86Blue`.
 
 Never grab `XF86Exit` ([sam-exit]; flutter-tizen does, against that rule),
-`XF86Home`, `XF86SysMenu`, volume, power or `XF86BTVoice` (it arrives anyway, and
-a grab might take it from the assistant: unverified). Grabbing mapped keys follows
+`XF86Home`, `XF86SysMenu`, volume or power. `XF86BTVoice` arrives anyway, and a
+grab takes it from the assistant (section 9), so it is grabbed only while
+JavaScript listens to `MicButton` and released with the last listener. Grabbing mapped keys follows
 flutter-tizen's "handled by the app first but not by the system" list
 ([ft-view] 19 to 31). Check each new grab on a TV.
 
@@ -334,11 +340,11 @@ Verified in simulator (**S**), with the shapes `useTVEventHandler` received:
 | `RemoteKeyMap.cpp` | `voice` is not a react-native-tvos event type; it is a Tizen addition | D [rntvos] |
 | `RemoteKeyMap.cpp` | `XF86Menu` appears on no Samsung TV remote table; it stays mapped for keyboards. `menu` also means Back on tvOS | I |
 | `simulator/guest/key.sh` | The chapter keys `XF86NextChapter`/`XF86PreviousChapter` have no X keysym, so the simulator cannot send `next` | S |
-| Input as a whole | No mouse events, no voice API | D |
+| Input as a whole | No mouse events; speech goes through expo-speech-recognition, not a remote event | D |
 
 Open questions for the TV: does a held remote key repeat, at what rate and with
 which flag; does a grab of volume keys succeed; what the 123 and app buttons
-send; whether `XF86BTVoice` also wakes the assistant; the minus key's name.
+send; the minus key's name.
 
 ## 13. The network remote
 

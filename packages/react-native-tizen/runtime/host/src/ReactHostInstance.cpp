@@ -110,6 +110,8 @@ void ReactHost::createInstance() {
                 });
               },
           .tv = tv_.state,
+          .micButton = tv_.micButton,
+          .speechRecognition = config_.speechRecognition,
       },
       instance_->createJSCallInvoker());
 

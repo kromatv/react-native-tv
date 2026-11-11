@@ -14,6 +14,7 @@ namespace rntizen {
 struct AlertRequest;
 struct ErrorReport;
 class LaunchUrl;
+class MicButton;
 class TvState;
 
 /// What the platform's TurboModules need from the host, handed to each as it
@@ -29,6 +30,9 @@ struct ModuleContext {
   std::shared_ptr<const LaunchUrl> launchUrl;
   std::function<void(AlertRequest request)> showAlert;
   std::shared_ptr<TvState> tv;
+  std::shared_ptr<MicButton> micButton;
+  /// The package declares the `recorder` privilege expo-speech-recognition needs.
+  bool speechRecognition{false};
 };
 
 } // namespace rntizen

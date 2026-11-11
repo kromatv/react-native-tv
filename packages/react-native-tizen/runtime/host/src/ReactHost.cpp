@@ -36,6 +36,11 @@ void ReactHost::start() {
       "Starting " + config_.appKey + " on " + device_.modelName + " (Tizen " + device_.platformVersion + ")");
   overrideFeatureFlagsOnce();
   tv_.state = std::make_shared<TvState>(config_.voice, config_.voiceSearchUrl);
+  tv_.micButton = std::make_shared<MicButton>(
+      [this](std::string_view type) {
+        emitDeviceEvent("rnTizenMicButton", folly::dynamic::object("type", std::string(type)));
+      },
+      [](std::function<void()> task) { runOnMainThread(std::move(task)); });
   createWindow();
   startDevSupport();
   createInstance();
@@ -90,6 +95,7 @@ void ReactHost::reload() {
   log(LogLevel::Info, "Reloading " + config_.appKey);
   diagnostics_.perfMonitor.reset();
   remoteInput_->releaseAll();
+  tv_.micButton->reset();
   closeMainThreadSync();
   instanceGate_->close();
   stopReactNative();
@@ -130,6 +136,7 @@ void ReactHost::setActive(bool isActive) {
 
 void ReactHost::pause() {
   remoteInput_->releaseAll();
+  tv_.micButton->releaseHeld();
   pauseMediaSessionsForBackground(config_.backgroundMedia);
   setActive(false);
 }

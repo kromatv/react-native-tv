@@ -6,7 +6,7 @@ react-native-tizen gives it today. Read it before touching `runtime/host/expo/`.
 Versions read: expo-modules-core 58.0.23, expo 58.0.16, expo-asset 58.0.17,
 expo-constants 58.0.12, expo-font 58.0.9, expo-file-system 58.0.10, expo-device
 58.0.5, expo-keep-awake 58.0.3, expo-blur 58.0.5, expo-image 58.0.16, expo-video
-58.0.12, expo-modules-autolinking 58.0.13, @expo/config-plugins 58.0.9,
+58.0.12, expo-speech-recognition 58.0.1, expo-modules-autolinking 58.0.13, @expo/config-plugins 58.0.9,
 react-native-tvos 0.88.0-0. Docs read on 2026-11-02.
 
 ## How facts are tagged
@@ -281,6 +281,27 @@ a first launch until it calls `writeSync` or awaits.
 EFL contract names the TV case. Whether a retail TV's screensaver or Auto
 Protection Time honours it is not known: record it on hardware. The power lock
 is the fallback if it does not.
+
+### Speech recognition
+
+expo-speech-recognition is a third-party package; its JavaScript runs unchanged
+on Tizen once a native module answers its contract. Paths are inside the npm
+package, version 58.0.1.
+
+| Fact | Source | Tag |
+|------|--------|-----|
+| `requireNativeModule("ExpoSpeechRecognition")` at import, so the import throws without the module; `stop` and `abort` are rebound to call through | `src/ExpoSpeechRecognitionModule.ts:7-14` | **src** |
+| `start`, `stop`, `abort`, `isRecognitionAvailable`, `supportsOnDeviceRecognition`, `supportsRecording`, `getSpeechRecognitionServices`, `getDefaultRecognitionService`, `getAssistantService` and the three iOS audio session calls are synchronous `Function`s; `getSupportedLocales`, `getStateAsync`, the six permission calls and `androidTriggerOfflineModelDownload` are `AsyncFunction`s | `android/.../ExpoSpeechRecognitionModule.kt:101-262` | **src** |
+| Events: `start`, `end`, `result` (`{ isFinal, results: [{ transcript, confidence, segments }] }`), `error` (`{ error, message, code? }`), `nomatch`, `speechstart`, `speechend`, `audiostart` and `audioend` (`{ uri, timestamp }`), `soundstart`, `soundend`, `languagedetection`, `volumechange` | `src/ExpoSpeechRecognitionModule.types.ts:28-198` | **src** |
+| Error codes: the Web Speech API's (`aborted`, `audio-capture`, `interrupted`, `bad-grammar`, `language-not-supported`, `network`, `no-speech`, `not-allowed`, `service-not-allowed`) and `busy`, `client`, `speech-timeout`, `too-many-requests`, `unknown` | `src/ExpoSpeechRecognitionModule.types.ts:70-85` | **src** |
+| Android ends every session with `end`, after an error too; `abort()` first sends an `aborted` error; a final result with no transcript is `nomatch`; partial results with no text are dropped | `android/.../ExpoSpeechService.kt:241-262,536-546,617-650` | **src** |
+| Android answers iOS's `getAudioSessionCategoryAndOptionsIOS` with `playAndRecord`, `defaultToSpeaker` and `allowBluetooth`, `measurement`, and does nothing for the other iOS calls | `android/.../ExpoSpeechRecognitionModule.kt:244-260` | **src** |
+| `getStateAsync` answers `inactive`, `starting`, `recognizing` or `stopping` | `src/ExpoSpeechRecognitionModule.types.ts:789-793` | **src** |
+| The pod declares `:ios => '16.4'` only, so a tvOS build has to leave it out of autolinking | `ios/ExpoSpeechRecognition.podspec:13` | **src** |
+
+`runtime/host/expo/modules/speech/` implements the module on Tizen's STT
+engine ([tizen-tv-app-integration.md](tizen-tv-app-integration.md), section 3)
+and answers the Android and iOS calls as Android answers iOS's.
 
 ## 5. Third-party modules with Tizen support
 
