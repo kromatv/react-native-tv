@@ -56,6 +56,7 @@ everything the tools inside print. Every action takes `--instance <name>` (see
 | `pointer <x> <y>`, `click [<x> <y>]`, `wheel <notches>` | Moves the remote's pointer to a screen pixel, presses its button there, or turns its wheel: `wheel -3` scrolls down three notches. |
 | `pause`, `resume` | Sends the app to the background and back: `AppState` changes as on a TV. |
 | `open-url <url>` | Delivers a deep link, as the TV does when another app opens this one. |
+| `relaunch [--params <json>]` | Launches the running app again with new parameters, as the TV's app manager does: `relaunch --params '{"contentTarget":"myapp://item/42"}'`. `run` and `restart` take `--params` too, for the first launch. |
 | `restart` | Starts the staged app again, without rebuilding. |
 | `build` | Rebuilds the app's native runtime only, after a change in `runtime/`; `restart` then runs it. Apps with the same native libraries share it (see [Runtime builds](#runtime-builds)). |
 | `logs [-f] [-n <lines>]` | Prints the app's stdout and stderr, and follows them with `-f`. |

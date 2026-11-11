@@ -26,6 +26,7 @@ import {
   simulatorCommandLine,
   type SimulatorInstance,
 } from '../simulator/instance.ts';
+import { launchParams } from '../simulator/launch-params.ts';
 import { deleteInstance, requireLima } from '../simulator/lima.ts';
 import {
   crashReport,
@@ -72,6 +73,12 @@ const OPTIONS = {
       'run: load the bundle from this `expo start` dev server instead of bundling the app: Fast Refresh, r to reload, LogBox and logs in its terminal',
   },
   gui: { type: 'boolean', description: 'run: also open the live screen and remote in the browser' },
+  params: {
+    type: 'string',
+    placeholder: '<json>',
+    description:
+      'run, restart, relaunch: the parameters the app is launched with, as a TV passes them: \'{"contentTarget":"myapp://item/42"}\'',
+  },
   'no-logs': {
     type: 'boolean',
     description: 'run: exit once the app is up instead of printing its logs',
@@ -203,6 +210,15 @@ const ACTIONS: Readonly<Record<string, Action>> = {
       url,
     );
   },
+  relaunch: ({ flags, reporter, instance }) => {
+    const params = launchParams(flags.params) ?? '{}';
+    return inRunningVm(
+      reporter,
+      'Relaunch',
+      (task) => sendControl(task, instance, 'relaunch', [params]),
+      params,
+    );
+  },
   text: (invocation) => {
     const text = requirePositionals(
       invocation,
@@ -259,12 +275,12 @@ const ACTIONS: Readonly<Record<string, Action>> = {
       app: null,
       inUseHint: `Another \`${simulatorCommandLine('run', instance.name)}\` is printing its logs: stop it, or start the app with --no-logs.`,
     }).then(() => undefined),
-  restart: async ({ reporter, instance }) => {
+  restart: async ({ flags, reporter, instance }) => {
     await reporter.step(
       'Restart',
       async (task) => {
         await requireRunningVm(task);
-        return startApp(task, instance);
+        return startApp(task, instance, launchParams(flags.params));
       },
       (pid) => `pid ${pid}`,
     );
@@ -330,6 +346,7 @@ export const simulatorCommand: Command = {
     "rn-webos simulator pointer 960 540      move the remote's pointer; click presses its button, wheel -3 scrolls",
     'rn-webos simulator pause                send the app to the background; resume brings it back',
     'rn-webos simulator open-url myapp://item/42',
+    `rn-webos simulator relaunch --params '{"contentTarget":"myapp://item/42"}'  launch the running app again, as the TV does`,
     'rn-webos simulator restart              start the app again, without rebuilding',
     'rn-webos simulator build                rebuild the native runtime only',
     'rn-webos simulator clean                remove the runtime builds no instance runs',

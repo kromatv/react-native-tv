@@ -127,10 +127,16 @@ export async function requireRunningVm(task: Task): Promise<void> {
 
 /**
  * (Re)starts the app staged in `instance` and returns its process id once its
- * window is up. No other instance is touched.
+ * window is up. `launchParams` is the JSON a TV's app manager would launch the
+ * app with. No other instance is touched.
  */
-export async function startApp(task: Task, instance: SimulatorInstance): Promise<number> {
-  const output = await runInstanceScript(task, instance, 'run');
+export async function startApp(
+  task: Task,
+  instance: SimulatorInstance,
+  launchParams?: string,
+): Promise<number> {
+  const args = launchParams === undefined ? [] : [launchParams];
+  const output = await runInstanceScript(task, instance, 'run', args);
   return Number(output.trim().split('\n').at(-1));
 }
 

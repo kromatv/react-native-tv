@@ -81,6 +81,7 @@ rm -f "$CONTROL_FIFO"
 mkfifo -m 600 "$CONTROL_FIFO"
 ulimit -c unlimited
 launch_params="${1:-${RN_WEBOS_SIMULATOR_LAUNCH_PARAMS:-}}"
+printf '%s' "$LAUNCHER $INSTANCE_DIR${launch_params:+ $launch_params}" >"$INSTANCE_DIR/command-line"
 start_daemon "$APP_PID_FILE" "$APP_LOG" "$LAUNCHER" "$INSTANCE_DIR" ${launch_params:+"$launch_params"}
 wait_for_window
 cat "$APP_PID_FILE"

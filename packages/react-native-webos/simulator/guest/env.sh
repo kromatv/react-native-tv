@@ -56,12 +56,17 @@ instance_runtime_dir() {
   runtime_dir "$(instance_runtime_key "$instance_dir")"
 }
 
-# The command line run.sh starts an instance's app with: systemd-coredump keeps
-# it with each core, and it is what tells one instance's crashes from another's.
-# The app takes its directories from the environment and ignores the argument.
+# The command line run.sh started an instance's app with, which it records:
+# systemd-coredump keeps it with each core, and it is what tells one instance's
+# crashes from another's. The app takes its directories from the environment
+# and ignores the instance directory it is given.
 app_command_line() {
   local instance_dir="$1"
-  echo "$(launcher_in "$(instance_runtime_dir "$instance_dir")") $instance_dir"
+  if [[ -f "$instance_dir/command-line" ]]; then
+    cat "$instance_dir/command-line"
+  else
+    echo "$(launcher_in "$(instance_runtime_dir "$instance_dir")") $instance_dir"
+  fi
 }
 
 start_daemon() {

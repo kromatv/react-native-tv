@@ -12,6 +12,7 @@ import { listenForLogs, type LogServer } from '../logs/log-server.ts';
 import { bundleDir, bundleStep, appSetupSteps } from '../pipeline/package-steps.ts';
 import { devServerBundleStep } from '../package/dev-server-bundle.ts';
 import { simulatorCommandLine, type SimulatorInstance } from '../simulator/instance.ts';
+import { launchParams } from '../simulator/launch-params.ts';
 import { ensureVm, hostAddress, startApp, type VmPreparation } from '../simulator/simulator.ts';
 import { ensureIcuData } from '../runtime/icu-data.ts';
 import { buildSimulatorRuntime } from '../simulator/simulator-runtime.ts';
@@ -25,6 +26,7 @@ export interface SimulatorRunFlags {
   readonly bundle?: string;
   readonly gui?: boolean;
   readonly 'no-logs'?: boolean;
+  readonly params?: string;
   readonly 'log-port'?: string;
   readonly 'dev-server'?: string;
   readonly level?: string;
@@ -132,7 +134,7 @@ export async function runInSimulator(
         const log = server === null ? null : { host: await hostAddress(task), port: server.port };
         const icuData = await ensureIcuData(task, app.config.locales);
         await stageApp(instance, app, bundle, log, { key: runtime, icuData });
-        return startApp(task, instance);
+        return startApp(task, instance, launchParams(flags.params));
       },
       (pid) => `pid ${pid}`,
     );

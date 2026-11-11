@@ -114,6 +114,28 @@ describe('rn-webos simulator', () => {
     expect(simulator.openUrl).toHaveBeenCalledWith(expect.anything(), expect.anything(), 'app://a');
   });
 
+  it('restarts and relaunches the app with launch parameters', async () => {
+    await simulate('restart', '--params', '{ "contentTarget": "app://a" }');
+    await simulate('relaunch', '--params', '{"contentTarget":"app://b"}');
+    await simulate('relaunch');
+
+    expect(simulator.startApp).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      '{"contentTarget":"app://a"}',
+    );
+    const relaunches = vi.mocked(simulator.sendControl).mock.calls.map((call) => call.slice(2));
+    expect(relaunches).toEqual([
+      ['relaunch', ['{"contentTarget":"app://b"}']],
+      ['relaunch', ['{}']],
+    ]);
+  });
+
+  it('refuses launch parameters that are not a JSON object', async () => {
+    await expect(simulate('restart', '--params', '[1]')).rejects.toThrow('--params takes a JSON');
+    await expect(simulate('restart', '--params', 'nope')).rejects.toThrow('--params takes a JSON');
+  });
+
   it('types text into the focused field', async () => {
     await simulate('text', 'Blade', 'Runner');
 
