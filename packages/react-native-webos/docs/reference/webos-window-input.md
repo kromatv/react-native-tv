@@ -330,6 +330,14 @@ returns ([wl-ext] text.xml 30 to 400, **D**). Indexes are bytes.
 | SDL3 fork: `SDL_StartTextInputWithProperties` maps `SDL_PROP_TEXTINPUT_TYPE_NUMBER` to a purpose (text 0, name 7, e-mail 6, password 8 with 0xc0, number 3, PIN 2), capitalisation and autocorrect to hints, multiline to hint 0x200 and enter key return, single line to enter key done | R | [sdl3] osk 204 to 282 |
 | SDL3 fork events: `SDL_EVENT_TEXT_INPUT`, `SDL_EVENT_TEXT_EDITING` with the preedit cursor, `delete_surrounding_text` replayed as Backspace and Delete presses, Clear all as `SDL_SCANCODE_CLEAR`, `SDL_EVENT_SCREEN_KEYBOARD_SHOWN` and `_HIDDEN` from the panel state | R | [sdl3] osk 330 to 405, 431 to 490 |
 | SDL3 fork gaps: no surrounding text, no url or phone purpose, enter key done or return only, and it sends `set_enter_key_type` at opcode 6, which is `invoke_action` on webOS 1 and 2 | R, I | [sdl3] osk 136 to 138; section 4 |
+| SDL3 fork: starting text input on a window where it is already started records the new properties and does nothing else: `StartTextInput` runs only `if (!window->text_input_active)`. New properties, or the panel again, take a stop and then a start | R | [sdl3] SDL_video.c 5798 to 5838 |
+| SDL3 fork: the panel has no hide of its own. `HideScreenKeyboard` is `StopTextInput`, which deactivates and destroys the model | R | [sdl3] osk 96 to 117, 284 to 292, 325 to 328 |
+| SDL3 fork: that stop sends no `SDL_EVENT_SCREEN_KEYBOARD_HIDDEN`, since the model that would report `input_panel_state` is gone, and SDL's own shown flag stays set. `SDL_SendScreenKeyboardShown` returns early while the flag is set, so the panel's next raise sends no `SDL_EVENT_SCREEN_KEYBOARD_SHOWN`; `SDL_ScreenKeyboardShown` answers true from the stop on, until the compositor reports the panel hidden | R, I | [sdl3] osk 96 to 117, SDL_video.c 5847 to 5866, 5919 to 5956 |
+| SDL3 fork: a commit empties an active preedit first, as two events: `SDL_EVENT_TEXT_EDITING` with an empty text, then `SDL_EVENT_TEXT_INPUT`. A preedit the user deleted is the empty editing event alone | R | [sdl3] osk 330 to 364 |
+| SDL3 fork: `SDL_EVENT_TEXT_EDITING`'s `start` is the preedit cursor in characters, -1 when the compositor sent none; `length` is -1 | R | [sdl3] osk 345 to 364 |
+| SDL sends text and editing events only while text input is started and a window has keyboard focus. A hardware key's text follows its key down as a text event, unless Ctrl or Alt is down | R | [sdl3] SDL_keyboard.c 764 to 770, 817 to 823; SDL_waylandevents.c 2321 to 2325, 2362 to 2369 |
+| SDL3 fork: `SDL_SetTextInputArea(rect, cursor)` becomes `set_cursor_rectangle(min(x + cursor, x + w), y, 1, h)`; `SDL_ClearComposition` becomes `reset` | R | [sdl3] osk 68 to 94, 306 to 316 |
+| SDL3 fork: `SDL_HasScreenKeyboardSupport` is true whenever the compositor has the text model factory: "The remote is advertised as a keyboard, but the input panel is the only way to enter text with it". On X11 it is true only with Steam's keyboard | D, R | [sdl3] SDL_waylandkeyboard.c 288 to 305; src/video/x11/SDL_x11keyboard.c 844 to 848 |
 | LG's SDL: screen keyboard symbols show in the dump from webOS 7. Older builds export the public API only, so nothing can be said | I | [fw] |
 
 ## 11. EGL and OpenGL ES
@@ -369,6 +377,10 @@ every dump, [fw] **R**); low-latency media goes through NDL DirectAudio
   `com.webos.app.home`?
 - Does the compositor deliver Back to the app or to the keyboard while the panel
   is up?
+- Does a second activation raise the panel while a USB keyboard is attached?
+  The host takes SDL's stale shown flag for the panel after a stop and a start.
+- Do the remote's digit keys type into a focused field, as text events, while
+  the panel is up or after it was closed?
 - Do the digit, Info, Record and subtitle keys arrive at a native surface without
   a key mask, and with which evdev codes on each remote?
 - Before webOS 7, does a held remote key repeat, and at what rate?
@@ -491,21 +503,51 @@ above the 300 ms hold timer, so the timer, not the repeat, starts a hold.
 
 ### Text input
 
-- `ImeSession` becomes a wrapper over SDL: `begin` calls
-  `SDL_StartTextInputWithProperties`, `end` calls `SDL_StopTextInput`.
-- `keyboardType`: default to `TEXT`, `email-address` to `TEXT_EMAIL`, the numeric
-  kinds to `NUMBER`; `secureTextEntry` to `TEXT_PASSWORD_HIDDEN`;
-  `autoCapitalize` to `SDL_PROP_TEXTINPUT_CAPITALIZATION_NUMBER`; `autoCorrect`
-  and `multiline` to their booleans. `url`, `phone-pad` and every
-  `returnKeyType` but done have no effect yet.
+Built as below in `runtime/host/src/input/ImeSession.*`, `ImeOptions.cpp`,
+`KeyboardFocus.*` and `views/TextInput*`; [text-input.md](text-input.md) has the
+field's own contract.
+
+- `ImeSession` wraps SDL: `begin` calls `SDL_StartTextInputWithProperties`, `end`
+  calls `SDL_StopTextInput`. Lowering the panel for a field that keeps the
+  keyboard is a stop too, and raising it again a stop and a start, since SDL
+  has no other way (section 10).
+- Props to SDL properties:
+
+  | Prop | `SDL_PROP_TEXTINPUT_*` | Value |
+  |------|------------------------|-------|
+  | `keyboardType` | `TYPE_NUMBER` | `email-address`: `TEXT_EMAIL`; `visible-password`: `TEXT_PASSWORD_VISIBLE`; `numeric`, `number-pad`, `decimal-pad`: `NUMBER`; anything else: `TEXT` |
+  | `secureTextEntry` | `TYPE_NUMBER` | `TEXT_PASSWORD_HIDDEN`, or `NUMBER_PASSWORD_HIDDEN` on a number keyboard, as Android's numeric password; it wins over the other text types |
+  | `autoCapitalize` | `CAPITALIZATION_NUMBER` | `none`: `NONE`; `words`: `WORDS`; `characters`: `LETTERS`; anything else: `SENTENCES`. `NONE` on a secure field |
+  | `autoCorrect` | `AUTOCORRECT_BOOLEAN` | the prop; false on a secure field |
+  | `multiline` | `MULTILINE_BOOLEAN` | the prop |
+
+- Not honoured, each said once in the log when a field with it takes the
+  keyboard: `keyboardType` `url` and `phone-pad` (SDL has no type: the text
+  keyboard opens); a `returnKeyType` other than `done` on a single line (the
+  fork sets Done, and Return on a multiline field); `showSoftInputOnFocus={false}`
+  (activating the model raises the panel). The three number keyboards are one
+  SDL type: whether the panel shows a sign or a decimal point is its own choice.
 - `SDL_EVENT_TEXT_INPUT` is `imeCommit`; `SDL_EVENT_TEXT_EDITING` is
-  `imePreedit`; the Backspace, Delete and Clear presses SDL synthesises go to the
-  field's own key handling; a Return press submits a single-line field;
+  `imePreedit`. An empty editing event waits for the events queued with it: when
+  a commit follows, the field sees the commit alone, one edit as on Android;
+  otherwise the composition ends.
+- The Backspace, Delete and Clear presses SDL synthesises go to the field's own
+  key handling (Clear empties the field); a Return press submits a single-line
+  field.
+- Whether the panel is up comes from `SDL_EVENT_SCREEN_KEYBOARD_SHOWN` and
+  `_HIDDEN`, and after a start from `SDL_ScreenKeyboardShown`: once the host
+  has lowered the panel by a stop, SDL sends no shown event for the next raise
+  (section 10), so its stale flag is the only sign that the panel is up again.
   `SDL_EVENT_SCREEN_KEYBOARD_HIDDEN` is `imePanelHidden`.
 - While a field has the keyboard, the field sees every key before
-  `RemotePresses`, as today. Back first stops text input, then blurs.
-- `showSoftInputOnFocus={false}` cannot be honoured: activating the model raises
-  the panel.
+  `RemotePresses`. Back lowers the panel when it is up, and blurs the field
+  otherwise. OK raises the panel again when the user closed it. A key that
+  types means a hardware keyboard, which lowers the panel by itself
+  (section 10): after one, OK submits instead.
+- A key whose keycode is a printable character is the field's while text input
+  is started, so a digit typed into a field is never also a remote key; its
+  text comes in the text event that follows. After Back lowered the panel, no
+  text arrives until OK raises it again.
 - If surrounding text, the missing purposes or the enter key label turn out to
   matter, the host talks to `text_model` itself on SDL's connection
   (`SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER`, `..._SURFACE_POINTER`), with every

@@ -71,6 +71,22 @@ void sendText(SDL_EventType type, std::string_view text) {
   MainLoop::get().post([kept] {});
 }
 
+bool &isComposing() {
+  static bool composing = false;
+  return composing;
+}
+
+void compose(std::string_view text) {
+  isComposing() = !text.empty();
+  sendText(SDL_EVENT_TEXT_EDITING, text);
+}
+
+// As SDL's webOS backend commits: the composition emptied, then the text.
+void commitText(std::string_view text) {
+  if (std::exchange(isComposing(), false)) sendText(SDL_EVENT_TEXT_EDITING, {});
+  sendText(SDL_EVENT_TEXT_INPUT, text);
+}
+
 void sendKeyboardState(std::string_view state) {
   if (state != "shown" && state != "hidden") {
     log(LogLevel::Warning, "The simulator's keyboard is shown or hidden, not " + std::string(state));
@@ -114,8 +130,8 @@ void runCommand(const SimulatorControl::Host &host, std::string_view line) {
   if (command == "resume") return host.resume();
   if (command == "exit") return host.exit();
   if (command == "open-url") return host.openUrl(std::string(arguments));
-  if (command == "text") return sendText(SDL_EVENT_TEXT_INPUT, arguments);
-  if (command == "compose") return sendText(SDL_EVENT_TEXT_EDITING, arguments);
+  if (command == "text") return commitText(arguments);
+  if (command == "compose") return compose(arguments);
   if (command == "keyboard") return sendKeyboardState(arguments);
   if (command.starts_with("key")) return runKeyCommand(command, arguments);
   log(LogLevel::Warning, "Unknown simulator command: " + std::string(line));
