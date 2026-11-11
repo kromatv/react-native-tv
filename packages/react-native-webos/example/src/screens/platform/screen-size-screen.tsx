@@ -1,12 +1,6 @@
-import { requireOptionalNativeModule } from 'expo';
 import { PixelRatio, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Fact } from './event-log.tsx';
-
-interface ExpoWebOSModule {
-  getScreenSize(): { readonly width: number; readonly height: number };
-}
-
-const expoWebOS = requireOptionalNativeModule<ExpoWebOSModule>('ExpoWebOS');
+import { expoWebOS } from './webos-module.ts';
 
 const SIZES = [12, 16, 20, 28] as const;
 
