@@ -73,4 +73,40 @@ TEST_CASE_FIXTURE(FreshIcu, "useIcuData picks a shipped locale when the package 
   CHECK(isShipped(fallback));
 }
 
+TEST_CASE_FIXTURE(FreshIcu, "useDeviceLocale makes the TV's language ICU's default when the package ships it") {
+  setDeviceLocale("en_US");
+  useIcuData(kIcuDataDirectory);
+
+  useDeviceLocale("fr-FR");
+  CHECK(std::string(uloc_getDefault()) == "fr_FR");
+  CHECK(defaultLanguageTag() == "fr-FR");
+
+  useDeviceLocale("pt-BR");
+  CHECK(std::string(uloc_getDefault()) == "pt_BR");
+  useDeviceLocale("ko");
+  CHECK(defaultLanguageTag() == "ko");
+}
+
+TEST_CASE_FIXTURE(FreshIcu, "useDeviceLocale keeps a shipped locale for a language the package has no data for") {
+  setDeviceLocale("en_US");
+  useIcuData(kIcuDataDirectory);
+
+  useDeviceLocale("xx-XX");
+
+  const std::string fallback = uloc_getDefault();
+  CHECK(fallback != "xx_XX");
+  CHECK(isShipped(fallback));
+}
+
+TEST_CASE_FIXTURE(FreshIcu, "useDeviceLocale ignores what is not a language tag") {
+  setDeviceLocale("en_US");
+  useIcuData(kIcuDataDirectory);
+
+  useDeviceLocale("");
+  useDeviceLocale(std::string(400, 'a'));
+
+  CHECK(std::string(uloc_getDefault()) == "en_US");
+  CHECK(defaultLanguageTag() == "en-US");
+}
+
 } // namespace rnwebos

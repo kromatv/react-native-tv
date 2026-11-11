@@ -7,6 +7,7 @@
 
 #include <SDL3/SDL.h>
 #include <fcntl.h>
+#include <folly/json.h>
 #include <poll.h>
 #include <sys/eventfd.h>
 #include <unistd.h>
@@ -64,12 +65,22 @@ void runKeyCommand(std::string_view command, std::string_view arguments) {
   pressKey(scancode, length);
 }
 
+void runRelaunch(const SimulatorControl::Host &host, std::string_view json) {
+  try {
+    const auto parameters = json.empty() ? folly::dynamic(folly::dynamic::object()) : folly::parseJson(json);
+    if (parameters.isObject()) return host.relaunch(parameters);
+  } catch (const std::exception &) {
+  }
+  log(LogLevel::Warning, "The parameters of a relaunch are a JSON object, not: " + std::string(json));
+}
+
 void runCommand(const SimulatorControl::Host &host, std::string_view line) {
   const auto [command, arguments] = splitWord(line);
   if (command == "pause") return host.pause();
   if (command == "resume") return host.resume();
   if (command == "exit") return host.exit();
   if (command == "open-url") return host.openUrl(std::string(arguments));
+  if (command == "relaunch") return runRelaunch(host, arguments);
   if (command.starts_with("key")) return runKeyCommand(command, arguments);
   log(LogLevel::Warning, "Unknown simulator command: " + std::string(line));
 }

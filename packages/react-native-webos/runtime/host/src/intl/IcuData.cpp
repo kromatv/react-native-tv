@@ -32,6 +32,17 @@ const char *shippedLocaleFor(std::string_view language) {
   return first;
 }
 
+// Formatting in a locale the app ships no data for fails in Hermes
+// (docs/reference/intl.md): the first shipped locale stands in.
+void keepShippedLocale() {
+  const std::string device = uloc_getDefault();
+  const char *fallback = shippedLocaleFor(languageOf(device.c_str()));
+  if (fallback == nullptr) return;
+  UErrorCode status = U_ZERO_ERROR;
+  uloc_setDefault(fallback, &status);
+  log(LogLevel::Info, "The app ships no ICU data for " + device + ": formatting in " + fallback);
+}
+
 } // namespace
 
 void useIcuData(const std::string &resourceDir) {
@@ -41,12 +52,30 @@ void useIcuData(const std::string &resourceDir) {
     return;
   }
   u_setDataDirectory(resourceDir.c_str());
-  const std::string device = uloc_getDefault();
-  const char *fallback = shippedLocaleFor(languageOf(device.c_str()));
-  if (fallback == nullptr) return;
+  keepShippedLocale();
+}
+
+void useDeviceLocale(const std::string &languageTag) {
+  std::array<char, ULOC_FULLNAME_CAPACITY> locale{};
   UErrorCode status = U_ZERO_ERROR;
-  uloc_setDefault(fallback, &status);
-  log(LogLevel::Info, "The app ships no ICU data for " + device + ": formatting in " + fallback);
+  int32_t parsed = 0;
+  uloc_forLanguageTag(languageTag.c_str(), locale.data(), static_cast<int32_t>(locale.size()), &parsed, &status);
+  if (U_FAILURE(status) || status == U_STRING_NOT_TERMINATED_WARNING || locale[0] == '\0') {
+    log(LogLevel::Warning, "Not a language tag ICU reads: " + languageTag);
+    return;
+  }
+  uloc_setDefault(locale.data(), &status);
+  keepShippedLocale();
+}
+
+std::string defaultLanguageTag() {
+  const char *locale = uloc_getDefault();
+  std::array<char, ULOC_COUNTRY_CAPACITY> country{};
+  UErrorCode status = U_ZERO_ERROR;
+  uloc_getCountry(locale, country.data(), static_cast<int32_t>(country.size()), &status);
+  const auto language = languageOf(locale);
+  if (language.empty()) return "en";
+  return U_SUCCESS(status) && country[0] != '\0' ? language + "-" + country.data() : language;
 }
 
 } // namespace rnwebos

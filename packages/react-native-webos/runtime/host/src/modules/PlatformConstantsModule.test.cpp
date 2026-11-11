@@ -15,19 +15,19 @@ TEST_CASE("PlatformConstants describes the TV in Android's shape, with React Nat
   auto &rt = *runtime;
   ModuleContext context{};
   context.device = {
-      .modelName = "QE55Q80", .platformVersion = "9.0", .buildString = "T-PTMDEUC-1234", .screenWidth = 1920, .screenHeight = 1080};
+      .modelName = "OLED65C25LB", .platformVersion = "10.2.0", .buildString = "33.22.52", .screenWidth = 1920, .screenHeight = 1080};
   PlatformConstantsModule module(std::make_shared<testing::QueuedInvoker>(), context);
 
   const auto constants = facebook::jsi::dynamicFromValue(rt, call(rt, module, "getConstants"));
 
-  CHECK(constants["Version"] == 9);
-  CHECK(constants["Release"] == "9.0");
-  CHECK(constants["Model"] == "QE55Q80");
-  CHECK(constants["Fingerprint"] == "T-PTMDEUC-1234");
+  CHECK(constants["Version"].asDouble() == doctest::Approx(10.02));
+  CHECK(constants["Release"] == "10.2.0");
+  CHECK(constants["Model"] == "OLED65C25LB");
+  CHECK(constants["Fingerprint"] == "33.22.52");
   CHECK(constants["Serial"] == "unknown");
   CHECK(constants["uiMode"] == "tv");
-  CHECK(constants["Brand"] == "Samsung");
-  CHECK(constants["Manufacturer"] == "Samsung");
+  CHECK(constants["Brand"] == "LG");
+  CHECK(constants["Manufacturer"] == "LG Electronics");
   CHECK(constants["isTesting"] == false);
   CHECK(constants["reactNativeVersion"]["major"] == 0);
   CHECK(constants["reactNativeVersion"]["minor"] == 88);

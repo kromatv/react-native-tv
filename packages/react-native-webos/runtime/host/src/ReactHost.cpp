@@ -13,24 +13,37 @@
 
 namespace rnwebos {
 
-ReactHost::ReactHost(const std::string &resourceDir)
+namespace {
+
+// The TV answers in a few milliseconds, while the window opens: past this the
+// app starts with what it has instead of waiting for a service that is down.
+constexpr auto kDeviceAnswerBudget = std::chrono::milliseconds(500);
+
+} // namespace
+
+ReactHost::ReactHost(const std::string &resourceDir, const LaunchParameters &launch)
     : config_(loadHostConfig(resourceDir)),
       lifetime_(std::make_shared<ReactHost *>(this)),
       weakHost_(lifetime_) {
   try {
-    start();
+    start(launch);
   } catch (...) {
     stop();
     throw;
   }
 }
 
-void ReactHost::start() {
+void ReactHost::start(const LaunchParameters &launch) {
   openMainThreadSync();
-  log(LogLevel::Info,
-      "Starting " + config_.appKey + " on " + device_.modelName + " (webOS " + device_.platformVersion + ")");
+  const auto asked = std::chrono::steady_clock::now();
+  const DeviceProfileRequest deviceRequest(LunaBus::get());
+  registerApp(launch);
   overrideFeatureFlagsOnce();
   createWindow();
+  readDevice(deviceRequest, asked + kDeviceAnswerBudget);
+  log(LogLevel::Info,
+      "Starting " + config_.appKey + " on " + device_.modelName + " (webOS " + device_.platformVersion + ", firmware " +
+          device_.buildString + ", " + device_.locale + ")");
   startDevSupport();
   createInstance();
   loadBundle();
@@ -43,6 +56,11 @@ void ReactHost::start() {
       .resume = [this] { resume(); },
       .exit = [this] { exit(); },
       .openUrl = [this](const std::string &url) { openUrl(url); },
+      .relaunch =
+          [this](const folly::dynamic &parameters) {
+            resume();
+            relaunch(parameters);
+          },
   });
 #endif
 }
@@ -57,6 +75,8 @@ ReactHost::~ReactHost() {
 
 void ReactHost::stop() {
   lifetime_.reset();
+  registration_.reset();
+  screenSaver_.reset();
 #if RN_WEBOS_SIMULATOR
   simulatorControl_.reset();
 #endif
@@ -111,7 +131,7 @@ void ReactHost::setActive(bool isActive) {
 
 void ReactHost::pause() {
   remotePresses_->releaseAll();
-  pauseMediaSessionsForBackground(config_.backgroundMedia);
+  pauseMediaSessionsForBackground();
   setActive(false);
 }
 
@@ -121,7 +141,7 @@ void ReactHost::resume() {
 }
 
 void ReactHost::setInitialUrl(const std::string &url) {
-  launchUrl_->set(url);
+  launch_->setInitialUrl(url);
 }
 
 void ReactHost::openUrl(const std::string &url) {

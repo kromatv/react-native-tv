@@ -1,13 +1,10 @@
 #include "DeviceInfoModule.h"
 
-#include "DeviceProfile.h"
 #include "TurboModuleTest.test.h"
 
 #include <doctest/doctest.h>
 
 #include <jsi/JSIDynamic.h>
-
-#include <cstdlib>
 
 namespace rnwebos {
 
@@ -39,21 +36,6 @@ TEST_CASE("DeviceInfo lays every screen out as the logical 1920x1080 one, scaled
   CHECK(hd["window"]["scale"].asDouble() == doctest::Approx(2.0 / 3.0));
   CHECK(hd["screen"]["densityDpi"].asDouble() == doctest::Approx(160.0 * 2 / 3));
   CHECK(uhd["screen"]["scale"].asDouble() == 2);
-}
-
-TEST_CASE("readDeviceProfile reads the model, the platform and the screen from system info") {
-  const auto profile = readDeviceProfile();
-  CHECK(profile.modelName == "Simulator");
-  CHECK(profile.platformVersion == "9.0");
-  CHECK(profile.buildString == "rn-webos-simulator");
-  CHECK(profile.screenWidth == 1920);
-  CHECK(profile.screenHeight == 1080);
-
-  setenv("RN_WEBOS_SIMULATOR_SCREEN_SIZE", "1280x720", 1);
-  const auto smaller = readDeviceProfile();
-  unsetenv("RN_WEBOS_SIMULATOR_SCREEN_SIZE");
-  CHECK(smaller.screenWidth == 1280);
-  CHECK(smaller.screenHeight == 720);
 }
 
 } // namespace rnwebos
