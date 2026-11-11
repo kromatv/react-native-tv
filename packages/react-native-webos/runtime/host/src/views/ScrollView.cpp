@@ -17,6 +17,7 @@ using facebook::react::Float;
 using facebook::react::Point;
 
 constexpr double kFrameSeconds = 1.0 / 60;
+constexpr std::chrono::milliseconds kSettleDelay{100};
 
 double throttleSeconds(double milliseconds) {
   const auto seconds = milliseconds / 1000.0;
@@ -38,7 +39,9 @@ bool flag(const folly::dynamic &value) {
 
 } // namespace
 
-ScrollView::ScrollView(Evas *evas, facebook::react::Tag tag) : ComponentView(evas, tag) {}
+ScrollView::~ScrollView() {
+  cancelSettle();
+}
 
 void ScrollView::updateProps(const facebook::react::Props::Shared &props) {
   const auto &scrollProps = static_cast<const facebook::react::ScrollViewProps &>(*props);
@@ -81,10 +84,46 @@ Point ScrollView::childrenOffset() const {
   return {.x = -contentOffset_.x, .y = -contentOffset_.y};
 }
 
+Point ScrollView::contentOffset() const {
+  return contentOffset_;
+}
+
+bool ScrollView::scrollBy(Float dx, Float dy) {
+  const bool interrupted = animation_.isRunning();
+  animation_.stop();
+  const auto target = clamped({.x = contentOffset_.x + dx, .y = contentOffset_.y + dy});
+  const bool moved = target != contentOffset_;
+  if (moved) {
+    moveContent(target);
+    emitScroll(true);
+  }
+  if (moved || interrupted) settleSoon();
+  return moved;
+}
+
+void ScrollView::settleSoon() {
+  cancelSettle();
+  settleTimer_ = MainLoop::get().addTimer(kSettleDelay, [this] {
+    settleTimer_ = 0;
+    finishScrolling();
+  });
+}
+
+void ScrollView::cancelSettle() {
+  if (settleTimer_ == 0) return;
+  MainLoop::get().removeTimer(settleTimer_);
+  settleTimer_ = 0;
+}
+
 void ScrollView::scrollTo(Point offset, bool animated) {
   const auto target = clamped(offset);
+  const bool interrupted = animation_.isRunning() || settleTimer_ != 0;
   animation_.stop();
-  if (target == contentOffset_) return;
+  cancelSettle();
+  if (target == contentOffset_) {
+    if (interrupted) finishScrolling();
+    return;
+  }
   if (!animated) {
     moveContent(target);
     finishScrolling();
@@ -101,7 +140,7 @@ void ScrollView::scrollTo(Point offset, bool animated) {
 }
 
 void ScrollView::keepOffsetInContent() {
-  if (animation_.isRunning() || !state_) return;
+  if (animation_.isRunning() || settleTimer_ != 0 || !state_) return;
   const auto inside = clamped(contentOffset_);
   if (inside == contentOffset_) return;
   moveContent(inside);
@@ -110,7 +149,7 @@ void ScrollView::keepOffsetInContent() {
 
 void ScrollView::moveContent(Point offset) {
   contentOffset_ = offset;
-  placeChildren();
+  invalidate();
 }
 
 void ScrollView::emitScroll(bool throttled) {

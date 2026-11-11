@@ -35,9 +35,10 @@ void ModalHostView::updateLayout(const facebook::react::LayoutMetrics &layoutMet
   events->onShow({});
 }
 
-bool ModalHostView::requestCloseTopmost(Evas *evas) {
+bool ModalHostView::requestCloseTopmost(const Scene &scene) {
   const auto &modals = mountedModals();
-  const auto topmost = std::find_if(modals.rbegin(), modals.rend(), [evas](auto *modal) { return modal->evas() == evas; });
+  const auto topmost =
+      std::find_if(modals.rbegin(), modals.rend(), [&scene](auto *modal) { return &modal->scene() == &scene; });
   if (topmost == modals.rend()) return false;
   if (const auto *events = modalEvents(**topmost)) events->onRequestClose({});
   return true;

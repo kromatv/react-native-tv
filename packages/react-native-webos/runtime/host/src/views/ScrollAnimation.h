@@ -1,8 +1,8 @@
 #pragma once
 
-#include <react/renderer/graphics/Point.h>
+#include "../platform/MainLoop.h"
 
-#include <Ecore.h>
+#include <react/renderer/graphics/Point.h>
 
 #include <functional>
 
@@ -25,10 +25,16 @@ class ScrollAnimation final {
   void stop();
   bool isRunning() const;
 
- private:
-  static Eina_Bool onFrame(void *data, double position);
+  /// Where an animation from `from` to `to` is once `position` of its time
+  /// has passed, from 0 to 1.
+  static facebook::react::Point
+  offsetAt(facebook::react::Point from, facebook::react::Point to, double position);
 
-  Ecore_Animator *animator_{nullptr};
+ private:
+  void onFrame(MainLoop::Clock::time_point frameTime);
+
+  MainLoop::Id frameCallback_{0};
+  MainLoop::Clock::time_point started_;
   facebook::react::Point from_;
   facebook::react::Point to_;
   Step step_;

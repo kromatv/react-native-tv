@@ -1,6 +1,7 @@
 #include "ReactHost.h"
 
 #include "platform/MainLoop.h"
+#include "views/ModalHostView.h"
 
 #include <chrono>
 
@@ -66,7 +67,7 @@ void ReactHost::onRemoteEvent(const RemoteEvent &event) {
     return;
   }
   if (event.isBack) {
-    emitDeviceEvent("hardwareBackPress", nullptr);
+    if (!ModalHostView::requestCloseTopmost(*scene_)) emitDeviceEvent("hardwareBackPress", nullptr);
     return;
   }
   emitDeviceEvent(

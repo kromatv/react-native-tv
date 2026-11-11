@@ -15,9 +15,9 @@ class ModalHostView final : public ComponentView {
 
   void updateLayout(const facebook::react::LayoutMetrics &layoutMetrics) override;
 
-  /// Sends `onRequestClose` to the Modal mounted last on `evas`. Returns
+  /// Sends `onRequestClose` to the Modal mounted last in `scene`. Returns
   /// false when no Modal is mounted there, so Back goes to `BackHandler`.
-  static bool requestCloseTopmost(Evas *evas);
+  static bool requestCloseTopmost(const Scene &scene);
 
  protected:
   bool isOverlay() const override;
