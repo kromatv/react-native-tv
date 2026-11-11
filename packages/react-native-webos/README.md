@@ -243,7 +243,7 @@ This is an alpha, and no TV has run it. What stands behind each part:
 
 | Part | Evidence so far |
 |---|---|
-| The runtime: Hermes, Fabric, views, text, images, `TextInput`, remote keys, the pointer, Expo modules, react-native-svg | Runs in the simulator, the same source built for aarch64 Linux; 1001 C++ tests |
+| The runtime: Hermes, Fabric, views, text, images, `TextInput`, remote keys, the pointer, Expo modules, react-native-svg | Runs in the simulator, the same source built for aarch64 Linux; 1008 C++ tests |
 | The TV executable | Cross-compiles on a Mac; its imports resolve on the firmware images of 14 releases, webOS 1.2 to 11.2 (`scripts/check-tv-binary.ts`). Never started on a TV |
 | The window, input and lifecycle on a TV | Written from SDL's webOS port and LG's and webOS OSE's sources; the simulator uses X11 instead |
 | Video | The player logic has tests against a fake of the TV's media service. Nothing has played on a TV |
