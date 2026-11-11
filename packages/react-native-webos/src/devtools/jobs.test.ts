@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -84,20 +84,27 @@ describe('startJob', () => {
     );
     const runner = script(
       'runner.mjs',
-      "import { appendFileSync } from 'node:fs';\nconst [dir, id] = process.argv.slice(2);\nappendFileSync(`${dir}/${id}.log`, 'ran');\n",
+      "import { appendFileSync } from 'node:fs';\nconst [dir, id] = process.argv.slice(2);\nappendFileSync(`${dir}/${id}.log`, `ran ${process.env.JOB_SECRET}`);\n",
     );
 
     const started = await startJob(
       dir,
-      { kind: 'find-tvs', title: 'Find TVs', args: ['devices'], cwd: dir },
+      {
+        kind: 'find-tvs',
+        title: 'Find TVs',
+        args: ['devices'],
+        cwd: dir,
+        env: { JOB_SECRET: 'A1b2C3' },
+      },
       runner,
     );
     const log = await until(
       () => readLog(dir, started.id, 0),
-      (read) => read.text === 'ran',
+      (read) => read.text.startsWith('ran'),
     );
 
-    expect(log.text).toBe('ran');
+    expect(log.text).toBe('ran A1b2C3');
+    expect(readFileSync(join(dir, `${started.id}.json`), 'utf8')).not.toContain('A1b2C3');
     expect(await readJob(dir, started.id)).toMatchObject({ status: 'running', args: ['devices'] });
     expect(existsSync(join(dir, 'old-2.json'))).toBe(false);
     expect(existsSync(join(dir, 'old-3.json'))).toBe(true);

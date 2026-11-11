@@ -1,5 +1,6 @@
 import { ask, canAsk } from '../cli/ask.ts';
 import { COMMON_OPTIONS, parseCommandArgs, UsageError, type Command } from '../cli/command.ts';
+import { PASSPHRASE_VARIABLE } from '../cli/passphrase-variable.ts';
 import { Reporter } from '../cli/reporter.ts';
 import { webosVersionName } from '../discovery/webos-version.ts';
 import { FixableError } from '../errors.ts';
@@ -14,7 +15,7 @@ const OPTIONS = {
     type: 'string',
     placeholder: '<code>',
     description:
-      'The six characters the Developer Mode app shows (default: asked for on a terminal)',
+      'The six characters the Developer Mode app shows (default: $RN_WEBOS_PASSPHRASE, else asked for on a terminal)',
   },
   name: {
     type: 'string',
@@ -32,8 +33,9 @@ function describe(device: Device): string {
     .join(', ');
 }
 
-async function passphrase(flag: string | undefined): Promise<string> {
-  if (flag !== undefined) return flag;
+async function passphrase(flag: string | undefined, env: NodeJS.ProcessEnv): Promise<string> {
+  const given = flag ?? env[PASSPHRASE_VARIABLE];
+  if (given !== undefined && given !== '') return given;
   if (!canAsk()) {
     throw new UsageError(
       'connect needs --passphrase <the six characters the Developer Mode app shows>',
@@ -75,7 +77,7 @@ export const connectCommand: Command = {
       () => fetchDeveloperKey(address.host),
       () => `from the key server of ${address.host}`,
     );
-    const phrase = await passphrase(flags.passphrase);
+    const phrase = await passphrase(flags.passphrase, process.env);
     const device = await reporter.step(
       'Login',
       () =>

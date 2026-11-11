@@ -144,7 +144,7 @@ commands:
 | Run on TV | `rn-webos run --device <ip or name> --dev-server <this dev server>`, then the app's logs. Leave the address empty for the TV used last |
 | Run in simulator | `rn-webos simulator run --dev-server <this dev server>`, on the instance `$RN_WEBOS_SIMULATOR_INSTANCE` names, else `default` |
 | Find TVs | `rn-webos devices` |
-| Connect TV | `rn-webos connect <ip> --passphrase <code>`: the TV's address and the passphrase its Developer Mode app shows, with Key Server on |
+| Connect TV | `rn-webos connect <ip>`, with the passphrase in `RN_WEBOS_PASSPHRASE` so it reaches no file: the TV's address and the passphrase its Developer Mode app shows, with Key Server on |
 
 Expo stops a command after ten seconds, so each one starts its work in the
 background and prints the address of the plugin's page,
@@ -281,12 +281,12 @@ rn-webos connect 192.168.1.50 --passphrase A1b2C3 --name living-room
 (`http://<tv>:9991/webos_rsa`), opens it with the passphrase, logs in once to
 prove it works, and keeps the key with the TV's name and address (see
 [Where things go](#where-things-go)). It asks for the passphrase on a terminal;
-anywhere else pass `--passphrase`. A wrong passphrase is reported as such and
+anywhere else pass `--passphrase` or set `RN_WEBOS_PASSPHRASE`. A wrong passphrase is reported as such and
 nothing is kept. Key Server can be turned off afterwards.
 
 | Option | |
 |---|---|
-| `--passphrase <code>` | The six characters the Developer Mode app shows (default: asked for) |
+| `--passphrase <code>` | The six characters the Developer Mode app shows (default: `$RN_WEBOS_PASSPHRASE`, else asked for) |
 | `--name <name>` | What `--device` calls this TV from now on (default: the name it already has, else its model). Letters, digits, `.`, `_` and `-` |
 
 Every command that takes `--device, -d` takes the TV's IP address or this name.

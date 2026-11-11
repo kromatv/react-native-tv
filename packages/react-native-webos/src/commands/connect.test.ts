@@ -29,6 +29,7 @@ beforeEach(() => {
 });
 
 afterEach(async () => {
+  vi.unstubAllEnvs();
   vi.clearAllMocks();
   await Promise.all(tvs.splice(0).map((started) => started.close()));
 });
@@ -61,6 +62,15 @@ describe('rn-webos connect', () => {
       hint: expect.stringContaining('six characters'),
     });
     expect(await readKnownDevices()).toEqual([]);
+  });
+
+  it('takes the passphrase from RN_WEBOS_PASSPHRASE, which the dev tools set', async () => {
+    const started = await tv();
+    vi.stubEnv('RN_WEBOS_PASSPHRASE', 'A1b2C3');
+
+    await connectCommand.run([`127.0.0.1:${started.port}`], { cwd: '/' });
+
+    expect(readDeviceKey({ host: '127.0.0.1', port: started.port })).not.toBeNull();
   });
 
   it('asks for --passphrase where it cannot ask on a terminal', async () => {

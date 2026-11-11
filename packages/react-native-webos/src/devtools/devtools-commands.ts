@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { WEBOS_PLUGIN } from '../config/webos-settings.ts';
+import { PASSPHRASE_VARIABLE } from '../cli/passphrase-variable.ts';
 import { addressText } from '../webos/device-address.ts';
 import { readKnownDevices } from '../webos/known-devices.ts';
 
@@ -8,6 +9,8 @@ export interface JobPlan {
   readonly kind: string;
   readonly title: string;
   readonly args: readonly string[];
+  /** Variables the job runs with that its record on disk must not hold, such as a passphrase. */
+  readonly env?: Readonly<Record<string, string>>;
   /** Only one job of this kind runs at a time: a new one stops the last. */
   readonly exclusive: boolean;
   /** The job bundles the app, so the app's Metro config must know the `webos` platform. */
@@ -86,7 +89,8 @@ export async function planCommand(
     return {
       kind: command,
       title: `Connect TV ${device}`,
-      args: ['connect', device, '--passphrase', passphrase],
+      args: ['connect', device],
+      env: { [PASSPHRASE_VARIABLE]: passphrase },
       exclusive: false,
       bundles: false,
     };

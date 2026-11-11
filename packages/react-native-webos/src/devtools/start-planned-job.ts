@@ -17,5 +17,11 @@ export async function startPlannedJob(dir: string, plan: JobPlan, root: string):
     );
     await Promise.all(running.map((job) => stopJob(dir, job.id)));
   }
-  return startJob(dir, { kind: plan.kind, title: plan.title, args: [...plan.args], cwd: root });
+  return startJob(dir, {
+    kind: plan.kind,
+    title: plan.title,
+    args: [...plan.args],
+    cwd: root,
+    env: plan.env,
+  });
 }

@@ -88,16 +88,18 @@ export async function readLog(
   }
 }
 
+/** What a job is started from. `env` reaches the command and never its record on disk. */
+export type JobRequest = Pick<Job, 'kind' | 'title' | 'args' | 'cwd'> & {
+  readonly env?: Readonly<Record<string, string>>;
+};
+
 /** Starts `rn-webos <args>` in `cwd`, detached, so it outlives the process that asked for it. */
-export async function startJob(
-  dir: string,
-  request: Pick<Job, 'kind' | 'title' | 'args' | 'cwd'>,
-  runner = RUNNER,
-): Promise<Job> {
+export async function startJob(dir: string, request: JobRequest, runner = RUNNER): Promise<Job> {
   await mkdir(dir, { recursive: true });
   await prune(dir);
+  const { env, ...recorded } = request;
   const job: Job = {
-    ...request,
+    ...recorded,
     id: `${Date.now().toString(36)}-${randomBytes(4).toString('hex')}`,
     status: 'running',
     startedAt: new Date().toISOString(),
@@ -107,6 +109,7 @@ export async function startJob(
     detached: true,
     stdio: 'ignore',
     cwd: request.cwd,
+    env: { ...process.env, ...env },
   });
   child.unref();
   return job;
