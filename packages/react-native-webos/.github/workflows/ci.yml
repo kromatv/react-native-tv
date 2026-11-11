@@ -120,8 +120,10 @@ jobs:
         run: |
           sudo apt-get update -q
           sudo apt-get install -y -q --no-install-recommends \
-            clang lld llvm libclang-rt-dev cmake ninja-build pkg-config ccache python3 \
-            libefl-all-dev libevas1-engines-x libcurl4-openssl-dev
+            clang lld llvm libclang-rt-dev cmake ninja-build generate-ninja pkg-config ccache python3 \
+            libegl-dev libgles-dev libcurl4-openssl-dev libicu-dev \
+            libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev libxfixes-dev libxss-dev \
+            libxtst-dev libxkbcommon-dev fonts-dejavu-core fonts-noto-core
           clang --version
           cmake --version
           echo "CCACHE_DIR=$HOME/.cache/ccache" >> "$GITHUB_ENV"
@@ -132,12 +134,13 @@ jobs:
             ~/.cache/ccache
             ~/.cache/react-native-webos/downloads
             ~/rn-webos-simulator/build/hermes-host
+            ~/rn-webos-simulator/build/skia
           key: native-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('runtime/dependencies.json', 'bun.lock') }}-${{ github.sha }}
           restore-keys: |
             native-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('runtime/dependencies.json', 'bun.lock') }}-
             native-${{ runner.os }}-${{ runner.arch }}-
       - run: ccache --zero-stats
-      - name: Compile the runtime and the launcher
+      - name: Compile the runtime
         run: bun scripts/compile-simulator-runtime.ts example
       - name: Test the runtime
         run: bun scripts/test-runtime.ts example --coverage coverage/runtime.xml
@@ -155,6 +158,7 @@ jobs:
             ~/.cache/ccache
             ~/.cache/react-native-webos/downloads
             ~/rn-webos-simulator/build/hermes-host
+            ~/rn-webos-simulator/build/skia
           key: ${{ steps.native-cache.outputs.cache-primary-key }}
 
   sonar:
