@@ -303,10 +303,14 @@ PixelRect ComponentView::screenRect() const {
   };
 }
 
-ComponentView *ComponentView::viewAt(SkPoint windowPoint, SkPoint *local) {
+ComponentView *ComponentView::hitTest(SkPoint windowPoint, SkPoint *local) {
   ComponentView *hit = nullptr;
   hitTestLocal(windowPoint, hit, local);
   return hit;
+}
+
+ComponentView *ComponentView::viewAt(SkPoint point, SkPoint *local) {
+  return hitTest(point, local);
 }
 
 bool ComponentView::scrollByWheel(facebook::react::Point) {
