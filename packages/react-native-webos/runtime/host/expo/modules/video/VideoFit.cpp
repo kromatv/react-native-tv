@@ -37,6 +37,10 @@ Box boxOf(const PixelRect &rect) {
   return {double(rect.x), double(rect.y), double(rect.width), double(rect.height)};
 }
 
+int pixel(double value) {
+  return static_cast<int>(std::lround(value));
+}
+
 } // namespace
 
 std::optional<PlaneGeometry> fitVideo(
@@ -45,11 +49,10 @@ std::optional<PlaneGeometry> fitVideo(
   if (frame.width < 1 || frame.height < 1) return std::nullopt;
   const auto shown = intersect(intersect(frame, boxOf(view)), boxOf(window));
   const PixelRect roi{
-      .x = static_cast<Evas_Coord>(std::lround(shown.x)),
-      .y = static_cast<Evas_Coord>(std::lround(shown.y)),
-      .width = static_cast<Evas_Coord>(std::lround(shown.x + shown.width)) - static_cast<Evas_Coord>(std::lround(shown.x)),
-      .height =
-          static_cast<Evas_Coord>(std::lround(shown.y + shown.height)) - static_cast<Evas_Coord>(std::lround(shown.y)),
+      .x = pixel(shown.x),
+      .y = pixel(shown.y),
+      .width = pixel(shown.x + shown.width) - pixel(shown.x),
+      .height = pixel(shown.y + shown.height) - pixel(shown.y),
   };
   if (roi.width < 1 || roi.height < 1) return std::nullopt;
   const SourceCrop crop{
@@ -59,6 +62,18 @@ std::optional<PlaneGeometry> fitVideo(
       .height = shown.height / frame.height,
   };
   return PlaneGeometry{.roi = roi, .crop = crop};
+}
+
+PixelRect sourcePixels(const SourceCrop &crop, int videoWidth, int videoHeight) {
+  if (videoWidth <= 0 || videoHeight <= 0) return {};
+  const int left = pixel(crop.x * videoWidth);
+  const int top = pixel(crop.y * videoHeight);
+  return {
+      .x = left,
+      .y = top,
+      .width = std::max(1, pixel((crop.x + crop.width) * videoWidth) - left),
+      .height = std::max(1, pixel((crop.y + crop.height) * videoHeight) - top),
+  };
 }
 
 } // namespace rnwebos::expo

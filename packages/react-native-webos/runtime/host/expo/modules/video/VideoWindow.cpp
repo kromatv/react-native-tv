@@ -1,30 +1,15 @@
 #include "VideoWindow.h"
 
-#include "HostWindow.h"
+#include <map>
 
 namespace rnwebos::expo {
 
-namespace {
-
-struct WindowState {
-  int shownViews{0};
-  bool transparent{false};
-};
-
-WindowState &windowState() {
-  static WindowState state;
-  return state;
-}
-
-} // namespace
-
-void videoViewShown(bool shown) {
-  auto &state = windowState();
-  state.shownViews += shown ? 1 : -1;
-  const bool transparent = state.shownViews > 0;
-  if (transparent == state.transparent) return;
-  state.transparent = transparent;
-  setHostWindowTransparent(transparent);
+void videoViewShown(Scene &scene, bool shown) {
+  static std::map<Scene *, int> shownViews;
+  auto &count = shownViews[&scene];
+  count += shown ? 1 : -1;
+  scene.setTransparent(count > 0);
+  if (count <= 0) shownViews.erase(&scene);
 }
 
 } // namespace rnwebos::expo

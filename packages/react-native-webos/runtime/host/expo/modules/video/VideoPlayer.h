@@ -1,6 +1,6 @@
 #pragma once
 
-#include "WebOSPlayer.h"
+#include "MediaPlayer.h"
 
 #include "../../Context.h"
 #include "../../SharedObject.h"
@@ -18,15 +18,15 @@ namespace rnwebos::expo {
 
 /// expo-video's `VideoPlayer`: the JavaScript object's native half. Getters
 /// read a snapshot the main loop keeps current, setters update it and queue
-/// the call for the WebOSPlayer, so JavaScript never waits for the player. It
-/// is also the TV's media session, which voice commands and the app going to
-/// the background drive.
+/// the call for the MediaPlayer, so JavaScript never waits for the player. It
+/// is also the TV's media session, which the app going to the background
+/// drives.
 class VideoPlayer final : public SharedObject, public PlayerObserver, public MediaSession {
  public:
   explicit VideoPlayer(std::weak_ptr<Context> context);
   ~VideoPlayer() override;
 
-  /// Creates the WebOSPlayer and opens `source`. Call once, on the JavaScript
+  /// Creates the MediaPlayer and opens `source`. Call once, on the JavaScript
   /// thread, before JavaScript holds the object.
   void open(const folly::dynamic &source);
 
@@ -41,6 +41,7 @@ class VideoPlayer final : public SharedObject, public PlayerObserver, public Med
   void restart() override;
   void seekTo(double seconds) override;
   bool setSubtitlesEnabled(bool enabled) override;
+  void appForegroundChanged(bool foreground) override;
 
   bool playing() const;
   PlayerStatus status() const;
@@ -78,7 +79,7 @@ class VideoPlayer final : public SharedObject, public PlayerObserver, public Med
   void store(const std::string &name, const folly::dynamic &value);
 
   /// The player a view shows; main thread only.
-  const std::shared_ptr<WebOSPlayer> &webosPlayer() const;
+  const std::shared_ptr<MediaPlayer> &mediaPlayer() const;
   int number() const;
 
   void sharedObjectDidRelease() override;
@@ -114,15 +115,14 @@ class VideoPlayer final : public SharedObject, public PlayerObserver, public Med
     folly::dynamic stored{folly::dynamic::object()};
   };
 
-  void command(std::function<void(WebOSPlayer &)> body);
+  void command(std::function<void(MediaPlayer &)> body);
   void emit(const std::string &event, folly::dynamic payload) const;
   void openOnPlayer(const folly::dynamic &source, bool prepareNow);
   double positionLocked() const;
-  bool accurateSeeks() const;
 
   const std::weak_ptr<Context> context_;
   const int number_;
-  std::shared_ptr<WebOSPlayer> player_;
+  std::shared_ptr<MediaPlayer> player_;
   mutable std::mutex mutex_;
   Snapshot snapshot_;
 };

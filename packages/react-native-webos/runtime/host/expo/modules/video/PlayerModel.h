@@ -11,8 +11,8 @@ enum class PlayerStatus { Idle, Loading, ReadyToPlay, Error };
 
 const char *statusName(PlayerStatus status);
 
-/// One audio or text track of the media, as capi-media-player lists it: an
-/// index and an ISO 639-1 language code, `und` when the file names none.
+/// One audio or text track of the media: its index in the pipeline's list and
+/// the language the pipeline names, `und` when the file names none.
 struct MediaTrack {
   int index{0};
   std::string language;

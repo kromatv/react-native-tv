@@ -47,12 +47,12 @@ VideoPlayer::~VideoPlayer() {
 
 void VideoPlayer::open(const folly::dynamic &source) {
   auto self = std::static_pointer_cast<VideoPlayer>(shared_from_this());
-  player_ = std::make_shared<WebOSPlayer>(std::weak_ptr<PlayerObserver>(self), number_);
+  player_ = std::make_shared<MediaPlayer>(std::weak_ptr<PlayerObserver>(self), number_);
   addMediaSession(self);
   openOnPlayer(source, false);
   if (auto context = context_.lock()) {
     context->runOnJs([weak = std::weak_ptr<VideoPlayer>(self)](facebook::jsi::Runtime &) {
-      if (auto player = weak.lock()) player->command([](WebOSPlayer &webos) { webos.prepare(); });
+      if (auto player = weak.lock()) player->command([](MediaPlayer &media) { media.prepare(); });
     });
   }
 }
@@ -68,9 +68,9 @@ void VideoPlayer::openOnPlayer(const folly::dynamic &source, bool prepareNow) {
     snapshot_.buffered = -1;
     snapshot_.media = {};
   }
-  command([uri, headers = headersOf(source), prepareNow](WebOSPlayer &webos) {
-    webos.open(uri, headers);
-    if (prepareNow) webos.prepare();
+  command([uri, headers = headersOf(source), prepareNow](MediaPlayer &media) {
+    media.open(uri, headers);
+    if (prepareNow) media.prepare();
   });
 }
 
@@ -85,11 +85,11 @@ void VideoPlayer::replace(const folly::dynamic &source) {
 }
 
 void VideoPlayer::play() {
-  command([](WebOSPlayer &webos) { webos.play(); });
+  command([](MediaPlayer &media) { media.play(); });
 }
 
 void VideoPlayer::pause() {
-  command([](WebOSPlayer &webos) { webos.pause(); });
+  command([](MediaPlayer &media) { media.pause(); });
 }
 
 void VideoPlayer::seekBy(double seconds) {
@@ -133,9 +133,7 @@ void VideoPlayer::setCurrentTime(double seconds) {
     snapshot_.positionAt = std::chrono::steady_clock::now();
     generation = ++snapshot_.seekGeneration;
   }
-  command([seconds, generation, accurate = accurateSeeks()](WebOSPlayer &webos) {
-    webos.seekTo(seconds, accurate, generation);
-  });
+  command([seconds, generation](MediaPlayer &media) { media.seekTo(seconds, generation); });
 }
 
 double VideoPlayer::duration() const {
@@ -159,7 +157,7 @@ void VideoPlayer::setMuted(bool muted) {
     std::lock_guard lock(mutex_);
     old = std::exchange(snapshot_.muted, muted);
   }
-  command([muted](WebOSPlayer &webos) { webos.setMuted(muted); });
+  command([muted](MediaPlayer &media) { media.setMuted(muted); });
   if (old != muted) emit("mutedChange", folly::dynamic::object("muted", muted)("oldMuted", old));
 }
 
@@ -175,7 +173,7 @@ void VideoPlayer::setVolume(double volume) {
     std::lock_guard lock(mutex_);
     old = std::exchange(snapshot_.volume, volume);
   }
-  command([volume](WebOSPlayer &webos) { webos.setVolume(volume); });
+  command([volume](MediaPlayer &media) { media.setVolume(volume); });
   if (old != volume) emit("volumeChange", folly::dynamic::object("volume", volume)("oldVolume", old));
 }
 
@@ -189,7 +187,7 @@ void VideoPlayer::setLoop(bool loop) {
     std::lock_guard lock(mutex_);
     snapshot_.loop = loop;
   }
-  command([loop](WebOSPlayer &webos) { webos.setLooping(loop); });
+  command([loop](MediaPlayer &media) { media.setLooping(loop); });
 }
 
 double VideoPlayer::playbackRate() const {
@@ -205,7 +203,7 @@ void VideoPlayer::setPlaybackRate(double rate) {
     snapshot_.positionAt = std::chrono::steady_clock::now();
     old = std::exchange(snapshot_.rate, rate);
   }
-  command([rate](WebOSPlayer &webos) { webos.setPlaybackRate(rate); });
+  command([rate](MediaPlayer &media) { media.setPlaybackRate(rate); });
   if (old != rate) emit("playbackRateChange", folly::dynamic::object("playbackRate", rate)("oldPlaybackRate", old));
 }
 
@@ -219,7 +217,7 @@ void VideoPlayer::setTimeUpdateEventInterval(double seconds) {
     std::lock_guard lock(mutex_);
     snapshot_.interval = std::max(0.0, seconds);
   }
-  command([seconds](WebOSPlayer &webos) { webos.setProgressInterval(seconds); });
+  command([seconds](MediaPlayer &media) { media.setProgressInterval(seconds); });
 }
 
 folly::dynamic VideoPlayer::bufferOptions() const {
@@ -233,7 +231,7 @@ void VideoPlayer::setBufferOptions(const folly::dynamic &options) {
     snapshot_.bufferOptions = options.isObject() ? options : folly::dynamic::object();
   }
   const auto seconds = numberField(options, "minBufferForPlayback", 0);
-  command([seconds](WebOSPlayer &webos) { webos.setPrebuffer(seconds); });
+  command([seconds](MediaPlayer &media) { media.setPrebuffer(seconds); });
 }
 
 folly::dynamic VideoPlayer::seekTolerance() const {
@@ -244,12 +242,6 @@ folly::dynamic VideoPlayer::seekTolerance() const {
 void VideoPlayer::setSeekTolerance(const folly::dynamic &tolerance) {
   std::lock_guard lock(mutex_);
   snapshot_.seekTolerance = tolerance.isObject() ? tolerance : folly::dynamic::object();
-}
-
-bool VideoPlayer::accurateSeeks() const {
-  std::lock_guard lock(mutex_);
-  const auto &tolerance = snapshot_.seekTolerance;
-  return numberField(tolerance, "toleranceBefore", -1) == 0 && numberField(tolerance, "toleranceAfter", -1) == 0;
 }
 
 folly::dynamic VideoPlayer::maxResolution() const {
@@ -264,7 +256,7 @@ void VideoPlayer::setMaxResolution(const folly::dynamic &size) {
   }
   const auto width = static_cast<int>(numberField(size, "width", -1));
   const auto height = static_cast<int>(numberField(size, "height", -1));
-  command([width, height](WebOSPlayer &webos) { webos.setMaxResolution(width, height); });
+  command([width, height](MediaPlayer &media) { media.setMaxResolution(width, height); });
 }
 
 folly::dynamic VideoPlayer::stored(const std::string &name, const folly::dynamic &fallback) const {
@@ -278,7 +270,7 @@ void VideoPlayer::store(const std::string &name, const folly::dynamic &value) {
   snapshot_.stored[name] = value;
 }
 
-const std::shared_ptr<WebOSPlayer> &VideoPlayer::webosPlayer() const {
+const std::shared_ptr<MediaPlayer> &VideoPlayer::mediaPlayer() const {
   return player_;
 }
 
@@ -287,12 +279,12 @@ int VideoPlayer::number() const {
 }
 
 void VideoPlayer::sharedObjectDidRelease() {
-  command([](WebOSPlayer &webos) { webos.release(); });
+  command([](MediaPlayer &media) { media.release(); });
 }
 
-void VideoPlayer::command(std::function<void(WebOSPlayer &)> body) {
+void VideoPlayer::command(std::function<void(MediaPlayer &)> body) {
   if (!player_) return;
-  runOnMainThread([player = player_, body = std::move(body)] { player->perform(body); });
+  runOnMainThread([player = player_, body = std::move(body)] { body(*player); });
 }
 
 } // namespace rnwebos::expo

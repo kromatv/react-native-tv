@@ -1,11 +1,13 @@
 #pragma once
 
+#include "render/Scene.h"
+
 namespace rnwebos::expo {
 
-/// Counts the views showing a video. While one does, the window turns
-/// transparent, which with each view's hole is what lets the overlay plane show
-/// through a page that has a background (`webos-media-playback.md`, section 3).
-/// Main thread only.
-void videoViewShown(bool shown);
+/// Counts the views of `scene` showing a video. While one does, the scene is
+/// cleared to transparent, so the video plane also shows through a hole that
+/// sits in a layer, such as under an ancestor with an opacity
+/// (docs/reference/webos-media-playback.md, section 2). Main thread only.
+void videoViewShown(Scene &scene, bool shown);
 
 } // namespace rnwebos::expo
