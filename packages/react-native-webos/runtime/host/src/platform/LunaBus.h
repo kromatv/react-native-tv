@@ -1,5 +1,7 @@
 #pragma once
 
+#include "LunaTransport.h"
+
 #include <folly/dynamic.h>
 
 #include <chrono>
@@ -27,7 +29,19 @@ class LunaBus final {
     virtual ~Subscription() = default;
   };
 
+  /// The reply of one call, which may still be on its way.
+  class PendingReply {
+   public:
+    virtual ~PendingReply() = default;
+    /// The reply, waited for until `deadline` at most. Nothing when it has not come by then.
+    virtual std::optional<folly::dynamic> waitUntil(std::chrono::steady_clock::time_point deadline) = 0;
+  };
+
   static LunaBus &get();
+
+  /// A bus over another transport than the TV's, for tests.
+  explicit LunaBus(std::unique_ptr<LunaTransport> transport);
+  ~LunaBus();
 
   LunaBus(const LunaBus &) = delete;
   LunaBus &operator=(const LunaBus &) = delete;
@@ -37,6 +51,10 @@ class LunaBus final {
   /// Sends one call. `onReply` gets its one reply; without it the reply is
   /// dropped. False when the bus is unavailable or refuses the call.
   bool call(const std::string &uri, const folly::dynamic &payload, Reply onReply = {});
+
+  /// Sends one call and returns at once: the reply is kept for whoever waits
+  /// for it, on any thread. Null when the bus is unavailable or refuses the call.
+  std::shared_ptr<PendingReply> ask(const std::string &uri, const folly::dynamic &payload);
 
   /// Sends one call and waits for its reply, at most `timeout`. Nothing when
   /// the bus is unavailable, refuses the call or does not answer in time.
@@ -52,11 +70,7 @@ class LunaBus final {
   std::unique_ptr<Subscription> subscribe(const std::string &uri, const folly::dynamic &payload, Reply onReply);
 
  private:
-  LunaBus();
-  ~LunaBus() = default;
-
-  struct Library;
-  const std::unique_ptr<Library> library_;
+  const std::unique_ptr<LunaTransport> transport_;
 };
 
 } // namespace rnwebos
