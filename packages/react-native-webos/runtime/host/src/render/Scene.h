@@ -8,12 +8,20 @@
 
 namespace rnwebos {
 
+class ComponentView;
+
 /// Something the window shows: a surface's view tree, a Modal, the error screen.
 class SceneLayer {
  public:
   virtual ~SceneLayer() = default;
   /// Draws the layer in window pixels.
   virtual void draw(SkCanvas &canvas) = 0;
+  /// The view of this layer under the window point `point` that takes pointer
+  /// events, with the point in that view's own pixels in `local`; null when
+  /// the layer has none there.
+  virtual ComponentView *viewAt(SkPoint point, SkPoint *local);
+  /// Whether the layer keeps the pointer from the layers under it.
+  virtual bool blocksPointer() const;
 };
 
 /// What one drawn frame cost, for `rn-webos perf`.
@@ -66,6 +74,10 @@ class Scene final {
   bool render();
   /// Draws the scene into `canvas`, as a screenshot or a test wants it.
   void drawInto(SkCanvas &canvas);
+
+  /// The topmost view under the window point `point` that takes pointer
+  /// events, or null.
+  ComponentView *viewAt(SkPoint point, SkPoint *local) const;
 
   void setFrameObserver(std::function<void(const FrameTiming &)> observer);
 

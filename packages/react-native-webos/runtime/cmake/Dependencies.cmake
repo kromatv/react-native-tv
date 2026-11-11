@@ -19,6 +19,11 @@ foreach(_index RANGE ${_last})
   string(JSON _name MEMBER "${_rn_webos_dependencies}" ${_index})
   string(JSON _url GET "${_rn_webos_dependencies}" ${_name} url)
   string(JSON _sha256 GET "${_rn_webos_dependencies}" ${_name} sha256)
+  # A pinned file that is no source archive, such as the CA bundle, is
+  # `rn-webos`'s to download: CMake compiles nothing from it.
+  if(NOT _url MATCHES "\\.(tar\\.gz|tgz|tar\\.xz|tar\\.bz2|zip)$")
+    continue()
+  endif()
   get_filename_component(_archive "${_url}" NAME)
   FetchContent_Declare(${_name}
     URL "${_url}"

@@ -32,8 +32,12 @@ void ReactHost::emitDeviceEvent(const std::string &eventName, folly::dynamic pay
 }
 
 void ReactHost::handleEvent(const SDL_Event &event) {
+  if (!errorScreen_->isShown() && pointerInput_->handleEvent(event)) return;
   switch (event.type) {
     case SDL_EVENT_KEY_DOWN:
+      // The TV reports the pointer going away as a key
+      // (docs/reference/webos-window-input.md, section 9).
+      if (event.key.scancode == SDL_SCANCODE_WEBOS_CURSOR_HIDE) pointerInput_->pointerLeft();
       remotePresses_->keyDown(event.key);
       return;
     case SDL_EVENT_KEY_UP:
@@ -51,6 +55,7 @@ void ReactHost::handleEvent(const SDL_Event &event) {
       return;
     case SDL_EVENT_WINDOW_FOCUS_LOST:
       remotePresses_->releaseAll();
+      pointerInput_->pointerLeft();
       return;
     case SDL_EVENT_WINDOW_EXPOSED:
       scene_->invalidate();

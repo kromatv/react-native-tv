@@ -213,7 +213,6 @@ SkRect ComponentView::paintBounds() const {
   const auto box = box_.overflow();
   auto bounds = SkRect::MakeWH(static_cast<float>(size_.width), static_cast<float>(size_.height));
   if (box_.style().clips || children_.empty()) {
-    bounds.outset(0, 0);
     return SkRect::MakeLTRB(
         bounds.left() - static_cast<float>(box.left),
         bounds.top() - static_cast<float>(box.top),
@@ -304,10 +303,14 @@ PixelRect ComponentView::screenRect() const {
   };
 }
 
-ComponentView *ComponentView::hitTest(SkPoint windowPoint, SkPoint *local) {
+ComponentView *ComponentView::viewAt(SkPoint windowPoint, SkPoint *local) {
   ComponentView *hit = nullptr;
   hitTestLocal(windowPoint, hit, local);
   return hit;
+}
+
+bool ComponentView::scrollByWheel(facebook::react::Point) {
+  return false;
 }
 
 bool ComponentView::hitTestLocal(SkPoint outer, ComponentView *&hit, SkPoint *local) {

@@ -513,7 +513,14 @@ above the 300 ms hold timer, so the timer, not the repeat, starts a hold.
 
 ### Pointer
 
-Mouse motion, buttons and wheel map to React Native pointer events once the host
-has them. Until then the host hides the pointer on every arrow press with
-`SDL_webOSCursorVisibility(false)` and treats the two pointer keys as the switch
-between pointer mode and focus mode.
+`input/PointerInput` turns SDL's mouse events into what React Native has for a
+pointer: W3C pointer enter, leave and move events on the views under it (the
+feature flag `shouldPressibilityUseW3CPointerEventsForHover` makes `Pressable`
+call `onHoverIn` and `onHoverOut` from them), touches for the button (the
+responder system makes presses of them), and a scroll of the nearest scroll
+view for the wheel, 100 points a notch. The pointer leaving
+(`SDL_SCANCODE_WEBOS_CURSOR_HIDE`, the window losing the pointer or the focus)
+ends the hover and cancels a press. The system draws the cursor and hides it
+when an arrow key is pressed (section 9), so the host draws none and hides
+none. Verified in the simulator with injected mouse events; on a TV, the
+events the Magic Remote really sends remain to be seen.

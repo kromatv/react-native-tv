@@ -43,5 +43,10 @@
     "version": "3.4.16-webos.5",
     "url": "https://github.com/webosbrew/SDL-webOS/archive/refs/tags/release-3.4.16-webos.5.tar.gz",
     "sha256": "84b43b4b41e794885149364ed46fd88e8859d34ac3d0520dc15429dcdbcce141"
+  },
+  "cacert": {
+    "version": "2026-11-05",
+    "url": "https://curl.se/ca/cacert-2026-11-05.pem",
+    "sha256": "427c064216761a1e72a8b30f0d954d08cb6e4435a82091fb865afd20c8497285"
   }
 }

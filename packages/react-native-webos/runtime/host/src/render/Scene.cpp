@@ -7,6 +7,14 @@
 
 namespace rnwebos {
 
+ComponentView *SceneLayer::viewAt(SkPoint, SkPoint *) {
+  return nullptr;
+}
+
+bool SceneLayer::blocksPointer() const {
+  return false;
+}
+
 Scene::Scene(HostWindow &window) : window_(&window), size_(window.size()) {
   MainLoop::get().setRenderer([this] { return render(); });
   MainLoop::get().requestFrame();
@@ -53,6 +61,14 @@ void Scene::drawInto(SkCanvas &canvas) {
   canvas.clear(transparent_ ? SK_ColorTRANSPARENT : SK_ColorBLACK);
   const auto layers = layers_;
   for (const auto &entry : layers) entry.layer->draw(canvas);
+}
+
+ComponentView *Scene::viewAt(SkPoint point, SkPoint *local) const {
+  for (auto entry = layers_.rbegin(); entry != layers_.rend(); ++entry) {
+    if (auto *view = entry->layer->viewAt(point, local)) return view;
+    if (entry->layer->blocksPointer()) return nullptr;
+  }
+  return nullptr;
 }
 
 bool Scene::render() {

@@ -64,8 +64,46 @@ void runKeyCommand(std::string_view command, std::string_view arguments) {
   pressKey(scancode, length);
 }
 
+float number(std::string_view text) {
+  float value = 0;
+  std::from_chars(text.data(), text.data() + text.size(), value);
+  return value;
+}
+
+void runPointerCommand(std::string_view command, std::string_view arguments) {
+  static float x = 0;
+  static float y = 0;
+  const auto [first, second] = splitWord(arguments);
+  SDL_Event event{};
+  if (command == "pointer-move") {
+    x = number(first);
+    y = number(second);
+    event.type = SDL_EVENT_MOUSE_MOTION;
+    event.motion.x = x;
+    event.motion.y = y;
+  } else if (command == "pointer-down" || command == "pointer-up") {
+    event.type = command == "pointer-down" ? SDL_EVENT_MOUSE_BUTTON_DOWN : SDL_EVENT_MOUSE_BUTTON_UP;
+    event.button.button = SDL_BUTTON_LEFT;
+    event.button.down = command == "pointer-down";
+    event.button.x = x;
+    event.button.y = y;
+  } else if (command == "pointer-wheel") {
+    event.type = SDL_EVENT_MOUSE_WHEEL;
+    event.wheel.y = number(first);
+    event.wheel.mouse_x = x;
+    event.wheel.mouse_y = y;
+  } else if (command == "pointer-leave") {
+    event.type = SDL_EVENT_WINDOW_MOUSE_LEAVE;
+  } else {
+    log(LogLevel::Warning, "Unknown simulator command: " + std::string(command));
+    return;
+  }
+  SDL_PushEvent(&event);
+}
+
 void runCommand(const SimulatorControl::Host &host, std::string_view line) {
   const auto [command, arguments] = splitWord(line);
+  if (command.starts_with("pointer-")) return runPointerCommand(command, arguments);
   if (command == "pause") return host.pause();
   if (command == "resume") return host.resume();
   if (command == "exit") return host.exit();

@@ -35,6 +35,9 @@ void ReactHost::start() {
   createInstance();
   loadBundle();
   remotePresses_ = std::make_unique<RemotePresses>([this](const RemoteEvent &event) { onRemoteEvent(event); });
+  pointerInput_ = std::make_unique<PointerInput>(*scene_, [this](facebook::react::Tag tag) {
+    return presenter_ ? presenter_->mountingManager().findView(tag) : nullptr;
+  });
   MainLoop::get().setEventHandler([this](const SDL_Event &event) { handleEvent(event); });
   startSurface();
 #if RN_WEBOS_SIMULATOR
@@ -61,6 +64,7 @@ void ReactHost::stop() {
   simulatorControl_.reset();
 #endif
   MainLoop::get().setEventHandler(nullptr);
+  pointerInput_.reset();
   remotePresses_.reset();
   closeMainThreadSync();
   if (instanceGate_ != nullptr) instanceGate_->close();
@@ -75,6 +79,7 @@ void ReactHost::stop() {
 void ReactHost::reload() {
   log(LogLevel::Info, "Reloading " + config_.appKey);
   remotePresses_->releaseAll();
+  pointerInput_->pointerLeft();
   closeMainThreadSync();
   instanceGate_->close();
   stopReactNative();
@@ -111,6 +116,7 @@ void ReactHost::setActive(bool isActive) {
 
 void ReactHost::pause() {
   remotePresses_->releaseAll();
+  pointerInput_->pointerLeft();
   pauseMediaSessionsForBackground(config_.backgroundMedia);
   setActive(false);
 }

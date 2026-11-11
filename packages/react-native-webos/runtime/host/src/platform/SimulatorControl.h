@@ -9,10 +9,12 @@ namespace rnwebos {
 
 /// What `rn-webos simulator` tells a running app, read from the FIFO named by
 /// `RN_WEBOS_SIMULATOR_CONTROL`, one command per line: `pause`, `resume`,
-/// `exit`, `open-url <url>`, and `key <name>`, `key-down <name>`,
-/// `key-up <name>` or `key-hold <name> <milliseconds>` for the remote. A key
-/// becomes the SDL key event the TV's remote would send, so it takes the same
-/// path as on a TV. Simulator builds only.
+/// `exit`, `open-url <url>`, `key <name>`, `key-down <name>`, `key-up <name>`
+/// or `key-hold <name> <milliseconds>` for the remote, and `pointer-move <x>
+/// <y>` (window pixels), `pointer-down`, `pointer-up`, `pointer-wheel
+/// <notches>` and `pointer-leave` for its pointer. Each becomes the SDL event
+/// the TV would send, so it takes the same path as on a TV. Simulator builds
+/// only.
 class SimulatorControl final {
  public:
   struct Host {

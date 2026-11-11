@@ -64,9 +64,14 @@ class ComponentView : public SceneLayer {
   /// view's own transform and every ancestor's, as the rect around it.
   PixelRect screenRect() const;
 
-  /// The deepest view under the window point `point` that takes pointer
-  /// events, or null. `local` gets the point in that view's own pixels.
-  ComponentView *hitTest(SkPoint point, SkPoint *local = nullptr);
+  /// The deepest view of this layer under the window point `point` that
+  /// takes pointer events, or null. `local` gets the point in that view's own
+  /// pixels.
+  ComponentView *viewAt(SkPoint point, SkPoint *local) override;
+
+  /// Scrolls by `delta` points when the view scrolls and has room to; false
+  /// to leave the wheel to an ancestor.
+  virtual bool scrollByWheel(facebook::react::Point delta);
 
  protected:
   Scene &scene() const;

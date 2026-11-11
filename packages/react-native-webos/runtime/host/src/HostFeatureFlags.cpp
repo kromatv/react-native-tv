@@ -15,6 +15,11 @@ class WebOSFeatureFlags final : public facebook::react::ReactNativeFeatureFlagsO
   bool cxxNativeAnimatedEnabled() override {
     return true;
   }
+
+  // The remote's pointer hovers: Pressable reads it from W3C pointer events.
+  bool shouldPressibilityUseW3CPointerEventsForHover() override {
+    return true;
+  }
 };
 
 } // namespace
