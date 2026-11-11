@@ -39,7 +39,9 @@ class EditBuffer {
   std::size_t utf16Offset(std::size_t position) const;
   std::size_t positionAtUtf16(std::size_t offset) const;
 
-  /// Replaces the whole value and puts the caret at its end.
+  /// Replaces the whole value as Android's `Editable.replace` does for a text
+  /// from JavaScript: a caret inside the old text keeps its relative place,
+  /// one at its end goes to the new end.
   void setText(std::string_view utf8);
   /// Selects from `anchor` to `focus`, both UTF-16 offsets, clamped to the text.
   void selectUtf16(std::size_t anchor, std::size_t focus);
@@ -73,6 +75,7 @@ class EditBuffer {
 
  private:
   bool replace(Range range, std::u32string_view insertion, std::size_t maxLength);
+  std::size_t rescaled(std::size_t position, std::size_t oldUnits, const std::u32string &replacement) const;
   bool erase(std::size_t start, std::size_t end);
 
   std::u32string text_;

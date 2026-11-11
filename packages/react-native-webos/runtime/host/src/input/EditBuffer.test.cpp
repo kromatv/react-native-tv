@@ -18,6 +18,34 @@ TEST_CASE("setText puts the caret after the last code point") {
   CHECK(buffer.selectionUtf16() == EditBuffer::Range{.start = 4, .end = 4});
 }
 
+TEST_CASE("setText keeps a caret inside the old text at its relative place, as Android's Editable.replace does") {
+  EditBuffer buffer;
+  buffer.setText("abxc");
+  buffer.moveTo(3, false);
+
+  buffer.setText("ABXC");
+  CHECK(buffer.caret() == 3);
+
+  buffer.setText("AB");
+  CHECK(buffer.caret() == 1);
+}
+
+TEST_CASE("setText leaves a caret at the start where it is, takes one at the end to the new end, and scales a selection") {
+  EditBuffer buffer;
+  buffer.setText("abcd");
+  buffer.moveTo(0, false);
+
+  buffer.setText("ABCDEFGH");
+  CHECK(buffer.caret() == 0);
+
+  buffer.selectUtf16(2, 8);
+  buffer.setText("abcd");
+  CHECK(buffer.selection() == EditBuffer::Range{.start = 1, .end = 4});
+
+  buffer.setText("");
+  CHECK(buffer.caret() == 0);
+}
+
 TEST_CASE("insert keeps what maxLength leaves room for and never splits a surrogate pair") {
   EditBuffer buffer;
   buffer.setText("ab");

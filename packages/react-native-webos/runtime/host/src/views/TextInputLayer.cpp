@@ -107,15 +107,20 @@ void TextInputLayer::readLines() {
   std::vector<LineMetrics> metrics;
   layout_.paragraph->getLineMetrics(metrics);
   lines_.clear();
+  std::size_t start = 0;
   for (const auto &line : metrics) {
     const bool isLast = &line == &metrics.back();
+    const auto end = line.fHardBreak || isLast ? line.fEndIndex : line.fEndExcludingWhitespaces;
     lines_.push_back({
-        .start = line.fStartIndex,
-        .end = line.fHardBreak || isLast ? line.fEndIndex : line.fEndExcludingWhitespaces,
+        .start = start,
+        .end = std::max(start, end),
         .left = static_cast<float>(line.fLeft),
         .top = static_cast<float>(line.fBaseline - line.fAscent),
         .height = static_cast<float>(line.fAscent + line.fDescent),
     });
+    // Not the line's own start index: SkParagraph starts the empty line
+    // after a last newline at the newline itself.
+    start = std::max(start, line.fEndIncludingNewline);
   }
 }
 
@@ -154,7 +159,7 @@ void TextInputLayer::place() {
   if (!lines_.empty()) {
     const auto &line = lines_[lineOf(caret_)];
     caretInText_ = SkRect::MakeXYWH(
-        std::round(caretX(line, caret_)), std::floor(line.top), static_cast<float>(caretWidth_), std::ceil(line.height));
+        std::round(caretX(line, caret_)), std::round(line.top), static_cast<float>(caretWidth_), std::round(line.height));
   }
   if (selectionEnd_ > selectionStart_) {
     const auto boxes = layout_.paragraph->getRectsForRange(

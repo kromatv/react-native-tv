@@ -10,9 +10,10 @@ namespace rnwebos {
 /// What `rn-webos simulator` tells a running app, read from the FIFO named by
 /// `RN_WEBOS_SIMULATOR_CONTROL`, one command per line: `pause`, `resume`,
 /// `exit`, `open-url <url>`, and `key <name>`, `key-down <name>`,
-/// `key-up <name>` or `key-hold <name> <milliseconds>` for the remote. A key
-/// becomes the SDL key event the TV's remote would send, so it takes the same
-/// path as on a TV. The TV's on-screen keyboard, which X11 has none of, is
+/// `key-up <name>` or `key-hold <name> <milliseconds>` for the remote, the
+/// name after `Shift+` for a keyboard's key with Shift down. A key becomes the
+/// SDL key event the TV's remote would send, so it takes the same path as on a
+/// TV. The TV's on-screen keyboard, which X11 has none of, is
 /// played by `text <UTF-8 text>` (the keyboard commits that text),
 /// `compose <UTF-8 text>` (it shows that text as its composition; no text
 /// ends the composition) and `keyboard shown` or `keyboard hidden`, each as

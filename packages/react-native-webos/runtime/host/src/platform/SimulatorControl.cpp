@@ -27,19 +27,28 @@ namespace {
 constexpr std::size_t kMaxLine = 4096;
 constexpr auto kPressLength = std::chrono::milliseconds(60);
 
-void sendKey(SDL_Scancode scancode, bool down) {
+constexpr std::string_view kShift = "Shift+";
+constexpr SDL_Keymod kShiftDown = SDL_KMOD_LSHIFT;
+
+struct Key {
+  SDL_Scancode scancode;
+  SDL_Keymod modifiers;
+};
+
+void sendKey(Key key, bool down) {
   SDL_Event event{};
   event.type = down ? SDL_EVENT_KEY_DOWN : SDL_EVENT_KEY_UP;
   event.key.timestamp = SDL_GetTicksNS();
-  event.key.scancode = scancode;
-  event.key.key = SDL_GetKeyFromScancode(scancode, SDL_KMOD_NONE, false);
+  event.key.scancode = key.scancode;
+  event.key.key = SDL_GetKeyFromScancode(key.scancode, key.modifiers, false);
+  event.key.mod = key.modifiers;
   event.key.down = down;
   SDL_PushEvent(&event);
 }
 
-void pressKey(SDL_Scancode scancode, std::chrono::milliseconds length) {
-  sendKey(scancode, true);
-  MainLoop::get().addTimer(length, [scancode] { sendKey(scancode, false); });
+void pressKey(Key key, std::chrono::milliseconds length) {
+  sendKey(key, true);
+  MainLoop::get().addTimer(length, [key] { sendKey(key, false); });
 }
 
 // SDL owns the text of the events it makes; the text of this one has to
@@ -80,21 +89,23 @@ std::pair<std::string_view, std::string_view> splitWord(std::string_view text) {
 }
 
 void runKeyCommand(std::string_view command, std::string_view arguments) {
-  const auto [name, rest] = splitWord(arguments);
-  const auto scancode = scancodeForKeyName(name);
-  if (scancode == SDL_SCANCODE_UNKNOWN) {
+  auto [name, rest] = splitWord(arguments);
+  const bool shifted = name.starts_with(kShift);
+  if (shifted) name.remove_prefix(kShift.size());
+  const Key key{.scancode = scancodeForKeyName(name), .modifiers = shifted ? kShiftDown : SDL_Keymod{}};
+  if (key.scancode == SDL_SCANCODE_UNKNOWN) {
     log(LogLevel::Warning, "The simulator has no remote key named " + std::string(name));
     return;
   }
-  if (command == "key-down") return sendKey(scancode, true);
-  if (command == "key-up") return sendKey(scancode, false);
+  if (command == "key-down") return sendKey(key, true);
+  if (command == "key-up") return sendKey(key, false);
   auto length = kPressLength;
   if (command == "key-hold") {
     int milliseconds = 0;
     std::from_chars(rest.data(), rest.data() + rest.size(), milliseconds);
     if (milliseconds > 0) length = std::chrono::milliseconds(milliseconds);
   }
-  pressKey(scancode, length);
+  pressKey(key, length);
 }
 
 void runCommand(const SimulatorControl::Host &host, std::string_view line) {

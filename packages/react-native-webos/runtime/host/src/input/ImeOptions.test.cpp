@@ -3,110 +3,121 @@
 #include <doctest/doctest.h>
 
 #include <string>
-#include <tuple>
+#include <string_view>
+#include <utility>
 #include <vector>
 
 namespace rnwebos {
 
 namespace {
 
-ImeOptions keyboardOptions(const std::string &keyboardType) {
-  return imeOptionsFor(keyboardType, "", "", false, false, false);
+bool mentions(const ImeOptions &options, std::string_view words) {
+  for (const auto &sentence : options.unsupported) {
+    if (sentence.find(words) != std::string::npos) return true;
+  }
+  return false;
 }
 
 } // namespace
 
-TEST_CASE("a field with no keyboard props gets the normal layout, Done, sentence capitals and no prediction") {
-  const auto options = imeOptionsFor("", "", "", false, false, false);
+TEST_CASE("a field with no keyboard props is text, capitalized by sentence, with no autocorrect") {
+  const auto options = imeOptionsFor({});
 
-  CHECK(options.layout == ECORE_IMF_INPUT_PANEL_LAYOUT_NORMAL);
-  CHECK(options.layoutVariation == 0);
-  CHECK(options.returnKey == ECORE_IMF_INPUT_PANEL_RETURN_KEY_TYPE_DONE);
-  CHECK(options.autocapital == ECORE_IMF_AUTOCAPITAL_TYPE_SENTENCE);
-  CHECK_FALSE(options.prediction);
-  CHECK_FALSE(options.secure);
+  CHECK(options.type == SDL_TEXTINPUT_TYPE_TEXT);
+  CHECK(options.capitalization == SDL_CAPITALIZE_SENTENCES);
+  CHECK_FALSE(options.autocorrect);
   CHECK_FALSE(options.multiline);
-  CHECK(options.showPanel);
+  CHECK(options.unsupported.empty());
 }
 
-TEST_CASE("each keyboardType opens its panel layout, the numeric ones with Android's sign and decimal point") {
-  for (const auto &[keyboardType, layout, variation] :
-       std::vector<std::tuple<std::string, Ecore_IMF_Input_Panel_Layout, int>>{
-           {"default", ECORE_IMF_INPUT_PANEL_LAYOUT_NORMAL, 0},
-           {"ascii-capable", ECORE_IMF_INPUT_PANEL_LAYOUT_NORMAL, 0},
-           {"email-address", ECORE_IMF_INPUT_PANEL_LAYOUT_EMAIL, 0},
-           {"url", ECORE_IMF_INPUT_PANEL_LAYOUT_URL, 0},
-           {"phone-pad", ECORE_IMF_INPUT_PANEL_LAYOUT_PHONENUMBER, 0},
-           {"visible-password", ECORE_IMF_INPUT_PANEL_LAYOUT_PASSWORD, 0},
-           {"numeric",
-            ECORE_IMF_INPUT_PANEL_LAYOUT_NUMBERONLY,
-            ECORE_IMF_INPUT_PANEL_LAYOUT_NUMBERONLY_VARIATION_SIGNED_AND_DECIMAL},
-           {"number-pad",
-            ECORE_IMF_INPUT_PANEL_LAYOUT_NUMBERONLY,
-            ECORE_IMF_INPUT_PANEL_LAYOUT_NUMBERONLY_VARIATION_NORMAL},
-           {"decimal-pad",
-            ECORE_IMF_INPUT_PANEL_LAYOUT_NUMBERONLY,
-            ECORE_IMF_INPUT_PANEL_LAYOUT_NUMBERONLY_VARIATION_DECIMAL},
+TEST_CASE("each keyboardType SDL can say gets its text input type, and the number ones are all a number") {
+  for (const auto &[keyboardType, type] : std::vector<std::pair<std::string_view, SDL_TextInputType>>{
+           {"default", SDL_TEXTINPUT_TYPE_TEXT},
+           {"ascii-capable", SDL_TEXTINPUT_TYPE_TEXT},
+           {"email-address", SDL_TEXTINPUT_TYPE_TEXT_EMAIL},
+           {"visible-password", SDL_TEXTINPUT_TYPE_TEXT_PASSWORD_VISIBLE},
+           {"numeric", SDL_TEXTINPUT_TYPE_NUMBER},
+           {"number-pad", SDL_TEXTINPUT_TYPE_NUMBER},
+           {"decimal-pad", SDL_TEXTINPUT_TYPE_NUMBER},
        }) {
     CAPTURE(keyboardType);
-    const auto options = keyboardOptions(keyboardType);
+    const auto options = imeOptionsFor({.keyboardType = keyboardType});
 
-    CHECK(options.layout == layout);
-    CHECK(options.layoutVariation == variation);
+    CHECK(options.type == type);
+    CHECK(options.unsupported.empty());
   }
 }
 
-TEST_CASE("each returnKeyType names the panel's return key, and any other one is Done") {
-  for (const auto &[returnKeyType, returnKey] :
-       std::vector<std::pair<std::string, Ecore_IMF_Input_Panel_Return_Key_Type>>{
-           {"go", ECORE_IMF_INPUT_PANEL_RETURN_KEY_TYPE_GO},
-           {"next", ECORE_IMF_INPUT_PANEL_RETURN_KEY_TYPE_NEXT},
-           {"search", ECORE_IMF_INPUT_PANEL_RETURN_KEY_TYPE_SEARCH},
-           {"send", ECORE_IMF_INPUT_PANEL_RETURN_KEY_TYPE_SEND},
-           {"join", ECORE_IMF_INPUT_PANEL_RETURN_KEY_TYPE_JOIN},
-           {"done", ECORE_IMF_INPUT_PANEL_RETURN_KEY_TYPE_DONE},
-           {"previous", ECORE_IMF_INPUT_PANEL_RETURN_KEY_TYPE_DONE},
-       }) {
+TEST_CASE("url and phone-pad open the text keyboard and say that SDL has no type for them") {
+  for (const std::string_view keyboardType : {"url", "phone-pad"}) {
+    CAPTURE(keyboardType);
+    const auto options = imeOptionsFor({.keyboardType = keyboardType});
+
+    CHECK(options.type == SDL_TEXTINPUT_TYPE_TEXT);
+    REQUIRE(options.unsupported.size() == 1);
+    CHECK(mentions(options, keyboardType));
+  }
+}
+
+TEST_CASE("a returnKeyType other than done is reported on a single line, where the key says Done") {
+  for (const std::string_view returnKeyType : {"", "default", "done"}) {
     CAPTURE(returnKeyType);
-    CHECK(imeOptionsFor("", returnKeyType, "", false, false, false).returnKey == returnKey);
+    CHECK(imeOptionsFor({.returnKeyType = returnKeyType}).unsupported.empty());
+  }
+  for (const std::string_view returnKeyType : {"go", "next", "search", "send", "previous", "none"}) {
+    CAPTURE(returnKeyType);
+    const auto options = imeOptionsFor({.returnKeyType = returnKeyType});
+
+    REQUIRE(options.unsupported.size() == 1);
+    CHECK(mentions(options, returnKeyType));
   }
 }
 
-TEST_CASE("each autoCapitalize sets the panel's capitals, and any other one capitalizes sentences") {
-  for (const auto &[autoCapitalize, autocapital] : std::vector<std::pair<std::string, Ecore_IMF_Autocapital_Type>>{
-           {"none", ECORE_IMF_AUTOCAPITAL_TYPE_NONE},
-           {"words", ECORE_IMF_AUTOCAPITAL_TYPE_WORD},
-           {"characters", ECORE_IMF_AUTOCAPITAL_TYPE_ALLCHARACTER},
-           {"sentences", ECORE_IMF_AUTOCAPITAL_TYPE_SENTENCE},
+TEST_CASE("a multiline field reports no returnKeyType: its key is Return whatever the prop says") {
+  const auto options = imeOptionsFor({.returnKeyType = "search", .multiline = true});
+
+  CHECK(options.multiline);
+  CHECK(options.unsupported.empty());
+}
+
+TEST_CASE("each autoCapitalize sets SDL's capitalization, and any other one capitalizes sentences") {
+  for (const auto &[autoCapitalize, capitalization] : std::vector<std::pair<std::string_view, SDL_Capitalization>>{
+           {"none", SDL_CAPITALIZE_NONE},
+           {"words", SDL_CAPITALIZE_WORDS},
+           {"characters", SDL_CAPITALIZE_LETTERS},
+           {"sentences", SDL_CAPITALIZE_SENTENCES},
+           {"", SDL_CAPITALIZE_SENTENCES},
        }) {
     CAPTURE(autoCapitalize);
-    CHECK(imeOptionsFor("", "", autoCapitalize, false, false, false).autocapital == autocapital);
+    CHECK(imeOptionsFor({.autoCapitalize = autoCapitalize}).capitalization == capitalization);
   }
 }
 
-TEST_CASE("autoCorrect turns prediction on, and multiline asks for a multiline panel") {
-  const auto options = imeOptionsFor("", "", "", true, false, true);
-
-  CHECK(options.prediction);
-  CHECK(options.multiline);
-  CHECK_FALSE(options.secure);
+TEST_CASE("autoCorrect turns SDL's autocorrect on") {
+  CHECK(imeOptionsFor({.autoCorrect = true}).autocorrect);
 }
 
-TEST_CASE("a secure field gets the password layout with no capitals and no prediction") {
-  const auto options = imeOptionsFor("", "", "words", true, true, false);
+TEST_CASE("a secure field is a hidden password with no capitals and no autocorrect, whatever its text keyboard") {
+  for (const std::string_view keyboardType : {"", "email-address", "visible-password"}) {
+    CAPTURE(keyboardType);
+    const auto options =
+        imeOptionsFor({.keyboardType = keyboardType, .autoCapitalize = "words", .autoCorrect = true, .secure = true});
 
-  CHECK(options.layout == ECORE_IMF_INPUT_PANEL_LAYOUT_PASSWORD);
-  CHECK(options.autocapital == ECORE_IMF_AUTOCAPITAL_TYPE_NONE);
-  CHECK_FALSE(options.prediction);
-  CHECK(options.secure);
+    CHECK(options.type == SDL_TEXTINPUT_TYPE_TEXT_PASSWORD_HIDDEN);
+    CHECK(options.capitalization == SDL_CAPITALIZE_NONE);
+    CHECK_FALSE(options.autocorrect);
+  }
 }
 
-TEST_CASE("a secure numeric field keeps its number layout, as Android's numeric password does") {
-  const auto options = imeOptionsFor("number-pad", "", "", false, true, false);
+TEST_CASE("a secure number field is a hidden PIN, as Android's numeric password is") {
+  CHECK(imeOptionsFor({.keyboardType = "number-pad", .secure = true}).type == SDL_TEXTINPUT_TYPE_NUMBER_PASSWORD_HIDDEN);
+}
 
-  CHECK(options.layout == ECORE_IMF_INPUT_PANEL_LAYOUT_NUMBERONLY);
-  CHECK(options.layoutVariation == ECORE_IMF_INPUT_PANEL_LAYOUT_NUMBERONLY_VARIATION_NORMAL);
-  CHECK(options.secure);
+TEST_CASE("showSoftInputOnFocus false is reported: starting text input raises the keyboard on webOS") {
+  const auto options = imeOptionsFor({.showOnFocus = false});
+
+  REQUIRE(options.unsupported.size() == 1);
+  CHECK(mentions(options, "showSoftInputOnFocus"));
 }
 
 } // namespace rnwebos

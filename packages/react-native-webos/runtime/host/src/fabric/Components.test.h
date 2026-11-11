@@ -31,14 +31,16 @@ class RecordingMeasurer final : public facebook::react::TextMeasurer {
   static constexpr facebook::react::Float kCharacterWidth = 10;
   static constexpr facebook::react::Float kLineHeight = 20;
 
-  facebook::react::Size measure(
+  facebook::react::TextMeasurement measure(
       const facebook::react::AttributedString &attributedString,
       const facebook::react::ParagraphAttributes &,
       facebook::react::Size maximumSize,
       facebook::react::Float) const override {
     measured = attributedString.getString();
     maximumWidth = maximumSize.width;
-    return {.width = kCharacterWidth * static_cast<facebook::react::Float>(measured.size()), .height = kLineHeight};
+    return {
+        .size = {.width = kCharacterWidth * static_cast<facebook::react::Float>(measured.size()), .height = kLineHeight},
+        .attachments = {}};
   }
 
   mutable std::string measured;
