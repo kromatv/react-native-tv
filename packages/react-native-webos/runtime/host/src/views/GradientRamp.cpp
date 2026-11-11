@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <limits>
 #include <optional>
 
 namespace rnwebos {
@@ -11,7 +10,11 @@ namespace {
 
 using facebook::react::UnitType;
 
-constexpr float kNoHint = std::numeric_limits<float>::quiet_NaN();
+// A hint's curve becomes straight transitions that stay within half a color
+// level of it, except in a first sliver too thin to see.
+constexpr float kHintTolerance = 0.5f / 255;
+constexpr float kThinnestHintStep = 1.0f / 2048;
+constexpr std::size_t kMostHintSteps = 32;
 
 std::optional<float> fraction(const facebook::react::ValueUnit &position, float lineLength, float pointScale) {
   using enum UnitType;
@@ -52,17 +55,53 @@ std::vector<float> fixedPositions(const std::vector<facebook::react::ColorStop> 
   return fixed;
 }
 
-Premultiplied premultiplied(const facebook::react::SharedColor &color) {
+SkColor4f colorOf(const facebook::react::SharedColor &color) {
   const auto c = facebook::react::colorComponentsFromColor(color);
-  const auto alpha = std::clamp(c.alpha, 0.0f, 1.0f);
-  return {c.red * alpha, c.green * alpha, c.blue * alpha, alpha};
+  return {c.red, c.green, c.blue, std::clamp(c.alpha, 0.0f, 1.0f)};
 }
 
-float weighting(float progress, float hint) {
-  if (std::isnan(hint)) return progress;
-  if (hint <= 0) return progress > 0 ? 1 : 0;
-  if (hint >= 1) return progress < 1 ? 0 : 1;
-  return std::pow(progress, std::log(0.5f) / std::log(hint));
+SkColor4f mixed(const SkColor4f &from, const SkColor4f &to, float weight) {
+  const auto a = from.premul();
+  const auto b = to.premul();
+  const SkRGBA4f<kPremul_SkAlphaType> color{
+      a.fR + (b.fR - a.fR) * weight,
+      a.fG + (b.fG - a.fG) * weight,
+      a.fB + (b.fB - a.fB) * weight,
+      a.fA + (b.fA - a.fA) * weight,
+  };
+  return color.unpremul();
+}
+
+float chordError(float from, float to, float exponent) {
+  const auto low = std::pow(from, exponent);
+  const auto high = std::pow(to, exponent);
+  float error = 0;
+  for (const auto part : {0.25f, 0.5f, 0.75f}) {
+    const auto curve = std::pow(from + (to - from) * part, exponent);
+    error = std::max(error, std::abs(curve - (low + (high - low) * part)));
+  }
+  return error;
+}
+
+// The fractions of a transition to put stops at so that straight lines
+// between them follow `progress ^ exponent`, the widest miss halved first.
+std::vector<float> hintSteps(float exponent) {
+  std::vector<float> steps{0, 1};
+  while (steps.size() < kMostHintSteps) {
+    auto worst = steps.end();
+    auto worstError = kHintTolerance;
+    for (auto step = steps.begin(); step + 1 != steps.end(); ++step) {
+      if (*(step + 1) - *step < kThinnestHintStep) continue;
+      const auto error = chordError(*step, *(step + 1), exponent);
+      if (error > worstError) {
+        worst = step;
+        worstError = error;
+      }
+    }
+    if (worst == steps.end()) break;
+    steps.insert(worst + 1, (*worst + *(worst + 1)) / 2);
+  }
+  return steps;
 }
 
 } // namespace
@@ -74,46 +113,77 @@ GradientRamp::GradientRamp(const std::vector<facebook::react::ColorStop> &stops,
   for (std::size_t i = 0; i < stops.size(); ++i) {
     const auto &stop = stops[i];
     if (!stop.color) {
-      if (!stops_.empty() && i + 1 < stops.size() && stops[i + 1].color) pendingHint = positions[i];
+      if (!colors_.empty() && i + 1 < stops.size() && stops[i + 1].color) pendingHint = positions[i];
       continue;
     }
-    Stop next{.position = positions[i], .color = premultiplied(stop.color), .hint = kNoHint};
+    const auto color = colorOf(stop.color);
     if (pendingHint.has_value()) {
-      const auto from = stops_.back().position;
-      const auto span = next.position - from;
-      next.hint = span > 0 ? (*pendingHint - from) / span : kNoHint;
+      const auto from = positions_.back();
+      const auto fromColor = colors_.back();
+      const auto span = positions[i] - from;
+      const auto hint = span > 0 ? (*pendingHint - from) / span : 0.5f;
       pendingHint.reset();
+      if (hint <= 0) {
+        colors_.push_back(color);
+        positions_.push_back(from);
+      } else if (hint >= 1) {
+        colors_.push_back(fromColor);
+        positions_.push_back(positions[i]);
+      } else {
+        const auto exponent = std::log(0.5f) / std::log(hint);
+        const auto steps = hintSteps(exponent);
+        for (std::size_t step = 1; step + 1 < steps.size(); ++step) {
+          colors_.push_back(mixed(fromColor, color, std::pow(steps[step], exponent)));
+          positions_.push_back(from + span * steps[step]);
+        }
+      }
     }
-    stops_.push_back(next);
+    colors_.push_back(color);
+    positions_.push_back(positions[i]);
   }
 }
 
 bool GradientRamp::empty() const {
-  return stops_.empty();
+  return colors_.empty();
 }
 
-Premultiplied GradientRamp::at(float t) const {
-  std::size_t segment = 0;
-  return at(t, segment);
+const std::vector<SkColor4f> &GradientRamp::colors() const {
+  return colors_;
 }
 
-Premultiplied GradientRamp::at(float t, std::size_t &segment) const {
-  if (t <= stops_.front().position) return stops_.front().color;
-  if (t >= stops_.back().position) return stops_.back().color;
-  if (const bool inSegment =
-          segment > 0 && segment < stops_.size() && stops_[segment - 1].position <= t && t < stops_[segment].position;
-      !inSegment) {
-    const auto upper = std::ranges::upper_bound(stops_, t, std::ranges::less{}, &Stop::position);
-    segment = static_cast<std::size_t>(upper - stops_.begin());
+const std::vector<float> &GradientRamp::positions() const {
+  return positions_;
+}
+
+SkColor4f GradientRamp::at(float position, bool after) const {
+  const auto [first, last] = std::ranges::equal_range(positions_, position);
+  if (first != last) {
+    const auto chosen = after ? last - 1 : first;
+    return colors_[static_cast<std::size_t>(chosen - positions_.begin())];
   }
-  return between(stops_[segment - 1], stops_[segment], t);
+  if (first == positions_.begin()) return colors_.front();
+  if (first == positions_.end()) return colors_.back();
+  const auto upper = static_cast<std::size_t>(first - positions_.begin());
+  const auto weight = (position - positions_[upper - 1]) / (positions_[upper] - positions_[upper - 1]);
+  return mixed(colors_[upper - 1], colors_[upper], weight);
 }
 
-Premultiplied GradientRamp::between(const Stop &from, const Stop &to, float t) const {
-  const auto weight = weighting((t - from.position) / (to.position - from.position), to.hint);
-  Premultiplied color{};
-  for (std::size_t c = 0; c < color.size(); ++c) color[c] = from.color[c] + (to.color[c] - from.color[c]) * weight;
-  return color;
+GradientRamp GradientRamp::between(float from, float to) const {
+  GradientRamp part;
+  if (empty() || !(to > from)) return part;
+  const auto add = [&part](const SkColor4f &color, float position) {
+    if (!part.colors_.empty() && part.positions_.back() == position && part.colors_.back() == color) return;
+    part.colors_.push_back(color);
+    part.positions_.push_back(position);
+  };
+  add(at(from, false), 0);
+  add(at(from, true), 0);
+  for (std::size_t i = 0; i < positions_.size(); ++i) {
+    if (positions_[i] > from && positions_[i] < to) add(colors_[i], (positions_[i] - from) / (to - from));
+  }
+  add(at(to, false), 1);
+  add(at(to, true), 1);
+  return part;
 }
 
 } // namespace rnwebos

@@ -1,7 +1,6 @@
 #include "BlurTint.h"
 
 #include <algorithm>
-#include <cmath>
 #include <map>
 #include <numbers>
 
@@ -53,17 +52,16 @@ double androidSigma(double radius) {
 
 } // namespace
 
-BlurTintColor blurTintColor(const std::string &tint, double intensity) {
+SkColor blurTintColor(const std::string &tint, double intensity) {
   auto found = overlays().find(tint);
   const auto &overlay = found == overlays().end() ? kDefault : found->second;
   const int alpha = std::clamp(static_cast<int>(255 * (intensity / 100) * overlay.alphaPerIntensity), 0, 255);
-  const int gray = overlay.gray * alpha / 255;
-  return {.red = gray, .green = gray, .blue = gray, .alpha = alpha};
+  return SkColorSetARGB(alpha, overlay.gray, overlay.gray, overlay.gray);
 }
 
-int blurRadiusPixels(double intensity, double reductionFactor, double pointScale) {
+float blurSigmaPixels(double intensity, double reductionFactor, double pointScale) {
   const double radius = reductionFactor > 0 ? intensity / reductionFactor : 0;
-  return static_cast<int>(std::lround(3 * androidSigma(radius) * pointScale));
+  return static_cast<float>(androidSigma(radius) * pointScale);
 }
 
 } // namespace rnwebos::expo

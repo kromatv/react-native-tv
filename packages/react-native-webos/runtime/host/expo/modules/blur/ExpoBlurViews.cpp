@@ -4,6 +4,7 @@
 #include "BlurTint.h"
 
 #include "views/BackdropBlur.h"
+#include "views/BoxPainter.h"
 
 #include <algorithm>
 
@@ -13,17 +14,8 @@ namespace {
 
 class ExpoBlurView final : public ExpoView {
  public:
-  ExpoBlurView(Evas *evas, facebook::react::Tag tag)
-      : ExpoView(evas, tag), blur_(evas), tint_(evas_object_rectangle_add(evas)) {
+  ExpoBlurView(Scene &scene, facebook::react::Tag tag) : ExpoView(scene, tag) {
     setAlwaysClips(true);
-    if (blur_.object() != nullptr) addMember(blur_.object(), true);
-    evas_object_pass_events_set(tint_, EINA_TRUE);
-    addMember(tint_, true);
-    paint();
-  }
-
-  ~ExpoBlurView() override {
-    evas_object_del(tint_);
   }
 
   void setTint(const folly::dynamic &value) {
@@ -40,25 +32,41 @@ class ExpoBlurView final : public ExpoView {
 
  protected:
   void didUpdateProps() override {
-    paint();
+    refresh();
   }
 
-  void layoutMembers() override {
-    ExpoView::layoutMembers();
-    blur_.setRadius(blurRadiusPixels(intensity_, reductionFactor_, pointScale()));
-    blur_.layout(canvasRect());
-    setGeometry(tint_, canvasRect());
+  void layoutContent() override {
+    refresh();
+  }
+
+  void drawBackdrop(SkCanvas &canvas, float opacity) override {
+    blur_.draw(canvas, shape_, opacity);
+  }
+
+  void drawContent(SkCanvas &canvas, float alpha) override {
+    auto tint = SkColor4f::FromColor(tint_);
+    tint.fA *= alpha;
+    canvas.drawColor(tint);
+  }
+
+  int contentLayers() const override {
+    return 1;
   }
 
  private:
-  void paint() {
-    const auto color = blurTintColor(tintName_, intensity_);
-    evas_object_color_set(tint_, color.red, color.green, color.blue, color.alpha);
-    blur_.setRadius(blurRadiusPixels(intensity_, reductionFactor_, pointScale()));
+  void refresh() {
+    tint_ = blurTintColor(tintName_, intensity_);
+    blur_.setSigma(blurSigmaPixels(intensity_, reductionFactor_, pointScale()));
+    if (props()) {
+      const auto &viewProps = static_cast<const facebook::react::ViewProps &>(*props());
+      shape_ = roundedRect(pixelSize(), resolveBoxStyle(viewProps, layoutMetrics(), true).corners);
+    }
+    invalidate();
   }
 
   BackdropBlur blur_;
-  Evas_Object *const tint_;
+  SkRRect shape_;
+  SkColor tint_{SK_ColorTRANSPARENT};
   std::string tintName_{"default"};
   double intensity_{50};
   double reductionFactor_{4};

@@ -323,6 +323,43 @@ Rejected.
   channel does, which would make it a calmer pin than m157.
 - Whether Ubuntu's `generate-ninja` can replace the pinned `gn` binary.
 
+## 11. What the views draw
+
+How the host's own views use Skia, and the CSS and Android rules they follow.
+`CSS-img3` is CSS Images Module Level 3, `https://www.w3.org/TR/css-images-3/`;
+`efl:` is EFL 1.28.1, `https://github.com/Enlightenment/efl/blob/v1.28.1/<path>`.
+Files are under `runtime/host/src/views/` unless a row says otherwise.
+
+| Fact | Mark | Source |
+| --- | --- | --- |
+| A linear gradient's line passes through the box's center at its angle (0deg is up, 90deg right) and is `abs(W sin a) + abs(H cos a)` long; a `to <corner>` keyword points it so the two neighbouring corners share the 50% line. A radial gradient's ray runs right from its center, so a length stop is measured against the ending shape's horizontal radius; its sizes are `closest-side`, `farthest-side`, `closest-corner` and `farthest-corner`, the default | doc | CSS-img3, sections 3.1.1 and 3.2.2 to 3.2.4 |
+| Color stops are fixed up (first 0%, last 100%, never before an earlier one, the rest spread evenly), colors between two stops are interpolated in premultiplied RGBA, and a transition hint at H gives the point at P the weight `P^(log 0.5 / log H)` | doc | CSS-img3, sections 3.4.2 and 3.4.3 |
+| On the `cxx` platform a `SharedColor` of 0 means no color, so a `transparent` stop would arrive as a transition hint; `react-native-overrides/Libraries/StyleSheet/processBackgroundImage.webos.ts` sends `0x00000001` instead, which premultiplied interpolation draws the same | src | that file; `GradientRamp.cpp`, which reads a stop without a color as a hint |
+| `SkShaders::LinearGradient` takes two points, `RadialGradient` a center and one radius (an ellipse is a local matrix); stop positions "must lie between 0.0 and 1.0", the end colors are held outside them, and `Interpolation::fInPremul` chooses premultiplied interpolation. There is no transition hint | src | `sk:include/effects/SkGradient.h#L24`, `#L69`, `#L83-L92`, `#L144-L164` |
+| So the host gives Skia the visible part of the ramp only: a linear gradient cut to 0..1 of its line (the box's corners are at 0% and 100%, so nothing else shows), a radial one from 0 to its last stop, the circle grown to that stop. A hint becomes stops along its curve, a miss halved until every straight piece is within half a color level of it, in at most 32 pieces no thinner than 1/2048 of the transition | inf | the three rows above; `GradientRamp.cpp`, `GradientShader.cpp` |
+| Ganesh colors a gradient in the fragment shader for up to 16 colors, or 128 where GLSL indexes an array with a variable (OpenGL ES 3); past that it samples a 256-texel strip, which "always blurs" hard stops. So on an OpenGL ES 2 TV a gradient with a hint, or more than 16 stops, has soft hard stops | src | `sk:src/gpu/ganesh/gradients/GrGradientShader.cpp#L81`, `#L200`, `#L312`, `#L695-L724`, `#L1029`; `sk:src/gpu/ganesh/gl/GrGLCaps.cpp#L1125-L1129` |
+| `SkPaint::setDither` "requests, but does not require, to distribute color error"; Ganesh dithers a paint that has a shader, an image filter or a mask filter when the flag is set. The host sets it on gradients, which band on 8 bits | src | `sk:include/core/SkPaint.h#L179-L182`, `sk:src/core/SkPaintPriv.cpp#L113-L131`, `sk:src/gpu/ganesh/SkGr.cpp#L508-L517`; `BackgroundImages.cpp` |
+| `SkCodec::MakeFromData(data, decoders)` picks among the decoders it is given, with no global registry; `getScaledDimensions(scale)` is the size a codec decodes to directly. The JPEG codec scales by eighths and snaps to the nearest one, so the host rounds its request up to an eighth; WebP decodes to any smaller size; PNG and GIF decode whole | src | `sk:include/codec/SkCodec.h#L219-L221`, `#L269-L288`; `sk:src/codec/SkJpegCodec.cpp#L230-L252`; `sk:src/codec/SkScalingCodec.h#L37-L42` |
+| `SkCodec::getOrigin` is the EXIF orientation, which `getPixels` does not apply; `SkPixmapUtils::Orient` turns the pixels upright | src | `sk:include/codec/SkCodec.h#L267`, `sk:include/codec/SkPixmapUtils.h#L22`, `sk:include/codec/SkEncodedOrigin.h#L63-L69` |
+| The image pipeline: bytes are fetched (`ImageFetcher.cpp`) or read from a file, decoded on two worker threads to RGBA in sRGB at the size the image is drawn at once it is twice that (`ImageFit.cpp`, `ImageDecoder.cpp`), uploaded with `SkImages::TextureFromImage` when they reach the main thread and kept, by source, under a 64 MiB budget (`DecodedImages.cpp`). A frame only calls `drawImageRect`, or `drawRect` with a repeating image shader | src | those files, `ImageContent.cpp`; section 7 for the upload |
+| `tintColor` is `SkColorFilters::Blend(color, kSrcIn)`: every pixel takes the color and keeps the image's alpha, as Android's `setColorFilter(color, SRC_IN)` and iOS's template rendering do. The Tizen host multiplied the image by the color instead | src + inf | `sk:include/core/SkColorFilter.h#L92`, `sk:include/core/SkBlendMode.h#L44`; `ImageContent.cpp` |
+| `saveLayer` with a backdrop filter starts the layer from what the parent layer holds, filtered, "respecting the current clip"; where the filter reads past the parent's pixels it uses `fBackdropTileMode`, clamp by default. The layer's paint blends it back | src | `sk:include/core/SkCanvas.h#L717-L732`, `#L758-L775` |
+| So a backdrop blur is a rounded clip and one such layer with `SkImageFilters::Blur`, and it sees only its own layer: under an ancestor with `opacity` below 1, or inside a `MaskedView`, it blurs what that layer holds so far, as a CSS backdrop root limits `backdrop-filter`. A view draws its backdrop before its own opacity layer and passes the opacity to the layer's paint (`ComponentView::drawBackdrop`) | inf | the row above; `BackdropBlur.cpp`, `ComponentView.cpp` |
+| A masked view is two layers: the content, then the mask blended `kDstIn` ("r = d * sa") | src | `sk:include/core/SkBlendMode.h#L45`; `MaskedView.cpp` |
+| expo-blur's Android radius is `intensity / blurReductionFactor`, and Android blurs a radius r with sigma `r / sqrt(3) + 0.5` | src | expo-blur 58.0.6 `android/src/main/java/expo/modules/blur/ExpoBlurView.kt:31-32`, `:209`; Android `libs/hwui/utils/Blur.cpp` (`convertRadiusToSigma`), as the Tizen host cites it; `runtime/host/expo/modules/blur/BlurTint.cpp` |
+| `SkCanvas::quickReject` and `getLocalClipBounds` both work on the clip's bounds grown by one pixel "to account for partial pixel coverage", so a view that only touches the clip is still drawn | src | `sk:include/core/SkCanvas.h#L1179-L1189` |
+| Culling: a view keeps the bounds of what it and its subtree paint (its box, its shadows and outline, its children as placed and transformed unless it clips them), recomputed when something under it changes. A view outside the clip costs its parent one rectangle test; a transform with perspective makes a view count as everywhere | src | `ComponentView.cpp` (`paintBounds`, `drawChildren`), `ViewTransform.cpp` (`mapRect`) |
+| An animated `scrollTo` lasts 0.25 s and follows `sin(t * pi / 2)`, the Tizen host's `ecore_animator_timeline_add(0.25, ...)` with `ECORE_POS_MAP_DECELERATE` ("pos = sin(pos * Pi / 2)") | src | `efl:src/lib/ecore/ecore_anim.c` (`ecore_animator_pos_map_n`, `_ecore_animator_run`); `ScrollAnimation.cpp` |
+
+Observed in the simulator on 2026-11-11 (aarch64 Ubuntu VM, Mesa llvmpipe, OpenGL
+ES 3.2, 1920x1080); a software GPU, so only the relations between numbers mean
+anything:
+
+| Observation | Mark |
+| --- | --- |
+| The eleven CSS gradients of `example/src/screens/gradients` beside the same CSS in headless Chrome 157 (`--disable-gpu`, 1920x1080): nine are within 3 levels a channel on every pixel, most within 1. The two rounded ones differ only in the anti-aliased corner pixels. `linear-gradient(to right, #ff5252, 20%, #3d5afe)` differs by up to 19 levels: Chrome's own curve is further from the formula than the host's | obs |
+| `example/src/screens/bench`, a 1000-row FlatList scrolling one row every 50 ms: 36 views drawn in a frame of about 550 mounted. Walking the views and recording their draws took 0.20 to 0.25 ms a frame with a fixed 256 px slack around unclipped parents, and 0.11 to 0.19 ms with the kept subtree bounds; flushing and swapping took 1.6 to 7.7 ms, so the difference is within what other load on the VM moves | obs |
+
 ## What this means for react-native-webos
 
 **Pin.** Skia `chrome/m157` at

@@ -7,52 +7,81 @@ namespace rnwebos {
 
 namespace {
 
-using facebook::react::ImageResizeMode;
+struct Scale {
+  float x;
+  float y;
+};
 
-Evas_Coord rounded(float value) {
-  return static_cast<Evas_Coord>(std::lround(value));
+// How many view pixels one image pixel covers, on each axis.
+Scale drawnScale(ImageFit fit, float boxWidth, float boxHeight, float imageWidth, float imageHeight, float naturalScale) {
+  const auto scaleX = boxWidth / imageWidth;
+  const auto scaleY = boxHeight / imageHeight;
+  using enum ImageFit;
+  switch (fit) {
+    case Stretch:
+      return {scaleX, scaleY};
+    case Cover:
+      return {std::max(scaleX, scaleY), std::max(scaleX, scaleY)};
+    case Contain:
+      return {std::min(scaleX, scaleY), std::min(scaleX, scaleY)};
+    case Center: {
+      const auto scale = std::min(naturalScale, std::min(scaleX, scaleY));
+      return {scale, scale};
+    }
+    case Natural:
+    case Repeat:
+      return {naturalScale, naturalScale};
+  }
+  return {scaleX, scaleY};
 }
 
-ImagePlacement centered(const PixelRect &box, float width, float height) {
-  const auto w = std::max(1, rounded(width));
-  const auto h = std::max(1, rounded(height));
-  return {
-      .geometry = {.x = box.x + (box.width - w) / 2, .y = box.y + (box.height - h) / 2, .width = w, .height = h},
-      .fill = {.x = 0, .y = 0, .width = w, .height = h},
-  };
+float wholePixels(float length) {
+  return std::max(1.0f, std::round(length));
 }
 
 } // namespace
 
-ImagePlacement placeImage(ImageResizeMode resizeMode, const PixelRect &box, int imageWidth, int imageHeight, float naturalScale) {
-  using enum ImageResizeMode;
-  const ImagePlacement stretched{.geometry = box, .fill = {.x = 0, .y = 0, .width = box.width, .height = box.height}};
-  if (imageWidth <= 0 || imageHeight <= 0 || box.width <= 0 || box.height <= 0) return stretched;
-  const auto iw = static_cast<float>(imageWidth);
-  const auto ih = static_cast<float>(imageHeight);
-  const auto fitScale = std::min(static_cast<float>(box.width) / iw, static_cast<float>(box.height) / ih);
-  switch (resizeMode) {
-    case Stretch:
-      return stretched;
-    case Contain:
-      return centered(box, iw * fitScale, ih * fitScale);
-    case Cover: {
-      const auto scale = std::max(static_cast<float>(box.width) / iw, static_cast<float>(box.height) / ih);
-      const auto w = rounded(iw * scale);
-      const auto h = rounded(ih * scale);
-      return {.geometry = box, .fill = {.x = (box.width - w) / 2, .y = (box.height - h) / 2, .width = w, .height = h}};
-    }
-    case Center:
-    case None: {
-      const auto scale = std::min(naturalScale, fitScale);
-      return centered(box, iw * scale, ih * scale);
-    }
-    case Repeat:
-      return {
-          .geometry = box,
-          .fill = {.x = 0, .y = 0, .width = std::max(1, rounded(iw * naturalScale)), .height = std::max(1, rounded(ih * naturalScale))}};
+ImagePlacement placeImage(ImageFit fit, const PixelRect &box, PixelSize image, float naturalScale) {
+  const auto boxRect = SkRect::MakeXYWH(
+      static_cast<float>(box.x), static_cast<float>(box.y), static_cast<float>(box.width), static_cast<float>(box.height));
+  const auto whole = SkRect::MakeWH(static_cast<float>(image.width), static_cast<float>(image.height));
+  if (image.width <= 0 || image.height <= 0 || box.width <= 0 || box.height <= 0) {
+    return {.destination = boxRect, .source = whole, .tile = {}};
   }
-  return stretched;
+  const auto scale = drawnScale(fit, boxRect.width(), boxRect.height(), whole.width(), whole.height(), naturalScale);
+  const auto width = wholePixels(whole.width() * scale.x);
+  const auto height = wholePixels(whole.height() * scale.y);
+  if (fit == ImageFit::Repeat) return {.destination = boxRect, .source = whole, .tile = {width, height}};
+  // Centered on whole pixels, then cut to the box: what falls outside is not
+  // painted, so a view needs no clip to keep a covering image inside.
+  const auto left = boxRect.left() + std::floor((boxRect.width() - width) / 2);
+  const auto top = boxRect.top() + std::floor((boxRect.height() - height) / 2);
+  const auto drawn = SkRect::MakeXYWH(left, top, width, height);
+  auto destination = drawn;
+  if (!destination.intersect(boxRect)) return {.destination = SkRect::MakeEmpty(), .source = whole, .tile = {}};
+  const auto source = SkRect::MakeLTRB(
+      (destination.left() - drawn.left()) / width * whole.width(),
+      (destination.top() - drawn.top()) / height * whole.height(),
+      (destination.right() - drawn.left()) / width * whole.width(),
+      (destination.bottom() - drawn.top()) / height * whole.height());
+  return {.destination = destination, .source = source, .tile = {}};
+}
+
+PixelSize decodedImageSize(ImageFit fit, PixelSize box, PixelSize image, float naturalScale) {
+  if (image.width <= 0 || image.height <= 0 || box.width <= 0 || box.height <= 0) return image;
+  const auto scale = drawnScale(
+      fit,
+      static_cast<float>(box.width),
+      static_cast<float>(box.height),
+      static_cast<float>(image.width),
+      static_cast<float>(image.height),
+      naturalScale);
+  const PixelSize drawn{
+      .width = static_cast<int>(wholePixels(static_cast<float>(image.width) * scale.x)),
+      .height = static_cast<int>(wholePixels(static_cast<float>(image.height) * scale.y)),
+  };
+  if (image.width < 2 * drawn.width || image.height < 2 * drawn.height) return image;
+  return drawn;
 }
 
 } // namespace rnwebos

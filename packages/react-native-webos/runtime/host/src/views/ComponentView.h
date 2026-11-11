@@ -82,12 +82,19 @@ class ComponentView : public SceneLayer {
   /// Asks for a redraw: call it when what the view draws changed.
   void invalidate();
 
+  /// Draws what the view makes of the pixels already behind it, in its own
+  /// pixels and at `opacity`: before the layer its own opacity may open, which
+  /// starts empty and would leave a backdrop filter nothing to read.
+  virtual void drawBackdrop(SkCanvas &canvas, float opacity);
   /// Draws what the component shows inside its box, under its children, in
   /// the view's own pixels; an `alpha` under 1 comes only to a view whose
   /// `contentLayers()` is 1, which then draws at that opacity.
   virtual void drawContent(SkCanvas &canvas, float alpha);
   /// Draws the children; a view that masks or filters them overrides it.
   virtual void drawChildren(SkCanvas &canvas);
+  /// Draws `child` where the view's canvas puts it, unless it is an overlay,
+  /// which the scene draws.
+  static void drawChild(SkCanvas &canvas, ComponentView &child);
   /// Draws over the children and the border, in the view's own pixels.
   virtual void drawOverChildren(SkCanvas &canvas);
   /// How many things `drawContent` paints on top of each other: 0 for none.
@@ -97,6 +104,8 @@ class ComponentView : public SceneLayer {
   /// How far the children sit from their layout position, in points: minus a
   /// scroll view's content offset.
   virtual facebook::react::Point childrenOffset() const;
+  /// Tells the view that `childrenOffset()` changed.
+  void childrenMoved();
   /// Clips content and children to the box even when `overflow` is visible.
   void setAlwaysClips(bool alwaysClips);
   /// Whether the view is drawn above every other view, at the screen's
@@ -114,7 +123,9 @@ class ComponentView : public SceneLayer {
   void place();
   void refreshBox();
   PixelPoint childrenShift() const;
-  SkRect paintBounds() const;
+  const SkRect &paintBounds() const;
+  SkRect placedBounds() const;
+  void paintBoundsChanged();
   bool hitTestLocal(SkPoint point, ComponentView *&hit, SkPoint *local);
 
   Scene &scene_;
@@ -128,6 +139,8 @@ class ComponentView : public SceneLayer {
   facebook::react::EventEmitter::Shared eventEmitter_;
   PixelPoint origin_;
   PixelSize size_;
+  mutable SkRect paintBounds_{};
+  mutable bool paintBoundsKnown_{false};
   float opacity_{1};
   bool alwaysClips_{false};
   bool isRoot_{false};

@@ -12,14 +12,6 @@ namespace {
 
 using facebook::react::Float;
 
-// Children may draw past a box that does not clip them, by a transform Yoga
-// knows nothing of: a view is skipped only when it is this far off screen.
-constexpr float kCullSlack = 256;
-
-int overflowPixels(Float inset, Float scale) {
-  return toPixels(-std::min(Float{0}, inset), scale);
-}
-
 SkPoint point(PixelPoint pixels) {
   return {static_cast<float>(pixels.x), static_cast<float>(pixels.y)};
 }
@@ -85,6 +77,7 @@ void ComponentView::updateProps(const facebook::react::Props::Shared &props) {
   opacity_ = static_cast<float>(std::clamp(viewProps.opacity, Float{0}, Float{1}));
   refreshBox();
   transform_.update(viewProps, layoutMetrics_);
+  paintBoundsChanged();
   invalidate();
 }
 
@@ -123,6 +116,7 @@ void ComponentView::mountChild(ComponentView &child, std::size_t index) {
   }
   child.didMount();
   didChangeChildren();
+  paintBoundsChanged();
   invalidate();
 }
 
@@ -135,6 +129,7 @@ void ComponentView::unmountChild(ComponentView &child) {
   }
   child.parent_ = nullptr;
   didChangeChildren();
+  paintBoundsChanged();
   invalidate();
 }
 
@@ -150,6 +145,7 @@ void ComponentView::place() {
   origin_ = isOverlay() ? PixelPoint{} : PixelPoint{toPixels(frame.origin.x, scale), toPixels(frame.origin.y, scale)};
   size_ = {std::max(0, toPixels(frame.size.width, scale)), std::max(0, toPixels(frame.size.height, scale))};
   layoutContent();
+  paintBoundsChanged();
   invalidate();
 }
 
@@ -163,7 +159,12 @@ void ComponentView::setAlwaysClips(bool alwaysClips) {
   if (alwaysClips_ == alwaysClips) return;
   alwaysClips_ = alwaysClips;
   refreshBox();
+  paintBoundsChanged();
   invalidate();
+}
+
+void ComponentView::drawBackdrop(SkCanvas &, float) {
+  // A plain view leaves what is behind it as it is.
 }
 
 void ComponentView::drawContent(SkCanvas &, float) {
@@ -208,39 +209,19 @@ PixelPoint ComponentView::childrenShift() const {
   return {toPixels(offset.x, scale), toPixels(offset.y, scale)};
 }
 
-SkRect ComponentView::paintBounds() const {
-  const auto scale = pointScale();
-  const auto box = box_.overflow();
-  auto bounds = SkRect::MakeWH(static_cast<float>(size_.width), static_cast<float>(size_.height));
-  if (box_.style().clips || children_.empty()) {
-    return SkRect::MakeLTRB(
-        bounds.left() - static_cast<float>(box.left),
-        bounds.top() - static_cast<float>(box.top),
-        bounds.right() + static_cast<float>(box.right),
-        bounds.bottom() + static_cast<float>(box.bottom));
-  }
-  const auto &inset = layoutMetrics_.overflowInset;
-  return SkRect::MakeLTRB(
-      bounds.left() - static_cast<float>(std::max(box.left, overflowPixels(inset.left, scale))) - kCullSlack,
-      bounds.top() - static_cast<float>(std::max(box.top, overflowPixels(inset.top, scale))) - kCullSlack,
-      bounds.right() + static_cast<float>(std::max(box.right, overflowPixels(inset.right, scale))) + kCullSlack,
-      bounds.bottom() + static_cast<float>(std::max(box.bottom, overflowPixels(inset.bottom, scale))) + kCullSlack);
-}
-
 void ComponentView::draw(SkCanvas &canvas) {
   if (layoutMetrics_.displayType == facebook::react::DisplayType::None || opacity_ <= 0) return;
+  if (canvas.quickReject(placedBounds())) return;
   SkAutoCanvasRestore restore(&canvas, true);
   canvas.translate(static_cast<float>(origin_.x), static_cast<float>(origin_.y));
   transform_.concat(canvas, pointScale());
-  const auto bounds = paintBounds();
-  if (canvas.quickReject(bounds)) return;
+  drawBackdrop(canvas, opacity_);
   float alpha = 1;
   if (opacity_ < 1) {
     if (children_.empty() && box_.layerCount() + contentLayers() <= 1) {
       alpha = opacity_;
     } else {
-      const bool bounded = box_.style().clips || children_.empty();
-      canvas.saveLayerAlphaf(bounded ? &bounds : nullptr, opacity_);
+      canvas.saveLayerAlphaf(&paintBounds(), opacity_);
     }
   }
   box_.drawBelowContent(canvas, size_, alpha);
@@ -260,9 +241,16 @@ void ComponentView::drawChildren(SkCanvas &canvas) {
   const auto shift = childrenShift();
   SkAutoCanvasRestore restore(&canvas, shift != PixelPoint{});
   if (shift != PixelPoint{}) canvas.translate(static_cast<float>(shift.x), static_cast<float>(shift.y));
+  // A list's rows are hundreds of siblings, most of them off screen: one look
+  // at the clip sorts them out without a call into the canvas for each.
+  const auto visible = canvas.getLocalClipBounds();
   for (auto *child : children_) {
-    if (!child->isOverlay()) child->draw(canvas);
+    if (SkRect::Intersects(visible, child->placedBounds())) drawChild(canvas, *child);
   }
+}
+
+void ComponentView::drawChild(SkCanvas &canvas, ComponentView &child) {
+  if (!child.isOverlay()) child.draw(canvas);
 }
 
 PixelRect ComponentView::canvasRect() const {

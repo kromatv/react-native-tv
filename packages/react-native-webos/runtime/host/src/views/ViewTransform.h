@@ -27,6 +27,12 @@ class ViewTransform final {
   /// the view is placed in.
   SkPoint mapPoint(SkPoint local, facebook::react::Float scale) const;
 
+  /// The rectangle around where `local`, in the view's own pixels, shows in
+  /// the pixels the view is placed in. A transform with perspective gives a
+  /// rectangle that holds everything, since part of the view may be behind
+  /// the viewer.
+  SkRect mapRect(const SkRect &local, facebook::react::Float scale) const;
+
   /// The point of the view's own pixels that shows at `outer`, or nothing
   /// when the transform flattens the view.
   bool invertPoint(SkPoint outer, facebook::react::Float scale, SkPoint &local) const;

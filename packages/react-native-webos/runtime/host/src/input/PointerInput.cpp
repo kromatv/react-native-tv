@@ -181,8 +181,12 @@ void PointerInput::release(SkPoint point, bool cancelled) {
 }
 
 void PointerInput::wheel(SkPoint point, float dx, float dy) {
+  position_ = point;
   for (auto *view = targetAt(point).view; view != nullptr; view = view->parent()) {
-    if (view->scrollByWheel({.x = -dx * kWheelStep, .y = -dy * kWheelStep})) return;
+    if (!view->scrollByWheel({.x = -dx * kWheelStep, .y = -dy * kWheelStep})) continue;
+    // The content moved under a pointer that did not: another view is under it now.
+    hover(targetAt(point), point);
+    return;
   }
 }
 

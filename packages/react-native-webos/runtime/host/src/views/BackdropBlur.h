@@ -1,39 +1,27 @@
 #pragma once
 
-#include "PixelGeometry.h"
-
-#include <Evas.h>
+#include "include/core/SkCanvas.h"
+#include "include/core/SkImageFilter.h"
+#include "include/core/SkRRect.h"
 
 namespace rnwebos {
 
-/// What is drawn behind a box, blurred: an Evas snapshot image under a `blur`
-/// filter. Evas keeps the blurred picture until something under the snapshot
-/// changes, so a still backdrop costs nothing per frame; a changing one is
-/// captured and blurred again in each frame it changes (efl-rendering.md,
-/// "Backdrop blur"). Main thread only.
+/// What is drawn behind a box, blurred: Skia filters the pixels the frame has
+/// under the box into a layer and draws it back, cut to the box
+/// (docs/reference/skia-rendering.md, "What the views draw"). It costs a
+/// layer and a blur in every frame that draws it.
 class BackdropBlur final {
  public:
-  explicit BackdropBlur(Evas *evas);
-  ~BackdropBlur();
+  /// The blur's Gaussian deviation in pixels; 0 blurs nothing.
+  void setSigma(float pixels);
+  float sigma() const;
 
-  BackdropBlur(const BackdropBlur &) = delete;
-  BackdropBlur &operator=(const BackdropBlur &) = delete;
-
-  /// The snapshot to stack under the box's content and clip to the box, or
-  /// null when this Evas has no filters.
-  Evas_Object *object() const;
-  /// The blur's reach in pixels; 0 hides the snapshot.
-  void setRadius(int pixels);
-  /// Covers `box` and the radius around it, so the blur meets the box's edges
-  /// with the pixels beyond them rather than fading out.
-  void layout(const PixelRect &box);
+  /// Blurs what `canvas` holds under `box` and blends it back at `opacity`.
+  void draw(SkCanvas &canvas, const SkRRect &box, float opacity) const;
 
  private:
-  void applyVisibility();
-
-  Evas_Object *const snapshot_;
-  PixelRect box_;
-  int radius_{0};
+  sk_sp<SkImageFilter> filter_;
+  float sigma_{0};
 };
 
 } // namespace rnwebos

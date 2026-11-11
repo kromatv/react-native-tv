@@ -1,10 +1,15 @@
 #include "ScrollAnimation.h"
 
+#include <algorithm>
+#include <chrono>
+#include <cmath>
+#include <numbers>
+
 namespace rnwebos {
 
 namespace {
 
-constexpr double kDurationSeconds = 0.25;
+constexpr std::chrono::duration<double> kDuration{0.25};
 
 } // namespace
 
@@ -17,31 +22,33 @@ void ScrollAnimation::start(facebook::react::Point from, facebook::react::Point 
   from_ = from;
   to_ = to;
   step_ = std::move(step);
-  animator_ = ecore_animator_timeline_add(kDurationSeconds, onFrame, this);
+  started_ = MainLoop::Clock::now();
+  frameCallback_ = MainLoop::get().addFrameCallback([this](MainLoop::Clock::time_point frameTime) { onFrame(frameTime); });
 }
 
 void ScrollAnimation::stop() {
-  if (animator_ == nullptr) return;
-  ecore_animator_del(animator_);
-  animator_ = nullptr;
+  if (frameCallback_ == 0) return;
+  MainLoop::get().removeFrameCallback(frameCallback_);
+  frameCallback_ = 0;
 }
 
 bool ScrollAnimation::isRunning() const {
-  return animator_ != nullptr;
+  return frameCallback_ != 0;
 }
 
-Eina_Bool ScrollAnimation::onFrame(void *data, double position) {
-  auto &self = *static_cast<ScrollAnimation *>(data);
-  const auto progress = static_cast<facebook::react::Float>(ecore_animator_pos_map(position, ECORE_POS_MAP_DECELERATE, 0, 0));
+facebook::react::Point ScrollAnimation::offsetAt(facebook::react::Point from, facebook::react::Point to, double position) {
+  const auto progress =
+      static_cast<facebook::react::Float>(std::sin(std::clamp(position, 0.0, 1.0) * std::numbers::pi / 2));
+  return {.x = from.x + (to.x - from.x) * progress, .y = from.y + (to.y - from.y) * progress};
+}
+
+void ScrollAnimation::onFrame(MainLoop::Clock::time_point frameTime) {
+  const auto position = std::chrono::duration<double>(frameTime - started_) / kDuration;
   const bool finished = position >= 1.0;
-  const facebook::react::Point offset{
-      .x = self.from_.x + (self.to_.x - self.from_.x) * progress,
-      .y = self.from_.y + (self.to_.y - self.from_.y) * progress,
-  };
-  if (finished) self.animator_ = nullptr;
-  auto step = self.step_;
+  const auto offset = finished ? to_ : offsetAt(from_, to_, position);
+  if (finished) stop();
+  const auto step = step_;
   step(offset, finished);
-  return finished ? ECORE_CALLBACK_CANCEL : ECORE_CALLBACK_RENEW;
 }
 
 } // namespace rnwebos

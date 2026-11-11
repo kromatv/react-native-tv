@@ -1,6 +1,8 @@
 #pragma once
 
 #include "ComponentView.h"
+#include "ImageContent.h"
+#include "ImageDecoder.h"
 #include "ImageFetcher.h"
 
 #include <react/renderer/components/image/ImageEventEmitter.h>
@@ -11,46 +13,44 @@
 
 namespace rnwebos {
 
-/// An `<Image>`: a remote (`http`, `https`), `data:` or file source, decoded
-/// by Evas in the background while the image object stays hidden, then shown
-/// fitted by `resizeMode` inside the padding and clipped to rounded corners.
+/// An `<Image>`: a remote (`http`, `https`), `data:` or file source, fetched
+/// and decoded off the main thread, then painted fitted by `resizeMode`
+/// inside the padding, tinted by `tintColor` and clipped to rounded corners.
 /// Emits `onLoadStart`, then `onLoad` or `onError`, then `onLoadEnd`, when
 /// `shouldNotifyLoadEvents` asks for them, as on Android.
 class ImageView final : public ComponentView {
  public:
-  ImageView(Evas *evas, facebook::react::Tag tag);
-  ~ImageView() override;
+  using ComponentView::ComponentView;
 
   void updateProps(const facebook::react::Props::Shared &props) override;
   void updateState(const facebook::react::State::Shared &state) override;
   void updateLayout(const facebook::react::LayoutMetrics &layoutMetrics) override;
 
  protected:
-  void layoutMembers() override;
+  void drawContent(SkCanvas &canvas, float alpha) override;
+  int contentLayers() const override;
+  void layoutContent() override;
 
  private:
-  static void onPreloaded(void *data, Evas *evas, Evas_Object *object, void *info);
-
   void loadIfNeeded();
   void startLoad();
-  void decode(const FetchedImage &fetched);
-  void setSource(const FetchedImage &fetched);
-  void finishLoad();
+  void sharpenIfNeeded();
+  void request(PixelSize box);
+  void decode(ImageDecodeRequest request);
+  void show(const DecodedImage &decoded);
   void fail(const std::string &message, int status);
   void updateCorners();
+  PixelRect contentBox() const;
   const facebook::react::ImageEventEmitter *loadEvents() const;
 
-  Evas_Object *image_;
+  ImageContent content_;
   facebook::react::ImageSource source_;
   std::string requestedUri_;
   std::shared_ptr<ImageFetch> fetch_;
-  facebook::react::ImageResizeMode resizeMode_{facebook::react::ImageResizeMode::Cover};
-  int imageWidth_{0};
-  int imageHeight_{0};
+  std::shared_ptr<ImageDecode> decode_;
   bool notifiesLoadEvents_{false};
   bool hasStateSource_{false};
-  bool decoding_{false};
-  bool loaded_{false};
+  bool sharpening_{false};
 };
 
 } // namespace rnwebos
