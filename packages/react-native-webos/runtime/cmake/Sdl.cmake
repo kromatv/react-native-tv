@@ -25,9 +25,17 @@ if(RN_WEBOS_SIMULATOR)
   set(SDL_X11 ON CACHE BOOL "" FORCE)
   set(SDL_WAYLAND OFF CACHE BOOL "" FORCE)
 else()
+  include("${CMAKE_CURRENT_LIST_DIR}/WaylandScanner.cmake")
   set(WEBOS ON CACHE BOOL "" FORCE)
   set(SDL_X11 OFF CACHE BOOL "" FORCE)
   set(SDL_WAYLAND ON CACHE BOOL "" FORCE)
+  set(SDL_WAYLAND_LIBDECOR OFF CACHE BOOL "" FORCE)
 endif()
 
 add_subdirectory("${sdl_SOURCE_DIR}" "${CMAKE_BINARY_DIR}/sdl" EXCLUDE_FROM_ALL)
+
+if(NOT RN_WEBOS_SIMULATOR)
+  set_source_files_properties("${sdl_SOURCE_DIR}/src/hidapi/SDL_hidapi.c"
+    TARGET_DIRECTORY SDL3-static
+    PROPERTIES COMPILE_OPTIONS "-include;${CMAKE_CURRENT_LIST_DIR}/../sdl/hidapi-disabled.h")
+endif()

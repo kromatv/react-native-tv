@@ -198,6 +198,23 @@ libstdc++ file versions map to GCC releases per [gcc-abi].
 | The Developer Mode app ships a `gdbserver` "old enough to be barely worth using". Xo ships `arm-webos-linux-gnueabi/debug-root/usr/bin/gdbserver` (GDB 16.3, needs `libatomic.so.1`, which the 1.x and 4.x images lack) and a Linux-host `bin/arm-webos-linux-gnueabi-gdb`; Xw ships neither. GDB's sysroot should be a copy of that TV's own `/lib` and `/usr/lib`. | D, Xo, Xw | [brew-gdb]; archives; [fw] |
 | The jail gives the app a private root, a non-root user, `/media/developer` writable as `HOME`; the app lives in `/media/developer/apps/usr/palm/applications/<appid>`. | D | [brew-vocab], [brew-fs] |
 
+## 9. The runtime, built for a TV
+
+The whole runtime (Hermes, folly, React Native 0.88, ICU 78.3, Skia m157 with
+the libraries it bundles, SDL 3.4.16-webos.5, curl 8.23.0, Mbed TLS 3.6.7 and
+the host) cross-compiled from macOS with the flags of "What this means".
+
+### SDL's webOS backend, cross-compiled
+
+| Fact | Tag | Source |
+|---|---|---|
+| SDL's Wayland backend needs `wayland-scanner` on the build machine and, through pkg-config, `wayland-client>=1.10`, `wayland-egl`, `wayland-cursor`, `egl` and `xkbcommon>=0.5.0`. The sysroot has them in two directories: `usr/lib/pkgconfig` (`wayland-client`, `wayland-cursor`, `xkbcommon`) and `usr/share/pkgconfig` (`egl`, `glesv2`, `wayland-egl`). | D, Xo | [sdl3] `cmake/sdlchecks.cmake` L643-L673 |
+| The sysroot's Wayland is 1.11.0. The scanner the SDK ships for its Linux host, `bin/wayland-scanner`, is 1.15.0. | Xo | `usr/include/wayland-version.h`, `usr/lib/pkgconfig/wayland-client.pc`; `llvm-strings` on the scanner, `lib/pkgconfig/wayland-scanner.pc` |
+| A scanner from Wayland 1.20 on writes calls to `wl_proxy_marshal_flags`; 1.15 and 1.19 do not. SDL loads that function only when it is compiled against Wayland 1.20 headers. So the scanner must be older than 1.20, whatever a Linux build machine has installed. | D | [wayland] `src/scanner.c` at 1.20.0 L1246, at 1.19.0 and 1.15.0; [sdl3] `src/video/wayland/SDL_waylandsym.h` L83-L90 |
+| Wayland 1.15.0's scanner is two C files, `src/scanner.c` and `src/wayland-util.c`, an empty `config.h`, and expat. It compiles and runs on macOS with the expat Skia pins. | B | `runtime/wayland-scanner/` |
+| On webOS the fork refuses to link Wayland directly: it opens `libwayland-client.so.0`, `libwayland-egl.so`, `libwayland-cursor.so.0` and `libxkbcommon.so.0` (the file names it finds in the sysroot) with `dlopen`, and `libhelpers.so.2` and `libpbnjson_c.so.2` too. None becomes a `DT_NEEDED`. | D, B | [sdl3] `CMakeLists.txt` L1439-L1443, L1893-L1903, `cmake/sdlchecks.cmake` L8-L43, L710-L719; configure log |
+| With `SDL_HIDAPI=OFF` the fork's `src/hidapi/SDL_hidapi.c` does not compile for webOS: `DeleteHIDDeviceWrapper` uses `SDL_HIDAPI_discovery` and `SDL_webOSGetDevicePresenceFlags`, which only exist with HIDAPI on. HIDAPI on needs libudev, whose SONAME changes at webOS 4. | B, D | build log; [sdl3] `src/hidapi/SDL_hidapi.c` L1153-L1158, `CMakeLists.txt` L2002-L2012; section 2 |
+
 ## Open questions
 
 - Does a clang and lld build start on a TV at all? Nothing was run: relocation
@@ -308,6 +325,8 @@ visible from a shell. For a shell run, set `APPID`. For GDB, push the SDK's
 with `ares-novacom --forward`.
 
 [nt]: https://github.com/webosbrew/native-toolchain/blob/730dbd680cc319935655b1b04c2d80fcb62fdb22/README.md
+[wayland]: https://gitlab.freedesktop.org/wayland/wayland/-/blob/1.20.0/src/scanner.c
+[sdl3]: https://github.com/webosbrew/SDL-webOS/tree/release-3.4.16-webos.5
 [mbedtls]: https://github.com/Mbed-TLS/mbedtls/tree/mbedtls-3.6.7
 [curl]: https://github.com/curl/curl/tree/curl-8_23_0
 [curl-ca]: https://curl.se/docs/caextract.html
