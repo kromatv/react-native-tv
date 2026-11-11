@@ -16,6 +16,8 @@ struct SvgViewBox {
   std::string align;
   int meetOrSlice{0};
 
+  bool operator==(const SvgViewBox &) const = default;
+
   bool present() const;
 };
 

@@ -3,6 +3,8 @@
 #include "../views/ComponentView.h"
 #include "SvgRootNode.h"
 
+#include <utility>
+
 namespace rnwebos::svg {
 
 /// `<Svg>`: draws the tree of its nodes onto the canvas, clipped to the
@@ -20,9 +22,11 @@ class SvgView : public ComponentView {
   void didChangeChildren() override;
   virtual void readProps(const facebook::react::Props &props) = 0;
 
+  /// Takes the props the drawing depends on. The others, such as the view's
+  /// own opacity or transform while they animate, leave the drawing as it is.
   template <typename Props>
   void readSvgProps(const Props &props) {
-    root_.viewBox = {
+    SvgViewBox viewBox{
         .minX = props.minX,
         .minY = props.minY,
         .width = props.vbWidth,
@@ -30,7 +34,11 @@ class SvgView : public ComponentView {
         .align = props.align,
         .meetOrSlice = props.meetOrSlice,
     };
-    root_.color = colorFromProp(props.color);
+    const auto color = colorFromProp(props.color);
+    if (viewBox == root_.viewBox && color == root_.color) return;
+    root_.viewBox = std::move(viewBox);
+    root_.color = color;
+    root_.invalidate();
   }
 
  private:

@@ -30,7 +30,6 @@ SvgView::SvgView(Scene &scene, facebook::react::Tag tag) : ComponentView(scene, 
 void SvgView::updateProps(const facebook::react::Props::Shared &props) {
   ComponentView::updateProps(props);
   readProps(*props);
-  root_.invalidate();
 }
 
 void SvgView::drawContent(SkCanvas &canvas, float) {
