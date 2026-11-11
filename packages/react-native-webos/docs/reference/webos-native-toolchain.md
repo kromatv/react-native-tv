@@ -237,6 +237,20 @@ the host) cross-compiled from macOS with the flags of "What this means".
 | On webOS the fork refuses to link Wayland directly: it opens `libwayland-client.so.0`, `libwayland-egl.so`, `libwayland-cursor.so.0` and `libxkbcommon.so.0` (the file names it finds in the sysroot) with `dlopen`, and `libhelpers.so.2` and `libpbnjson_c.so.2` too. None becomes a `DT_NEEDED`. | D, B | [sdl3] `CMakeLists.txt` L1439-L1443, L1893-L1903, `cmake/sdlchecks.cmake` L8-L43, L710-L719; configure log |
 | With `SDL_HIDAPI=OFF` the fork's `src/hidapi/SDL_hidapi.c` does not compile for webOS: `DeleteHIDDeviceWrapper` uses `SDL_HIDAPI_discovery` and `SDL_webOSGetDevicePresenceFlags`, which only exist with HIDAPI on. HIDAPI on needs libudev, whose SONAME changes at webOS 4. | B, D | build log; [sdl3] `src/hidapi/SDL_hidapi.c` L1153-L1158, `CMakeLists.txt` L2002-L2012; section 2 |
 
+### Checked against the firmware data
+
+`bun scripts/check-tv-binary.ts <executable> --opens libwayland-client.so.0
+--opens libwayland-egl.so --opens libwayland-cursor.so.0 --opens
+libxkbcommon.so.0 --opens libhelpers.so.2 --opens libpbnjson_c.so.2` reads the
+executable and [fw] at commit `2d5a7b6`.
+
+| Fact | Tag | Source |
+|---|---|---|
+| Every needed library, every version node and every imported symbol exists on all 14 images, webOS 1.2.0 to 11.2.0. Only weak symbols are absent: `__gmon_start__` and the two `_ITM_` ones everywhere, `__cxa_thread_atexit_impl` on the 1.x images. | B, D | the script; [fw] |
+| The six libraries SDL and the host open are on all 14 images. | B, D | the script; [fw] |
+| Of the names SDL looks up in them, these are missing somewhere. Required by SDL (`SDL_WAYLAND_SYM`): `wl_proxy_get_class` on the 1.x images; `wl_display_prepare_read`, `wl_display_prepare_read_queue`, `wl_display_read_events`, `wl_display_cancel_read` and `wl_proxy_marshal_constructor` up to 2.2.3. Optional (`SDL_WAYLAND_SYM_OPT`, some with a stand-in): `wl_proxy_marshal_constructor_versioned`, `wl_proxy_get_version`, `wl_proxy_create_wrapper`, `wl_proxy_wrapper_destroy` and the `xkb_compose_` functions up to 3.9.2; `wl_proxy_set_tag`, `wl_proxy_get_tag` and `xkb_keymap_key_get_mods_for_level` up to 8.3.0; `HNDLSetLSHandle` of libhelpers up to 6.4.0; `jvalue_stringify` of pbnjson up to 2.2.3. | B, D | the script, which finds the names among the executable's strings; [sdl3] `src/video/wayland/SDL_waylandsym.h` L40-L170, `SDL_waylanddyn.c` L208-L219, `src/core/webos/SDL_webos_helpers_sym.h` L67, `SDL_webos_pbnjson_sym.h` L48 |
+| So what a file can show puts the floor at webOS 3.4.0 for this executable: the dynamic linker is satisfied from 1.2.0, and every name SDL requires of Wayland is there from 3.4.0. The claim of webOS 4 holds with one release to spare; what the jailer does before 4 (section 4) is not something a file shows. | I | the rows above |
+
 ## Open questions
 
 - Does the executable start on a TV at all? Nothing was run. It is linked at a
@@ -370,16 +384,20 @@ is absent on the 3.4.0 image and older, and has two API generations.
 fails the configure, and an executable that needs one fails the build. Today
 the executable needs eight of them and the loader (section 9).
 
-**Floor.** webOS 4.x (2018) is the lowest release these facts support without
-extra work: Wayland code built from the sysroot's headers needs
-`wl_proxy_marshal_constructor_versioned`, which the 1.x to 3.x images lack, and
-the jailer and native services misbehave before 4. The build still targets
-glibc 2.12.2, because no other public sysroot exists. The floor is a decision
-for `docs/decisions.md`.
+**Floor.** webOS 4.x (2018), as `docs/decisions.md` records. The executable
+itself asks less: every image back to 1.2.0 has what it imports, and SDL, which
+stands in for the Wayland functions older releases lack, finds every one it
+requires from 3.4.0 on (section 9). What keeps the floor at 4 is the jailer and
+native services, which misbehave before it. The build still targets glibc
+2.12.2, because no other public sysroot exists.
 
-**Check every build** against [fw]: each `DT_NEEDED` SONAME and each undefined
-symbol, per firmware. The data is Apache-2.0 JSON, so `rn-webos` can read it
-with zod on macOS, where `webosbrew-ipk-verify` has no release.
+**Check every build** against [fw] with `scripts/check-tv-binary.ts`: the ABI,
+the interpreter, each `DT_NEEDED` SONAME, each version node and each imported
+symbol, per firmware image, and the libraries named with `--opens`, which the
+code loads with `dlopen`. It fails when the first release that passes is newer
+than webOS 4. The data is Apache-2.0 JSON, fetched into the cache at a pinned
+commit; `webosbrew-ipk-verify` has no macOS release. It reads the file and
+cannot see what a `dlsym` will ask for beyond the names it finds as strings.
 
 **One 32-bit build.** No release gives an app a 64-bit userland, and LG's own
 NDK for webOS 26 is 32-bit.
