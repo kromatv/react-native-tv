@@ -76,7 +76,7 @@
     "@formatjs/intl-pluralrules": "7.0.2",
     "@formatjs/intl-relativetimeformat": "13.0.1",
     "ssh2": "1.17.0",
-    "ws": "8.22.1",
+    "ws": "8.22.2",
     "zod": "^4.6.7"
   },
   "devDependencies": {
