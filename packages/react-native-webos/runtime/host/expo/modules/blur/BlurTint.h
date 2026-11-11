@@ -2,7 +2,7 @@
 
 #include <string>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 struct BlurTintColor {
   int red;
@@ -21,4 +21,4 @@ BlurTintColor blurTintColor(const std::string &tint, double intensity);
 /// passes Evas spans over three sigmas.
 int blurRadiusPixels(double intensity, double reductionFactor, double pointScale);
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

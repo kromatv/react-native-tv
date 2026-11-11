@@ -20,7 +20,7 @@
 #include <optional>
 #include <stdexcept>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -182,4 +182,4 @@ std::variant<ScreenCapture, std::string> ControlLink::capture() {
   return std::move(*captured);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

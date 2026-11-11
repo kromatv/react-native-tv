@@ -4,7 +4,7 @@
 
 #include <Evas.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// A member of a view's smart object that fills its box: a rectangle while its
 /// corners are square, a filled nine-patch image once they are rounded.
@@ -31,4 +31,4 @@ class BoxShape final {
   Corners corners_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

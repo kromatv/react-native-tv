@@ -10,7 +10,7 @@ export const PACKAGE_OPTIONS = {
     type: 'string',
     placeholder: '<id>',
     description:
-      "The app to read, by its Tizen package id (default: the app in --project or the current directory's, else the only one connected)",
+      "The app to read, by its webOS package id (default: the app in --project or the current directory's, else the only one connected)",
   },
 } as const satisfies OptionSpecs;
 
@@ -28,7 +28,7 @@ export function targetPackage(
   if (flag !== undefined) {
     const issue = packageIdIssue(flag);
     if (issue !== null)
-      throw new UsageError(`--package is not a Tizen package id: ${issue}`, command);
+      throw new UsageError(`--package is not a webOS package id: ${issue}`, command);
     return flag;
   }
   if (!CONFIG_FILES.some((name) => existsSync(join(dir, name)))) return null;

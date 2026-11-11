@@ -10,7 +10,7 @@ const command: Command = {
     port: { type: 'string', placeholder: '<port>', description: 'Where to listen' },
     verbose: { type: 'boolean', short: 'v', description: 'Say more' },
   },
-  examples: ['rn-tizen logs --port 9000'],
+  examples: ['rn-webos logs --port 9000'],
   run: () => Promise.resolve(),
 };
 
@@ -18,7 +18,7 @@ describe('commandHelp', () => {
   it('lists every option with its value, short form and description, aligned', () => {
     expect(commandHelp(command, painter(false))).toBe(
       [
-        'Usage: rn-tizen logs [options]',
+        'Usage: rn-webos logs [options]',
         '',
         'Stream the logs of a development build',
         '',
@@ -27,7 +27,7 @@ describe('commandHelp', () => {
         '  --verbose, -v   Say more',
         '',
         'Examples',
-        '  rn-tizen logs --port 9000',
+        '  rn-webos logs --port 9000',
       ].join('\n'),
     );
   });

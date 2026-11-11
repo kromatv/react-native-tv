@@ -2,7 +2,7 @@
 
 #include "ModuleDefinition.h"
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 ExpoModuleRegistry &ExpoModuleRegistry::shared() {
   static ExpoModuleRegistry registry;
@@ -33,4 +33,4 @@ std::vector<std::string> ExpoModuleRegistry::names() const {
   return names;
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

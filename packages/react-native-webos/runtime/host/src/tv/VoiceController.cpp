@@ -10,7 +10,7 @@
 #include <functional>
 #include <map>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -50,7 +50,7 @@ std::string VoiceController::appState() const {
 std::string VoiceController::contentContext() const {
   auto *root = dependencies_.rootView();
   if (root == nullptr) return "[]";
-  return folly::toJson(rntizen::contentContext(labelledViews(*root)));
+  return folly::toJson(rnwebos::contentContext(labelledViews(*root)));
 }
 
 bool VoiceController::handle(const std::string &json) {
@@ -102,4 +102,4 @@ bool VoiceController::search(const VoiceCommand &command) {
   return true;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

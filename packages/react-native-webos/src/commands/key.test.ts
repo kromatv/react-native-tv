@@ -23,7 +23,7 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-describe('rn-tizen key', () => {
+describe('rn-webos key', () => {
   it('presses the keys with the saved token, then closes the connection', async () => {
     vi.mocked(readToken).mockReturnValue('12345');
     const remote = session('12345');

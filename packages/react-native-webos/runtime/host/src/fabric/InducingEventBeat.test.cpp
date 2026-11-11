@@ -8,7 +8,7 @@
 #include <functional>
 #include <memory>
 
-namespace rntizen {
+namespace rnwebos {
 
 TEST_CASE("InducingEventBeat schedules its beat on the runtime as soon as one is requested") {
   int scheduled = 0;
@@ -25,4 +25,4 @@ TEST_CASE("InducingEventBeat schedules its beat on the runtime as soon as one is
   CHECK(scheduled == 1);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

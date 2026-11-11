@@ -5,7 +5,7 @@
 #include <memory>
 #include <string>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 class Context;
 
@@ -20,4 +20,4 @@ void installViewPrototypes(
     const facebook::jsi::Object &moduleObject,
     const std::string &moduleName);
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

@@ -1,8 +1,8 @@
 import { COMMON_OPTIONS, parseCommandArgs, UsageError, type Command } from '../cli/command.ts';
 import { Reporter } from '../cli/reporter.ts';
 import { splitActionArgs } from '../simulator/action-args.ts';
-import { resolveDevice } from '../tizen/devices.ts';
-import { uninstallApp } from '../tizen/install-app.ts';
+import { resolveDevice } from '../webos/devices.ts';
+import { uninstallApp } from '../webos/install-app.ts';
 
 const OPTIONS = {
   device: {
@@ -14,19 +14,19 @@ const OPTIONS = {
   ...COMMON_OPTIONS,
 } as const;
 
-/** `rn-tizen uninstall <package id>`: removes a package and its data from a TV. */
+/** `rn-webos uninstall <package id>`: removes a package and its data from a TV. */
 export const uninstallCommand: Command = {
   name: 'uninstall',
   summary: 'Remove a package and its data from a TV',
   options: OPTIONS,
-  examples: ['rn-tizen uninstall com.example.myapp --device 192.168.1.50'],
+  examples: ['rn-webos uninstall com.example.myapp --device 192.168.1.50'],
   async run(args) {
     const { positionals, options } = splitActionArgs(args);
     const flags = parseCommandArgs('uninstall', options, OPTIONS);
     const [packageId, ...extra] = positionals;
     if (packageId === undefined || extra.length > 0) {
       throw new UsageError(
-        'uninstall needs one package id, e.g. `rn-tizen uninstall com.example.myapp`',
+        'uninstall needs one package id, e.g. `rn-webos uninstall com.example.myapp`',
         'uninstall',
       );
     }

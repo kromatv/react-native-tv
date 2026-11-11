@@ -1,6 +1,6 @@
-# libreact-native-tizen.so: Hermes, React Native's C++ core and the Tizen host,
-# linked into the one library a Tizen app loads. It exports the C API in
-# include/react-native-tizen/react-native-tizen.h and nothing else.
+# libreact-native-webos.so: Hermes, React Native's C++ core and the webOS host,
+# linked into the one library a webOS app loads. It exports the C API in
+# include/react-native-webos/react-native-webos.h and nothing else.
 
 file(GLOB_RECURSE _host_sources CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
 list(FILTER _host_sources EXCLUDE REGEX "\\.test\\.cpp$")
@@ -9,7 +9,7 @@ if(TARGET expo_modules_common)
   list(FILTER _expo_host_sources EXCLUDE REGEX "\\.test\\.cpp$")
   list(APPEND _host_sources ${_expo_host_sources})
 endif()
-if(RN_TIZEN_DEVELOPMENT)
+if(RN_WEBOS_DEVELOPMENT)
   file(GLOB_RECURSE _devsupport_sources CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/devsupport/*.cpp")
   list(FILTER _devsupport_sources EXCLUDE REGEX "\\.test\\.cpp$")
   list(APPEND _host_sources ${_devsupport_sources})
@@ -28,72 +28,72 @@ set(_react_native_roots
   rrc_root rrc_view rrc_text rrc_image rrc_scrollview rrc_modal rrc_native react_codegen_rncore
   react_renderer_textlayoutmanager react_nativemodule_core react_nativemodule_defaults
   jsi jsireact jsitooling hermesvm_a folly_runtime glog)
-set(_tizen_libraries
+set(_webos_libraries
   elementary ecore ecore_evas ecore_imf ecore_input evas eina eo efl-extension dlog curl capi-system-info
   capi-appfw-application capi-appfw-app-common capi-media-player)
 
 # The host's objects, which the library links as they are and the tests in
 # src/**/*.test.cpp link from an archive, so a test pulls in only what it uses.
-add_library(rn_tizen_host OBJECT ${_host_sources})
-target_include_directories(rn_tizen_host
+add_library(rn_webos_host OBJECT ${_host_sources})
+target_include_directories(rn_webos_host
   PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" "${CMAKE_CURRENT_SOURCE_DIR}/src")
-target_compile_reactnative_options(rn_tizen_host PRIVATE)
-target_compile_options(rn_tizen_host PRIVATE -Wno-error)
-set_target_properties(rn_tizen_host PROPERTIES
+target_compile_reactnative_options(rn_webos_host PRIVATE)
+target_compile_options(rn_webos_host PRIVATE -Wno-error)
+set_target_properties(rn_webos_host PROPERTIES
   CXX_VISIBILITY_PRESET hidden
   VISIBILITY_INLINES_HIDDEN ON)
 if(TARGET expo_modules_common)
   list(APPEND _react_native_roots expo_modules_common)
-  target_compile_definitions(rn_tizen_host PRIVATE RN_TIZEN_EXPO=1)
+  target_compile_definitions(rn_webos_host PRIVATE RN_WEBOS_EXPO=1)
 endif()
-if(RN_TIZEN_DEVELOPMENT)
-  target_compile_definitions(rn_tizen_host PRIVATE RN_TIZEN_DEV_SUPPORT=1)
+if(RN_WEBOS_DEVELOPMENT)
+  target_compile_definitions(rn_webos_host PRIVATE RN_WEBOS_DEV_SUPPORT=1)
 endif()
-target_link_libraries(rn_tizen_host PUBLIC ${_react_native_roots} Threads::Threads ${CMAKE_DL_LIBS})
-target_link_tizen_libraries(rn_tizen_host ${_tizen_libraries})
+target_link_libraries(rn_webos_host PUBLIC ${_react_native_roots} Threads::Threads ${CMAKE_DL_LIBS})
+target_link_webos_libraries(rn_webos_host ${_webos_libraries})
 
-add_library(react-native-tizen SHARED)
-target_include_directories(react-native-tizen PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
-target_link_libraries(react-native-tizen PRIVATE rn_tizen_host)
-target_link_tizen_libraries(react-native-tizen ${_tizen_libraries})
-rn_tizen_link_object_closure(react-native-tizen ${_react_native_roots})
-target_link_options(react-native-tizen PRIVATE
+add_library(react-native-webos SHARED)
+target_include_directories(react-native-webos PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+target_link_libraries(react-native-webos PRIVATE rn_webos_host)
+target_link_webos_libraries(react-native-webos ${_webos_libraries})
+rn_webos_link_object_closure(react-native-webos ${_react_native_roots})
+target_link_options(react-native-webos PRIVATE
   "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/exports.map"
   "-Wl,--gc-sections")
-set_property(TARGET react-native-tizen APPEND PROPERTY LINK_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/exports.map")
+set_property(TARGET react-native-webos APPEND PROPERTY LINK_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/exports.map")
 
-if(RN_TIZEN_TESTS)
+if(RN_WEBOS_TESTS)
   file(GLOB_RECURSE _host_test_sources CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.test.cpp")
   if(TARGET expo_modules_common)
     file(GLOB_RECURSE _expo_test_sources CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/expo/*.test.cpp")
     list(APPEND _host_test_sources ${_expo_test_sources})
   endif()
-  if(RN_TIZEN_DEVELOPMENT)
+  if(RN_WEBOS_DEVELOPMENT)
     file(GLOB_RECURSE _devsupport_test_sources CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/devsupport/*.test.cpp")
     list(APPEND _host_test_sources ${_devsupport_test_sources})
   endif()
-  rn_tizen_add_host_tests(rn-tizen-host-tests
+  rn_webos_add_host_tests(rn-webos-host-tests
     SOURCES ${_host_test_sources}
-    HOST rn_tizen_host
+    HOST rn_webos_host
     ROOTS ${_react_native_roots}
-    TIZEN_LIBRARIES ${_tizen_libraries}
+    WEBOS_LIBRARIES ${_webos_libraries}
     INSTRUMENT react_renderer_textlayoutmanager hermesPlatformIntl_obj)
   if(TARGET expo_modules_common)
     # An Expo module registers itself from a static initializer in its own file
-    # (RN_TIZEN_EXPO_MODULE), which never runs from an archive member no test
+    # (RN_WEBOS_EXPO_MODULE), which never runs from an archive member no test
     # references: link the Expo host's objects whole, as the library does.
-    target_sources(rn-tizen-host-tests PRIVATE "$<FILTER:$<TARGET_OBJECTS:rn_tizen_host>,INCLUDE,/expo/>")
+    target_sources(rn-webos-host-tests PRIVATE "$<FILTER:$<TARGET_OBJECTS:rn_webos_host>,INCLUDE,/expo/>")
   endif()
   # A component descriptor registers itself from a static initializer too
-  # (RN_TIZEN_COMPONENT_DESCRIPTOR): link the core's, so the registry a test
+  # (RN_WEBOS_COMPONENT_DESCRIPTOR): link the core's, so the registry a test
   # builds has them.
-  target_sources(rn-tizen-host-tests PRIVATE
-    "$<FILTER:$<TARGET_OBJECTS:rn_tizen_host>,INCLUDE,/fabric/[A-Za-z]+ComponentDescriptors?\\.cpp\\.o>")
+  target_sources(rn-webos-host-tests PRIVATE
+    "$<FILTER:$<TARGET_OBJECTS:rn_webos_host>,INCLUDE,/fabric/[A-Za-z]+ComponentDescriptors?\\.cpp\\.o>")
   # react-native-svg's implementation compiles only for an app that uses it
   # (cmake/Libraries.cmake); its path and viewBox math needs no package.
-  target_sources(rn-tizen-host-tests PRIVATE
+  target_sources(rn-webos-host-tests PRIVATE
     src/svg/PathData.cpp src/svg/SvgPath.cpp src/svg/SvgViewBox.cpp)
   # The full ICU data file ICU's sources ship, for the host's ICU setup to load.
   set_source_files_properties(src/intl/IcuData.test.cpp PROPERTIES
-    COMPILE_DEFINITIONS "RN_TIZEN_TEST_ICU_DATA_DIR=\"${icu_SOURCE_DIR}/source/data/in\"")
+    COMPILE_DEFINITIONS "RN_WEBOS_TEST_ICU_DATA_DIR=\"${icu_SOURCE_DIR}/source/data/in\"")
 endif()

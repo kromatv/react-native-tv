@@ -1,19 +1,19 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import type { TizenAppConfig } from '../config/tizen-config.ts';
+import type { WebOSAppConfig } from '../config/webos-config.ts';
 import { SHELL_DIR } from '../package-paths.ts';
-import { platformProfile } from '../tizen/platform-profiles.ts';
+import { platformProfile } from '../webos/platform-profiles.ts';
 import { manifestValues, projectValues, renderTemplate } from './templates.ts';
 import { escapeXml } from './xml.ts';
 
-const config: TizenAppConfig = {
-  packageId: 'org.rntizen.example',
+const config: WebOSAppConfig = {
+  packageId: 'org.rnwebos.example',
   label: 'Tom & Jerry <TV>',
   version: '1.2.3',
   profile: undefined,
   privileges: [
-    'http://tizen.org/privilege/internet',
+    'http://webos.org/privilege/internet',
     'http://developer.samsung.com/privilege/network.public',
   ],
   platform: undefined,
@@ -51,15 +51,15 @@ describe('escapeXml', () => {
 
 describe('the shell manifest', () => {
   const manifest = renderTemplate(
-    shellFile('tizen-manifest.xml'),
+    shellFile('webos-manifest.xml'),
     manifestValues(config, platformProfile('9.0')),
   );
 
   it('names the package, its version and its platform as x.y', () => {
     expect(manifest).toContain(
-      '<manifest package="org.rntizen.example" version="1.2.3" api-version="9.0"',
+      '<manifest package="org.rnwebos.example" version="1.2.3" api-version="9.0"',
     );
-    expect(manifest).toContain('appid="org.rntizen.example"');
+    expect(manifest).toContain('appid="org.rnwebos.example"');
   });
 
   it('declares the TV profile', () => {
@@ -72,19 +72,19 @@ describe('the shell manifest', () => {
 
   it('lists one element per privilege', () => {
     expect(manifest).toContain(
-      '    <privilege>http://tizen.org/privilege/internet</privilege>\n    <privilege>http://developer.samsung.com/privilege/network.public</privilege>',
+      '    <privilege>http://webos.org/privilege/internet</privilege>\n    <privilege>http://developer.samsung.com/privilege/network.public</privilege>',
     );
   });
 });
 
 describe('the shell project', () => {
-  it('targets TizenFX API 8 and the Tizen.NET version whatever the floor', () => {
+  it('targets WebOSFX API 8 and the webOS.NET version whatever the floor', () => {
     const project = renderTemplate(
-      shellFile('ReactNativeTizen.csproj'),
+      shellFile('ReactNativeWebOS.csproj'),
       projectValues(platformProfile('9.0'), config),
     );
 
-    expect(project).toContain('<TargetFramework>tizen80</TargetFramework>');
-    expect(project).toContain('<TizenNetPackageVersion>12.0.0.18510</TizenNetPackageVersion>');
+    expect(project).toContain('<TargetFramework>webos80</TargetFramework>');
+    expect(project).toContain('<WebOSNetPackageVersion>12.0.0.18510</WebOSNetPackageVersion>');
   });
 });

@@ -8,7 +8,7 @@ function timed<T>(make: () => T): [T, number] {
   return [value, performance.now() - start];
 }
 
-/** Intl on Tizen: the calls KROMA makes, each with what it returned, logged for a diff against Node. */
+/** Intl on webOS: the calls KROMA makes, each with what it returned, logged for a diff against Node. */
 export function IntlScreen() {
   const [cases, elapsed] = useMemo(() => timed(intlCases), []);
   useMemo(() => {

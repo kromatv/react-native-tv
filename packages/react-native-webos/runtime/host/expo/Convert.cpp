@@ -9,7 +9,7 @@
 #include <cmath>
 #include <cstring>
 
-namespace rntizen::expo::detail {
+namespace rnwebos::expo::detail {
 
 using facebook::jsi::JSError;
 using facebook::jsi::Runtime;
@@ -88,4 +88,4 @@ PromiseOutcome failureFor(const std::exception &error) {
   return {.value = nullptr, .error = std::string(error.what()), .code = coded != nullptr ? coded->code() : std::string()};
 }
 
-} // namespace rntizen::expo::detail
+} // namespace rnwebos::expo::detail

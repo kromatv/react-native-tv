@@ -4,7 +4,7 @@
 
 #include <algorithm>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -184,4 +184,4 @@ void TextInputLayer::placeCaret() {
   }
 }
 
-} // namespace rntizen
+} // namespace rnwebos

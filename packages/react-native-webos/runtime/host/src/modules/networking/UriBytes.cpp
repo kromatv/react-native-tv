@@ -6,7 +6,7 @@
 #include <iterator>
 #include <stdexcept>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -67,4 +67,4 @@ std::optional<std::string> uriBytes(std::string_view uri) {
   return std::nullopt;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

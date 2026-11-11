@@ -6,7 +6,7 @@
 #include <sstream>
 #include <stdexcept>
 
-namespace rntizen {
+namespace rnwebos {
 
 Bundle loadBundleFile(const std::string &path) {
   std::ifstream file(path, std::ios::binary);
@@ -23,4 +23,4 @@ Bundle downloadBundle(const std::string &url) {
   return Bundle{.script = std::make_unique<facebook::react::JSBigStdString>(httpGet(url)), .sourceURL = url};
 }
 
-} // namespace rntizen
+} // namespace rnwebos

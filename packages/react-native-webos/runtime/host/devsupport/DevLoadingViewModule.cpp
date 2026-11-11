@@ -4,7 +4,7 @@
 
 #include "modules/PlatformModuleRegistry.h"
 
-namespace rntizen {
+namespace rnwebos {
 
 std::optional<std::uint32_t> argbColor(std::optional<double> color) {
   if (!color.has_value()) return std::nullopt;
@@ -31,6 +31,6 @@ void DevLoadingViewModule::hide(facebook::jsi::Runtime &) {
   DevSupport::post([](DevSupport &devSupport) { devSupport.hideMessage(); });
 }
 
-RN_TIZEN_PLATFORM_MODULE("DevLoadingView", DevLoadingViewModule);
+RN_WEBOS_PLATFORM_MODULE("DevLoadingView", DevLoadingViewModule);
 
-} // namespace rntizen
+} // namespace rnwebos

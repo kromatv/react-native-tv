@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <optional>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -96,4 +96,4 @@ std::string encodeUtf8(std::u32string_view text) {
   return encoded;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

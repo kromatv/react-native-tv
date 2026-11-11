@@ -13,7 +13,7 @@
 #include <memory>
 #include <mutex>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -186,4 +186,4 @@ std::chrono::nanoseconds mainThreadWaitTime() {
   return std::chrono::nanoseconds(waits.nanos.load(std::memory_order_relaxed) + std::max<std::int64_t>(0, ongoing));
 }
 
-} // namespace rntizen
+} // namespace rnwebos

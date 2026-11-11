@@ -11,7 +11,7 @@
 #include <thread>
 #include <vector>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -72,4 +72,4 @@ void runInBackground(std::function<void()> task) {
   queue->push(std::move(task));
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

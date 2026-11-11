@@ -4,7 +4,7 @@
 
 #include <utility>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 SharedObjectRegistry &SharedObjectRegistry::shared() {
   static folly::Indestructible<SharedObjectRegistry> registry;
@@ -44,4 +44,4 @@ std::vector<SharedObjectId> SharedObjectRegistry::takeReleased() {
   return std::exchange(released_, {});
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

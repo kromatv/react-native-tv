@@ -6,7 +6,7 @@
 #include <JSIUtils.h>
 #include <SharedObject.h>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -148,4 +148,4 @@ void RuntimeState::forgetReleased() {
   for (const auto id : SharedObjectRegistry::shared().takeReleased()) objects_.erase(id);
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

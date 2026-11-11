@@ -13,7 +13,7 @@
 #include <utility>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// What JavaScript's `new WebSocket(url, protocols, {headers})` asks for.
 struct WebSocketRequest {
@@ -34,7 +34,7 @@ struct WebSocketListener {
 
 /// One client WebSocket (RFC 6455) on its own thread. libcurl opens the TCP or
 /// TLS connection with `CURLOPT_CONNECT_ONLY` and this class speaks the
-/// protocol over it, because the Tizen 9 rootstrap's libcurl is built without
+/// protocol over it, because the webOS 9 rootstrap's libcurl is built without
 /// WebSocket support. Every method is thread-safe and returns at once; the
 /// destructor stops the thread without reporting anything more.
 class WebSocketConnection final {
@@ -81,4 +81,4 @@ class WebSocketConnection final {
   std::jthread thread_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

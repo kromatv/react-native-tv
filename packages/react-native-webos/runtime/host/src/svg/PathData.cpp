@@ -4,7 +4,7 @@
 #include <charconv>
 #include <optional>
 
-namespace rntizen::svg {
+namespace rnwebos::svg {
 
 namespace {
 
@@ -226,4 +226,4 @@ Path parsePathData(std::string_view data) {
   return PathBuilder(data).build();
 }
 
-} // namespace rntizen::svg
+} // namespace rnwebos::svg

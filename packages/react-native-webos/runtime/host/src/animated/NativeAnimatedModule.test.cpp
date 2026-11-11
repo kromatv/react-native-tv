@@ -9,7 +9,7 @@
 
 #include <memory>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -47,4 +47,4 @@ TEST_CASE("NativeAnimatedModule is left to JavaScript's driver while cxxNativeAn
   CHECK(createNativeAnimatedModule(std::make_shared<NoInvoker>(), ModuleContext{}) == nullptr);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

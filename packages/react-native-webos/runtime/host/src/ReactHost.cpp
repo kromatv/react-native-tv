@@ -14,7 +14,7 @@
 #include <format>
 #include <utility>
 
-namespace rntizen {
+namespace rnwebos {
 
 ReactHost::ReactHost(const std::string &resourceDir)
     : config_(loadHostConfig(resourceDir)),
@@ -33,7 +33,7 @@ void ReactHost::start() {
   diagnostics_.controlLink = openDevelopmentLinks(config_);
   installCrashReporter();
   log(LogLevel::Info,
-      "Starting " + config_.appKey + " on " + device_.modelName + " (Tizen " + device_.platformVersion + ")");
+      "Starting " + config_.appKey + " on " + device_.modelName + " (webOS " + device_.platformVersion + ")");
   overrideFeatureFlagsOnce();
   tv_.state = std::make_shared<TvState>(config_.voice, config_.voiceSearchUrl);
   createWindow();
@@ -154,4 +154,4 @@ VoiceController &ReactHost::voice() {
   return *tv_.voice;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

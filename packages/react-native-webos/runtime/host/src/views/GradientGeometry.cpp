@@ -7,7 +7,7 @@
 #include <numbers>
 #include <optional>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -197,4 +197,4 @@ float GradientGeometry::slope() const {
   return length_ > 0 ? (std::abs(sin_) + std::abs(cos_)) / length_ : 0;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

@@ -11,9 +11,9 @@
 #include <thread>
 #include <variant>
 
-namespace rntizen {
+namespace rnwebos {
 
-/// The connection `rn-tizen screenshot` and `rn-tizen perf` reach a development
+/// The connection `rn-webos screenshot` and `rn-webos perf` reach a development
 /// build through: a second TCP connection to the log endpoint, beside the log
 /// stream, held open, answering screenshot requests with the window's pixels
 /// and taking perf requests. It reconnects every 500 ms, so a listener started
@@ -59,4 +59,4 @@ class ControlLink final {
   std::jthread thread_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

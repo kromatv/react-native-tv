@@ -19,7 +19,7 @@ function app(appConfig: string): string {
 }
 
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'rn-tizen-app-'));
+  dir = mkdtempSync(join(tmpdir(), 'rn-webos-app-'));
 });
 
 afterEach(() => {
@@ -30,10 +30,10 @@ describe('loadAppProject', () => {
   it("reads the example's config, entry and native packages", () => {
     const project = loadAppProject(EXAMPLE);
 
-    expect(project.config.packageId).toBe('org.rntizen.example');
+    expect(project.config.packageId).toBe('org.rnwebos.example');
     expect(project.entryFile).toBe(join(EXAMPLE, 'main.ts'));
     expect(project.packages.reactNative.name).toBe('react-native-tvos');
-    expect(project.tizenDir).toBe(join(EXAMPLE, 'tizen'));
+    expect(project.webosDir).toBe(join(EXAMPLE, 'webos'));
   });
 
   it('takes the entry it was given', () => {
@@ -60,7 +60,7 @@ describe('loadAppProject', () => {
 describe('readExpoConfig', () => {
   it('evaluates app.config.js with Node, public fields only when asked', () => {
     app(
-      "module.exports = { name: 'Dynamic', slug: 'dynamic', extra: { built: 1 + 1 }, tizen: { package: 'a.b' } };",
+      "module.exports = { name: 'Dynamic', slug: 'dynamic', extra: { built: 1 + 1 }, webos: { package: 'a.b' } };",
     );
 
     expect(readExpoConfig(dir)).toMatchObject({ name: 'Dynamic', extra: { built: 2 } });

@@ -4,7 +4,7 @@
 #include <string>
 #include <string_view>
 
-namespace rntizen {
+namespace rnwebos {
 
 enum class PackagerCommand { Reload, DevMenu };
 
@@ -18,4 +18,4 @@ struct PackagerMessage {
 /// Reads a message of the packager protocol, version 2; any other text asks nothing.
 PackagerMessage readPackagerMessage(std::string_view text);
 
-} // namespace rntizen
+} // namespace rnwebos

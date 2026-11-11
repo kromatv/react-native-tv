@@ -4,7 +4,7 @@
 
 #include <FBReactNativeSpec/FBReactNativeSpecJSI.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// `ExceptionsManager`: JavaScript errors reach the log with their stack, and a
 /// fatal one takes the host's fatal path, as an error before the bundle ran
@@ -33,4 +33,4 @@ class ExceptionsManagerModule final
   std::function<void(const ErrorReport &report)> reportFatalError_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

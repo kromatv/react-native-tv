@@ -3,7 +3,7 @@
 #include <optional>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// What fontconfig would match a font file on: its `OS/2` weight class and
 /// whether it is italic.
@@ -25,4 +25,4 @@ bool trackSfntAdvances(std::string &bytes, int units);
 /// The font's units per em from its `head` table, or nothing.
 std::optional<int> sfntUnitsPerEm(const std::string &bytes);
 
-} // namespace rntizen
+} // namespace rnwebos

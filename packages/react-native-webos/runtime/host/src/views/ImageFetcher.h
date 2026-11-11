@@ -7,7 +7,7 @@
 #include <string>
 #include <string_view>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// An image's encoded bytes, or why there are none.
 struct FetchedImage {
@@ -28,4 +28,4 @@ std::shared_ptr<ImageFetch> fetchImage(const facebook::react::ImageSource &sourc
 /// Whether `uri` names something `fetchImage` fetches rather than a file.
 bool isFetchedUri(std::string_view uri);
 
-} // namespace rntizen
+} // namespace rnwebos

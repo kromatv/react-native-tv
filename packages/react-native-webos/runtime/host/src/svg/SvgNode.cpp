@@ -2,7 +2,7 @@
 
 #include <cmath>
 
-namespace rntizen::svg {
+namespace rnwebos::svg {
 
 namespace {
 
@@ -61,4 +61,4 @@ DrawnShape drawnShape(const Path &path, const DrawContext &context) {
   return shape;
 }
 
-} // namespace rntizen::svg
+} // namespace rnwebos::svg

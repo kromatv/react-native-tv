@@ -7,7 +7,7 @@
 #include <react/renderer/animated/AnimatedModule.h>
 #include <react/renderer/animated/NativeAnimatedNodesManagerProvider.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 std::shared_ptr<facebook::react::TurboModule> createNativeAnimatedModule(
     std::shared_ptr<facebook::react::CallInvoker> jsInvoker,
@@ -22,8 +22,8 @@ std::shared_ptr<facebook::react::TurboModule> createNativeAnimatedModule(
   return std::make_shared<AnimatedModule>(std::move(jsInvoker), std::move(provider));
 }
 
-RN_TIZEN_REGISTRATION(
+RN_WEBOS_REGISTRATION(
     (registerPlatformModule(std::string(facebook::react::AnimatedModule::kModuleName), createNativeAnimatedModule),
      true));
 
-} // namespace rntizen
+} // namespace rnwebos

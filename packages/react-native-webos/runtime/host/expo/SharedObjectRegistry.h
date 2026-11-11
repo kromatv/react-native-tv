@@ -7,7 +7,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 /// Every native object paired with a JavaScript one, by id, for the whole
 /// process: ids start at 1 and are never reused, so a stale id finds nothing.
@@ -41,4 +41,4 @@ class SharedObjectRegistry final {
   std::vector<SharedObjectId> released_;
 };
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

@@ -13,7 +13,7 @@
 #include <string_view>
 #include <vector>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 class ExpoView;
 
@@ -43,7 +43,7 @@ struct ExpoViewType {
 std::string expoViewComponentName(const std::string &moduleName, const std::string &viewName);
 
 /// Registers the view's Fabric component descriptor, its native view and its
-/// view config. Call while the library loads, with RN_TIZEN_EXPO_VIEW.
+/// view config. Call while the library loads, with RN_WEBOS_EXPO_VIEW.
 bool registerExpoView(ExpoViewType type);
 
 /// Every view the module `moduleName` defines.
@@ -53,4 +53,4 @@ std::vector<std::shared_ptr<const ExpoViewType>> expoViewTypes(std::string_view 
 /// directEventTypes }`, or nullopt for a view no module defines.
 std::optional<folly::dynamic> expoViewConfig(const std::string &moduleName, const std::string &viewName);
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

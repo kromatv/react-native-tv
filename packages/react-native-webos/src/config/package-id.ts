@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { packageIdSchema } from './tizen-config.ts';
+import { packageIdSchema } from './webos-config.ts';
 
 const FALLBACK_PACKAGE_ID = 'com.anonymous.app';
 
@@ -20,15 +20,15 @@ function sanitized(value: string): string {
   return padded.map((segment) => (/^[A-Za-z]/.test(segment) ? segment : `x${segment}`)).join('.');
 }
 
-/** Why `id` cannot be a Tizen package id, or null when it can. */
+/** Why `id` cannot be a webOS package id, or null when it can. */
 export function packageIdIssue(id: string): string | null {
   const parsed = packageIdSchema.safeParse(id);
   return parsed.success ? null : (parsed.error.issues[0]?.message ?? 'not a package id');
 }
 
 /**
- * The package id `rn-tizen init` offers for an Expo config: its Android
- * package when Tizen takes it, else `com.anonymous.<slug>`, as `expo prebuild`
+ * The package id `rn-webos init` offers for an Expo config: its Android
+ * package when webOS takes it, else `com.anonymous.<slug>`, as `expo prebuild`
  * suggests for an owner it does not know.
  */
 export function suggestedPackageId(expo: unknown): string {

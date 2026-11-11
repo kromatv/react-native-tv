@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <format>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -57,4 +57,4 @@ std::string fillSearchUrl(std::string_view templateUrl, const Fields &fields) {
   return url;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

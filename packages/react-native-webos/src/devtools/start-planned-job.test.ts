@@ -4,12 +4,12 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { singleReactNativeIssue } from '../dependencies/react-native-copies.ts';
 import { FixableError } from '../errors.ts';
-import { tizenMetroIssue } from '../metro/metro-platforms.ts';
+import { webosMetroIssue } from '../metro/metro-platforms.ts';
 import { openPlan } from './devtools-commands.ts';
 import { readJob, startJob, writeJob, type Job } from './jobs.ts';
 import { startPlannedJob } from './start-planned-job.ts';
 
-vi.mock('../metro/metro-platforms.ts', () => ({ tizenMetroIssue: vi.fn(() => null) }));
+vi.mock('../metro/metro-platforms.ts', () => ({ webosMetroIssue: vi.fn(() => null) }));
 vi.mock('../dependencies/react-native-copies.ts', () => ({
   singleReactNativeIssue: vi.fn(() => null),
 }));
@@ -21,7 +21,7 @@ vi.mock('./jobs.ts', async (importOriginal) => ({
 let dir = '';
 
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'rn-tizen-planned-'));
+  dir = mkdtempSync(join(tmpdir(), 'rn-webos-planned-'));
 });
 
 afterEach(() => {
@@ -78,12 +78,12 @@ describe('startPlannedJob', () => {
     expect((await readJob(dir, 'old'))?.status).toBe('running');
   });
 
-  it('refuses an app Metro cannot bundle for Tizen', async () => {
-    vi.mocked(tizenMetroIssue).mockReturnValueOnce(new FixableError('no tizen', 'Run init.'));
+  it('refuses an app Metro cannot bundle for webOS', async () => {
+    vi.mocked(webosMetroIssue).mockReturnValueOnce(new FixableError('no webos', 'Run init.'));
 
     await expect(
       startPlannedJob(dir, openPlan('simulator', 'http://localhost:8081'), '/app'),
-    ).rejects.toThrow('no tizen');
+    ).rejects.toThrow('no webos');
     expect(singleReactNativeIssue).toHaveBeenCalledWith('/app');
     expect(startJob).not.toHaveBeenCalled();
   });

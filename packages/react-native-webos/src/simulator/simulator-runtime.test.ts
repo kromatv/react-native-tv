@@ -24,9 +24,9 @@ vi.mock('../libraries/prepare-native-libraries.ts', () => ({
 let root: string;
 
 beforeEach(() => {
-  root = mkdtempSync(join(tmpdir(), 'rn-tizen-sim-runtime-'));
+  root = mkdtempSync(join(tmpdir(), 'rn-webos-sim-runtime-'));
   writeFileSync(join(root, 'package.json'), '{"name":"app"}');
-  vi.stubEnv('RN_TIZEN_CACHE_DIR', join(root, 'cache'));
+  vi.stubEnv('RN_WEBOS_CACHE_DIR', join(root, 'cache'));
 });
 
 afterEach(() => {
@@ -57,8 +57,8 @@ describe('buildSimulatorRuntime', () => {
       task,
       ['bash', expect.stringMatching(/guest\/build\.sh$/)],
       expect.objectContaining({
-        RN_TIZEN_SIMULATOR_RUNTIME: key,
-        RN_TIZEN_LIBRARIES_FILE: '/libraries.json',
+        RN_WEBOS_SIMULATOR_RUNTIME: key,
+        RN_WEBOS_LIBRARIES_FILE: '/libraries.json',
       }),
       expect.any(Function),
     );

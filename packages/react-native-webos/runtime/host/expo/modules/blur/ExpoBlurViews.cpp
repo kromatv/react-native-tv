@@ -7,7 +7,7 @@
 
 #include <algorithm>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -78,13 +78,13 @@ class ExpoBlurModule final : public Module {
 
 } // namespace
 
-RN_TIZEN_EXPO_MODULE(ExpoBlur, ExpoBlurModule);
+RN_WEBOS_EXPO_MODULE(ExpoBlur, ExpoBlurModule);
 
-RN_TIZEN_EXPO_VIEW(ViewDefinition<ExpoBlurView>("ExpoBlur", "ExpoBlurView")
+RN_WEBOS_EXPO_VIEW(ViewDefinition<ExpoBlurView>("ExpoBlur", "ExpoBlurView")
                        .prop("tint", &ExpoBlurView::setTint)
                        .prop("intensity", &ExpoBlurView::setIntensity)
                        .prop("blurReductionFactor", &ExpoBlurView::setBlurReductionFactor));
 
-RN_TIZEN_EXPO_VIEW(ViewDefinition<ExpoBlurTargetView>("ExpoBlur", "ExpoBlurTargetView"));
+RN_WEBOS_EXPO_VIEW(ViewDefinition<ExpoBlurTargetView>("ExpoBlur", "ExpoBlurTargetView"));
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

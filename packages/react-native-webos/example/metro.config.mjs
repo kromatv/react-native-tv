@@ -1,6 +1,6 @@
 import { resolve } from 'node:path';
 import { getDefaultConfig } from 'expo/metro-config';
-import { withTizen } from '../src/metro/with-tizen.ts';
+import { withWebOS } from '../src/metro/with-webos.ts';
 
 const workspaceRoot = resolve(import.meta.dirname, '..');
 const config = getDefaultConfig(import.meta.dirname);
@@ -11,4 +11,4 @@ config.resolver.nodeModulesPaths = [
 ];
 config.resolver.unstable_enableSymlinks = true;
 
-export default withTizen(config);
+export default withWebOS(config);

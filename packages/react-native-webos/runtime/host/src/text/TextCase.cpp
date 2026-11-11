@@ -2,7 +2,7 @@
 
 #include "Utf8.h"
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -60,4 +60,4 @@ std::string transformedText(const std::string &text, facebook::react::TextTransf
   return encodeUtf8(codePoints);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

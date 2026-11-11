@@ -55,7 +55,7 @@ export async function watchPerf(reporter: Reporter, watch: PerfWatch): Promise<P
   const quiet = setTimeout(() => {
     if (listener.samples.length > 0) return;
     reporter.note(
-      `No sample yet. A development build packaged with port ${server.port} sends them once it connects; one built before rn-tizen perf existed never does.`,
+      `No sample yet. A development build packaged with port ${server.port} sends them once it connects; one built before rn-webos perf existed never does.`,
     );
   }, QUIET_NOTE_MS);
   const stopped = untilInterrupted();

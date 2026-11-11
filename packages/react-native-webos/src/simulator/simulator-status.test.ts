@@ -48,19 +48,19 @@ describe('describeApp', () => {
 
   it('points a crashed app at the crash report of its instance', () => {
     expect(describeApp('agent-a', agent)).toBe(
-      'crashed (pid 5120): rn-tizen simulator crash --instance agent-a',
+      'crashed (pid 5120): rn-webos simulator crash --instance agent-a',
     );
   });
 
   it('offers a restart for an app that exited', () => {
     const stopped = defaultInstance === undefined ? undefined : { ...defaultInstance, app: null };
 
-    expect(describeApp('default', stopped)).toBe('stopped: rn-tizen simulator restart');
+    expect(describeApp('default', stopped)).toBe('stopped: rn-webos simulator restart');
   });
 
   it('offers a run for an instance the VM does not hold', () => {
     expect(describeApp('agent-b', undefined)).toBe(
-      'not started: rn-tizen simulator run --instance agent-b',
+      'not started: rn-webos simulator run --instance agent-b',
     );
   });
 });

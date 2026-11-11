@@ -7,8 +7,8 @@ import { bundleStep, packageSteps, appSetupSteps } from '../pipeline/package-ste
 import { runtimeSteps } from '../pipeline/runtime-steps.ts';
 import { testSigner } from '../signing/signing.fixtures.ts';
 import { setupTarget } from '../sysroot/setup-target.ts';
-import { resolveDevice } from '../tizen/devices.ts';
-import { installOn, launchOn, onDevice } from '../tizen/install-app.ts';
+import { resolveDevice } from '../webos/devices.ts';
+import { installOn, launchOn, onDevice } from '../webos/install-app.ts';
 import { buildRuntimeCommand } from './build-runtime.ts';
 import { bundleCommand } from './bundle.ts';
 import { packageCommand } from './package.ts';
@@ -16,7 +16,7 @@ import { runCommand } from './run.ts';
 import { setupCommand } from './setup.ts';
 
 const ROOT = '/work/app';
-const SDK = { root: '/tizen-studio', packageManager: '/pm' };
+const SDK = { root: '/webos-studio', packageManager: '/pm' };
 const [DISTRIBUTOR] = testSigner('Distributor').chain;
 const TV = {
   address: { host: '192.168.1.50', port: 26101 },
@@ -26,10 +26,10 @@ const TV = {
 };
 
 vi.mock('../app/app-project.ts', () => ({ loadAppProject: vi.fn() }));
-vi.mock('../tizen/tizen-sdk.ts', () => ({ locateTizenSdk: () => SDK }));
-vi.mock('../tizen/devices.ts', () => ({ resolveDevice: vi.fn() }));
+vi.mock('../webos/webos-sdk.ts', () => ({ locateWebOSSdk: () => SDK }));
+vi.mock('../webos/devices.ts', () => ({ resolveDevice: vi.fn() }));
 const CONNECTION = { address: { host: '192.168.1.50', port: 26101 } };
-vi.mock('../tizen/install-app.ts', () => ({
+vi.mock('../webos/install-app.ts', () => ({
   onDevice: vi.fn(async (_device: unknown, work: (tv: unknown) => Promise<unknown>) =>
     work(CONNECTION),
   ),
@@ -63,11 +63,11 @@ beforeEach(async () => {
     distributor: DISTRIBUTOR,
   });
   vi.mocked(bundleStep).mockResolvedValue({
-    javascript: `${ROOT}/tizen/build/bundle/index.tizen.js`,
+    javascript: `${ROOT}/webos/build/bundle/index.webos.js`,
     bytecode: import.meta.filename,
-    assetsDir: `${ROOT}/tizen/build/bundle/assets`,
+    assetsDir: `${ROOT}/webos/build/bundle/assets`,
   });
-  vi.mocked(runtimeSteps).mockResolvedValue('/cache/runtime/libreact-native-tizen.so');
+  vi.mocked(runtimeSteps).mockResolvedValue('/cache/runtime/libreact-native-webos.so');
   vi.mocked(setupTarget).mockResolvedValue({
     path: '/cache/sysroot',
     reused: true,
@@ -81,8 +81,8 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-describe('rn-tizen bundle', () => {
-  it("bundles into the app's tizen/ unless --out says otherwise", async () => {
+describe('rn-webos bundle', () => {
+  it("bundles into the app's webos/ unless --out says otherwise", async () => {
     await bundleCommand.run([], context);
     await bundleCommand.run(['--out', 'dist'], context);
 
@@ -101,7 +101,7 @@ describe('rn-tizen bundle', () => {
   });
 });
 
-describe('rn-tizen package', () => {
+describe('rn-webos package', () => {
   it('builds for the store by default, at the 6.0 floor, for the TV it was given', async () => {
     await packageCommand.run(['--device', '192.168.1.50'], context);
 
@@ -110,7 +110,7 @@ describe('rn-tizen package', () => {
       expect.anything(),
       expect.objectContaining({ log: null, target: { arch: 'armv7l', platformVersion: '6.0' } }),
     );
-    expect(output.stdout()).toContain('rn-tizen run --device 192.168.1.50:26101');
+    expect(output.stdout()).toContain('rn-webos run --device 192.168.1.50:26101');
   });
 
   it('builds a development package streaming its logs with --dev', async () => {
@@ -121,7 +121,7 @@ describe('rn-tizen package', () => {
       expect.anything(),
       expect.objectContaining({ log: { host: '10.0.0.2', port: 9000 } }),
     );
-    expect(output.stdout()).toContain('rn-tizen run --device <tv ip>');
+    expect(output.stdout()).toContain('rn-webos run --device <tv ip>');
   });
 
   it('refuses log options without --dev', async () => {
@@ -131,7 +131,7 @@ describe('rn-tizen package', () => {
   });
 });
 
-describe('rn-tizen run', () => {
+describe('rn-webos run', () => {
   it('packages, installs and launches the app, then prints its logs until Ctrl+C', async () => {
     await runCommand.run(['--log-host', '10.0.0.2'], context);
 
@@ -167,7 +167,7 @@ describe('rn-tizen run', () => {
   });
 });
 
-describe('rn-tizen build-runtime', () => {
+describe('rn-webos build-runtime', () => {
   it("builds for the app's platform unless told otherwise", async () => {
     vi.mocked(loadAppProject).mockReturnValue(fakeApp(ROOT, { platform: '8.0' }));
 
@@ -180,7 +180,7 @@ describe('rn-tizen build-runtime', () => {
       { arch: 'aarch64', platformVersion: '8.0' },
       'development',
     );
-    expect(output.stdout()).toContain('/cache/runtime/libreact-native-tizen.so');
+    expect(output.stdout()).toContain('/cache/runtime/libreact-native-webos.so');
   });
 
   it('builds the release runtime when asked', async () => {
@@ -198,7 +198,7 @@ describe('rn-tizen build-runtime', () => {
   });
 });
 
-describe('rn-tizen setup', () => {
+describe('rn-webos setup', () => {
   it('prepares the target the flags name', async () => {
     await setupCommand.run(['--arch', 'aarch64', '--platform', '9.0'], context);
 

@@ -4,7 +4,7 @@
 
 #include <algorithm>
 
-namespace rntizen {
+namespace rnwebos {
 
 using namespace facebook::react;
 
@@ -277,6 +277,6 @@ void TextInputView::emit(std::string name, folly::dynamic payload) const {
   if (const auto &emitter = eventEmitter()) emitter->dispatchEvent(std::move(name), std::move(payload));
 }
 
-RN_TIZEN_COMPONENT_VIEW("AndroidTextInput", TextInputView);
+RN_WEBOS_COMPONENT_VIEW("AndroidTextInput", TextInputView);
 
-} // namespace rntizen
+} // namespace rnwebos

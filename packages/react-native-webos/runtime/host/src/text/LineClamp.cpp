@@ -4,7 +4,7 @@
 
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -65,4 +65,4 @@ void clampLines(Evas_Object *textblock, int lines, bool ellipsis) {
   evas_textblock_cursor_free(cut);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

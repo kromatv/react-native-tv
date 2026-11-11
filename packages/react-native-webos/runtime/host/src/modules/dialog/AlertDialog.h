@@ -10,7 +10,7 @@
 #include <string>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// One button of an alert, and the key `onClose` reports when it is pressed.
 struct AlertButton {
@@ -66,4 +66,4 @@ class AlertDialog final {
   std::vector<Evas_Object *> buttonLabels_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

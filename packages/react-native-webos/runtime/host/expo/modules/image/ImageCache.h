@@ -3,7 +3,7 @@
 #include <optional>
 #include <string>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 /// An image file ready for Evas to decode, with expo-image's `cacheType`:
 /// `none` when it was just downloaded, `disk` when it came from the cache.
@@ -23,4 +23,4 @@ std::optional<std::string> cachedImagePath(const std::string &cacheKey);
 /// Deletes every cached download; returns whether there was a cache to delete.
 bool clearImageDiskCache();
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

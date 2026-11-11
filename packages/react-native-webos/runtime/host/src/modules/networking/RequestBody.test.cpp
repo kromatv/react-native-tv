@@ -3,7 +3,7 @@
 
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -53,7 +53,7 @@ TEST_CASE_FIXTURE(Network, "a FormData body goes as multipart/form-data, each pa
   const auto request = served.get();
 
   const auto type = headerOf(request.head, "Content-Type");
-  REQUIRE(type.starts_with("multipart/form-data; boundary=RNTizenFormBoundary"));
+  REQUIRE(type.starts_with("multipart/form-data; boundary=RNWebOSFormBoundary"));
   const auto boundary = type.substr(type.find('=') + 1);
   CHECK(request.body ==
         "--" + boundary + "\r\ncontent-disposition: form-data; name=\"title\"\r\n\r\nh\xC3\xA9llo\r\n" +
@@ -124,4 +124,4 @@ TEST_CASE_FIXTURE(Network, "a binary FormData part whose file cannot be read fai
         "Could not retrieve file for uri file:///no/such/file");
 }
 
-} // namespace rntizen
+} // namespace rnwebos

@@ -54,8 +54,8 @@ describe('Voice', () => {
     const heard: unknown[] = [];
 
     Voice.addListener('search', (search) => heard.push(search));
-    state.listeners.get('rnTizenVoiceSearch')?.({ utterance: 'Dune' });
-    state.listeners.get('rnTizenVoiceSearch')?.({ nonsense: true });
+    state.listeners.get('rnWebOSVoiceSearch')?.({ utterance: 'Dune' });
+    state.listeners.get('rnWebOSVoiceSearch')?.({ nonsense: true });
 
     expect(heard).toEqual([{ utterance: 'Dune' }]);
     expect(state.native?.addListener).toHaveBeenCalledWith('search');
@@ -68,7 +68,7 @@ describe('Voice', () => {
     subscription.remove();
     subscription.remove();
 
-    expect(state.listeners.has('rnTizenVoiceCommand')).toBe(false);
+    expect(state.listeners.has('rnWebOSVoiceCommand')).toBe(false);
     expect(state.native?.removeListener).toHaveBeenCalledTimes(1);
   });
 
@@ -85,11 +85,11 @@ describe('Voice', () => {
 
   it('says why voice is unavailable on an older TV', async () => {
     vi.mocked(state.native?.unavailableReason ?? vi.fn()).mockReturnValue(
-      'Voice control needs Tizen 6.0, and this TV runs 5.5',
+      'Voice control needs webOS 6.0, and this TV runs 5.5',
     );
     const Voice = await loadVoice();
 
-    expect(Voice.unavailableReason).toBe('Voice control needs Tizen 6.0, and this TV runs 5.5');
+    expect(Voice.unavailableReason).toBe('Voice control needs webOS 6.0, and this TV runs 5.5');
   });
 
   it('does nothing where there is no voice module', async () => {

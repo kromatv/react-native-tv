@@ -5,10 +5,10 @@
 #include <regex>
 #include <set>
 
-namespace rntizen {
+namespace rnwebos {
 
 TEST_CASE("a multipart boundary is the fixed prefix and 32 random hex digits, within RFC 2046's 70 characters") {
-  const std::regex layout("RNTizenFormBoundary[0-9a-f]{32}");
+  const std::regex layout("RNWebOSFormBoundary[0-9a-f]{32}");
   std::set<std::string> seen;
   for (int index = 0; index < 32; ++index) {
     const auto boundary = multipartBoundary();
@@ -32,4 +32,4 @@ TEST_CASE("encodeMultipart lays out each part's headers, a blank line and its by
   CHECK(encodeMultipart({}, "b") == "--b--\r\n");
 }
 
-} // namespace rntizen
+} // namespace rnwebos

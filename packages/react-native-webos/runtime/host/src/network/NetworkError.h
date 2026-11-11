@@ -2,7 +2,7 @@
 
 #include <stdexcept>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// A request or connection that failed: its message is what JavaScript sees.
 class NetworkError final : public std::runtime_error {
@@ -10,4 +10,4 @@ class NetworkError final : public std::runtime_error {
   using std::runtime_error::runtime_error;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

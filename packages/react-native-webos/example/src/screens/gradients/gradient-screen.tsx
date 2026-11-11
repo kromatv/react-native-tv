@@ -89,7 +89,7 @@ const CSS_SAMPLES: readonly Sample[] = [
   },
 ];
 
-/** `experimental_backgroundImage`, dashed and dotted borders, and react-native-svg gradients on Tizen. */
+/** `experimental_backgroundImage`, dashed and dotted borders, and react-native-svg gradients on webOS. */
 export function GradientScreen() {
   return (
     <View style={styles.screen}>

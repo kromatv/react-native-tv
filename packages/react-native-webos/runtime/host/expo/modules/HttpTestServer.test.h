@@ -16,7 +16,7 @@
 #include <thread>
 #include <vector>
 
-namespace rntizen::expo::testing {
+namespace rnwebos::expo::testing {
 
 /// An HTTP/1.1 response with a Content-Length and the given extra header lines.
 inline std::string httpResponse(int status, std::string_view reason, std::string_view body, std::string_view headers = "") {
@@ -65,18 +65,18 @@ class HttpTestServer final {
       if (socket < 0) continue;
       const timeval patience{.tv_sec = 5, .tv_usec = 0};
       setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, &patience, sizeof patience);
-      auto request = rntizen::testing::readUntil(socket, "\r\n\r\n");
-      request += rntizen::testing::readBytes(socket, contentLength(request));
+      auto request = rnwebos::testing::readUntil(socket, "\r\n\r\n");
+      request += rnwebos::testing::readBytes(socket, contentLength(request));
       {
         std::lock_guard lock(mutex_);
         requests_.push_back(request);
       }
-      rntizen::testing::writeAll(socket, respond_(request));
+      rnwebos::testing::writeAll(socket, respond_(request));
       ::close(socket);
     }
   }
 
-  rntizen::testing::LoopbackServer server_;
+  rnwebos::testing::LoopbackServer server_;
   Respond respond_;
   std::atomic<bool> stopping_{false};
   mutable std::mutex mutex_;
@@ -84,4 +84,4 @@ class HttpTestServer final {
   std::thread thread_{[this] { serve(); }};
 };
 
-} // namespace rntizen::expo::testing
+} // namespace rnwebos::expo::testing

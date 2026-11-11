@@ -8,7 +8,7 @@
 #include <optional>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// A `<Text>`: an Evas textblock filled from the paragraph's attributed string
 /// at the surface's scale, laid out inside the view's padding.
@@ -37,4 +37,4 @@ class ParagraphView final : public ComponentView {
   bool clamped_{false};
 };
 
-} // namespace rntizen
+} // namespace rnwebos

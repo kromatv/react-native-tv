@@ -2,7 +2,7 @@
 
 #include <doctest/doctest.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -94,4 +94,4 @@ TEST_CASE("cachedPatch paints a key once") {
   CHECK(again.width == 1);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

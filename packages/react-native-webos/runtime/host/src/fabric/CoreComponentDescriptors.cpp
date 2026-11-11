@@ -12,7 +12,7 @@
 #include <react/renderer/components/view/ConcreteViewShadowNode.h>
 #include <react/renderer/components/view/ViewComponentDescriptor.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -47,15 +47,15 @@ using MaskedViewComponentDescriptor = facebook::react::ConcreteComponentDescript
 
 } // namespace
 
-} // namespace rntizen
+} // namespace rnwebos
 
-RN_TIZEN_COMPONENT_DESCRIPTOR(facebook::react::RootComponentDescriptor);
-RN_TIZEN_COMPONENT_DESCRIPTOR(facebook::react::ViewComponentDescriptor);
-RN_TIZEN_COMPONENT_DESCRIPTOR(facebook::react::TextComponentDescriptor);
-RN_TIZEN_COMPONENT_DESCRIPTOR(facebook::react::RawTextComponentDescriptor);
-RN_TIZEN_COMPONENT_DESCRIPTOR(facebook::react::ParagraphComponentDescriptor);
-RN_TIZEN_COMPONENT_DESCRIPTOR(facebook::react::ImageComponentDescriptor);
-RN_TIZEN_COMPONENT_DESCRIPTOR(facebook::react::ScrollViewComponentDescriptor);
-RN_TIZEN_COMPONENT_DESCRIPTOR(rntizen::ModalHostViewComponentDescriptor);
-RN_TIZEN_COMPONENT_DESCRIPTOR(rntizen::MaskedViewComponentDescriptor);
-RN_TIZEN_COMPONENT_DESCRIPTOR(facebook::react::ActivityIndicatorViewComponentDescriptor);
+RN_WEBOS_COMPONENT_DESCRIPTOR(facebook::react::RootComponentDescriptor);
+RN_WEBOS_COMPONENT_DESCRIPTOR(facebook::react::ViewComponentDescriptor);
+RN_WEBOS_COMPONENT_DESCRIPTOR(facebook::react::TextComponentDescriptor);
+RN_WEBOS_COMPONENT_DESCRIPTOR(facebook::react::RawTextComponentDescriptor);
+RN_WEBOS_COMPONENT_DESCRIPTOR(facebook::react::ParagraphComponentDescriptor);
+RN_WEBOS_COMPONENT_DESCRIPTOR(facebook::react::ImageComponentDescriptor);
+RN_WEBOS_COMPONENT_DESCRIPTOR(facebook::react::ScrollViewComponentDescriptor);
+RN_WEBOS_COMPONENT_DESCRIPTOR(rnwebos::ModalHostViewComponentDescriptor);
+RN_WEBOS_COMPONENT_DESCRIPTOR(rnwebos::MaskedViewComponentDescriptor);
+RN_WEBOS_COMPONENT_DESCRIPTOR(facebook::react::ActivityIndicatorViewComponentDescriptor);

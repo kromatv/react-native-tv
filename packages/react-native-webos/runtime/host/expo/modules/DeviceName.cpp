@@ -6,13 +6,13 @@
 
 #if __has_include(<system/system_settings.h>)
 #include <system/system_settings.h>
-#define RN_TIZEN_HAS_SYSTEM_SETTINGS 1
+#define RN_WEBOS_HAS_SYSTEM_SETTINGS 1
 #endif
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 std::string tvDeviceName(const std::string &fallback) {
-#ifdef RN_TIZEN_HAS_SYSTEM_SETTINGS
+#ifdef RN_WEBOS_HAS_SYSTEM_SETTINGS
   // Opened at run time: the simulator has no stand-in for this library.
   static void *library = dlopen("libcapi-system-system-settings.so.0", RTLD_LAZY | RTLD_LOCAL);
   if (library == nullptr) return fallback;
@@ -31,4 +31,4 @@ std::string tvDeviceName(const std::string &fallback) {
 #endif
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

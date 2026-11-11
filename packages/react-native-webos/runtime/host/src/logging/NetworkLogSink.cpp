@@ -11,7 +11,7 @@
 #include <chrono>
 #include <format>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -137,4 +137,4 @@ void NetworkLogSink::run() {
   }
 }
 
-} // namespace rntizen
+} // namespace rnwebos

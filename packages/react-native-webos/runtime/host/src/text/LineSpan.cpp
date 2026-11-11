@@ -1,6 +1,6 @@
 #include "LineSpan.h"
 
-namespace rntizen {
+namespace rnwebos {
 
 LineSpan lineSpan(Evas_Object *textblock, int maxLines) {
   LineSpan span;
@@ -14,4 +14,4 @@ LineSpan lineSpan(Evas_Object *textblock, int maxLines) {
   return span;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

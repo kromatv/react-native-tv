@@ -2,7 +2,7 @@
 
 #include "BlobStore.h"
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -31,4 +31,4 @@ std::optional<std::string> resolveBlob(const BlobReference &reference) {
   return BlobStore::shared().resolve(reference.blobId, reference.offset, reference.size);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

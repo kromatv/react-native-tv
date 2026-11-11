@@ -4,7 +4,7 @@
 
 #include <algorithm>
 
-namespace rntizen {
+namespace rnwebos {
 
 ViewBox::ViewBox(Evas *evas, Evas_Object *smart)
     : smart_(smart),
@@ -75,4 +75,4 @@ Edges ViewBox::overflow() const {
   };
 }
 
-} // namespace rntizen
+} // namespace rnwebos

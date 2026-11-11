@@ -8,7 +8,7 @@
 #include <chrono>
 #include <ctime>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -50,7 +50,7 @@ class ExpoDeviceModule final : public Module {
         .constant("deviceYearClass", [] { return std::optional<int>(); })
         .constant("totalMemory", [] { return totalMemory(); })
         .constant("supportedCpuArchitectures", [] { return cpuArchitectures(); })
-        .constant("osName", [] { return std::string("Tizen"); })
+        .constant("osName", [] { return std::string("webOS"); })
         .constant("osVersion", [&device] { return device.platformVersion; })
         .constant("osBuildId", [&device] { return device.buildString; })
         .constant("osInternalBuildId", [&device] { return device.buildString; })
@@ -68,6 +68,6 @@ class ExpoDeviceModule final : public Module {
 
 } // namespace
 
-RN_TIZEN_EXPO_MODULE(ExpoDevice, ExpoDeviceModule);
+RN_WEBOS_EXPO_MODULE(ExpoDevice, ExpoDeviceModule);
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

@@ -7,7 +7,7 @@
 
 #include <cmath>
 
-namespace rntizen {
+namespace rnwebos {
 
 ParagraphView::ParagraphView(Evas *evas, facebook::react::Tag tag)
     : ComponentView(evas, tag), textblock_(evas_object_textblock_add(evas)), style_(evas_textblock_style_new()) {
@@ -74,6 +74,6 @@ void ParagraphView::layoutMembers() {
   clamped_ = true;
 }
 
-RN_TIZEN_COMPONENT_VIEW("Paragraph", ParagraphView);
+RN_WEBOS_COMPONENT_VIEW("Paragraph", ParagraphView);
 
-} // namespace rntizen
+} // namespace rnwebos

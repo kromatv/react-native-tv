@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <cmath>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -28,4 +28,4 @@ bool isVisible(const facebook::react::SharedColor &color) {
   return color && facebook::react::colorComponentsFromColor(color).alpha > 0;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

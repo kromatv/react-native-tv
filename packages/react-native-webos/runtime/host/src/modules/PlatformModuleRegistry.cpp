@@ -4,7 +4,7 @@
 #include <map>
 #include <mutex>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -34,4 +34,4 @@ std::optional<PlatformModuleFactory> findPlatformModule(const std::string &name)
   return found->second;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

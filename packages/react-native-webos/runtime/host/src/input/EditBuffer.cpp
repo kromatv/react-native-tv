@@ -2,7 +2,7 @@
 
 #include <algorithm>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -166,4 +166,4 @@ std::size_t EditBuffer::positionAtUtf16(std::size_t offset) const {
   return position;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

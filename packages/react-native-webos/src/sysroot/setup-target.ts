@@ -1,10 +1,10 @@
 import { join } from 'node:path';
 import { cacheDir } from '../cache-dir.ts';
 import { RUNTIME_DIR } from '../package-paths.ts';
-import { buildCMakeProject, sourcesKey, tizenDefinitions } from '../runtime/cmake.ts';
+import { buildCMakeProject, sourcesKey, webosDefinitions } from '../runtime/cmake.ts';
 import type { Task } from '../task.ts';
-import { locateRootstrap, type TizenSdk } from '../tizen/tizen-sdk.ts';
-import { rootstrapFor, type TizenTarget } from '../tizen/target.ts';
+import { locateRootstrap, type WebOSSdk } from '../webos/webos-sdk.ts';
+import { rootstrapFor, type WebOSTarget } from '../webos/target.ts';
 import { mirrorSysroot, type MirroredSysroot } from './mirror-sysroot.ts';
 
 /**
@@ -14,8 +14,8 @@ import { mirrorSysroot, type MirroredSysroot } from './mirror-sysroot.ts';
  */
 export async function setupTarget(
   task: Task,
-  sdk: TizenSdk,
-  target: TizenTarget,
+  sdk: WebOSSdk,
+  target: WebOSTarget,
 ): Promise<MirroredSysroot> {
   const rootstrap = locateRootstrap(sdk, target);
   const { name } = rootstrapFor(target);
@@ -23,11 +23,11 @@ export async function setupTarget(
   await buildCMakeProject(task, {
     source: join(RUNTIME_DIR, 'compat'),
     build: compatBuild,
-    definitions: { ...tizenDefinitions(sdk, target), TIZEN_USE_RAW_ROOTSTRAP: 'ON' },
+    definitions: { ...webosDefinitions(sdk, target), WEBOS_USE_RAW_ROOTSTRAP: 'ON' },
   });
   return mirrorSysroot({
     rootstrap,
     destination: join(cacheDir(), 'sysroots', name),
-    compatArchive: join(compatBuild, 'librn-tizen-glibc-compat.a'),
+    compatArchive: join(compatBuild, 'librn-webos-glibc-compat.a'),
   });
 }

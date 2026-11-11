@@ -5,7 +5,7 @@
 
 #include <react/renderer/components/rnsvg/Props.h>
 
-namespace rntizen::svg {
+namespace rnwebos::svg {
 
 namespace {
 
@@ -79,7 +79,7 @@ void SvgView::redraw() {
   canvas_.paint(drawing, painted_.width, painted_.height);
 }
 
-RN_TIZEN_COMPONENT_VIEW("RNSVGSvgView", SvgRootView<facebook::react::RNSVGSvgViewProps>);
-RN_TIZEN_COMPONENT_VIEW("RNSVGSvgViewAndroid", SvgRootView<facebook::react::RNSVGSvgViewAndroidProps>);
+RN_WEBOS_COMPONENT_VIEW("RNSVGSvgView", SvgRootView<facebook::react::RNSVGSvgViewProps>);
+RN_WEBOS_COMPONENT_VIEW("RNSVGSvgViewAndroid", SvgRootView<facebook::react::RNSVGSvgViewAndroidProps>);
 
-} // namespace rntizen::svg
+} // namespace rnwebos::svg

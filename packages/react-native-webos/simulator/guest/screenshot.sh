@@ -5,7 +5,7 @@ set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/instance.sh"
 
 if ! is_running "$XVFB_PID_FILE"; then
-  echo "The virtual screen of instance $INSTANCE is not running: start an app with \`rn-tizen simulator run$INSTANCE_FLAG\`." >&2
+  echo "The virtual screen of instance $INSTANCE is not running: start an app with \`rn-webos simulator run$INSTANCE_FLAG\`." >&2
   exit 1
 fi
 import -window root png:-

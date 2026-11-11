@@ -7,7 +7,7 @@
 #include <optional>
 #include <vector>
 
-namespace rntizen::svg {
+namespace rnwebos::svg {
 
 /// Where a node draws: the transform to the `<Svg>` view's pixels, the opacity
 /// and paint it inherits, the color `currentColor` stands for, the size
@@ -84,4 +84,4 @@ Paint readPaint(const Props &props) {
 /// Turns a shape's path, in its own user units, into what Evas VG draws.
 DrawnShape drawnShape(const Path &path, const DrawContext &context);
 
-} // namespace rntizen::svg
+} // namespace rnwebos::svg

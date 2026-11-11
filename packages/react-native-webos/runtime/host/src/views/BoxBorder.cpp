@@ -5,7 +5,7 @@
 
 #include <algorithm>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -150,4 +150,4 @@ int BoxBorder::overflow() const {
   return style_.outline.width > 0 ? style_.outline.offset + style_.outline.width : 0;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

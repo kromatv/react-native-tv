@@ -4,7 +4,7 @@
 #include "tv/ScreenSize.h"
 #include "views/ModalHostView.h"
 
-namespace rntizen {
+namespace rnwebos {
 
 void ReactHost::createWindow() {
   window_ = createHostWindow(config_.appKey, device_.screenWidth, device_.screenHeight);
@@ -57,4 +57,4 @@ void ReactHost::onRemoteEvent(const RemoteEvent &event) {
       folly::dynamic::object("eventType", std::string(event.eventType))("eventKeyAction", event.keyAction));
 }
 
-} // namespace rntizen
+} // namespace rnwebos

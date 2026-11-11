@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// A gradient's pixels along its line, sampled finely enough that looking one
 /// up by the nearest entry differs from the ramp by one step of 255 at most:
@@ -34,4 +34,4 @@ class GradientTable {
   std::vector<std::uint32_t> pixels_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

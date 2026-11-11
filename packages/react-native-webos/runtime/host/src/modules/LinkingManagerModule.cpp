@@ -3,7 +3,7 @@
 #include "PlatformModuleRegistry.h"
 #include "Promises.h"
 
-namespace rntizen {
+namespace rnwebos {
 
 LinkingManagerModule::LinkingManagerModule(
     std::shared_ptr<facebook::react::CallInvoker> jsInvoker,
@@ -22,17 +22,17 @@ facebook::jsi::Value LinkingManagerModule::canOpenURL(facebook::jsi::Runtime &ru
 
 facebook::jsi::Value LinkingManagerModule::openURL(facebook::jsi::Runtime &runtime, facebook::jsi::String url) {
   return rejectedPromise(
-      runtime, "Cannot open " + url.utf8(runtime) + ": Linking.openURL is not supported on Tizen yet");
+      runtime, "Cannot open " + url.utf8(runtime) + ": Linking.openURL is not supported on webOS yet");
 }
 
 facebook::jsi::Value LinkingManagerModule::openSettings(facebook::jsi::Runtime &runtime) {
-  return rejectedPromise(runtime, "Linking.openSettings is not supported on Tizen");
+  return rejectedPromise(runtime, "Linking.openSettings is not supported on webOS");
 }
 
 void LinkingManagerModule::addListener(facebook::jsi::Runtime &, facebook::jsi::String) {}
 
 void LinkingManagerModule::removeListeners(facebook::jsi::Runtime &, double) {}
 
-RN_TIZEN_PLATFORM_MODULE("LinkingManager", LinkingManagerModule);
+RN_WEBOS_PLATFORM_MODULE("LinkingManager", LinkingManagerModule);
 
-} // namespace rntizen
+} // namespace rnwebos

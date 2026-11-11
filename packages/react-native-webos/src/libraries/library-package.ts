@@ -15,7 +15,7 @@ export const libraryPackageSchema = z.looseObject({
   peerDependencies: dependencyMapSchema,
   peerDependenciesMeta: peerMetaSchema,
   codegenConfig: z.unknown().optional(),
-  tizen: z.unknown().optional(),
+  webos: z.unknown().optional(),
 });
 
 export type LibraryPackage = z.infer<typeof libraryPackageSchema>;
@@ -29,25 +29,25 @@ export const codegenConfigSchema = z.object({
 
 export type CodegenConfig = z.infer<typeof codegenConfigSchema>;
 
-/** How a package declares its own Tizen implementation (see docs/native-modules.md). */
-export const tizenDeclarationSchema = z.object({
+/** How a package declares its own webOS implementation (see docs/native-modules.md). */
+export const webosDeclarationSchema = z.object({
   cmake: z.string().min(1),
 });
 
 /** The parts of an `expo-module.config.json` that native library discovery reads. */
 export const expoModuleConfigSchema = z.looseObject({
   platforms: z.array(z.string()).optional(),
-  tizen: z.unknown().optional(),
+  webos: z.unknown().optional(),
 });
 
 const autolinkingOptionsSchema = z.looseObject({ nativeModulesDir: z.string().optional() });
 
-/** The `expo.autolinking` options of an app's package.json, with its `tizen` overrides. */
+/** The `expo.autolinking` options of an app's package.json, with its `webos` overrides. */
 export const autolinkingPackageSchema = z.looseObject({
   expo: z
     .looseObject({
       autolinking: autolinkingOptionsSchema
-        .extend({ tizen: autolinkingOptionsSchema.optional() })
+        .extend({ webos: autolinkingOptionsSchema.optional() })
         .optional(),
     })
     .optional(),

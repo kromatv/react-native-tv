@@ -2,7 +2,7 @@
 
 #include <Evas.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// Where a textblock's lines start and end, in pixels from its top.
 struct LineSpan {
@@ -17,4 +17,4 @@ struct LineSpan {
 /// only.
 LineSpan lineSpan(Evas_Object *textblock, int maxLines);
 
-} // namespace rntizen
+} // namespace rnwebos

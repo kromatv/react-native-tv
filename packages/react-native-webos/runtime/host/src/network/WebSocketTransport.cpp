@@ -4,7 +4,7 @@
 
 #include <curl/curl.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -72,4 +72,4 @@ std::size_t WebSocketTransport::send(std::string_view bytes) {
   return sent;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

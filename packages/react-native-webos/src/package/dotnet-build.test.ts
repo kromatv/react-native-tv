@@ -4,13 +4,13 @@ import { dirname, join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { fakeApp } from '../app/app.fixtures.ts';
 import { recordingTask } from '../fakes.fixtures.ts';
-import { platformProfile } from '../tizen/platform-profiles.ts';
+import { platformProfile } from '../webos/platform-profiles.ts';
 import { buildDotnetProject } from './dotnet-build.ts';
 
 let dir: string;
 
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'rn-tizen-dotnet-'));
+  dir = mkdtempSync(join(tmpdir(), 'rn-webos-dotnet-'));
 });
 
 afterEach(() => {

@@ -9,7 +9,7 @@
 
 #include <array>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -24,7 +24,7 @@ using facebook::jsi::Value;
 using facebook::react::TurboModule;
 
 PreviewModule::PreviewModule(std::shared_ptr<facebook::react::CallInvoker> jsInvoker, const ModuleContext &context)
-    : TurboModule("RNTizenSmartHubPreview", jsInvoker),
+    : TurboModule("RNWebOSSmartHubPreview", jsInvoker),
       invoker_(std::move(jsInvoker)),
       state_(context.tv),
       platformVersion_(context.device.platformVersion) {
@@ -117,6 +117,6 @@ void PreviewModule::settle(std::uint64_t id, int channel) {
   });
 }
 
-RN_TIZEN_PLATFORM_MODULE("RNTizenSmartHubPreview", PreviewModule);
+RN_WEBOS_PLATFORM_MODULE("RNWebOSSmartHubPreview", PreviewModule);
 
-} // namespace rntizen
+} // namespace rnwebos

@@ -6,7 +6,7 @@
 #include <optional>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// The `BlobData` JavaScript passes for a blob: `{blobId, offset, size, type}`
 /// (`react-native/Libraries/Blob/BlobTypes.js`).
@@ -23,4 +23,4 @@ BlobReference readBlobReference(facebook::jsi::Runtime &runtime, const facebook:
 /// The bytes `reference` names, or nullopt when the store has no such range.
 std::optional<std::string> resolveBlob(const BlobReference &reference);
 
-} // namespace rntizen
+} // namespace rnwebos

@@ -1,7 +1,7 @@
 import type { Paint } from '../paint.ts';
 import type { Command, OptionSpec } from './command.ts';
 
-const PROGRAM = 'rn-tizen';
+const PROGRAM = 'rn-webos';
 
 function optionLabel(name: string, spec: OptionSpec): string {
   const short = spec.short === undefined ? '' : `, -${spec.short}`;
@@ -14,7 +14,7 @@ function table(rows: readonly (readonly [string, string])[], paint: Paint): stri
   return rows.map(([label, text]) => `  ${paint('bold', label.padEnd(width))}${text}`);
 }
 
-/** The help `rn-tizen` prints with no command, or with `--help`. */
+/** The help `rn-webos` prints with no command, or with `--help`. */
 export function programHelp(commands: readonly Command[], version: string, paint: Paint): string {
   return [
     `${paint('bold', PROGRAM)} ${version}: build an Expo app into a Samsung TV package, and run it`,
@@ -31,7 +31,7 @@ export function programHelp(commands: readonly Command[], version: string, paint
   ].join('\n');
 }
 
-/** The help `rn-tizen <command> --help` prints. */
+/** The help `rn-webos <command> --help` prints. */
 export function commandHelp(command: Command, paint: Paint): string {
   const options = Object.entries(command.options).map(
     ([name, spec]) => [optionLabel(name, spec), spec.description] as const,

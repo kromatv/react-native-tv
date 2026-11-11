@@ -1,14 +1,14 @@
 import { FixableError } from '../errors.ts';
-import { belowMinimumError, MINIMUM_PLATFORM, runsOn } from '../tizen/platform-profiles.ts';
+import { belowMinimumError, MINIMUM_PLATFORM, runsOn } from '../webos/platform-profiles.ts';
 import type { DeviceCapabilities } from '../sdb/capabilities.ts';
 import {
   archFromDevice,
-  compareTizenVersions,
+  compareWebOSVersions,
   DEFAULT_TARGET,
   platformVersionSchema,
-  tizenArchSchema,
-  type TizenTarget,
-} from '../tizen/target.ts';
+  webosArchSchema,
+  type WebOSTarget,
+} from '../webos/target.ts';
 import { UsageError, type OptionSpecs } from './command.ts';
 
 /** The options that pick the CPU and platform a build is for. */
@@ -22,7 +22,7 @@ export const TARGET_OPTIONS = {
     type: 'string',
     placeholder: '<version>',
     description:
-      "The oldest Tizen the package runs on (default: the plugin's platform prop, else 6.0)",
+      "The oldest webOS the package runs on (default: the plugin's platform prop, else 6.0)",
   },
 } as const satisfies OptionSpecs;
 
@@ -36,7 +36,7 @@ interface TargetSources {
 
 function chooseArch(sources: TargetSources) {
   if (sources.arch !== undefined) {
-    const parsed = tizenArchSchema.safeParse(sources.arch);
+    const parsed = webosArchSchema.safeParse(sources.arch);
     if (parsed.success) return parsed.data;
     throw new UsageError(
       `--arch must be armv7l, aarch64 or x86_64, got ${sources.arch}`,
@@ -62,19 +62,19 @@ function choosePlatform(sources: TargetSources): string {
 
 /**
  * The target a build is for: flags first, then the app config's platform, then
- * armv7l and Tizen 6.0, the floor every package runs above. Refuses a TV older
+ * armv7l and webOS 6.0, the floor every package runs above. Refuses a TV older
  * than the floor, since the package would not install there.
  */
-export function chooseTarget(sources: TargetSources): TizenTarget {
+export function chooseTarget(sources: TargetSources): WebOSTarget {
   const target = { arch: chooseArch(sources), platformVersion: choosePlatform(sources) };
   const device = sources.device;
   if (device === undefined) return target;
-  if (compareTizenVersions(device.platformVersion, MINIMUM_PLATFORM) < 0) {
-    throw belowMinimumError(`The TV runs Tizen ${device.platformVersion}, which`);
+  if (compareWebOSVersions(device.platformVersion, MINIMUM_PLATFORM) < 0) {
+    throw belowMinimumError(`The TV runs webOS ${device.platformVersion}, which`);
   }
   if (!runsOn(target.platformVersion, device.platformVersion)) {
     throw new FixableError(
-      `The TV runs Tizen ${device.platformVersion}, older than the ${target.platformVersion} this build targets`,
+      `The TV runs webOS ${device.platformVersion}, older than the ${target.platformVersion} this build targets`,
       "Pass an older --platform, or lower the plugin's platform prop.",
     );
   }

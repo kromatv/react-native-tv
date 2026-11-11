@@ -10,7 +10,7 @@ import {
 import { Reporter } from '../cli/reporter.ts';
 import { chooseTarget, TARGET_OPTIONS } from '../cli/target-options.ts';
 import { runtimeSteps } from '../pipeline/runtime-steps.ts';
-import { locateTizenSdk } from '../tizen/tizen-sdk.ts';
+import { locateWebOSSdk } from '../webos/webos-sdk.ts';
 
 const OPTIONS = {
   ...TARGET_OPTIONS,
@@ -22,15 +22,15 @@ const OPTIONS = {
   ...COMMON_OPTIONS,
 } as const satisfies OptionSpecs;
 
-/** `rn-tizen build-runtime`: compiles `libreact-native-tizen.so` for an app. */
+/** `rn-webos build-runtime`: compiles `libreact-native-webos.so` for an app. */
 export const buildRuntimeCommand: Command = {
   name: 'build-runtime',
   summary: "Compile the native runtime against the app's react-native and Expo",
   options: OPTIONS,
   examples: [
-    'rn-tizen build-runtime',
-    'rn-tizen build-runtime --release',
-    'rn-tizen build-runtime --arch aarch64 --verbose',
+    'rn-webos build-runtime',
+    'rn-webos build-runtime --release',
+    'rn-webos build-runtime --arch aarch64 --verbose',
   ],
   async run(args, context) {
     const values = parseCommandArgs('build-runtime', args, OPTIONS);
@@ -42,9 +42,9 @@ export const buildRuntimeCommand: Command = {
       platform: values.platform,
       configPlatform: app.config.platform,
     });
-    reporter.field('Target', `${target.arch}, Tizen ${target.platformVersion}`);
+    reporter.field('Target', `${target.arch}, webOS ${target.platformVersion}`);
     const flavour = values.release === true ? 'release' : 'development';
-    const library = await runtimeSteps(reporter, locateTizenSdk(), app, target, flavour);
+    const library = await runtimeSteps(reporter, locateWebOSSdk(), app, target, flavour);
     reporter.field('Runtime', library);
   },
 };

@@ -5,7 +5,7 @@
 #include <map>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// The timers a ThreadTimerRegistry waits on. Not thread-safe.
 class TimerQueue final {
@@ -36,4 +36,4 @@ class TimerQueue final {
   std::map<std::uint32_t, Timer> timers_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

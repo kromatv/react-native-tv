@@ -13,7 +13,7 @@
 #include <utility>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -93,4 +93,4 @@ TEST_CASE("InstanceGate passes calls to JavaScript until it is closed, then drop
   CHECK(probe.heard() == std::vector<std::string>{"open"});
 }
 
-} // namespace rntizen
+} // namespace rnwebos

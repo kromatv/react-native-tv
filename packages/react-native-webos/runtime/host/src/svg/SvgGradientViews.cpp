@@ -3,7 +3,7 @@
 
 #include <react/renderer/components/rnsvg/Props.h>
 
-namespace rntizen::svg {
+namespace rnwebos::svg {
 
 namespace {
 
@@ -92,7 +92,7 @@ void collectGradients(std::span<ComponentView *const> views, GradientDefinitions
   }
 }
 
-RN_TIZEN_COMPONENT_VIEW("RNSVGLinearGradient", SvgLinearGradientView);
-RN_TIZEN_COMPONENT_VIEW("RNSVGRadialGradient", SvgRadialGradientView);
+RN_WEBOS_COMPONENT_VIEW("RNSVGLinearGradient", SvgLinearGradientView);
+RN_WEBOS_COMPONENT_VIEW("RNSVGRadialGradient", SvgRadialGradientView);
 
-} // namespace rntizen::svg
+} // namespace rnwebos::svg

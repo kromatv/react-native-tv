@@ -14,7 +14,7 @@
 #include <utility>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -112,4 +112,4 @@ TEST_CASE("a fatal report without a host to tell only logs") {
   CHECK(testing::call(rt, module, "reportException", evaluate(rt, R"({message: "late", isFatal: true})")).isUndefined());
 }
 
-} // namespace rntizen
+} // namespace rnwebos

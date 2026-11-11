@@ -11,7 +11,7 @@
 #include <memory>
 #include <utility>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -93,4 +93,4 @@ void captureHostWindow(CaptureDone done) {
   evas_event_callback_add(evas, EVAS_CALLBACK_RENDER_POST, onRenderPost, job.release());
 }
 
-} // namespace rntizen
+} // namespace rnwebos

@@ -50,7 +50,7 @@ const combineModuleSchema = z.object({
 
 /**
  * React Native's codegen, as the app's own react-native ships it. `schema` reads
- * the specs under `dirs` as Android does, since a Tizen bundle falls back to the
+ * the specs under `dirs` as Android does, since a webOS bundle falls back to the
  * Android sources: `.android.*` specs count and `.ios.*` do not. `write` runs
  * `generators` into `directory` and returns the `.cpp` files it wrote.
  */
@@ -85,7 +85,7 @@ export async function loadCodegen(reactNativeDir: string): Promise<Codegen> {
         if (generate === undefined) {
           throw new FixableError(
             `@react-native/codegen has no ${name}`,
-            "Install a react-native that rn-tizen supports: its package.json's peerDependencies name it.",
+            "Install a react-native that rn-webos supports: its package.json's peerDependencies name it.",
           );
         }
         return [...generate(libraryName, schema, undefined, false, undefined, true)].map(

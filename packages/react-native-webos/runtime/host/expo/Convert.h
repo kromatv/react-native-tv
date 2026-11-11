@@ -16,7 +16,7 @@
 #include <variant>
 #include <vector>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 /// Bytes JavaScript receives as a Uint8Array and may pass as any typed array or ArrayBuffer.
 struct Bytes {
@@ -194,4 +194,4 @@ struct Convert<std::shared_ptr<T>> {
   }
 };
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

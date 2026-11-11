@@ -6,7 +6,7 @@
 #include <mutex>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// Lets any thread call into a ReactInstance until the host closes the gate.
 /// `close` waits for calls in flight, so the instance can be destroyed once it
@@ -29,4 +29,4 @@ class InstanceGate final {
   facebook::react::ReactInstance *instance_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

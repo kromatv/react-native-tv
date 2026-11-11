@@ -9,16 +9,16 @@
 #include <string>
 #include <vector>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 class Module;
 
 /// Creates one Expo module for an app.
 using ModuleFactory = std::function<std::shared_ptr<Module>()>;
 
-/// Every Expo module implemented for Tizen, by the name JavaScript passes to
+/// Every Expo module implemented for webOS, by the name JavaScript passes to
 /// `requireNativeModule`. A module registers itself once, before React Native
-/// starts, with RN_TIZEN_EXPO_MODULE.
+/// starts, with RN_WEBOS_EXPO_MODULE.
 class ExpoModuleRegistry final {
  public:
   static ExpoModuleRegistry &shared();
@@ -41,8 +41,8 @@ bool registerExpoModuleType(const char *name) {
   return true;
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo
 
-/// Registers `Type`, a default-constructible rntizen::expo::Module, as the
+/// Registers `Type`, a default-constructible rnwebos::expo::Module, as the
 /// Expo module `name` when the library loads.
-#define RN_TIZEN_EXPO_MODULE(name, Type) RN_TIZEN_REGISTRATION(::rntizen::expo::registerExpoModuleType<Type>(#name))
+#define RN_WEBOS_EXPO_MODULE(name, Type) RN_WEBOS_REGISTRATION(::rnwebos::expo::registerExpoModuleType<Type>(#name))

@@ -13,7 +13,7 @@
 #include <utility>
 #include <vector>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -72,7 +72,7 @@ TEST_CASE("decimal and millisSince write a point and the digits asked for") {
 }
 
 TEST_CASE("threadDescription says whether the caller is on the main loop") {
-  const rntizen::testing::MainLoopScope mainLoop;
+  const rnwebos::testing::MainLoopScope mainLoop;
   CHECK(threadDescription().starts_with("on the main loop (thread "));
   std::string other;
   std::thread([&other] { other = threadDescription(); }).join();
@@ -128,4 +128,4 @@ TEST_CASE("runOnPlayerThread runs every task on one other thread, in order") {
   CHECK(order == std::vector<int>{1, 2});
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

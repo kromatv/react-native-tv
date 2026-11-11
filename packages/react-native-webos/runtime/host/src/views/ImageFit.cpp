@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <cmath>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -55,4 +55,4 @@ ImagePlacement placeImage(ImageResizeMode resizeMode, const PixelRect &box, int 
   return stretched;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

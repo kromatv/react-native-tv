@@ -6,7 +6,7 @@ describe('mountRoot', () => {
   it('is the repository root for a workspace package and its hoisted react-native', () => {
     expect(
       mountRoot([
-        '/repo/packages/react-native-tizen',
+        '/repo/packages/react-native-webos',
         '/repo/node_modules/.bun/react-native-tvos@0.88.0/node_modules/react-native-tvos',
       ]),
     ).toBe('/repo');
@@ -15,7 +15,7 @@ describe('mountRoot', () => {
   it('is the app node_modules for an installed package', () => {
     expect(
       mountRoot([
-        '/app/node_modules/@kromatv/react-native-tizen',
+        '/app/node_modules/@kromatv/react-native-webos',
         '/app/node_modules/react-native',
       ]),
     ).toBe('/app/node_modules');

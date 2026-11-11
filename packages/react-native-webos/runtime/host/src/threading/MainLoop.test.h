@@ -6,7 +6,7 @@
 #include <chrono>
 #include <thread>
 
-namespace rntizen::testing {
+namespace rnwebos::testing {
 
 class MainLoopScope final {
  public:
@@ -36,4 +36,4 @@ class MainLoopScope final {
   }
 };
 
-} // namespace rntizen::testing
+} // namespace rnwebos::testing

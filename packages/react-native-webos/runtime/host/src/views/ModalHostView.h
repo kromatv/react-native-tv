@@ -2,7 +2,7 @@
 
 #include "ComponentView.h"
 
-namespace rntizen {
+namespace rnwebos {
 
 /// A `<Modal>`: drawn above every other view at the screen's origin, across
 /// the logical screen, whatever its place in the tree. Emits `onShow` once
@@ -30,4 +30,4 @@ class ModalHostView final : public ComponentView {
   bool shown_{false};
 };
 
-} // namespace rntizen
+} // namespace rnwebos

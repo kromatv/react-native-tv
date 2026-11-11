@@ -43,18 +43,18 @@ function printInstance(
 }
 
 function describeRuntimes(runtimes: readonly RuntimeStatus[]): string {
-  if (runtimes.length === 0) return 'none built: rn-tizen simulator build';
+  if (runtimes.length === 0) return 'none built: rn-webos simulator build';
   const keys = runtimes.map((runtime) => describeRuntime(runtime.key, runtime.built));
   return keys.join(', ');
 }
 
-/** `rn-tizen simulator status`: the VM, its runtime builds, then `current` and every other instance. */
+/** `rn-webos simulator status`: the VM, its runtime builds, then `current` and every other instance. */
 export async function printSimulatorStatus(
   reporter: Reporter,
   current: SimulatorInstance,
 ): Promise<void> {
   const state = await instanceState();
-  const vm = state === null ? 'not created: rn-tizen simulator run' : state.status.toLowerCase();
+  const vm = state === null ? 'not created: rn-webos simulator run' : state.status.toLowerCase();
   reporter.field('VM', vm);
   if (state?.status !== 'Running') return;
   const status = await readSimulatorStatus(reporter.task());

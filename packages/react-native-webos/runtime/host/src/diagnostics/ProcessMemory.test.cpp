@@ -6,12 +6,12 @@
 #include <fstream>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
 struct ProcDirectory {
-  std::filesystem::path path = std::filesystem::temp_directory_path() / "rn-tizen-proc-test";
+  std::filesystem::path path = std::filesystem::temp_directory_path() / "rn-webos-proc-test";
 
   ProcDirectory() {
     std::filesystem::remove_all(path);
@@ -58,4 +58,4 @@ TEST_CASE_FIXTURE(ProcDirectory, "readProcessMemory falls back to RSS without sm
   CHECK(none.source.empty());
 }
 
-} // namespace rntizen
+} // namespace rnwebos

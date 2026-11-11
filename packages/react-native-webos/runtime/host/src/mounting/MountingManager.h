@@ -12,7 +12,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// Turns Fabric's mutation lists into ComponentViews on one Evas canvas. Main
 /// thread only.
@@ -50,4 +50,4 @@ class MountingManager final {
   std::unordered_map<facebook::react::Tag, facebook::react::ComponentHandle> handles_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

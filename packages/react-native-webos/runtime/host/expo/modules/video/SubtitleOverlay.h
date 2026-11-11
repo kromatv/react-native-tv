@@ -7,7 +7,7 @@
 
 #include <string>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 /// The subtitle line a video view draws over its box: white text with a black
 /// outline, centered near the bottom, for as long as the player says. Main thread only.
@@ -39,4 +39,4 @@ class SubtitleOverlay final {
   bool shown_{false};
 };
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

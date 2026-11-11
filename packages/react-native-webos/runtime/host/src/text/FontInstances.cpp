@@ -12,7 +12,7 @@
 #include <string>
 #include <system_error>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace fs = std::filesystem;
 
@@ -137,4 +137,4 @@ std::vector<fs::path> writeWeightInstances(const HarfBuzzSubset &hb, const fs::p
   return files;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

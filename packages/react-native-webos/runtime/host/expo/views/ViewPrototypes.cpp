@@ -11,7 +11,7 @@
 #include <format>
 #include <optional>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -88,4 +88,4 @@ void installViewPrototypes(
   moduleObject.setProperty(runtime, "ViewPrototypes", prototypes);
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

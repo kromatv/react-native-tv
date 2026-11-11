@@ -7,7 +7,7 @@
 #include <fstream>
 #include <iterator>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -173,4 +173,4 @@ TEST_CASE("a File refuses a URI that is not a local file") {
   CHECK(expo.json("fails(() => new FS.FileSystemFile(42))") != R"("no error")");
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

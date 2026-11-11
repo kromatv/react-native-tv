@@ -7,11 +7,11 @@
 #include <sstream>
 #include <stdexcept>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
-constexpr const char *kConfigFile = "react-native-tizen.json";
+constexpr const char *kConfigFile = "react-native-webos.json";
 constexpr std::size_t kMaxConfigBytes = 64 * 1024;
 
 std::string readConfigText(const std::string &path) {
@@ -92,4 +92,4 @@ HostConfig loadHostConfig(const std::string &resourceDir) {
   };
 }
 
-} // namespace rntizen
+} // namespace rnwebos

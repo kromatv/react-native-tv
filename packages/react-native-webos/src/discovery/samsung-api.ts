@@ -33,10 +33,10 @@ function isSoundbar(device: z.infer<typeof apiSchema>['device']): boolean {
   return (device.ModelNumber ?? '').startsWith('HW-') || (device.model ?? '').endsWith('SPK');
 }
 
-/** Reads `/api/v2/`; null for anything that is not a Tizen TV. */
+/** Reads `/api/v2/`; null for anything that is not a webOS TV. */
 export function parseApiDevice(json: z.infer<typeof apiSchema>): SamsungApiDevice | null {
   const { device } = json;
-  if (device.OS !== 'Tizen' || isSoundbar(device)) return null;
+  if (device.OS !== 'webOS' || isSoundbar(device)) return null;
   const developerIp = z.ipv4().safeParse(device.developerIP);
   return {
     name: unescapeName(device.name ?? ''),

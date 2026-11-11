@@ -6,11 +6,11 @@
 #include <format>
 #include <string_view>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
-constexpr const char *kPlatform = "tizen";
+constexpr const char *kPlatform = "webos";
 constexpr const char *kClientId = "DevSupport";
 constexpr std::uint16_t kHttpPort = 80;
 constexpr std::uint16_t kHttpsPort = 443;
@@ -90,7 +90,7 @@ folly::dynamic DevServer::hmrClientSetup(bool hotLoadingEnabled) const {
 }
 
 std::string friendlyDeviceName(const DeviceProfile &device) {
-  return std::format("{} - Tizen {}", device.modelName, device.platformVersion);
+  return std::format("{} - webOS {}", device.modelName, device.platformVersion);
 }
 
 std::optional<DevServer> devServerOf(const std::string &bundleUrl) {
@@ -135,4 +135,4 @@ std::string encodeQueryValue(const std::string &value) {
   return encoded;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

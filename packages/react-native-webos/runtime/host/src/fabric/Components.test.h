@@ -24,7 +24,7 @@
 #include <string>
 #include <utility>
 
-namespace rntizen::testing {
+namespace rnwebos::testing {
 
 class RecordingMeasurer final : public facebook::react::TextMeasurer {
  public:
@@ -113,4 +113,4 @@ inline facebook::react::Size laidOutSize(
   return layoutable->getLayoutMetrics().frame.size;
 }
 
-} // namespace rntizen::testing
+} // namespace rnwebos::testing

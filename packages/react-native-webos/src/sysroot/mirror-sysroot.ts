@@ -14,9 +14,9 @@ import { z } from 'zod';
 import { isElfSharedObject, rebindStrayLocalSymbols } from './elf-dynamic-symbols.ts';
 
 const MIRROR_FORMAT = 1;
-const STAMP_FILE = '.rn-tizen-sysroot.json';
+const STAMP_FILE = '.rn-webos-sysroot.json';
 const LIBRARY_DIRS = ['lib', 'lib64', 'usr/lib', 'usr/lib64'] as const;
-const COMPAT_ARCHIVE = 'librn-tizen-glibc-compat.a';
+const COMPAT_ARCHIVE = 'librn-webos-glibc-compat.a';
 const LIBC_NONSHARED = /(\/usr\/lib(?:64)?\/)libc_nonshared\.a/;
 
 const stampSchema = z.object({
@@ -121,7 +121,7 @@ async function mirrorDir(
 }
 
 /**
- * Mirrors a Tizen rootstrap into `destination` so lld can link against it:
+ * Mirrors a webOS rootstrap into `destination` so lld can link against it:
  * every file is a symlink to the original except the shared libraries whose
  * symbol tables need {@link rebindStrayLocalSymbols}, which are patched copies,
  * and `libc.so`, whose linker script also pulls in `compatArchive`. Rebuilds only

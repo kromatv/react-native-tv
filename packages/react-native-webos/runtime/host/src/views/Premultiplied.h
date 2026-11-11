@@ -3,7 +3,7 @@
 #include <array>
 #include <cstdint>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// A premultiplied RGBA color, each channel from 0 to 1.
 using Premultiplied = std::array<float, 4>;
@@ -14,4 +14,4 @@ std::uint32_t pixelOf(const Premultiplied &color);
 /// White at `alpha`, premultiplied: the pixel of a patch its object's color tints.
 std::uint32_t alphaPixel(float alpha);
 
-} // namespace rntizen
+} // namespace rnwebos

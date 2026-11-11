@@ -15,7 +15,7 @@
 #include <optional>
 #include <string>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 class Module;
 
@@ -58,4 +58,4 @@ class Context final : public std::enable_shared_from_this<Context> {
 /// `payload` as a JavaScript value, for Context::emit.
 JsValueFactory dynamicPayload(folly::dynamic payload);
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

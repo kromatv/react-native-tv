@@ -9,7 +9,7 @@
 
 #include <cerrno>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -77,4 +77,4 @@ bool sendAll(int socket, const void *data, std::size_t size) {
   return true;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

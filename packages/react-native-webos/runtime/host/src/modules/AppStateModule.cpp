@@ -2,7 +2,7 @@
 
 #include "PlatformModuleRegistry.h"
 
-namespace rntizen {
+namespace rnwebos {
 
 AppStateModule::AppStateModule(std::shared_ptr<facebook::react::CallInvoker> jsInvoker, const ModuleContext &context)
     : NativeAppStateCxxSpec(std::move(jsInvoker)), isActive_(context.isActive) {}
@@ -30,6 +30,6 @@ void AppStateModule::addListener(facebook::jsi::Runtime &, facebook::jsi::String
 
 void AppStateModule::removeListeners(facebook::jsi::Runtime &, double) {}
 
-RN_TIZEN_PLATFORM_MODULE("AppState", AppStateModule);
+RN_WEBOS_PLATFORM_MODULE("AppState", AppStateModule);
 
-} // namespace rntizen
+} // namespace rnwebos

@@ -6,7 +6,7 @@
 #include <ReactCommon/CxxTurboModuleUtils.h>
 #include <react/nativemodule/defaults/DefaultTurboModules.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 TurboModuleProvider::TurboModuleProvider(ModuleContext context, std::shared_ptr<facebook::react::CallInvoker> jsInvoker)
     : context_(std::move(context)), jsInvoker_(std::move(jsInvoker)) {}
@@ -31,4 +31,4 @@ std::shared_ptr<facebook::react::TurboModule> TurboModuleProvider::create(const 
   return nullptr;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

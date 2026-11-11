@@ -4,7 +4,7 @@
     "webpageRoot": "devtools",
     "serverEntryPoint": "./dist/devtools/devtools-server.js",
     "cliExtensions": {
-      "description": "Run the app on a Samsung TV or in the Tizen simulator, find TVs, make a certificate",
+      "description": "Run the app on a Samsung TV or in the webOS simulator, find TVs, make a certificate",
       "entryPoint": "dist/devtools/devtools-cli.js",
       "commands": [
         {

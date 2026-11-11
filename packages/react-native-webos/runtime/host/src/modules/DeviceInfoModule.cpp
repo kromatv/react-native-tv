@@ -5,7 +5,7 @@
 
 #include <jsi/JSIDynamic.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 DeviceInfoModule::DeviceInfoModule(
     std::shared_ptr<facebook::react::CallInvoker> jsInvoker,
@@ -23,6 +23,6 @@ facebook::jsi::Object DeviceInfoModule::getConstants(facebook::jsi::Runtime &run
   return facebook::jsi::valueFromDynamic(runtime, constants).asObject(runtime);
 }
 
-RN_TIZEN_PLATFORM_MODULE("DeviceInfo", DeviceInfoModule);
+RN_WEBOS_PLATFORM_MODULE("DeviceInfo", DeviceInfoModule);
 
-} // namespace rntizen
+} // namespace rnwebos

@@ -6,7 +6,7 @@
 
 #include <unordered_map>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -58,4 +58,4 @@ void ExpoView::dispatchEvent(const std::string &event, folly::dynamic payload) c
   });
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

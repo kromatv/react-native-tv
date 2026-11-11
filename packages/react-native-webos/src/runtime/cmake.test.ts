@@ -4,12 +4,12 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { recordingTask } from '../fakes.fixtures.ts';
 import { TOOLCHAIN_FILE } from '../package-paths.ts';
-import { buildCMakeProject, sourcesKey, tizenDefinitions } from './cmake.ts';
+import { buildCMakeProject, sourcesKey, webosDefinitions } from './cmake.ts';
 
 let dir: string;
 
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'rn-tizen-cmake-'));
+  dir = mkdtempSync(join(tmpdir(), 'rn-webos-cmake-'));
 });
 
 afterEach(() => {
@@ -57,28 +57,28 @@ describe('buildCMakeProject', () => {
   });
 });
 
-describe('tizenDefinitions', () => {
+describe('webosDefinitions', () => {
   it('cross-compiles through the toolchain file for the target', () => {
-    const sdk = { root: '/tizen-studio', sdb: '', tizenCli: '', packageManager: '' };
+    const sdk = { root: '/webos-studio', sdb: '', webosCli: '', packageManager: '' };
 
-    expect(tizenDefinitions(sdk, { arch: 'aarch64', platformVersion: '8.0' })).toEqual({
+    expect(webosDefinitions(sdk, { arch: 'aarch64', platformVersion: '8.0' })).toEqual({
       CMAKE_TOOLCHAIN_FILE: TOOLCHAIN_FILE,
       CMAKE_BUILD_TYPE: 'Release',
-      TIZEN_ARCH: 'aarch64',
-      TIZEN_PLATFORM_VERSION: '8.0',
-      TIZEN_ROOTSTRAP_VERSION: '8.0',
-      TIZEN_ROOTSTRAP_PROFILE: 'tizen',
-      TIZEN_SDK_DIR: '/tizen-studio',
+      WEBOS_ARCH: 'aarch64',
+      WEBOS_PLATFORM_VERSION: '8.0',
+      WEBOS_ROOTSTRAP_VERSION: '8.0',
+      WEBOS_ROOTSTRAP_PROFILE: 'webos',
+      WEBOS_SDK_DIR: '/webos-studio',
     });
   });
 
-  it('names the rootstrap a floor older than the tizen profile is linked against', () => {
-    const sdk = { root: '/tizen-studio', sdb: '', tizenCli: '', packageManager: '' };
+  it('names the rootstrap a floor older than the webos profile is linked against', () => {
+    const sdk = { root: '/webos-studio', sdb: '', webosCli: '', packageManager: '' };
 
-    expect(tizenDefinitions(sdk, { arch: 'armv7l', platformVersion: '6.0' })).toMatchObject({
-      TIZEN_PLATFORM_VERSION: '6.0',
-      TIZEN_ROOTSTRAP_VERSION: '6.0',
-      TIZEN_ROOTSTRAP_PROFILE: 'iot-headed',
+    expect(webosDefinitions(sdk, { arch: 'armv7l', platformVersion: '6.0' })).toMatchObject({
+      WEBOS_PLATFORM_VERSION: '6.0',
+      WEBOS_ROOTSTRAP_VERSION: '6.0',
+      WEBOS_ROOTSTRAP_PROFILE: 'iot-headed',
     });
   });
 });

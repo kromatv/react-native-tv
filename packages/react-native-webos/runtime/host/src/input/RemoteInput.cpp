@@ -8,7 +8,7 @@
 #include <string>
 #include <utility>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -64,4 +64,4 @@ void RemoteInput::onFocusOut(void *self, Evas_Object *, void *) {
   static_cast<RemoteInput *>(self)->releaseAll();
 }
 
-} // namespace rntizen
+} // namespace rnwebos

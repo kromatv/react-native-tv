@@ -6,7 +6,7 @@
 
 #include <filesystem>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -18,7 +18,7 @@ using testing::writeFile;
 } // namespace
 
 TEST_CASE("trackedAppFont writes the closest file with its advances moved by the spacing, once") {
-  const auto root = fs::temp_directory_path() / "rn-tizen-app-fonts-test";
+  const auto root = fs::temp_directory_path() / "rn-webos-app-fonts-test";
   fs::remove_all(root);
   fs::create_directories(root / "Brand");
   const auto regular = writeFile(root / "Brand" / "Regular.ttf", appFont(400, 1000));
@@ -36,7 +36,7 @@ TEST_CASE("trackedAppFont writes the closest file with its advances moved by the
 }
 
 TEST_CASE("trackedAppFont has nothing for an unknown family or a spacing under one font unit") {
-  const auto root = fs::temp_directory_path() / "rn-tizen-app-fonts-small";
+  const auto root = fs::temp_directory_path() / "rn-webos-app-fonts-small";
   fs::remove_all(root);
   fs::create_directories(root / "Small");
   registerAppFontFiles("Small", {writeFile(root / "Small" / "Regular.ttf", appFont(400, 1000))});
@@ -46,4 +46,4 @@ TEST_CASE("trackedAppFont has nothing for an unknown family or a spacing under o
   fs::remove_all(root);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

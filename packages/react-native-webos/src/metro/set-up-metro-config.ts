@@ -7,12 +7,12 @@ export type MetroSetup =
   | { readonly kind: 'written' | 'wrapped' | 'present'; readonly file: string }
   | { readonly kind: 'manual'; readonly file: string; readonly lines: readonly string[] };
 
-const METRO_IMPORT = "import { withTizen } from '@kromatv/react-native-tizen/metro';";
-const METRO_REQUIRE = "const { withTizen } = require('@kromatv/react-native-tizen/metro');";
+const METRO_IMPORT = "import { withWebOS } from '@kromatv/react-native-webos/metro';";
+const METRO_REQUIRE = "const { withWebOS } = require('@kromatv/react-native-webos/metro');";
 const NEW_CONFIG = [
   "import { getDefaultConfig } from 'expo/metro-config';",
   METRO_IMPORT,
-  'export default withTizen(getDefaultConfig(import.meta.dirname));',
+  'export default withWebOS(getDefaultConfig(import.meta.dirname));',
   '',
 ].join('\n');
 const EXTENSIONS = ['.js', '.cjs', '.mjs', '.json', '.ts', '.cts', '.mts'];
@@ -93,7 +93,7 @@ function isModule(file: string, text: string): boolean {
 }
 
 function exportLine(esm: boolean, value: string): string {
-  return esm ? `export default withTizen(${value});` : `module.exports = withTizen(${value});`;
+  return esm ? `export default withWebOS(${value});` : `module.exports = withWebOS(${value});`;
 }
 
 function isBalanced(value: string): boolean {
@@ -133,9 +133,9 @@ function wrapped(lines: readonly string[], esm: boolean): string[] | null {
 }
 
 /**
- * Makes the app's Metro config teach Metro the `tizen` platform. With none,
+ * Makes the app's Metro config teach Metro the `webos` platform. With none,
  * writes `metro.config.mjs`; with one that has a single-line export, wraps
- * that export with `withTizen`; otherwise returns the two lines to add.
+ * that export with `withWebOS`; otherwise returns the two lines to add.
  */
 export function setUpMetroConfig(root: string): MetroSetup {
   const file = configIn(root) ?? packageJsonConfig(root);
@@ -148,7 +148,7 @@ export function setUpMetroConfig(root: string): MetroSetup {
   }
   if (file.endsWith('.json')) return manual(file);
   const text = readFileSync(file, 'utf8');
-  if (text.includes('withTizen')) return { kind: 'present', file };
+  if (text.includes('withWebOS')) return { kind: 'present', file };
   if (text.length > MAX_CONFIG_BYTES) return manual(file);
   const result = wrapped(text.split('\n'), isModule(file, text));
   if (result === null) return manual(file);

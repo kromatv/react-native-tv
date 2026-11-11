@@ -38,11 +38,11 @@ are abbreviated:
 
 | Step | Contract | Source | Host provides |
 |------|----------|--------|---------------|
-| Feature flags | Overridden once per process, before any flag is read. iOS picks `ReactNativeFeatureFlagsOverridesOSSStable` (or Canary/Experimental) from the release level; Android overrides with `ReactNativeFeatureFlagsOverrides_RNOSS_Stable_Android`. OSS Stable only turns on `useNativeViewConfigsInBridgelessMode`. | doc: `RN/Libraries/AppDelegate/RCTReactNativeFactory.mm:330-347`, `RA/defaults/DefaultNewArchitectureEntryPoint.kt:92-102`, `RC/featureflags/ReactNativeFeatureFlagsOverridesOSSStable.h:16-22` | A provider subclass if it needs any flag the stable set leaves off. Tizen's (`host/HostFeatureFlags.cpp`) is OSS Stable plus `cxxNativeAnimatedEnabled`, for the native animated driver (section 5). |
+| Feature flags | Overridden once per process, before any flag is read. iOS picks `ReactNativeFeatureFlagsOverridesOSSStable` (or Canary/Experimental) from the release level; Android overrides with `ReactNativeFeatureFlagsOverrides_RNOSS_Stable_Android`. OSS Stable only turns on `useNativeViewConfigsInBridgelessMode`. | doc: `RN/Libraries/AppDelegate/RCTReactNativeFactory.mm:330-347`, `RA/defaults/DefaultNewArchitectureEntryPoint.kt:92-102`, `RC/featureflags/ReactNativeFeatureFlagsOverridesOSSStable.h:16-22` | A provider subclass if it needs any flag the stable set leaves off. webOS's (`host/HostFeatureFlags.cpp`) is OSS Stable plus `cxxNativeAnimatedEnabled`, for the native animated driver (section 5). |
 | JS thread | A `MessageQueueThread` that runs tasks in order. Hermes is created for it. | doc: `RI/RCTInstance.mm:324-329`, `RN/ReactAndroid/src/main/jni/react/runtime/jni/JReactInstance.cpp:61-66` | The thread. |
 | Timers | A `PlatformTimerRegistry` feeds `TimerManager`, whose executor is the **buffered** runtime executor. `TimerManager::attachGlobals` installs `setTimeout`, `setInterval`, `requestAnimationFrame` (a 0 ms timer, not a frame callback) and their clears. In bridgeless JS, `queueMicrotask`, `setImmediate` and `requestIdleCallback` come from C++ modules, not from a `Timing` module. | doc: `RI/RCTInstance.mm:311-316,332-333`, `JReactInstance.cpp:44-46,71`, `RC/runtime/TimerManager.cpp:197-363` (rAF at 356-363), `RN/Libraries/Core/setUpTimers.js` (the `RN$Bridgeless === true` branch) | A timer registry. No `Timing` TurboModule is needed. |
-| Timer firing | The registry gets `createTimer(id, 0)` for both `setTimeout(0)` and `requestAnimationFrame`, so it cannot tell them apart. Both reference hosts fire every timer on the next display frame, a 0 ms one included: iOS's bridgeless registry calls `createTimerForNextFrame`, which `RCTTiming` fires from its CADisplayLink (intervals under 18 ms run every frame); Android's calls `JavaTimerManager.createTimer`, whose timers fire from a Choreographer frame callback. That is what paces `requestAnimationFrame` to the display. | doc: `RC/runtime/TimerManager.cpp:76-103,356-363`, `RN/ReactCommon/react/runtime/platform/ios/ReactCommon/ObjCTimerRegistry.mm:48-61`, `RN/React/CoreModules/RCTTiming.mm:242-278,379-390`, `RN/ReactAndroid/src/main/jni/react/runtime/jni/JavaTimerRegistry.cpp:18-24`, `RA/modules/core/JavaTimerManager.kt:182-189,285-319` | A frame clock. Tizen's (`host/timers/ThreadTimerRegistry.cpp`) waits for deadlines on a thread and fires expired timers from an Ecore animator (`host/timers/FrameClock.cpp`); a timer no frame has fired 100 ms after it expired fires from the thread, since a window the compositor sends no frames to would otherwise hold it. |
-| Timer order | Timers that expire before the same frame fire earliest deadline first. iOS sorts the timers it calls by their target date; Android pops them from a priority queue ordered by target time. | doc: `RN/React/CoreModules/RCTTiming.mm:244-265`, `RA/modules/core/JavaTimerManager.kt:64-65,296-306` | Tizen's `host/timers/TimerQueue.cpp` hands expired timers back by deadline, then by id, so a 5 ms and a 10 ms timer that expire in one wait of the timer thread fire 5 ms first. |
+| Timer firing | The registry gets `createTimer(id, 0)` for both `setTimeout(0)` and `requestAnimationFrame`, so it cannot tell them apart. Both reference hosts fire every timer on the next display frame, a 0 ms one included: iOS's bridgeless registry calls `createTimerForNextFrame`, which `RCTTiming` fires from its CADisplayLink (intervals under 18 ms run every frame); Android's calls `JavaTimerManager.createTimer`, whose timers fire from a Choreographer frame callback. That is what paces `requestAnimationFrame` to the display. | doc: `RC/runtime/TimerManager.cpp:76-103,356-363`, `RN/ReactCommon/react/runtime/platform/ios/ReactCommon/ObjCTimerRegistry.mm:48-61`, `RN/React/CoreModules/RCTTiming.mm:242-278,379-390`, `RN/ReactAndroid/src/main/jni/react/runtime/jni/JavaTimerRegistry.cpp:18-24`, `RA/modules/core/JavaTimerManager.kt:182-189,285-319` | A frame clock. webOS's (`host/timers/ThreadTimerRegistry.cpp`) waits for deadlines on a thread and fires expired timers from an Ecore animator (`host/timers/FrameClock.cpp`); a timer no frame has fired 100 ms after it expired fires from the thread, since a window the compositor sends no frames to would otherwise hold it. |
+| Timer order | Timers that expire before the same frame fire earliest deadline first. iOS sorts the timers it calls by their target date; Android pops them from a priority queue ordered by target time. | doc: `RN/React/CoreModules/RCTTiming.mm:244-265`, `RA/modules/core/JavaTimerManager.kt:64-65,296-306` | webOS's `host/timers/TimerQueue.cpp` hands expired timers back by deadline, then by id, so a 5 ms and a 10 ms timer that expire in one wait of the timer thread fire 5 ms first. |
 | `ReactInstance` | Owns the runtime, the `RuntimeScheduler`, the `JsErrorHandler` and two executors. A `HostTarget` (inspector) is optional; without it, no CDP debugging. | doc: `RC/runtime/ReactInstance.cpp:67-190` | An `onJsError` callback, optionally a `HostTarget`. |
 | Executors | `getBufferedRuntimeExecutor()` holds work until the main bundle has run; `getUnbufferedRuntimeExecutor()` does not. Rule from the source: buffered for anything that calls into JS modules, unbuffered only for installing bindings. iOS hands the surface presenter the buffered one as `runtimeExecutor` and the unbuffered one as `bridgelessBindingsExecutor`; Android registers Fabric with the buffered one and TurboModules with the unbuffered one. | doc: `ReactInstance.cpp:214-234`, `RI/RCTInstance.mm:421-424`, `RA/runtime/ReactInstance.kt:183-186,261-262` | Use them as the reference hosts do. |
 | Call invoker | `createJSCallInvoker()` returns a buffered invoker when `enableBufferedCallInvoker` is on (default on). TurboModules get this invoker. | doc: `ReactInstance.cpp:243-254`, `RC/featureflags/ReactNativeFeatureFlagsDefaults.h:88-90` | Nothing. |
@@ -51,10 +51,10 @@ are abbreviated:
 | Calls into JS | `callFunctionOnModule` goes through the buffered executor and needs the module registered with `RN$registerCallableModule`. `RCTDeviceEventEmitter`, `RCTNativeAppEventEmitter` and `HMRClient` are registered by `setUpBatchedBridge.js`. | doc: `ReactInstance.cpp:345-395`, `RN/Libraries/Core/setUpBatchedBridge.js:20-40` | Device events through `RCTDeviceEventEmitter.emit`. |
 | Surface start | `UIManager::startSurface` runs `RN$AppRegistry.runApplication` through the runtime executor it was given, and throws `Global was not installed` if the bundle has not run. | doc: `RC/renderer/uimanager/UIManager.cpp:235-262`, `RC/renderer/uimanager/AppRegistryBinding.cpp:27-31` | A buffered executor, so a surface can start before the bundle arrives. |
 
-Verified on a 2024 Samsung The Frame (LS03D), Tizen 9.0, armv7, 2026-11-03,
+Verified on a 2024 Samsung The Frame (LS03D), webOS 9.0, armv7, 2026-11-03,
 with KROMA's frame HUD, which counts `requestAnimationFrame` callbacks: before
 timers waited for a frame it read 5000 to 9000 FPS on every screen; after, 56
-to 60, the animator ticking at 60 Hz (`rn-tizen perf`, `hz`).
+to 60, the animator ticking at 60 Hz (`rn-webos perf`, `hz`).
 
 ### Errors
 
@@ -87,7 +87,7 @@ fatal `onJsError` (inf: the two paths are split only by `isRuntimeReady`).
 | Loading banner | Optional `DevLoadingView` (`showMessage`, `hide`). | doc: `RN/src/private/specs_DEPRECATED/modules/NativeDevLoadingView.js:16-22` |
 | Inspector | `ws://host:port/inspector/device?...` needs a `HostTarget` handed to `ReactInstance`. | doc: `RA/devsupport/DevServerHelper.kt:123`, `ReactInstance.cpp:112-166` |
 
-Tizen's development runtime does the same, inspector included, in
+webOS's development runtime does the same, inspector included, in
 `runtime/host/devsupport/`; the facts and what was verified are in
 [react-native-dev-tooling.md](react-native-dev-tooling.md).
 
@@ -210,7 +210,7 @@ ScrollView offset (above) and `viewportOffset` for `measureInWindow`. doc:
 returns null. doc: `RN/Libraries/TurboModule/TurboModuleRegistry.js:39-47`.
 Specs live in `RN/src/private/specs_DEPRECATED/modules/`.
 
-| Module (JS name) | Lookup | Events (device events unless noted) | Needed by | Tizen |
+| Module (JS name) | Lookup | Events (device events unless noted) | Needed by | webOS |
 |------------------|--------|-------------------------------------|-----------|-------|
 | `PlatformConstants` | get | none | `Platform` (every app) | yes |
 | `DeviceInfo` | getEnforcing | `didUpdateDimensions` with `{window, screen}`, read by `Dimensions` | every app | yes, no events |
@@ -241,14 +241,14 @@ C++ defaults already answer `NativeReactNativeFeatureFlags`, `NativeMicrotasks`,
 observers and `NativeAnimatedModule`. doc: `RC/nativemodule/defaults/DefaultTurboModules.cpp:30-90`.
 
 React Native modules KROMA still looks up and the host does not serve (its
-simulator log, 2026-11-03), none of them called on `tizen`:
+simulator log, 2026-11-03), none of them called on `webos`:
 
 | Module | Why nothing breaks | Source |
 |--------|--------------------|--------|
 | `SoundManager` | `playTouchSound` runs only when `Platform.OS === 'android'` | doc: `RN/Libraries/Pressability/Pressability.js:482,823`, `RN/Libraries/Components/Touchable/Touchable.js:813` |
 | `FrameRateLogger` | every call is `NativeFrameRateLogger?.` | doc: `RN/Libraries/Interaction/FrameRateLogger.js:42-60` |
 | `KeyboardObserver` | handed to `NativeEventEmitter` on iOS only | doc: `RN/Libraries/Components/Keyboard/Keyboard.js:76` |
-| `AccessibilityInfo`, `IntentAndroid` | used on `android` only; `tizen` takes the iOS branch, served by `AccessibilityManager` and `LinkingManager` | doc: `RN/Libraries/Components/AccessibilityInfo/AccessibilityInfo.js:50`, `RN/Libraries/Linking/Linking.js:26,51` |
+| `AccessibilityInfo`, `IntentAndroid` | used on `android` only; `webos` takes the iOS branch, served by `AccessibilityManager` and `LinkingManager` | doc: `RN/Libraries/Components/AccessibilityInfo/AccessibilityInfo.js:50`, `RN/Libraries/Linking/Linking.js:26,51` |
 | `TVNavigationEventEmitter` | required on iOS only; elsewhere TV events are device events | doc: `RN/Libraries/Components/TV/TVEventHandler.js:50` |
 
 Every event above reaches JS through `RCTDeviceEventEmitter` because
@@ -257,7 +257,7 @@ Every event above reaches JS through `RCTDeviceEventEmitter` because
 
 ### Networking, checked against the current host
 
-Tizen resolves `RCTNetworking.android.js`: it calls
+webOS resolves `RCTNetworking.android.js`: it calls
 `sendRequest(method, url, requestId, headers as [name, value][], data, responseType, useIncrementalUpdates, timeout, withCredentials)`
 and listens on device events. doc: `RN/Libraries/Network/RCTNetworking.android.js:40-44,82-92`.
 Each event's single argument is an array (doc:
@@ -279,7 +279,7 @@ The `data` argument is `convertRequestBody(body)` spread with `trackingName` and
 through (doc: `RN/Libraries/Network/convertRequestBody.js:28-44`,
 `RN/Libraries/Network/RCTNetworking.android.js:72-92`).
 
-| Body | Contract | Android | Tizen (`host/modules/networking/RequestBody.cpp`) |
+| Body | Contract | Android | webOS (`host/modules/networking/RequestBody.cpp`) |
 |------|----------|---------|------|
 | `string`, `base64`, `blob` | Text as UTF-8; base64 decoded; the blob's bytes | sent as is; a string or base64 body without Content-Type fails | sent as is, no Content-Type check |
 | `uri` | A file to upload | Content-Type required, else the request fails with "Payload is set but no content-type header specified"; `http(s)` URIs are downloaded first, `data:` decoded, anything else opened through the content resolver | the same error; `file:` (RFC 8089, percent-decoded) and `data:` (RFC 2397) URIs; any other scheme fails with "Could not retrieve file for uri ..." |
@@ -291,7 +291,7 @@ Sources: `RN/Libraries/Network/FormData.js:82-105`;
 Content-Type, Content-Disposition and, rarely, Content-Transfer-Encoding);
 RFC 2046 section 5.1.1 (boundary syntax). A body that cannot be built fails the
 request through `didCompleteNetworkResponse` with the message above, as
-Android's `onRequestError` does. Tizen reads a `uri` file on the JavaScript
+Android's `onRequestError` does. webOS reads a `uri` file on the JavaScript
 thread, as it resolves a blob.
 
 Verified in simulator (2026-11-03), XHR to a server that parses multipart: a
@@ -304,7 +304,7 @@ Content-Type and a `uri` part without a type fail with Android's messages.
 |------|--------|------|
 | A GET or HEAD request carries no body, even when JavaScript gives one; Android sends POST, PUT and PATCH without one with an empty body | doc: XHR `send()` step 3 ("If this's request method is GET or HEAD, then set body to null", https://xhr.spec.whatwg.org/#the-send()-method), `RA/modules/network/NetworkingModule.kt:460-461`, `RA/modules/network/RequestBodyUtil.kt:175-181` | `host/network/CurlMethod.cpp`: libcurl turns a request with `CURLOPT_POSTFIELDS` into a POST unless `CURLOPT_CUSTOMREQUEST` names the method, so a GET with a body went out as a POST before |
 | A header name is a token and a header value holds no NUL, CR or LF; XHR's `setRequestHeader` throws a SyntaxError otherwise. React Native's XHR checks neither (`RN/Libraries/Network/XMLHttpRequest.js:512-520`), and Android strips control characters from names only (`RA/modules/network/HeaderUtil.kt`) | doc: Fetch "header name" and "header value" (https://fetch.spec.whatwg.org/#terminology-headers), XHR `setRequestHeader()` step 4 | `host/network/HeaderField.cpp`: a request or WebSocket handshake with such a header fails before it connects, since libcurl and the handshake writer copy a CR LF into the request as a new header line |
-| `CURL_SSLVERSION_TLSv1_2` means "TLSv1.2 or later"; libcurl's own default floor is TLS 1.2 only since 8.16.0, and the Tizen 9 rootstrap's libcurl is 8.5.0 | doc: https://curl.se/libcurl/c/CURLOPT_SSLVERSION.html, `rs:usr/include/curl/curlver.h:35` | Every libcurl connection the host opens sets it (`HttpEngine`, `HttpGet`, `WebSocketTransport`) |
+| `CURL_SSLVERSION_TLSv1_2` means "TLSv1.2 or later"; libcurl's own default floor is TLS 1.2 only since 8.16.0, and the webOS 9 rootstrap's libcurl is 8.5.0 | doc: https://curl.se/libcurl/c/CURLOPT_SSLVERSION.html, `rs:usr/include/curl/curlver.h:35` | Every libcurl connection the host opens sets it (`HttpEngine`, `HttpGet`, `WebSocketTransport`) |
 
 React Native's `fetch` is `whatwg-fetch` 3.6.20 over XHR. It sets
 `responseType = 'blob'` when `new Blob()` works, else `'arraybuffer'`, which XHR
@@ -326,9 +326,9 @@ every `fetch` goes as `blob`, and `Networking` answers with a blob descriptor
 | Each event is a device event with one object: `websocketOpen {id, protocol}`, `websocketMessage {id, type, data}` (`text`, `binary` in base64, or `blob` with a `BlobData`), `websocketClosed {id, code, reason}`, `websocketFailed {id, message}`; JS turns a failure into `error` then `close` with 1006 | doc: `RN/Libraries/WebSocket/WebSocket.js:61-72,240-293` |
 | Android adds `Origin: http(s)://host[:port]` when JS sets none, drops a protocol that is empty or holds a comma, joins the rest with `,`, and gives the connection 10 s | doc: `RA/modules/websocket/WebSocketModule.kt:113,138-165,468-492` |
 | `send`, `sendBinary` and `ping` on an unknown socket answer `websocketFailed` with `client is null`, then `websocketClosed` with code 0; `close` on one does nothing | doc: `WebSocketModule.kt:276-306` |
-| `ping` sends a Ping frame on iOS, an empty binary message on Android; Tizen sends a Ping frame | doc: `RN/React/CoreModules/RCTWebSocketModule.mm:191-193`, `WebSocketModule.kt:408` |
+| `ping` sends a Ping frame on iOS, an empty binary message on Android; webOS sends a Ping frame | doc: `RN/React/CoreModules/RCTWebSocketModule.mm:191-193`, `WebSocketModule.kt:408` |
 | Once `BlobModule.addWebSocketHandler(id)` ran, binary messages arrive as `{type: 'blob', data: {blobId, offset: 0, size}}` | doc: `RA/modules/blob/BlobModule.kt:48-62` |
-| The Tizen 9 rootstrap's libcurl is 8.5.0, older than 8.11.0, the release that took curl's WebSocket support out of experimental, so the host does not count on `curl_ws_send` (I). Tizen 10's rootstrap carries 8.11.0. So the host speaks RFC 6455 itself over a connection libcurl opens with `CURLOPT_CONNECT_ONLY` (DNS, TCP, TLS, proxy) | `rs:usr/include/curl/curlver.h:35`, the same for the Tizen 10 rootstrap, and curl's 8.11.0 changelog (https://curl.se/ch/8.11.0.html), 2026-11-03 |
+| The webOS 9 rootstrap's libcurl is 8.5.0, older than 8.11.0, the release that took curl's WebSocket support out of experimental, so the host does not count on `curl_ws_send` (I). webOS 10's rootstrap carries 8.11.0. So the host speaks RFC 6455 itself over a connection libcurl opens with `CURLOPT_CONNECT_ONLY` (DNS, TCP, TLS, proxy) | `rs:usr/include/curl/curlver.h:35`, the same for the webOS 10 rootstrap, and curl's 8.11.0 changelog (https://curl.se/ch/8.11.0.html), 2026-11-03 |
 | Over TLS, libcurl offers HTTP/2 through ALPN unless `CURLOPT_HTTP_VERSION` is 1.1; a server that picks h2 then has `curl_easy_recv` decode HTTP/2 frames. The RFC 6455 upgrade is HTTP/1.1 only | verified in simulator: a SIGSEGV in `nghttp2_session_mem_recv2` under `curl_easy_recv` on `wss://` before the option was set, 2026-11-03; RFC 6455 section 4.1 |
 | A client sends a random 16-byte key, checks status 101, `Upgrade`, `Connection` and `Sec-WebSocket-Accept`, masks every frame, fails on a masked server frame, answers a Ping with a Pong and a Close with a Close; control frames carry at most 125 bytes and are never fragmented; an empty Close reads as 1005 | doc: RFC 6455 sections 4.1, 4.2.2, 5.1, 5.3, 5.5, 5.5.1, 7.1.5 |
 
@@ -344,12 +344,12 @@ app stopping, and a cast command from the server reaches the TV.
 
 | Fact | Source |
 |------|--------|
-| iOS answers `BLOB_URI_SCHEME: 'blob'`, `BLOB_URI_HOST: null`; Android answers only with a content provider declared. `URL.createObjectURL` throws without a scheme. Tizen answers as iOS does | doc: `RN/Libraries/Blob/RCTBlobManager.mm:69-75`, `RA/modules/blob/BlobModule.kt:133-141`, `RN/Libraries/Blob/URL.js:17-30,70-75` |
-| iOS's networking answers `blob:` URLs from the blob store; Tizen's `Networking` does too | doc: `RCTBlobManager.mm:220-223` |
+| iOS answers `BLOB_URI_SCHEME: 'blob'`, `BLOB_URI_HOST: null`; Android answers only with a content provider declared. `URL.createObjectURL` throws without a scheme. webOS answers as iOS does | doc: `RN/Libraries/Blob/RCTBlobManager.mm:69-75`, `RA/modules/blob/BlobModule.kt:133-141`, `RN/Libraries/Blob/URL.js:17-30,70-75` |
+| iOS's networking answers `blob:` URLs from the blob store; webOS's `Networking` does too | doc: `RCTBlobManager.mm:220-223` |
 | `createFromParts` gets `{type: 'string' \| 'blob', data}` parts; strings are stored as UTF-8 | doc: `BlobModule.kt:298-320`, `RN/Libraries/Blob/BlobManager.js:62-100` |
 | JS gives each Blob the host object `global.__blobCollectorProvider(blobId)` returns; its destruction frees the bytes. Android installs it from `BlobModule`'s JSI bindings | doc: `BlobManager.js:42-49`, `RN/ReactAndroid/src/main/jni/react/reactnativeblob/BlobCollector.cpp:56-80` |
-| `readAsDataURL` answers `data:<type, or application/octet-stream>;base64,...`; `readAsText(blob, encoding)` decodes with that charset, `UTF-8` by default. Tizen decodes UTF-8, ISO-8859-1 and US-ASCII | doc: `RA/modules/blob/FileReaderModule.kt:49,80-86`, `RN/Libraries/Blob/FileReader.js:185` |
-| `expo/fetch`'s `response.blob()` stores the bytes with `ExpoFetchModule.unstable_createBlobData`, then wraps the id with `BlobManager.createFromOptions`; Android stores them in its `BlobModule`. Tizen's `ExpoFetchModule` uses the same store | doc: `EXPO/src/winter/fetch/createBlob.ts:16-26`, `EXPO/android/src/main/java/expo/modules/fetch/ExpoFetchModule.kt:54-58` |
+| `readAsDataURL` answers `data:<type, or application/octet-stream>;base64,...`; `readAsText(blob, encoding)` decodes with that charset, `UTF-8` by default. webOS decodes UTF-8, ISO-8859-1 and US-ASCII | doc: `RA/modules/blob/FileReaderModule.kt:49,80-86`, `RN/Libraries/Blob/FileReader.js:185` |
+| `expo/fetch`'s `response.blob()` stores the bytes with `ExpoFetchModule.unstable_createBlobData`, then wraps the id with `BlobManager.createFromOptions`; Android stores them in its `BlobModule`. webOS's `ExpoFetchModule` uses the same store | doc: `EXPO/src/winter/fetch/createBlob.ts:16-26`, `EXPO/android/src/main/java/expo/modules/fetch/ExpoFetchModule.kt:54-58` |
 | Expo replaces the global `URL`, and its `createObjectURL` reads the constants through `globalThis.__turboModuleProxy('BlobModule')` when `RN$Bridgeless` is true. Bridgeless React Native never defines `__turboModuleProxy`, so the global `URL.createObjectURL` throws `undefined is not a function`. React Native's own `URL` (`react-native/Libraries/Blob/URL`) works | doc: `EXPO/src/winter/runtime.native.ts:16`, `EXPO/src/winter/url.ts:34-56`, `RC/nativemodule/core/ReactCommon/TurboModuleBinding.cpp:117-150`; verified in simulator, 2026-11-03. inf: the same on bridgeless Android and iOS, whose hosts install the binding the same way |
 
 Verified in simulator (2026-11-03): `new Blob` from strings read back as text,
@@ -401,12 +401,12 @@ A JS-driven focus engine (KROMA's `@kromatv/spatial-nav` is a tree walker, not
 a geometry search) needs only three things from the host: key events, a way to
 scroll (`scrollTo`), and an app that does not also rely on the native focus
 engine. It ignores `focusable`, `nextFocus*` and `TVFocusGuideView`, so their
-absence on Tizen costs it nothing (inf: from [`packages/spatial-nav/README.md`](https://github.com/kromatv/kroma/blob/1d270635adcc9f3a81283e04f06336845d8c5985/packages/spatial-nav/README.md)
+absence on webOS costs it nothing (inf: from [`packages/spatial-nav/README.md`](https://github.com/kromatv/kroma/blob/1d270635adcc9f3a81283e04f06336845d8c5985/packages/spatial-nav/README.md)
 and [`packages/ui/src/lib/seam-keys.ts:36-40`](https://github.com/kromatv/kroma/blob/1d270635adcc9f3a81283e04f06336845d8c5985/packages/ui/src/lib/seam-keys.ts#L36-L40), which treats a key as released
-only on Android). A `TVFocusGuideView` is a plain View on Tizen and its
+only on Android). A `TVFocusGuideView` is a plain View on webOS and its
 `setDestinations` command is dropped. The list's wrapper still lays out, so a
-Tizen bundle gives it the flex its ScrollView would take
-(`src/metro/tizen-list-focus-guide.ts`, with
+webOS bundle gives it the flex its ScrollView would take
+(`src/metro/webos-list-focus-guide.ts`, with
 `react-native-overrides/Libraries/Lists/list-focus-guide-style.ts`).
 
 ## 5. Animated native driver
@@ -421,7 +421,7 @@ Tizen bundle gives it the flex its ScrollView would take
 | Shared backend | With `useSharedAnimatedBackend`, the `AnimationBackend` on the UIManager owns commits. | doc: `NativeAnimatedNodesManagerProvider.cpp:133-140` |
 | Ecore animators | An animator runs once per frame: the clock starts at 1/60 s and Elementary sets it to `1 / fps` (60 by default). On Wayland the tick is the compositor's frame callback. `ecore_animator_del` only marks the animator and returns its data, so a callback may delete its own animator; if it then also returns `ECORE_CALLBACK_CANCEL`, the deletion is counted twice. | src: `efl:src/lib/ecore/ecore_anim.c#L80`, `#L494-L503`, `#L847-L870`, `efl:src/lib/elementary/elm_config.c#L1603`; `efl-rendering.md` section 1 |
 
-How Tizen wires it: `host/HostFeatureFlags.cpp` turns on
+How webOS wires it: `host/HostFeatureFlags.cpp` turns on
 `cxxNativeAnimatedEnabled`; `host/animated/NativeAnimatedModule.cpp` serves
 `NativeAnimatedModule` with a provider whose start and stop callbacks drive
 `host/animated/AnimationFrameLoop.cpp`, an Ecore animator calling `onRender` on
@@ -440,12 +440,12 @@ final commit puts it. KROMA no longer logs the missing-module warning.
 
 ## 6. How out-of-tree platforms resolve JavaScript
 
-| Mechanism | react-native-windows | react-native-macos | react-native-tizen |
+| Mechanism | react-native-windows | react-native-macos | react-native-webos |
 |-----------|----------------------|--------------------|--------------------|
 | Kind | Separate package with overrides of RN's `Libraries/` | Full fork with inline diffs | Metro resolver over the app's own `react-native` |
-| Declared in | `react-native.config.js` `platforms.windows.npmPackageName: 'react-native-windows'` (`RNW@vnext/react-native.config.js:34-41`) | same, `platforms.macos` and `visionos` (`react-native-macos .../react-native.config.js:178-216`) | `withTizen` in the app's `metro.config.js` (`src/metro/with-tizen.ts:80-107`) |
-| Redirect | CLI's `reactNativePlatformResolver` rewrites `react-native` and `react-native/x` to the package for that platform; `resolver.platforms` gets the platform; `<pkg>/setup-env` runs before main (`facebook/react-native packages/community-cli-plugin/src/utils/metroPlatformResolver.js:27-48`, `loadMetroConfig.js:38-73`) | same | `.tizen.*` wins, else resolve as `android` and swap files present in `react-native-overrides/` (`with-tizen.ts:86-97`) |
-| `Platform.OS` | `'windows'`, in `Platform.windows.js` derived from `Platform.android.js`; `isTV` false; `select` checks `windows`, `native`, `default` (`RNW@vnext/src-win/Libraries/Utilities/Platform.windows.js:13-74`, `overrides.json:671-676`) | `'macos'`, in-tree `Platform.macos.js` | `'tizen'`; `isTV` true; `select` checks `tizen`, `android`, `native`, `default` (`react-native-overrides/Libraries/Utilities/select-for-tizen.ts`), and so does Expo's build-time inlining once `withTizen` wraps the Babel transformer (`src/metro/tizen-platform-select.ts`) |
+| Declared in | `react-native.config.js` `platforms.windows.npmPackageName: 'react-native-windows'` (`RNW@vnext/react-native.config.js:34-41`) | same, `platforms.macos` and `visionos` (`react-native-macos .../react-native.config.js:178-216`) | `withWebOS` in the app's `metro.config.js` (`src/metro/with-webos.ts:80-107`) |
+| Redirect | CLI's `reactNativePlatformResolver` rewrites `react-native` and `react-native/x` to the package for that platform; `resolver.platforms` gets the platform; `<pkg>/setup-env` runs before main (`facebook/react-native packages/community-cli-plugin/src/utils/metroPlatformResolver.js:27-48`, `loadMetroConfig.js:38-73`) | same | `.webos.*` wins, else resolve as `android` and swap files present in `react-native-overrides/` (`with-webos.ts:86-97`) |
+| `Platform.OS` | `'windows'`, in `Platform.windows.js` derived from `Platform.android.js`; `isTV` false; `select` checks `windows`, `native`, `default` (`RNW@vnext/src-win/Libraries/Utilities/Platform.windows.js:13-74`, `overrides.json:671-676`) | `'macos'`, in-tree `Platform.macos.js` | `'webos'`; `isTV` true; `select` checks `webos`, `android`, `native`, `default` (`react-native-overrides/Libraries/Utilities/select-for-webos.ts`), and so does Expo's build-time inlining once `withWebOS` wraps the Babel transformer (`src/metro/webos-platform-select.ts`) |
 | Platform files | 124 overrides of four kinds: platform, derived, patch, copy, managed by `react-native-platform-override` (`RNW@vnext/overrides.json`, `RNW@packages/react-native-platform-override/README.md:40-91`) | `*.macos.js` beside upstream files | four derived overrides (`Platform`, `Alert`, the ScrollView and Image view configs) and a native module wherever the iOS branch works with one |
 
 The CLI docs define `npmPackageName` as the package that "should provide a
@@ -457,10 +457,10 @@ https://reactnative.dev/docs/out-of-tree-platforms). RN 0.89 nightlies no longer
 ship a `react-native.config.js`, so RNW re-exports the community `bundle` and
 `start` commands itself (doc: `RNW@vnext/react-native.config.js:10-16`).
 
-### The cost of "Android files, Tizen OS"
+### The cost of "Android files, webOS OS"
 
 Files resolve as Android, but runtime checks compare `Platform.OS` with
-`'android'` or `'ios'`, and `'tizen'` fails both. In RN's JS, 30 files test
+`'android'` or `'ios'`, and `'webos'` fails both. In RN's JS, 30 files test
 `'android'` and 36 test `'ios'` (doc: a grep of `RN/Libraries` and
 `RN/src/private`, tests excluded). RNW avoids this by owning a copy of every file
 whose branch matters.
@@ -472,26 +472,26 @@ In a production bundle, `babel-preset-expo` also replaces every static
 `.../build/plugins/minify-platform-select-plugin.js:53-66`). Expo's transform
 worker skips Metro's own inline pass (doc:
 `node_modules/.bun/@expo+metro-config@58.0.15+4264611429502de5/node_modules/@expo/metro-config/build/transform-worker/metro-transform-worker.js:304`).
-For Tizen that picked `default` over `android` until `withTizen` renamed the
+For webOS that picked `default` over `android` until `withWebOS` renamed the
 `android` entry (verified in simulator: `Platform.select({ios, android, default})`
 answered `default`, then `android`).
 
-What each file does on `tizen` and what this package does about it (a read of
+What each file does on `webos` and what this package does about it (a read of
 every file in `RN/Libraries` and `RN/src/private` that compares `Platform.OS`
-with `'android'` or `'ios'`; Tizen loads `ProgressBarAndroid.android.js`, the
+with `'android'` or `'ios'`; webOS loads `ProgressBarAndroid.android.js`, the
 only one with an Android twin):
 
-| File | Branch on `tizen` | Effect before | Now |
+| File | Branch on `webos` | Effect before | Now |
 |------|-------------------|---------------|-----|
 | `Linking/Linking.js:26,51-93` | the iOS one | `getInitialURL` throws from `nullthrows` | `LinkingManager` answers; verified in simulator: `getInitialURL` resolves `null`, an `open-url` arrives as `url` |
-| `Alert/Alert.js:100-110` | neither | `Alert.alert` does nothing | `Alert.tizen.ts` takes the Android path; `DialogManagerAndroid` draws a native dialog the remote drives; verified in simulator (each button, Back on a cancelable alert) |
+| `Alert/Alert.js:100-110` | neither | `Alert.alert` does nothing | `Alert.webos.ts` takes the Android path; `DialogManagerAndroid` draws a native dialog the remote drives; verified in simulator (each button, Back on a cancelable alert) |
 | `Components/StatusBar/StatusBar.js:15-16` | neither, but imports both specs | the import throws without `StatusBarManager` | `StatusBarManager` answers; verified in simulator |
 | `Vibration/Vibration.js:14` | `isTV` guards | the import throws without `Vibration` | `Vibration` answers, doing nothing; verified in simulator |
 | `Components/AccessibilityInfo/AccessibilityInfo.js:50-501` | the iOS one | every query rejects | `AccessibilityManager` answers every setting off; verified in simulator (`isReduceMotionEnabled` resolves false) |
-| `Components/ScrollView/ScrollViewNativeComponent.js:21` | the iOS one | the iOS view config drops `horizontal`, `scrollsChildToFocus`, `isInvertedVirtualizedList`, `removeClippedSubviews`... | `ScrollViewNativeComponent.tizen.ts`, Android's config |
-| `Image/ImageViewNativeComponent.js:60` | the iOS one | `Image.android.js` runs with the iOS config: `src`, `headers`, `shouldNotifyLoadEvents` dropped, a `defaultSource` URI resolved to null | `ImageViewNativeComponent.tizen.ts`, Android's config |
+| `Components/ScrollView/ScrollViewNativeComponent.js:21` | the iOS one | the iOS view config drops `horizontal`, `scrollsChildToFocus`, `isInvertedVirtualizedList`, `removeClippedSubviews`... | `ScrollViewNativeComponent.webos.ts`, Android's config |
+| `Image/ImageViewNativeComponent.js:60` | the iOS one | `Image.android.js` runs with the iOS config: `src`, `headers`, `shouldNotifyLoadEvents` dropped, a `defaultSource` URI resolved to null | `ImageViewNativeComponent.webos.ts`, Android's config |
 | `Share/Share.js:98-120` | neither | rejects "Unsupported platform" | unchanged: safer than Android's path |
-| `Components/TextInput/TextInput.js:75,625,953`, `TextInputState.js:105,136` | neither | renders nothing, no focus | `src/metro/tizen-android-branch.ts` reads `Platform.OS` as `android` in both files; `AndroidTextInput` is a host component (`text-input.md`); verified in simulator |
+| `Components/TextInput/TextInput.js:75,625,953`, `TextInputState.js:105,136` | neither | renders nothing, no focus | `src/metro/webos-android-branch.ts` reads `Platform.OS` as `android` in both files; `AndroidTextInput` is a host component (`text-input.md`); verified in simulator |
 | `Utilities/DevSettings.js:14` | any | a `__DEV__` bundle throws without the module | the development runtime serves `DevSettings` ([react-native-dev-tooling.md](react-native-dev-tooling.md)) |
 | `WebSocket/WebSocket.js:30` | any | the first `WebSocket` throws without the module | `WebSocketModule` answers; verified in simulator |
 | `Lists/FlatList.js:166`, `Components/ScrollView/ScrollView.js:1873,1883` | the iOS one | `removeClippedSubviews` off by default; `snapToAlignment` children flattened | open, low |
@@ -500,7 +500,7 @@ only one with an Android twin):
 
 ## 7. Third-party native libraries and codegen
 
-What `rn-tizen` relies on to build a library's native code
+What `rn-webos` relies on to build a library's native code
 ([`../native-modules.md`](../native-modules.md)).
 
 | Fact | Source |
@@ -511,11 +511,11 @@ What `rn-tizen` relies on to build a library's native code
 | A component declared `interfaceOnly` gets props and events but no shadow node, state or descriptor: the library writes those in its own C++ | doc: `CG/generators/components/GenerateShadowNodeH.js:72`, `GenerateComponentDescriptorH.js:58`, `GenerateStateH.js:49` |
 | `excludedPlatforms` filters only the Objective-C++ and Java generators; the C++ generators write every component | doc: `CG/generators/components/GenerateComponentHObjCpp.js:289`, `GeneratePropsJavaDelegate.js:233` |
 | Android links a library's descriptors through `react-native.config.js` (`dependency.platforms.android.componentDescriptors`, `cmakeListsPath`); react-native-svg's C++ is `common/cpp`, compiled with the codegen output | doc: `SVG/react-native.config.js`, `SVG/android/src/main/jni/CMakeLists.txt:10-29` |
-| react-native-svg renders `RNSVGSvgViewAndroid` only when `Platform.OS === 'android'`: on `tizen` it renders `RNSVGSvgView`, so both need a native view | doc: `SVG/src/elements/Svg.tsx:190` |
+| react-native-svg renders `RNSVGSvgViewAndroid` only when `Platform.OS === 'android'`: on `webos` it renders `RNSVGSvgView`, so both need a native view | doc: `SVG/src/elements/Svg.tsx:190` |
 | react-native-svg sends a brush as `{type, payload}` (0 a processed color, 1 a `url(#id)` reference, 2 `currentColor`), `null` for `none`, and black when a renderable sets no fill; `propList` names the presentation props a node sets, which its children inherit | doc: `SVG/src/lib/extract/extractBrush.ts`, `SVG/src/lib/extract/extractFill.ts`, `SVG/src/lib/extract/extractProps.ts:89-95`, `SVG/apple/RNSVGRenderable.mm:727-750` |
 | Expo's autolinking walks `dependencies` and non-optional `peerDependencies` at every depth (up to 9), and `devDependencies` of the app only | doc: `EAL/dependencies/resolution.ts:17-72` |
 
-## Implications for react-native-tizen
+## Implications for react-native-webos
 
 ### Gaps, in priority order
 
@@ -523,7 +523,7 @@ What `rn-tizen` relies on to build a library's native code
 |---|-----|----------------|------------------|
 | 1 | View commands and a scrolling ScrollView | KROMA's rails and lists scroll with `scrollTo` ([`packages/ui/src/components/organisms/virtual/virtual-rail/virtual-rail.tsx:145,173`](https://github.com/kromatv/kroma/blob/1d270635adcc9f3a81283e04f06336845d8c5985/packages/ui/src/components/organisms/virtual/virtual-rail/virtual-rail.tsx#L145), [`packages/ui/src/components/organisms/command/use-cursor-scroll.ts:22`](https://github.com/kromatv/kroma/blob/1d270635adcc9f3a81283e04f06336845d8c5985/packages/ui/src/components/organisms/command/use-cursor-scroll.ts#L22)). Fixed: commands reach their view after the commit that mounted it, and `host/views/ScrollView.cpp` applies the offset, writes `ScrollViewState` and emits `onScroll` and `onMomentumScrollEnd`; verified in simulator (`efl-rendering.md`, ScrollView). | Section 2 Commands, State, Events: apply the offset, write `ScrollViewState`, emit `onScroll` with the `ScrollEvent` payload. |
 | 2 | Native animated driver | KROMA asks for `useNativeDriver: true` ([`packages/ui/src/components/organisms/toast/toast-card.tsx:30`](https://github.com/kromatv/kroma/blob/1d270635adcc9f3a81283e04f06336845d8c5985/packages/ui/src/components/organisms/toast/toast-card.tsx#L30), [`packages/ui/src/lib/splash-motion.ts:41`](https://github.com/kromatv/kroma/blob/1d270635adcc9f3a81283e04f06336845d8c5985/packages/ui/src/lib/splash-motion.ts#L41), [`packages/ui/src/lib/native-film.tsx:78`](https://github.com/kromatv/kroma/blob/1d270635adcc9f3a81283e04f06336845d8c5985/packages/ui/src/lib/native-film.tsx#L78)) and got JS animation plus a warning. Fixed: React Native's C++ driver runs on an Ecore animator and moves mounted views without JavaScript (section 5); verified in simulator. | Section 5. |
-| 2 | Dev loop | Fixed: `rn-tizen run --dev-server` writes `bundleUrl`, and the development runtime serves DevSettings, LogBox and DevLoadingView, calls `HMRClient.setup('tizen', ...)` and keeps the `/message` socket; verified in simulator and on the TV ([react-native-dev-tooling.md](react-native-dev-tooling.md)). | Section 1 Dev server. |
+| 2 | Dev loop | Fixed: `rn-webos run --dev-server` writes `bundleUrl`, and the development runtime serves DevSettings, LogBox and DevLoadingView, calls `HMRClient.setup('webos', ...)` and keeps the `/message` socket; verified in simulator and on the TV ([react-native-dev-tooling.md](react-native-dev-tooling.md)). | Section 1 Dev server. |
 | 3 | `reportMount` | No IntersectionObserver, MutationObserver or event timing. | Section 2 Scheduler delegate. |
 | 3 | WebSocketModule; then Blob and FileReader | HMR and app sockets; Blob changes `fetch` (section 3). Fixed: the host serves all three, so the `setUpXHR` override that hid `WebSocket` is gone; verified in simulator (section 3, WebSocket and Blob). | Section 3. |
 | 3 | `onTextLayout` | `TextLayoutManager` has no `measureLines`. | Section 2 Events. |
@@ -543,8 +543,8 @@ What `rn-tizen` relies on to build a library's native code
 | 8 | `host/fabric/SurfacePresenter.cpp:92-111` | `schedulerDidDispatchCommand` and `schedulerShouldSynchronouslyUpdateViewOnUIThread` are empty: every command and every native-driven prop update is dropped silently. Fixed for commands: they run on the main thread once the commit their view came with is mounted (gap P1). `schedulerShouldSynchronouslyUpdateViewOnUIThread` applies the native animated driver's props to the mounted view (section 5). | doc: section 2 | fixed |
 | 9 | `host/mounting/MountingManager.cpp:36-42` | No `reportMount` after a transaction, and no telemetry hooks. | doc: `RCTSurfacePresenter.mm:478-485` | low |
 | 10 | `host/views/ComponentView.cpp:103-110` | `displayType`, `borderWidth`, `layoutDirection` and transforms are ignored, and no view ever uses its event emitter (no focus, blur, press or scroll events). `display: none` stays invisible only because Yoga zeroes the subtree (`RN/ReactCommon/yoga/yoga/algorithm/CalculateLayout.cpp:666-674`). Rendering detail belongs in `efl-rendering.md`. | doc: section 2 Layout metrics | medium |
-| 11 | `host/ReactHostWindow.cpp:54-56` | `onHWKeyEvent` carries `eventKeyAction: 0` on key down only and no `tag`; `host/input/RemoteInput.cpp:13` listens to `ECORE_EVENT_KEY_DOWN` alone. Neither Android's two-event shape nor tvOS's single `1`. Fixed in favour of tvOS's shape (`docs/decisions.md`): one event with `1` at release, `long<Type>` `0` then `1`; see `tizen-input.md`, section 12. `tag` is still missing. | doc: section 4 | fixed |
-| 12 | `host/ReactHost.cpp:107-109` | A URL from `app_control` is emitted as a `url` event; before JS subscribes (the buffer flushes right after the bundle, before `runApplication`) it is lost, and there is no `getInitialURL` to recover it. Fixed: the shell passes the first app control's URI to `rn_tizen_host_set_initial_url`, which `LinkingManager.getInitialURL` answers; later ones arrive as `url`. | doc: `ReactInstance.cpp:331-334`, `Linking.js:90-93` | fixed |
+| 11 | `host/ReactHostWindow.cpp:54-56` | `onHWKeyEvent` carries `eventKeyAction: 0` on key down only and no `tag`; `host/input/RemoteInput.cpp:13` listens to `ECORE_EVENT_KEY_DOWN` alone. Neither Android's two-event shape nor tvOS's single `1`. Fixed in favour of tvOS's shape (`docs/decisions.md`): one event with `1` at release, `long<Type>` `0` then `1`; see `webos-input.md`, section 12. `tag` is still missing. | doc: section 4 | fixed |
+| 12 | `host/ReactHost.cpp:107-109` | A URL from `app_control` is emitted as a `url` event; before JS subscribes (the buffer flushes right after the bundle, before `runApplication`) it is lost, and there is no `getInitialURL` to recover it. Fixed: the shell passes the first app control's URI to `rn_webos_host_set_initial_url`, which `LinkingManager.getInitialURL` answers; later ones arrive as `url`. | doc: `ReactInstance.cpp:331-334`, `Linking.js:90-93` | fixed |
 | 13 | `host/modules/NetworkingModule.cpp` | A `formData` or `uri` body is sent as no body instead of failing the request (a `blob` body is sent since `BlobModule` exists). Fixed: both are built as on Android (section 3, Networking), verified in simulator. A POST with no body goes out through `CURLOPT_CUSTOMREQUEST` without `POSTFIELDS` (`host/network/HttpEngine.cpp:127-133`), so curl sends no `Content-Length`. | inf: libcurl semantics, not tested | low |
 | 14 | `host/network/HttpEngine.cpp:159-161` | The body is delivered once, after the transfer ends: incremental XHR (`onprogress`, streaming responses) sees nothing until completion. | doc: `XMLHttpRequest.js:570-571` | low |
 | 15 | `host/HostFeatureFlags.cpp:13-25` with `host/fabric/SurfacePresenter.cpp:37` | OSS Stable turns on native view configs, but the binding they need is never installed (gap P3), and the `Scheduler` gets no animation delegate, so `LayoutAnimation` is a no-op. | doc: `RI/RCTInstance.mm:457-459`, `RA/runtime/ReactInstance.kt:219-224` | low |

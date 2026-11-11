@@ -4,7 +4,7 @@
 #include <utility>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -82,4 +82,4 @@ bool KeyboardFocus::handleKey(const Ecore_Event_Key &key, bool isDown) {
   return used || held;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

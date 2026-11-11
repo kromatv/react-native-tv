@@ -13,11 +13,11 @@
 #include <string>
 #include <string_view>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
-constexpr const char *kIcuDataDirectory = RN_TIZEN_TEST_ICU_DATA_DIR;
+constexpr const char *kIcuDataDirectory = RN_WEBOS_TEST_ICU_DATA_DIR;
 
 class FreshIcu {
  public:
@@ -48,7 +48,7 @@ TEST_CASE_FIXTURE(FreshIcu, "useIcuData leaves ICU alone when the package has no
   const std::string locale = uloc_getDefault();
   const std::string dataDirectory = u_getDataDirectory();
 
-  useIcuData("/nonexistent/rn-tizen-icu");
+  useIcuData("/nonexistent/rn-webos-icu");
 
   CHECK(locale == uloc_getDefault());
   CHECK(dataDirectory == u_getDataDirectory());
@@ -73,4 +73,4 @@ TEST_CASE_FIXTURE(FreshIcu, "useIcuData picks a shipped locale when the package 
   CHECK(isShipped(fallback));
 }
 
-} // namespace rntizen
+} // namespace rnwebos

@@ -1,4 +1,4 @@
-import { Voice } from '@kromatv/react-native-tizen/voice';
+import { Voice } from '@kromatv/react-native-webos/voice';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useEffect, useState } from 'react';
 import {

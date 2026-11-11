@@ -5,7 +5,7 @@
 #include <filesystem>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// Writes one static font per weight, 100 to 900 in steps of 100, that a
 /// variable font's `wght` axis covers, into `directory` as
@@ -23,4 +23,4 @@ std::vector<std::filesystem::path> writeWeightInstances(
 std::vector<std::filesystem::path> writeWeightInstances(
     const HarfBuzzSubset &hb, const std::filesystem::path &font, const std::filesystem::path &directory);
 
-} // namespace rntizen
+} // namespace rnwebos

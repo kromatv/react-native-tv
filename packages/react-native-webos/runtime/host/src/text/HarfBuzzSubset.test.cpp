@@ -2,13 +2,13 @@
 
 #include <doctest/doctest.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
 constexpr const char *kCore = "libharfbuzz.so.0";
 constexpr const char *kSubset = "libharfbuzz-subset.so.0";
-constexpr const char *kMissing = "librn-tizen-missing.so.0";
+constexpr const char *kMissing = "librn-webos-missing.so.0";
 
 } // namespace
 
@@ -35,4 +35,4 @@ TEST_CASE("hbTag packs four characters big-endian, as HB_TAG does") {
   CHECK(hbTag('w', 'g', 'h', 't') == 0x77676874U);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

@@ -10,7 +10,7 @@
 #include <thread>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -161,4 +161,4 @@ TEST_CASE("mainThreadWaitTime adds up how long workers waited while measured") {
   CHECK(mainThreadWaitTime() - before >= 10ms);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

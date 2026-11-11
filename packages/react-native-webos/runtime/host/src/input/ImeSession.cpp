@@ -13,7 +13,7 @@
 #include <string_view>
 #include <utility>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -209,4 +209,4 @@ void ImeSession::onPanelState(void *self, Ecore_IMF_Context *, int state) {
   }
 }
 
-} // namespace rntizen
+} // namespace rnwebos

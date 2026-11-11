@@ -10,7 +10,7 @@
 #include <string_view>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -177,4 +177,4 @@ TEST_CASE("KeyboardFocus keeps a repeat the field refuses from the remote when t
   CHECK(field.keys == std::vector<std::string>{"down Left", "repeat Left", "up Left"});
 }
 
-} // namespace rntizen
+} // namespace rnwebos

@@ -1,4 +1,4 @@
-import { SmartHubPreview, type PreviewSection } from '@kromatv/react-native-tizen/preview';
+import { SmartHubPreview, type PreviewSection } from '@kromatv/react-native-webos/preview';
 import { useEffect, useState } from 'react';
 import { Linking, View, useTVEventHandler } from 'react-native';
 import { EventLog, Fact, useEventLog } from './event-log.tsx';
@@ -12,17 +12,17 @@ const SAMPLE: readonly PreviewSection[] = [
       {
         title: 'Big Buck Bunny',
         subtitle: '4 min left',
-        image: poster('rntizen-1'),
+        image: poster('rnwebos-1'),
         ratio: '16:9',
-        url: 'rntizen-example://tile/1',
+        url: 'rnwebos-example://tile/1',
         playable: true,
       },
       {
         title: 'Sintel',
         subtitle: '12 min left',
-        image: poster('rntizen-2'),
+        image: poster('rnwebos-2'),
         ratio: '16:9',
-        url: 'rntizen-example://tile/2',
+        url: 'rnwebos-example://tile/2',
         playable: true,
       },
     ],
@@ -32,15 +32,15 @@ const SAMPLE: readonly PreviewSection[] = [
     tiles: [
       {
         title: 'Tears of Steel',
-        image: poster('rntizen-3'),
+        image: poster('rnwebos-3'),
         ratio: '16:9',
-        url: 'rntizen-example://tile/3',
+        url: 'rnwebos-example://tile/3',
       },
       {
         title: 'Elephants Dream',
-        image: poster('rntizen-4'),
+        image: poster('rnwebos-4'),
         ratio: '16:9',
-        url: 'rntizen-example://tile/4',
+        url: 'rnwebos-example://tile/4',
       },
     ],
   },

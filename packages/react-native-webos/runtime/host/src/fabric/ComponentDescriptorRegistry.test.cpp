@@ -11,7 +11,7 @@
 
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 TEST_CASE("hasComponent knows a registered component by its React name too") {
   registerComponentDescriptor(
@@ -33,4 +33,4 @@ TEST_CASE("the registry answers a component no descriptor knows with a plain vie
   CHECK(testing::laidOutSize(node) == kBox);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

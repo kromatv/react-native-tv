@@ -4,7 +4,7 @@
 
 #include <react/renderer/imagemanager/primitives.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// Where an image is drawn inside its view: the image object's geometry and
 /// its fill, the rectangle one copy of the image covers relative to that
@@ -23,4 +23,4 @@ ImagePlacement placeImage(
     int imageHeight,
     float naturalScale);
 
-} // namespace rntizen
+} // namespace rnwebos

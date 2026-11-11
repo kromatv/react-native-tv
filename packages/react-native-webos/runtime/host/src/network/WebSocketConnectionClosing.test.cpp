@@ -10,7 +10,7 @@
 #include <thread>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -188,4 +188,4 @@ TEST_CASE("a connection finishes a message the socket cannot take at once before
   CHECK(received == kLargeMessage + kLargeFrameHeader + kCloseFrame);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

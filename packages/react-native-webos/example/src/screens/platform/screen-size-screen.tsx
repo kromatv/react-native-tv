@@ -2,24 +2,24 @@ import { requireOptionalNativeModule } from 'expo';
 import { PixelRatio, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Fact } from './event-log.tsx';
 
-interface ExpoTizenModule {
+interface ExpoWebOSModule {
   getScreenSize(): { readonly width: number; readonly height: number };
 }
 
-const expoTizen = requireOptionalNativeModule<ExpoTizenModule>('ExpoTizen');
+const expoWebOS = requireOptionalNativeModule<ExpoWebOSModule>('ExpoWebOS');
 
 const SIZES = [12, 16, 20, 28] as const;
 
 export function ScreenSizeScreen() {
   const window = useWindowDimensions();
-  const screen = expoTizen?.getScreenSize();
+  const screen = expoWebOS?.getScreenSize();
   return (
     <View>
       <Fact label="Window, in points" value={`${window.width}x${window.height}`} />
       <Fact label="PixelRatio" value={String(PixelRatio.get())} />
       <Fact
         label="Window, in pixels"
-        value={screen ? `${screen.width}x${screen.height}` : 'no ExpoTizen module'}
+        value={screen ? `${screen.width}x${screen.height}` : 'no ExpoWebOS module'}
       />
       <View style={styles.lines}>
         {[1, 0.5, StyleSheet.hairlineWidth].map((width) => (

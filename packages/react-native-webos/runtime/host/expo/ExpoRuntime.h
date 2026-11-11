@@ -4,7 +4,7 @@
 
 #include <memory>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 class Context;
 
@@ -19,4 +19,4 @@ void installExpoRuntime(facebook::jsi::Runtime &runtime);
 /// when it is already installed.
 void installExpoGlobals(facebook::jsi::Runtime &runtime, std::shared_ptr<Context> context);
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

@@ -9,7 +9,7 @@
 #include <memory>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// An `<Image>`: a remote (`http`, `https`), `data:` or file source, decoded
 /// by Evas in the background while the image object stays hidden, then shown
@@ -53,4 +53,4 @@ class ImageView final : public ComponentView {
   bool loaded_{false};
 };
 
-} // namespace rntizen
+} // namespace rnwebos

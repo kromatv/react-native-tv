@@ -3,7 +3,7 @@
 #include "../mounting/ComponentViewRegistry.h"
 #include "RenderSync.h"
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -84,6 +84,6 @@ class MaskedView final : public ComponentView {
 
 } // namespace
 
-RN_TIZEN_COMPONENT_VIEW("RNCMaskedView", MaskedView);
+RN_WEBOS_COMPONENT_VIEW("RNCMaskedView", MaskedView);
 
-} // namespace rntizen
+} // namespace rnwebos

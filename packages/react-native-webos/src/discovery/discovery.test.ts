@@ -47,7 +47,7 @@ describe('upnp', () => {
 describe('parseApiDevice', () => {
   it('reads a TV in Developer mode and the host PC it names', () => {
     const device = {
-      OS: 'Tizen',
+      OS: 'webOS',
       name: '75&quot; The Frame',
       model: '24_PTM_FTV_T09',
       modelName: 'GQ75LS03DAUXZG',
@@ -65,7 +65,7 @@ describe('parseApiDevice', () => {
 
   it('leaves out a soundbar, which answers the same API', () => {
     const device = {
-      OS: 'Tizen',
+      OS: 'webOS',
       name: 'Soundbar',
       model: '25_MT8532_AISPK',
       ModelNumber: 'HW-QS700F',
@@ -76,7 +76,7 @@ describe('parseApiDevice', () => {
   });
 
   it('reads no host PC from an empty or zero address', () => {
-    const device = { OS: 'Tizen', developerMode: '0', developerIP: '0.0.0.0' };
+    const device = { OS: 'webOS', developerMode: '0', developerIP: '0.0.0.0' };
 
     expect(parseApiDevice({ device })?.developerIp).toBeNull();
   });

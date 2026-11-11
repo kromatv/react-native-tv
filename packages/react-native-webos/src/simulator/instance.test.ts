@@ -35,19 +35,19 @@ describe('simulatorInstance', () => {
 
 describe('chooseInstance', () => {
   it('prefers the flag over the environment', () => {
-    const env = { RN_TIZEN_SIMULATOR_INSTANCE: 'from-env' };
+    const env = { RN_WEBOS_SIMULATOR_INSTANCE: 'from-env' };
 
     expect(chooseInstance('from-flag', env).name).toBe('from-flag');
   });
 
   it('reads the environment when there is no flag', () => {
-    expect(chooseInstance(undefined, { RN_TIZEN_SIMULATOR_INSTANCE: 'agent-a' }).name).toBe(
+    expect(chooseInstance(undefined, { RN_WEBOS_SIMULATOR_INSTANCE: 'agent-a' }).name).toBe(
       'agent-a',
     );
   });
 
   it('falls back to the default instance', () => {
-    expect(chooseInstance(undefined, { RN_TIZEN_SIMULATOR_INSTANCE: '' }).name).toBe('default');
+    expect(chooseInstance(undefined, { RN_WEBOS_SIMULATOR_INSTANCE: '' }).name).toBe('default');
   });
 
   it('rejects a name that cannot be a directory', () => {
@@ -55,20 +55,20 @@ describe('chooseInstance', () => {
   });
 
   it('names the environment variable when its value is wrong', () => {
-    expect(() => chooseInstance(undefined, { RN_TIZEN_SIMULATOR_INSTANCE: 'Agent A' })).toThrow(
-      /RN_TIZEN_SIMULATOR_INSTANCE must be/,
+    expect(() => chooseInstance(undefined, { RN_WEBOS_SIMULATOR_INSTANCE: 'Agent A' })).toThrow(
+      /RN_WEBOS_SIMULATOR_INSTANCE must be/,
     );
   });
 });
 
 describe('simulatorCommandLine', () => {
   it('leaves the default instance out', () => {
-    expect(simulatorCommandLine('crash', 'default')).toBe('rn-tizen simulator crash');
+    expect(simulatorCommandLine('crash', 'default')).toBe('rn-webos simulator crash');
   });
 
   it('names any other instance', () => {
     expect(simulatorCommandLine('crash', 'agent-a')).toBe(
-      'rn-tizen simulator crash --instance agent-a',
+      'rn-webos simulator crash --instance agent-a',
     );
   });
 });

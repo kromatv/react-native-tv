@@ -2,7 +2,7 @@
 
 #include <memory>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// A player the TV can drive without JavaScript: Samsung's voice commands, and
 /// the app leaving the foreground. Every method may be called from any thread.
@@ -38,4 +38,4 @@ std::shared_ptr<MediaSession> currentMediaSession();
 /// app play while hidden.
 void pauseMediaSessionsForBackground(bool mediaCategoryDeclared);
 
-} // namespace rntizen
+} // namespace rnwebos

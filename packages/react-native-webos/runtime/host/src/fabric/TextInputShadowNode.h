@@ -10,15 +10,15 @@
 
 #include <memory>
 
-namespace rntizen {
+namespace rnwebos {
 
 extern const char TextInputComponentName[];
 
-/// React Native's `AndroidTextInput` on Tizen, with
+/// React Native's `AndroidTextInput` on webOS, with
 /// `AndroidTextInputShadowNode`'s layout and state rules, measured by the
 /// host's text measurer. ReactCommon's own node cannot build here: it asks the
 /// TextLayoutManager for Java's cached spannables and for line measurements,
-/// which Tizen's does not have. Its events go out with Android's names and
+/// which webOS's does not have. Its events go out with Android's names and
 /// payloads, straight through the view's event emitter, as Java sends them.
 class TextInputShadowNode final : public facebook::react::ConcreteViewShadowNode<
                                       TextInputComponentName,
@@ -47,4 +47,4 @@ class TextInputShadowNode final : public facebook::react::ConcreteViewShadowNode
   std::shared_ptr<const facebook::react::TextLayoutManager> textLayoutManager_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

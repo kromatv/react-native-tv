@@ -14,7 +14,7 @@
 #include <utility>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// One HTTP request as JavaScript's XMLHttpRequest describes it.
 struct HttpRequest {
@@ -68,4 +68,4 @@ class HttpEngine final {
   std::jthread thread_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

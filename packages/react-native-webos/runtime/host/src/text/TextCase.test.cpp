@@ -2,7 +2,7 @@
 
 #include <doctest/doctest.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 using facebook::react::TextTransform;
 
@@ -36,4 +36,4 @@ TEST_CASE("transformedText replaces a malformed sequence and keeps the text afte
   CHECK(transformedText("a\xC3" "b", TextTransform::Uppercase) == "A\xEF\xBF\xBD" "B");
 }
 
-} // namespace rntizen
+} // namespace rnwebos

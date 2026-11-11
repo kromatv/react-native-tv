@@ -10,7 +10,7 @@
 #include <future>
 #include <memory>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -135,4 +135,4 @@ void TaskQueueThread::run() {
   dropped.swap(tasks_);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

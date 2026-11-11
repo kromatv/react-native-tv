@@ -14,7 +14,7 @@ afterEach(() => {
 describe('writeAppConfig', () => {
   it("writes the app's public Expo config where expo-constants reads it", async () => {
     const app = appDir({ name: 'Config', slug: 'config', extra: { api: 'https://example.org' } });
-    const res = mkdtempSync(join(tmpdir(), 'rn-tizen-res-'));
+    const res = mkdtempSync(join(tmpdir(), 'rn-webos-res-'));
     dirs.push(app, res);
 
     await writeAppConfig(app, res);

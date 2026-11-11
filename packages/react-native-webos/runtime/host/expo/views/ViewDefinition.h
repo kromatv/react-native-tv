@@ -9,12 +9,12 @@
 #include <initializer_list>
 #include <string>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 /// Describes an Expo view, `View`, an ExpoView constructed from (Evas *, Tag),
 /// in the shape of Expo's `View` DSL:
 ///
-///   RN_TIZEN_EXPO_VIEW(ViewDefinition<ImageView>("ExpoImage")
+///   RN_WEBOS_EXPO_VIEW(ViewDefinition<ImageView>("ExpoImage")
 ///                          .prop("source", &ImageView::setSource)
 ///                          .events({"onLoad", "onError"}));
 template <typename View>
@@ -57,8 +57,8 @@ class ViewDefinition {
   ExpoViewType type_;
 };
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo
 
 /// Registers an Expo view from a ViewDefinition when the library loads.
-#define RN_TIZEN_EXPO_VIEW(definition) \
-  RN_TIZEN_REGISTRATION(::rntizen::expo::registerExpoView(static_cast<::rntizen::expo::ExpoViewType>(definition)))
+#define RN_WEBOS_EXPO_VIEW(definition) \
+  RN_WEBOS_REGISTRATION(::rnwebos::expo::registerExpoView(static_cast<::rnwebos::expo::ExpoViewType>(definition)))

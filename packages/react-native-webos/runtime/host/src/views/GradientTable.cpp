@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <utility>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -54,4 +54,4 @@ std::uint32_t GradientTable::at(float t) const {
   return pixels_[static_cast<std::size_t>(std::clamp(index, 0L, static_cast<long>(pixels_.size()) - 1))];
 }
 
-} // namespace rntizen
+} // namespace rnwebos

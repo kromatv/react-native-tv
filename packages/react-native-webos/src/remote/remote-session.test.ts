@@ -41,7 +41,7 @@ function fakeTv(buffered: number[] = []): FakeTv {
 const options = { host: '192.168.1.50', timeoutMs: 1000, keyIntervalMs: 0 };
 
 describe('remoteUrl', () => {
-  it('names the client rn-tizen in base64 and adds the token when there is one', () => {
+  it('names the client rn-webos in base64 and adds the token when there is one', () => {
     expect(remoteUrl('192.168.1.50', null)).toBe(
       'wss://192.168.1.50:8002/api/v2/channels/samsung.remote.control?name=cm4tdGl6ZW4=',
     );
@@ -85,14 +85,14 @@ describe('openRemote', () => {
     expect((await opening).token).toBeNull();
   });
 
-  it('says where to allow rn-tizen when the TV refuses it, and closes', async () => {
+  it('says where to allow rn-webos when the TV refuses it, and closes', async () => {
     const tv = fakeTv();
 
     const opening = openRemote({ ...options, token: '1', open: tv.open });
     tv.answer({ event: 'ms.channel.unauthorized' });
 
     await expect(opening).rejects.toMatchObject({
-      message: 'The TV at 192.168.1.50 refused rn-tizen',
+      message: 'The TV at 192.168.1.50 refused rn-webos',
       hint: expect.stringContaining('Device Connection Manager'),
     });
     expect(tv.closed()).toBe(true);
@@ -114,7 +114,7 @@ describe('openRemote', () => {
 
     const opening = openRemote({ ...options, timeoutMs: 10, token: null, open: tv.open });
 
-    await expect(opening).rejects.toThrow('Nobody allowed rn-tizen on the TV within 0.01 s');
+    await expect(opening).rejects.toThrow('Nobody allowed rn-webos on the TV within 0.01 s');
   });
 
   it('reads past a message that is not JSON', async () => {

@@ -6,7 +6,7 @@
 #include "network/Digest.h"
 #include "network/HttpGet.h"
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -34,6 +34,6 @@ class ExpoAssetModule final : public Module {
 
 } // namespace
 
-RN_TIZEN_EXPO_MODULE(ExpoAsset, ExpoAssetModule);
+RN_WEBOS_EXPO_MODULE(ExpoAsset, ExpoAssetModule);
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

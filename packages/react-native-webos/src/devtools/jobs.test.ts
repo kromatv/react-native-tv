@@ -9,7 +9,7 @@ import { runJobFromArgv } from './run-job.ts';
 let dir = '';
 
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'rn-tizen-jobs-'));
+  dir = mkdtempSync(join(tmpdir(), 'rn-webos-jobs-'));
 });
 
 afterEach(() => {

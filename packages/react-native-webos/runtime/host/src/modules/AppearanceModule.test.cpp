@@ -4,7 +4,7 @@
 
 #include <doctest/doctest.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 using facebook::jsi::String;
 using testing::call;
@@ -24,4 +24,4 @@ TEST_CASE("Appearance starts dark and keeps only light or dark") {
   CHECK(call(rt, module, "removeListeners", 1).isUndefined());
 }
 
-} // namespace rntizen
+} // namespace rnwebos

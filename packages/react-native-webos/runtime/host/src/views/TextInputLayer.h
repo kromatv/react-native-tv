@@ -12,7 +12,7 @@
 #include <cstddef>
 #include <optional>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// What a text input draws inside its padding: its text, or its placeholder,
 /// in one Evas textblock built like a `<Text>`'s, the selection and the
@@ -76,4 +76,4 @@ class TextInputLayer final {
   bool caretLit_{true};
 };
 
-} // namespace rntizen
+} // namespace rnwebos

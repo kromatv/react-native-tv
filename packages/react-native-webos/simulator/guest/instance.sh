@@ -4,14 +4,14 @@
 # shellcheck source=SCRIPTDIR/env.sh
 source "$(dirname "${BASH_SOURCE[0]}")/env.sh"
 
-INSTANCE="${RN_TIZEN_SIMULATOR_INSTANCE:?set by rn-tizen simulator}"
+INSTANCE="${RN_WEBOS_SIMULATOR_INSTANCE:?set by rn-webos simulator}"
 if [[ ! "$INSTANCE" =~ $INSTANCE_NAME ]]; then
   echo "Not an instance name: $INSTANCE" >&2
   exit 2
 fi
-DISPLAY_NUMBER="${RN_TIZEN_SIMULATOR_DISPLAY:?set by rn-tizen simulator}"
-VIEWER_PORT="${RN_TIZEN_SIMULATOR_VIEWER_PORT:?set by rn-tizen simulator}"
-VNC_PORT="${RN_TIZEN_SIMULATOR_VNC_PORT:?set by rn-tizen simulator}"
+DISPLAY_NUMBER="${RN_WEBOS_SIMULATOR_DISPLAY:?set by rn-webos simulator}"
+VIEWER_PORT="${RN_WEBOS_SIMULATOR_VIEWER_PORT:?set by rn-webos simulator}"
+VNC_PORT="${RN_WEBOS_SIMULATOR_VNC_PORT:?set by rn-webos simulator}"
 INSTANCE_FLAG=""
 [[ "$INSTANCE" == default ]] || INSTANCE_FLAG=" --instance $INSTANCE"
 
@@ -32,16 +32,16 @@ VIEWER_WEB_DIR="$INSTANCE_DIR/viewer"
 export DISPLAY=":$DISPLAY_NUMBER"
 export ELM_DISPLAY=x11
 export ELM_ACCEL=none
-export RN_TIZEN_SIMULATOR_DATA_DIR="$INSTANCE_DIR/data"
-export RN_TIZEN_SIMULATOR_CACHE_DIR="$INSTANCE_DIR/cache"
-export RN_TIZEN_SIMULATOR_RESOURCE_DIR="$APP_DIR"
+export RN_WEBOS_SIMULATOR_DATA_DIR="$INSTANCE_DIR/data"
+export RN_WEBOS_SIMULATOR_CACHE_DIR="$INSTANCE_DIR/cache"
+export RN_WEBOS_SIMULATOR_RESOURCE_DIR="$APP_DIR"
 export EINA_LOG_BACKTRACE=-1
 
 mkdir -p "$INSTANCE_DIR"
 
 require_app() {
   if ! is_running "$APP_PID_FILE"; then
-    echo "No app is running in instance $INSTANCE: start one with \`rn-tizen simulator run$INSTANCE_FLAG\`." >&2
+    echo "No app is running in instance $INSTANCE: start one with \`rn-webos simulator run$INSTANCE_FLAG\`." >&2
     exit 1
   fi
 }

@@ -5,7 +5,7 @@
 
 #include "logging/Log.h"
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -37,6 +37,6 @@ class ExpoImageModule final : public Module {
 
 } // namespace
 
-RN_TIZEN_EXPO_MODULE(ExpoImage, ExpoImageModule);
+RN_WEBOS_EXPO_MODULE(ExpoImage, ExpoImageModule);
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

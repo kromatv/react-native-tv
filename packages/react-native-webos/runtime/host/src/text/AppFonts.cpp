@@ -13,7 +13,7 @@
 #include <system_error>
 #include <tuple>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace fs = std::filesystem;
 
@@ -104,4 +104,4 @@ std::optional<fs::path> trackedAppFont(const std::string &family, int weight, bo
   return state.tracked[key] = writeTracked(file->path, units);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

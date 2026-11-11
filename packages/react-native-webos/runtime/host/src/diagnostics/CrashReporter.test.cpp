@@ -15,7 +15,7 @@
 #include <utility>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -161,4 +161,4 @@ TEST_CASE("installCrashReporter reports a crash in native code, then hands every
   CHECK(outsideReports.empty());
 }
 
-} // namespace rntizen
+} // namespace rnwebos

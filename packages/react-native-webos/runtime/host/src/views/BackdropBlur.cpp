@@ -3,7 +3,7 @@
 #include "EvasFilter.h"
 #include "RenderSync.h"
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -56,4 +56,4 @@ void BackdropBlur::applyVisibility() {
   }
 }
 
-} // namespace rntizen
+} // namespace rnwebos

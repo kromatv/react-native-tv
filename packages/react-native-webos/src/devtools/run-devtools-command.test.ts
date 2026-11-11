@@ -4,12 +4,12 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { singleReactNativeIssue } from '../dependencies/react-native-copies.ts';
 import { FixableError } from '../errors.ts';
-import { tizenMetroIssue } from '../metro/metro-platforms.ts';
+import { webosMetroIssue } from '../metro/metro-platforms.ts';
 import { jobPageUrl } from './devtools-commands.ts';
 import { startJob, writeJob, type Job } from './jobs.ts';
 import { runDevtoolsCommand } from './run-devtools-command.ts';
 
-vi.mock('../metro/metro-platforms.ts', () => ({ tizenMetroIssue: vi.fn(() => null) }));
+vi.mock('../metro/metro-platforms.ts', () => ({ webosMetroIssue: vi.fn(() => null) }));
 vi.mock('../dependencies/react-native-copies.ts', () => ({
   singleReactNativeIssue: vi.fn(() => null),
 }));
@@ -32,7 +32,7 @@ const job = (id: string, kind: string): Job => ({
 });
 
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'rn-tizen-devtools-command-'));
+  dir = mkdtempSync(join(tmpdir(), 'rn-webos-devtools-command-'));
 });
 
 afterEach(() => {
@@ -78,11 +78,11 @@ describe('runDevtoolsCommand', () => {
     expect(lines[0]?.text).toContain(message);
   });
 
-  it('refuses to run the app when its Metro config has no withTizen, and says how to fix it', async () => {
-    vi.mocked(tizenMetroIssue).mockReturnValueOnce(
+  it('refuses to run the app when its Metro config has no withWebOS, and says how to fix it', async () => {
+    vi.mocked(webosMetroIssue).mockReturnValueOnce(
       new FixableError(
-        "The app's Metro config does not know the tizen platform",
-        'Run npx rn-tizen init',
+        "The app's Metro config does not know the webos platform",
+        'Run npx rn-webos init',
       ),
     );
 
@@ -91,15 +91,15 @@ describe('runDevtoolsCommand', () => {
 
     expect(exitCode).toBe(1);
     expect(lines[0]?.text).toBe(
-      "The app's Metro config does not know the tizen platform. Run npx rn-tizen init",
+      "The app's Metro config does not know the webos platform. Run npx rn-webos init",
     );
-    expect(tizenMetroIssue).toHaveBeenCalledOnce();
+    expect(webosMetroIssue).toHaveBeenCalledOnce();
     expect(startJob).toHaveBeenCalledOnce();
   });
 
   it('refuses to run an app that loads two react-natives, before reading its Metro config', async () => {
     vi.mocked(singleReactNativeIssue).mockReturnValueOnce(
-      new FixableError('The app loads 2 copies of react-native', 'Run npx rn-tizen init'),
+      new FixableError('The app loads 2 copies of react-native', 'Run npx rn-webos init'),
     );
 
     const { lines, exitCode } = await runDevtoolsCommand(
@@ -108,8 +108,8 @@ describe('runDevtoolsCommand', () => {
     );
 
     expect(exitCode).toBe(1);
-    expect(lines[0]?.text).toBe('The app loads 2 copies of react-native. Run npx rn-tizen init');
-    expect(tizenMetroIssue).not.toHaveBeenCalled();
+    expect(lines[0]?.text).toBe('The app loads 2 copies of react-native. Run npx rn-webos init');
+    expect(webosMetroIssue).not.toHaveBeenCalled();
     expect(startJob).not.toHaveBeenCalled();
   });
 
@@ -119,7 +119,7 @@ describe('runDevtoolsCommand', () => {
     vi.mocked(startJob).mockRejectedValueOnce('no reason');
     const second = await runDevtoolsCommand(['find-tvs', '{}', DEV_SERVER], dir);
 
-    expect(first.lines[0]?.text).toBe('rn-tizen could not start the command: disk full');
-    expect(second.lines[0]?.text).toBe('rn-tizen could not start the command: no reason');
+    expect(first.lines[0]?.text).toBe('rn-webos could not start the command: disk full');
+    expect(second.lines[0]?.text).toBe('rn-webos could not start the command: no reason');
   });
 });

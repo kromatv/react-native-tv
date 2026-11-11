@@ -12,7 +12,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -112,4 +112,4 @@ TEST_CASE("RuntimeState drops a collected object even when another runtime took 
   CHECK_FALSE(state.liveObject(runtime, id).has_value());
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -162,4 +162,4 @@ TEST_CASE("tapView cannot press a view that sends no touch events") {
   CHECK(screen.touches().empty());
 }
 
-} // namespace rntizen
+} // namespace rnwebos

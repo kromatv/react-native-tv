@@ -6,21 +6,21 @@ import { formatPath } from '../cli/format.ts';
 import { packageRunner } from '../dependencies/package-manager.ts';
 import { Reporter } from '../cli/reporter.ts';
 import { readExpoConfig } from '../app/expo-config.ts';
-import { addTizenPlugin, type PluginSetup } from '../config/add-tizen-plugin.ts';
+import { addWebOSPlugin, type PluginSetup } from '../config/add-webos-plugin.ts';
 import { packageIdIssue, suggestedPackageId } from '../config/package-id.ts';
-import { isTizenPluginEntry } from '../config/plugin-entry.ts';
-import { resolveTizenConfig } from '../config/tizen-config.ts';
-import { TIZEN_PLUGIN } from '../config/tizen-settings.ts';
+import { isWebOSPluginEntry } from '../config/plugin-entry.ts';
+import { resolveWebOSConfig } from '../config/webos-config.ts';
+import { WEBOS_PLUGIN } from '../config/webos-settings.ts';
 import { FixableError } from '../errors.ts';
 import { setUpMetroConfig, type MetroSetup } from '../metro/set-up-metro-config.ts';
-import { DEFAULT_TARGET, rootstrapFor } from '../tizen/target.ts';
+import { DEFAULT_TARGET, rootstrapFor } from '../webos/target.ts';
 import { installReactNative } from './init-react-native.ts';
 
 const OPTIONS = {
   package: {
     type: 'string',
     placeholder: '<id>',
-    description: "The app's Tizen package id, such as com.example.myapp (asked when left out)",
+    description: "The app's webOS package id, such as com.example.myapp (asked when left out)",
   },
   'no-install': {
     type: 'boolean',
@@ -34,13 +34,13 @@ function checkedPackageId(id: string): string {
   const issue = packageIdIssue(id);
   if (issue === null) return id;
   throw new FixableError(
-    `${id} is not a Tizen package id: ${issue}`,
+    `${id} is not a webOS package id: ${issue}`,
     'Pass --package com.example.myapp.',
   );
 }
 
 async function askPackageId(reporter: Reporter, suggestion: string): Promise<string> {
-  const answer = await ask('Tizen package id', suggestion);
+  const answer = await ask('webOS package id', suggestion);
   const issue = packageIdIssue(answer);
   if (issue === null) return answer;
   reporter.line(reporter.paint('yellow', `${answer}: ${issue}`));
@@ -65,9 +65,9 @@ function reportPlugin(reporter: Reporter, setup: PluginSetup, cwd: string): void
     return;
   }
   const done = {
-    added: `added the ${TIZEN_PLUGIN} config plugin`,
-    moved: `moved expo.tizen into the props of the ${TIZEN_PLUGIN} config plugin`,
-    present: `lists the ${TIZEN_PLUGIN} config plugin already`,
+    added: `added the ${WEBOS_PLUGIN} config plugin`,
+    moved: `moved expo.webos into the props of the ${WEBOS_PLUGIN} config plugin`,
+    present: `lists the ${WEBOS_PLUGIN} config plugin already`,
   }[setup.kind];
   reporter.field('App config', `${file} ${done}`);
 }
@@ -81,16 +81,16 @@ function reportMetro(reporter: Reporter, setup: MetroSetup, cwd: string): void {
   }
   const done = {
     written: 'written',
-    wrapped: 'wrapped with withTizen',
-    present: 'uses withTizen already',
+    wrapped: 'wrapped with withWebOS',
+    present: 'uses withWebOS already',
   }[setup.kind];
   reporter.field('Metro config', `${file} ${done}`);
 }
 
 function appFloor(root: string): string {
   try {
-    const config = resolveTizenConfig(readExpoConfig(root), (name) =>
-      isTizenPluginEntry(root, name),
+    const config = resolveWebOSConfig(readExpoConfig(root), (name) =>
+      isWebOSPluginEntry(root, name),
     );
     return config.platform ?? DEFAULT_TARGET.platformVersion;
   } catch {
@@ -102,20 +102,20 @@ function reportRootstrap(reporter: Reporter, root: string): void {
   const floor = appFloor(root);
   const { sdkPackage } = rootstrapFor({ ...DEFAULT_TARGET, platformVersion: floor });
   reporter.note(
-    `Builds for Tizen ${floor}, the app's floor, need ${sdkPackage} from Tizen Studio's Package Manager: ${packageRunner(root)} rn-tizen doctor checks it.`,
+    `Builds for webOS ${floor}, the app's floor, need ${sdkPackage} from webOS Studio's Package Manager: ${packageRunner(root)} rn-webos doctor checks it.`,
   );
 }
 
 /**
- * `rn-tizen init`: lists the config plugin in the app's config, wraps its Metro
- * config with `withTizen`, and installs one react-native-tvos.
+ * `rn-webos init`: lists the config plugin in the app's config, wraps its Metro
+ * config with `withWebOS`, and installs one react-native-tvos.
  */
 export const initCommand: Command = {
   name: 'init',
   summary:
-    'Set an Expo app up for Tizen: the config plugin, withTizen in the Metro config, one react-native-tvos',
+    'Set an Expo app up for webOS: the config plugin, withWebOS in the Metro config, one react-native-tvos',
   options: OPTIONS,
-  examples: ['npx rn-tizen init', 'npx rn-tizen init --package com.example.myapp'],
+  examples: ['npx rn-webos init', 'npx rn-webos init --package com.example.myapp'],
   async run(args, context) {
     const values = parseCommandArgs('init', args, OPTIONS);
     const reporter = new Reporter({ verbose: values.verbose ?? false });
@@ -123,12 +123,12 @@ export const initCommand: Command = {
     if (!existsSync(join(root, 'package.json'))) {
       throw new FixableError(
         `${root} has no package.json`,
-        `Run ${packageRunner(root)} rn-tizen init in the app, or pass --project <dir>.`,
+        `Run ${packageRunner(root)} rn-webos init in the app, or pass --project <dir>.`,
       );
     }
     reportPlugin(
       reporter,
-      await addTizenPlugin(root, choosePackageId(reporter, values.package)),
+      await addWebOSPlugin(root, choosePackageId(reporter, values.package)),
       context.cwd,
     );
     reportMetro(reporter, setUpMetroConfig(root), context.cwd);

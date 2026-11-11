@@ -5,7 +5,7 @@
 
 #include <utility>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -77,4 +77,4 @@ bool FrameClock::shouldStop(bool hadWork) {
   return true;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

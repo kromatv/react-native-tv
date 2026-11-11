@@ -21,7 +21,7 @@ function serve(status: number, body: string | null) {
 }
 
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'rn-tizen-download-'));
+  dir = mkdtempSync(join(tmpdir(), 'rn-webos-download-'));
   destination = join(dir, 'downloads', 'archive.tar.gz');
 });
 

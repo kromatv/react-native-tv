@@ -17,7 +17,7 @@ describe('changelogTypes', () => {
 describe('prTitleProblem', () => {
   it('accepts the titles this repository merges, its release pull requests and Dependabot', () => {
     for (const title of [
-      'fix(input): map the Back key on Tizen 8',
+      'fix(input): map the Back key on webOS 8',
       'feat(devsupport): Fast Refresh, reload, logs and LogBox from expo start',
       'fix(input,tv,text): decode UTF-8 per WHATWG, finish held presses',
       'docs: a README for the first release',
@@ -31,14 +31,14 @@ describe('prTitleProblem', () => {
 
   it('refuses a title that is not type(scope): summary', () => {
     for (const title of [
-      'Map the Back key on Tizen 8',
+      'Map the Back key on webOS 8',
       'fix map the Back key',
       'fix(): map the Back key',
       'fix(Input): map the Back key',
       'fix(input, tv): map the Back key',
       'fix(input):map the Back key',
       'fix(input): ',
-      'Revert "feat(cli): rn-tizen init"',
+      'Revert "feat(cli): rn-webos init"',
     ]) {
       expect(prTitleProblem(title, types), title).toBe(
         'The title is not in the form type(scope): summary',

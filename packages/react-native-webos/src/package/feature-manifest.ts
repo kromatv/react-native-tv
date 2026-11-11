@@ -4,7 +4,7 @@ import { escapeXml } from './xml.ts';
 /** The directory, inside the generated project, of the preview service app. */
 export const PREVIEW_SERVICE_DIR = 'PreviewService';
 
-const BASE_SCREEN_RESOLUTION = 'http://tizen.org/metadata/app_ui_type/base_screen_resolution';
+const BASE_SCREEN_RESOLUTION = 'http://webos.org/metadata/app_ui_type/base_screen_resolution';
 const USE_PREVIEW = 'http://samsung.com/tv/metadata/use.preview';
 const EDEN_RESUME = 'http://samsung.com/appcontrol/operation/eden_resume';
 

@@ -11,7 +11,7 @@
 #include <string>
 #include <thread>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -31,7 +31,7 @@ std::thread answerOnce(const LoopbackServer &server, std::string response) {
 } // namespace
 
 TEST_CASE("loadBundleFile reads the packaged bundle and reports it as a file URL") {
-  const auto file = fs::temp_directory_path() / "rn-tizen-bundle-test.bundle";
+  const auto file = fs::temp_directory_path() / "rn-webos-bundle-test.bundle";
   std::ofstream(file, std::ios::binary) << "globalThis.ready = true;";
 
   const auto bundle = loadBundleFile(file.string());
@@ -47,7 +47,7 @@ TEST_CASE("loadBundleFile names a missing bundle") {
 
 TEST_CASE("downloadBundle takes the dev server's bundle and reports it under its URL") {
   const LoopbackServer server;
-  const auto url = server.url("http", "/index.bundle?platform=tizen");
+  const auto url = server.url("http", "/index.bundle?platform=webos");
   auto peer = answerOnce(server, "HTTP/1.1 200 OK\r\nContent-Length: 24\r\n\r\nglobalThis.ready = true;");
 
   const auto bundle = downloadBundle(url);
@@ -66,4 +66,4 @@ TEST_CASE("downloadBundle passes on the dev server's error") {
   peer.join();
 }
 
-} // namespace rntizen
+} // namespace rnwebos

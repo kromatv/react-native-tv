@@ -2,7 +2,7 @@
 
 #include "PlatformModuleRegistry.h"
 
-namespace rntizen {
+namespace rnwebos {
 
 AppearanceModule::AppearanceModule(std::shared_ptr<facebook::react::CallInvoker> jsInvoker, const ModuleContext &)
     : NativeAppearanceCxxSpec(std::move(jsInvoker)) {}
@@ -20,6 +20,6 @@ void AppearanceModule::addListener(facebook::jsi::Runtime &, facebook::jsi::Stri
 
 void AppearanceModule::removeListeners(facebook::jsi::Runtime &, double) {}
 
-RN_TIZEN_PLATFORM_MODULE("Appearance", AppearanceModule);
+RN_WEBOS_PLATFORM_MODULE("Appearance", AppearanceModule);
 
-} // namespace rntizen
+} // namespace rnwebos

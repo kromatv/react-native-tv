@@ -20,20 +20,20 @@
 #include <string>
 #include <thread>
 
-namespace rntizen::expo::testing {
+namespace rnwebos::expo::testing {
 
 /// The app's data, cache and resource directories, in a directory of their own
 /// that the simulator's app_common shim answers for: set before any test runs,
 /// so appDirectories() reads them the first time it is asked.
 inline const std::filesystem::path &testAppRoot() {
   static const std::filesystem::path root = [] {
-    auto pattern = (std::filesystem::temp_directory_path() / "rn-tizen-expo-tests-XXXXXX").string();
+    auto pattern = (std::filesystem::temp_directory_path() / "rn-webos-expo-tests-XXXXXX").string();
     if (mkdtemp(pattern.data()) == nullptr) throw std::runtime_error("cannot create the test app directory");
     const std::filesystem::path made(pattern);
     for (const auto *name : {"data", "cache", "res"}) std::filesystem::create_directories(made / name);
-    setenv("RN_TIZEN_SIMULATOR_DATA_DIR", (made / "data").c_str(), 1);
-    setenv("RN_TIZEN_SIMULATOR_CACHE_DIR", (made / "cache").c_str(), 1);
-    setenv("RN_TIZEN_SIMULATOR_RESOURCE_DIR", (made / "res").c_str(), 1);
+    setenv("RN_WEBOS_SIMULATOR_DATA_DIR", (made / "data").c_str(), 1);
+    setenv("RN_WEBOS_SIMULATOR_CACHE_DIR", (made / "cache").c_str(), 1);
+    setenv("RN_WEBOS_SIMULATOR_RESOURCE_DIR", (made / "res").c_str(), 1);
     return made;
   }();
   return root;
@@ -140,11 +140,11 @@ class ExpoTestRuntime final {
   }
 
  private:
-  rntizen::testing::MainLoopScope mainLoop_;
+  rnwebos::testing::MainLoopScope mainLoop_;
   std::shared_ptr<QueuedInvoker> invoker_ = std::make_shared<QueuedInvoker>();
   std::shared_ptr<Context> context_;
   std::unique_ptr<facebook::jsi::Runtime> runtime_ =
       facebook::hermes::makeHermesRuntime(::hermes::vm::RuntimeConfig::Builder().withMicrotaskQueue(true).build());
 };
 
-} // namespace rntizen::expo::testing
+} // namespace rnwebos::expo::testing

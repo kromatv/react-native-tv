@@ -4,7 +4,7 @@
 #include <string>
 #include <string_view>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// The app process's memory as the kernel accounts it, in MB: what Samsung's
 /// budget counts that a process can read about itself (PSS and swap; GPU and
@@ -24,4 +24,4 @@ std::optional<double> kilobytesOf(std::string_view text, std::string_view key);
 /// means neither could be read.
 ProcessMemory readProcessMemory(const std::string &procSelf = "/proc/self");
 
-} // namespace rntizen
+} // namespace rnwebos

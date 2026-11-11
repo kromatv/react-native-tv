@@ -4,10 +4,10 @@
 
 #include <FBReactNativeSpec/FBReactNativeSpecJSI.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// `PlatformConstants`, in the shape of Android's spec: `Platform.constants`
-/// reports the TV's model and Tizen version, and `uiMode` is always `tv`.
+/// reports the TV's model and webOS version, and `uiMode` is always `tv`.
 class PlatformConstantsModule final
     : public facebook::react::NativePlatformConstantsAndroidCxxSpec<PlatformConstantsModule> {
  public:
@@ -20,4 +20,4 @@ class PlatformConstantsModule final
   DeviceProfile device_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

@@ -7,7 +7,7 @@
 
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -73,4 +73,4 @@ TEST_CASE_FIXTURE(Reader, "readAsDataURL keeps the blob's type, or names it appl
   CHECK(settled(rt, call(rt, module, "readAsDataURL", blob(", size: 5"))) == "rejected: The specified blob is invalid");
 }
 
-} // namespace rntizen
+} // namespace rnwebos

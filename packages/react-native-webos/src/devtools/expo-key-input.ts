@@ -1,7 +1,7 @@
 /** A key handler on stdin, as Expo's `KeyPressHandler` attaches one. */
 export type KeyListener = (chunk: unknown) => void;
 
-/** The part of `process.stdin` the Tizen keys use. */
+/** The part of `process.stdin` the webOS keys use. */
 export interface KeyInput {
   readonly isRaw?: boolean;
   on(event: 'data', listener: KeyListener): unknown;

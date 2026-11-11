@@ -1,7 +1,7 @@
 # Expo modules contract
 
 What Expo SDK 58 needs from a platform before its JavaScript runs, and what
-react-native-tizen gives it today. Read it before touching `runtime/host/expo/`.
+react-native-webos gives it today. Read it before touching `runtime/host/expo/`.
 
 Versions read: expo-modules-core 58.0.23, expo 58.0.16, expo-asset 58.0.17,
 expo-constants 58.0.12, expo-font 58.0.9, expo-file-system 58.0.10, expo-device
@@ -31,7 +31,7 @@ in this order: the core object, `__expo_app_identifier__`, the CoreModule member
 `EventEmitter`, `SharedObject` (with a releaser that deletes from the registry),
 `SharedRef`, `NativeModule`, then `modules`. **src**
 
-| Member | Read by | If missing | Tizen today |
+| Member | Read by | If missing | webOS today |
 |--------|---------|------------|-------------|
 | `EventEmitter` class | `emc/src/EventEmitter.ts:21` at import; base of the next three (`emc/common/cpp/NativeModule.cpp:10-13`, `SharedObject.cpp:25-26`) | Exported as `undefined`; the first `new` or `extends` on it throws | Installed (`runtime/host/expo/ExpoRuntime.cpp`, `installExpoGlobals`) |
 | `NativeModule` class | `emc/src/NativeModule.ts:11` | Same | Installed |
@@ -51,7 +51,7 @@ in this order: the core object, `__expo_app_identifier__`, the CoreModule member
 
 If `globalThis.expo` itself is missing, `ensureNativeModulesAreInstalled` calls the
 TurboModule `ExpoModulesCore.installModules()` (`emc/src/ensureNativeModulesAreInstalled.native.ts:7-21`). **src**
-Tizen registers that TurboModule (`runtime/host/expo/ExpoModulesCoreModule.cpp`):
+webOS registers that TurboModule (`runtime/host/expo/ExpoModulesCoreModule.cpp`):
 it receives React Native's CallInvoker and the host's `ModuleContext`, and the
 host's `installExpoRuntime(runtime)` calls its `installModules()` while the
 runtime initializes, so the global exists before the bundle runs.
@@ -108,7 +108,7 @@ search of every installed package finds it nowhere else. **src**
 | 4 | `provider` calls `expo.getViewConfig(module, view)` and gives every attribute `process: processPropValue`. A null config logs a warning and returns `{ uiViewClassName }` | `NativeViewManagerAdapter.native.tsx:60-77,104-111` **src** |
 | 5 | `createViewConfig` merges the platform's base View attributes with the provided ones | `rn/Libraries/NativeComponent/ViewConfig.js:21-42` **src** |
 | 6 | With no config, every custom prop (`source`, `player`, `intensity`) is dropped before Fabric | **inf**: React Native's attribute diff only sends keys listed in `validAttributes` |
-| 7 | Fabric finds a ComponentDescriptor by that name. On Tizen an unknown name gets `UnimplementedNativeViewComponentDescriptor` and draws empty | `runtime/host/src/fabric/CoreComponents.cpp:48-57`, `CoreComponents.h:9-11` **src** |
+| 7 | Fabric finds a ComponentDescriptor by that name. On webOS an unknown name gets `UnimplementedNativeViewComponentDescriptor` and draws empty | `runtime/host/src/fabric/CoreComponents.cpp:48-57`, `CoreComponents.h:9-11` **src** |
 | 8 | `ViewPrototypes['<module>_<view>']` on the module is copied onto the wrapper class; its functions find the view through `this.nativeTag` | `NativeViewManagerAdapter.native.tsx:222-261` **src** |
 
 `getViewConfig` returns `{ validAttributes: { <prop>: true }, directEventTypes:
@@ -136,11 +136,11 @@ reload (`emc/ios/Fabric/ExpoFabricViewObjC.mm:176-196`). Android adds providers 
 (`emc/android/src/main/cpp/fabric/FabricComponentsRegistry.cpp`,
 `ExpoComponentDescriptorFactory.cpp:13-31`). **src**
 
-How Tizen hosts Expo views (`runtime/host/expo/views/`):
+How webOS hosts Expo views (`runtime/host/expo/views/`):
 
 1. `runtime/cmake/Expo.cmake` compiles `common/cpp/fabric/*.cpp`.
 2. A view is an `ExpoViewType` (module, view, prop setters, event names, factory),
-   written with `ViewDefinition<View>` and registered with `RN_TIZEN_EXPO_VIEW`.
+   written with `ViewDefinition<View>` and registered with `RN_WEBOS_EXPO_VIEW`.
 3. Registration adds a `ComponentDescriptorProvider` whose flavor is the component
    name and whose constructor builds `expo::ExpoViewComponentDescriptor<>`, as
    Android does, and a `ComponentView` factory under the same name. Both go through
@@ -166,9 +166,9 @@ How Tizen hosts Expo views (`runtime/host/expo/views/`):
 | expo-video `VideoView` (`expo-video/src/NativeVideoView.ts:4-6`: `VideoView` unless `Platform.OS` is `android`) | `ViewManagerAdapter_ExpoVideo_VideoView` | `player` (shared object id), `nativeControls`, `contentFit`, `contentPosition`, `fullscreenOptions`, `allowsPictureInPicture` (`ios/VideoModule.swift:39-92`) | `onPictureInPictureStart`, `onPictureInPictureStop`, `onFullscreenEnter`, `onFullscreenExit`, `onFirstFrameRender` (`:31-37`) |
 | expo-blur `BlurView` | `ViewManagerAdapter_ExpoBlur_ExpoBlurView` and `..._ExpoBlurTargetView` | `blurTargetId`, `intensity`, `tint`, `blurReductionFactor`, `borderRadii`, `blurMethod` (`android/.../BlurModule.kt:12-45`) | none |
 
-expo-blur resolves its Android file on Tizen: the Metro resolver keeps a
-`.tizen.*` match and otherwise resolves for `android`
-(`src/metro/with-tizen.ts:10,86-98`), so `NativeBlurModule.android.tsx:3,5` asks for
+expo-blur resolves its Android file on webOS: the Metro resolver keeps a
+`.webos.*` match and otherwise resolves for `android`
+(`src/metro/with-webos.ts:10,86-98`), so `NativeBlurModule.android.tsx:3,5` asks for
 both views. **src**
 
 ## 3. Startup of `expo`
@@ -207,7 +207,7 @@ keep React Native's built-in `fetch` as the global, set `EXPO_PUBLIC_USE_RN_FETC
 | Response properties | `bodyUsed`, `_rawHeaders`, `status`, `statusText`, `url`, `redirected` | `NativeRequest.ts:29-34`; `ExpoFetchModule.swift:54-72` **src** |
 | Response methods | `startStreaming(): Promise<Uint8Array or null>`, `cancelStreaming(reason)`, `arrayBuffer()`, `text()` | `NativeRequest.ts:35-38` **src** |
 | Response events | `didReceiveResponseData(Uint8Array)`, `didComplete()`, `didFailWithError(string)`, then `readyForJSFinalization()` | `NativeRequest.ts:21-26`; `NativeResponse.swift:240-258` **src** |
-| `unstable_createBlobData(bytes)` | Returns a React Native BlobModule id, for `response.blob()`. Tizen stores the bytes in the host's `BlobStore`, which `BlobModule` reads (verified in simulator) | `createBlob.ts:18`; `ExpoFetchModule.swift:27-38` **src** |
+| `unstable_createBlobData(bytes)` | Returns a React Native BlobModule id, for `response.blob()`. webOS stores the bytes in the host's `BlobStore`, which `BlobModule` reads (verified in simulator) | `createBlob.ts:18`; `ExpoFetchModule.swift:27-38` **src** |
 
 ### ExponentConstants
 
@@ -232,9 +232,9 @@ A manifest from `ExpoUpdates` (`manifest` or `manifestString`) or from
 
 A module read with `requireNativeModule` at the top of a file throws "Cannot find
 native module" (`emc/src/requireNativeModule.ts:16-23`), so the first import of
-its package fails and the app does not start. Tizen registers every module below.
+its package fails and the app does not start. webOS registers every module below.
 
-| Package | Native module | Missing on Tizen | TV app usage |
+| Package | Native module | Missing on webOS | TV app usage |
 |---------|---------------|------------------|--------------|
 | expo-font | `ExpoFontLoader`, required at import (`src/ExpoFontLoader.ts:38`); `ExpoFontUtils` optional | Import throws | `useFonts(KIT_FONTS)` (`tv-native/src/App.tsx:93`) |
 | expo-file-system | `FileSystem`, required at import (`src/ExpoFileSystem.ts:48`); `File` and `Directory` extend its classes at import | Import throws | `Paths`, `File`, `Directory` (`tv-native/src/lib/storage.ts:15-37,92`) |
@@ -247,22 +247,22 @@ its package fails and the app does not start. Tizen registers every module below
 
 ### Native API and minimum viable subset
 
-| Module | Full native API (iOS definition) | Minimum for the TV app | Tizen implementation (unverified on a TV) |
+| Module | Full native API (iOS definition) | Minimum for the TV app | webOS implementation (unverified on a TV) |
 |--------|----------------------------------|------------------------|---------------------------------------------|
 | `ExpoFontLoader` | `getLoadedFonts(): string[]` (sync); `loadAsync(alias, localUri)`; `loadFontFamilyAsync(alias, [{localUri, weight?, style?}])` (`expo-font/ios/FontLoaderModule.swift:9-60`). JS downloads the file through expo-asset first (`src/FontLoader.ts:30-50`) | `getLoadedFonts`, `loadAsync`: `KIT_FONTS` is a name-to-file map ([`packages/ui/src/assets/fonts.ts:6-9`](https://github.com/kromatv/kroma/blob/1d270635adcc9f3a81283e04f06336845d8c5985/packages/ui/src/assets/fonts.ts#L6-L9)), which takes the `loadAsync` path | `modules/ExpoFontLoaderModule.cpp`: `getLoadedFonts`, `isLoaded`, `loadAsync`, `loadFontFamilyAsync`. Each font gets a directory of its own, keyed by alias and content, passed to `evas_font_path_global_append` (`Evas_Common.h:3374`) on the main thread; text then finds the font by its **family name** inside the file. A variable font with a `wght` axis goes in as static instances, one per hundred of its range, and the files are remembered per alias for letter spacing (`efl-rendering.md`, section 5 and Features). The work runs off the main loop. An alias that differs from the family name does not reach the text layer |
-| `FileSystem` | Constants `documentDirectory`, `cacheDirectory` (file URIs, `ios/FileSystemModule.swift:194-200`), `bundleDirectory`; properties `totalDiskSpace`, `availableDiskSpace`; `info`, `downloadFileAsync`, event `downloadProgress`; classes `FileSystemFile` (`validatePath`, `exists`, `uri`, `size`, `md5`, `type`, times, `text`/`textSync`, `base64`, `bytes`, `write`/`writeSync`, `create`, `delete`, `copy`, `move`, `rename`, `info`, `open`, `digest`), `FileSystemDirectory` (`validatePath`, `exists`, `uri`, `size`, `info`, `create`, `delete`, `copy`, `move`, `rename`, `listAsRecords`, `createFile`, `createDirectory`), `FileSystemFileHandle`, upload and download tasks, `FileSystemWatcher` (`:184-607`) | The constants; `FileSystemFile` and `FileSystemDirectory` with constructor(uri), `validatePath`, `uri`, `exists`, `create`, `delete`, `write`, `writeSync`, `text`. Needs SharedObject classes | `modules/filesystem/`: the constants, `info`, disk space, `downloadFileAsync` (no progress events), and both classes with every member in the minimum plus `copy`, `move`, `rename`, `bytes`, `base64`, `md5`, `listAsRecords`, `createFile`, `createDirectory`. Paths from `app_get_data_path`, `app_get_cache_path`, `app_get_resource_path` (`appfw/app_common.h:314,326,337`, Tizen 9.0 rootstrap); "files stored in the application's cache directory can be removed by setting application or platform while the application is running" (`:321-322`). No file handle, watcher, upload or download task |
+| `FileSystem` | Constants `documentDirectory`, `cacheDirectory` (file URIs, `ios/FileSystemModule.swift:194-200`), `bundleDirectory`; properties `totalDiskSpace`, `availableDiskSpace`; `info`, `downloadFileAsync`, event `downloadProgress`; classes `FileSystemFile` (`validatePath`, `exists`, `uri`, `size`, `md5`, `type`, times, `text`/`textSync`, `base64`, `bytes`, `write`/`writeSync`, `create`, `delete`, `copy`, `move`, `rename`, `info`, `open`, `digest`), `FileSystemDirectory` (`validatePath`, `exists`, `uri`, `size`, `info`, `create`, `delete`, `copy`, `move`, `rename`, `listAsRecords`, `createFile`, `createDirectory`), `FileSystemFileHandle`, upload and download tasks, `FileSystemWatcher` (`:184-607`) | The constants; `FileSystemFile` and `FileSystemDirectory` with constructor(uri), `validatePath`, `uri`, `exists`, `create`, `delete`, `write`, `writeSync`, `text`. Needs SharedObject classes | `modules/filesystem/`: the constants, `info`, disk space, `downloadFileAsync` (no progress events), and both classes with every member in the minimum plus `copy`, `move`, `rename`, `bytes`, `base64`, `md5`, `listAsRecords`, `createFile`, `createDirectory`. Paths from `app_get_data_path`, `app_get_cache_path`, `app_get_resource_path` (`appfw/app_common.h:314,326,337`, webOS 9.0 rootstrap); "files stored in the application's cache directory can be removed by setting application or platform while the application is running" (`:321-322`). No file handle, watcher, upload or download task |
 | `ExpoDevice` | Constants `isDevice`, `brand`, `manufacturer`, `modelId`, `modelName`, `deviceYearClass`, `totalMemory`, `osName`, `osVersion`, `osBuildId`, `osInternalBuildId`, `deviceName`, `deviceType`, `supportedCpuArchitectures` (`expo-device/ios/DeviceModule.swift:9-63`); Android adds `designName`, `productName`, `platformApiLevel`, `osBuildFingerprint`; async `getDeviceTypeAsync`, `getUptimeAsync`, `getMaxMemoryAsync`, `isRootedExperimentalAsync`, `isSideLoadingEnabledAsync`, `getPlatformFeaturesAsync`, `hasPlatformFeatureAsync` (`src/Device.ts:243-369`) | Every constant (null is allowed), `deviceType` 4 (`TV` in `src/Device.types.ts:8-24`) | `modules/ExpoDeviceModule.cpp`: every constant (`brand` and `manufacturer` "Samsung", `deviceType` 4, the rest from `DeviceProfile`, `sysconf` and `uname`) and the async functions. `deviceName` reads `SYSTEM_SETTINGS_KEY_DEVICE_NAME` (`system/system_settings.h:77,258`) through `dlopen`, so neither the link line nor the simulator changes; the model name when that fails |
 | `ExpoKeepAwake` | `activate(tag): bool`, `deactivate(tag): bool`, `isActivated()` (`ios/KeepAwakeModule.swift:9-27`); optional `isAvailableAsync`, `addListenerForTag` (`src/index.ts:12,35,114`) | `activate`, `deactivate` over a set of tags | `modules/ExpoKeepAwakeModule.cpp`: a tag set on the main thread; `elm_win_noblank_set(window, !tags.empty())`. See "Keep awake" below |
 | `ExpoBlur` views | See section 2 | `ExpoBlurView` drawing a translucent tint and ignoring `blurTargetId`; `ExpoBlurTargetView` as a plain container | `modules/blur/ExpoBlurViews.cpp`: an Evas snapshot of what is drawn behind the view under a `blur` filter, clipped to the view and its corners, and Android's overlay color above it (`TintStyle.kt`), from `intensity`, `tint` and `blurReductionFactor`; `blurTargetId` and `blurMethod` are not needed, since a snapshot sees every Evas object below it (`efl-rendering.md`, "Backdrop blur"). Without Evas filters, the tint alone. An empty `ExpoBlur` module answers the adapter's lookup |
 | `ExpoImage` | `prefetch(urls, cachePolicy, headers)`, `clearMemoryCache`, `clearDiskCache`, `getCachePathAsync`, `configureCache`, `generateBlurhashAsync`, `generateThumbhashAsync`, `loadAsync`, `writeToCacheAsync`, `readFromCacheAsync`, class `Image`, event `imageLoaded`, and the view (`ios/ImageModule.swift:16-330`) | Module with `prefetch` and the two `clear` functions; view with `source`, `contentFit`, `transition`, `cachePolicy`, `recyclingKey`, `onLoad` (width, height), `onError` | `modules/image/`: `prefetch`, `clearMemoryCache` (a no-op that resolves true), `clearDiskCache`, `getCachePathAsync`; the view takes the first `source`, downloads it off the main thread into `<cache>/ExpoImage/<md5 of cacheKey or uri>`, has Evas decode it on its preload thread while hidden (at about the drawn size when the image is twice it or more and its loader reads a load size, which WebP's does not, efl-rendering.md section 6), fits it by `contentFit` (`cover`, `contain`, `fill`, `none`, `scale-down`, centered), fades in over `transition` ms once decoded and sends `onLoadStart`, `onLoad` (once decoded), `onError`, `onDisplay`. No placeholder, `contentPosition`, `tintColor`, headers or animated images |
-| `ExpoVideo` | `isPictureInPictureSupported`, cache functions; class `VideoPlayer(source, useSynchronousReplace, builderOptions)` with about 30 properties, `play`, `pause`, `replace`, `replaceAsync`, `seekBy`, `replay`, `generateThumbnailsAsync`; events `statusChange`, `playingChange`, `playbackRateChange`, `volumeChange`, `mutedChange`, `playToEnd`, `timeUpdate`, `sourceChange`, track changes, `sourceLoad` (`ios/VideoModule.swift:8-392`; `src/VideoPlayerEvents.types.ts:17-90`) | `isPictureInPictureSupported` (false); `VideoPlayer` with `play`, `pause`, `replace`, `replaceAsync`, `release`, `currentTime` (read and write), `duration`, `volume`, `muted`, `loop`, `playbackRate`, `playing`, `status`, `bufferedPosition`, `bufferOptions`, `timeUpdateEventInterval`, `audioTrack`, `availableAudioTracks`, `videoTrack`; events `statusChange` `{status, oldStatus?, error?}`, `playingChange` `{isPlaying}`, `timeUpdate` `{currentTime, currentLiveTimestamp, currentOffsetFromLive, bufferedPosition}`, `playToEnd`; the view with `player`, `contentFit` | `modules/video/`: every member in the minimum and the rest of the class, on capi-media-player, run on a Samsung TV; see `tizen-media-playback.md` section 7 |
+| `ExpoVideo` | `isPictureInPictureSupported`, cache functions; class `VideoPlayer(source, useSynchronousReplace, builderOptions)` with about 30 properties, `play`, `pause`, `replace`, `replaceAsync`, `seekBy`, `replay`, `generateThumbnailsAsync`; events `statusChange`, `playingChange`, `playbackRateChange`, `volumeChange`, `mutedChange`, `playToEnd`, `timeUpdate`, `sourceChange`, track changes, `sourceLoad` (`ios/VideoModule.swift:8-392`; `src/VideoPlayerEvents.types.ts:17-90`) | `isPictureInPictureSupported` (false); `VideoPlayer` with `play`, `pause`, `replace`, `replaceAsync`, `release`, `currentTime` (read and write), `duration`, `volume`, `muted`, `loop`, `playbackRate`, `playing`, `status`, `bufferedPosition`, `bufferOptions`, `timeUpdateEventInterval`, `audioTrack`, `availableAudioTracks`, `videoTrack`; events `statusChange` `{status, oldStatus?, error?}`, `playingChange` `{isPlaying}`, `timeUpdate` `{currentTime, currentLiveTimestamp, currentOffsetFromLive, bufferedPosition}`, `playToEnd`; the view with `player`, `contentFit` | `modules/video/`: every member in the minimum and the rest of the class, on capi-media-player, run on a Samsung TV; see `webos-media-playback.md` section 7 |
 | `ExponentConstants` | Section 3 | `manifest`, `executionEnvironment: "bare"`, `deviceName`, `sessionId`, `systemFonts: []` | `modules/ExponentConstantsModule.cpp` reads `<res>/app.config`, written at package time by `src/package/app-config-file.ts` with expo-constants' own call, `getConfig(root, {isPublicConfig: true, skipSDKVersionRequirement: true})` (`expo-constants/scripts/getAppConfig.js`) |
 | `ExpoAsset` | `downloadAsync(url, md5Hash or null, type)`: a file URL resolves as is; a remote one is cached as `ExponentAsset-<md5>.<type>`, re-downloaded when the md5 does not match. "do NOT change the function signature" (`expo-asset/ios/AssetModule.swift:20-47`) | Provided | `modules/ExpoAssetModule.cpp`, off the JavaScript thread, keyed as on iOS |
 
 `File.write` is an AsyncFunction and `writeSync` the synchronous one in SDK 58
 (`FileSystemModule.swift:382,386`). `tv-native/src/lib/storage.ts:36` writes then
 reads `exists` on the next line without awaiting, on every platform. **src** On
-Tizen `write` runs on a background thread too, so that `exists` reads false the
+webOS `write` runs on a background thread too, so that `exists` reads false the
 first time (verified in simulator, below): the store falls through to no file on
 a first launch until it calls `writeSync` or awaits.
 
@@ -272,9 +272,9 @@ a first launch until it calls `writeSync` or awaits.
 |------|--------|-----|
 | "The screensaver is used to prevent screen burn when the TV screen displays a still image or the user provides no input for some time"; "You must disable the screensaver during activities when the user is watching the TV without giving input, such as video playback or image slideshows"; "To be published on Samsung Apps TV, your application must enable and disable the screensaver appropriately" | [Setting Screensaver](https://developer.samsung.com/tv/develop/guides/fundamentals/setting-screensaver) | **doc** |
 | "If "Auto Protection Time" is switched off in the TV settings, enabling and disabling the screensaver using the AppCommon API has no effect" | same page | **doc** |
-| Samsung documents the switch for web apps only: `webapis.appcommon.setScreenSaver(SCREEN_SAVER_OFF = 0 or SCREEN_SAVER_ON = 1)`, since 2.3, no privilege listed; no TizenFX or native C equivalent is listed in its API references | [AppCommon API](https://developer.samsung.com/smarttv/develop/api-references/samsung-product-api-references/appcommon-api.html) | **doc** |
-| EFL's window property for exactly this case: "a way to request the display on which the window is shown does not blank, go to screensaver or otherwise hide or obscure the window. It is intended for uses such as media playback on a television"; it "may have no effect if the window is iconified/minimized or hidden" | `elementary-1/elm_win_legacy.h:1943-1957` (`elm_win_noblank_set`, since 1.11), Tizen 9.0 rootstrap | **doc** |
-| `device_power_request_lock(POWER_LOCK_DISPLAY, 0)` keeps the display "ON(Normal)" until released and needs `http://tizen.org/privilege/display` | `device/power.h:41-55,64,88` | **doc** |
+| Samsung documents the switch for web apps only: `webapis.appcommon.setScreenSaver(SCREEN_SAVER_OFF = 0 or SCREEN_SAVER_ON = 1)`, since 2.3, no privilege listed; no WebOSFX or native C equivalent is listed in its API references | [AppCommon API](https://developer.samsung.com/smarttv/develop/api-references/samsung-product-api-references/appcommon-api.html) | **doc** |
+| EFL's window property for exactly this case: "a way to request the display on which the window is shown does not blank, go to screensaver or otherwise hide or obscure the window. It is intended for uses such as media playback on a television"; it "may have no effect if the window is iconified/minimized or hidden" | `elementary-1/elm_win_legacy.h:1943-1957` (`elm_win_noblank_set`, since 1.11), webOS 9.0 rootstrap | **doc** |
+| `device_power_request_lock(POWER_LOCK_DISPLAY, 0)` keeps the display "ON(Normal)" until released and needs `http://webos.org/privilege/display` | `device/power.h:41-55,64,88` | **doc** |
 | Elementary stores a window's object on its Ecore_Evas under the data key `elm_win`; `ecore_evas_ecore_evas_list_get` and `ecore_evas_data_get` are public (`Ecore_Evas.h:3258,2237`) | the key is not documented; found in the simulator, where `elm_win_noblank_get` reads back true | **inf** |
 
 `ExpoKeepAwake` uses `elm_win_noblank_set`: no privilege, already linked, and the
@@ -282,7 +282,7 @@ EFL contract names the TV case. Whether a retail TV's screensaver or Auto
 Protection Time honours it is not known: record it on hardware. The power lock
 is the fallback if it does not.
 
-## 5. Third-party modules with Tizen support
+## 5. Third-party modules with webOS support
 
 | Fact | Tag |
 |------|-----|
@@ -293,34 +293,34 @@ is the fallback if it does not.
 | The options loader reads `expo.autolinking[<any platform>]` and merges it (`commands/autolinkingOptions.ts:83-105`) | **src** |
 | `resolveModulesAsync` and `generateModulesProviderAsync` throw for an unknown platform (`platforms/index.ts:32-52`, `autolinking/generatePackageList.ts:16-31`) | **src** |
 | `SupportedPlatform` accepts any string (`src/types.ts:10`); `@expo/platforms`' `PlatformName` is closed: android, ios, web, tvos, macos (`build/index.d.ts:12`) | **src** |
-| `ExpoModuleConfig` keeps the parsed JSON as `rawConfig` (`ExpoModuleConfig.ts:48`), so a `tizen` section survives | **inf** from the constructor |
+| `ExpoModuleConfig` keeps the parsed JSON as `rawConfig` (`ExpoModuleConfig.ts:48`), so a `webos` section survives | **inf** from the constructor |
 
 So, without changing Expo (**inf**, from the table): a package declares
-`"platforms": [..., "tizen"]` and a `tizen` section; `rn-tizen` calls the app's
-own `findModulesAsync({ appRoot, autolinkingOptions: { ...options, platform: "tizen" } })`
+`"platforms": [..., "webos"]` and a `webos` section; `rn-webos` calls the app's
+own `findModulesAsync({ appRoot, autolinkingOptions: { ...options, platform: "webos" } })`
 and resolves the results itself, since `resolve` cannot.
 
 ```json
 {
-  "platforms": ["apple", "android", "tizen"],
-  "tizen": {
+  "platforms": ["apple", "android", "webos"],
+  "webos": {
     "modules": ["ExpoKeepAwake"],
-    "cmake": "tizen/CMakeLists.txt",
-    "target": "expo_keep_awake_tizen",
-    "privileges": ["http://tizen.org/privilege/display"]
+    "cmake": "webos/CMakeLists.txt",
+    "target": "expo_keep_awake_webos",
+    "privileges": ["http://webos.org/privilege/display"]
   }
 }
 ```
 
-`rn-tizen` would `add_subdirectory` each `cmake`, link each `target` into
-`libreact-native-tizen.so`, and generate one C++ file that calls every package's
+`rn-webos` would `add_subdirectory` each `cmake`, link each `target` into
+`libreact-native-webos.so`, and generate one C++ file that calls every package's
 registration function, the way Apple's generated `ExpoModulesProvider` lists
 every module. Generating it avoids static initializers, which a linker drops from
 a static library unless it is linked whole-archive. Implementations of Expo's own
 packages (expo-video, expo-image) stay in this package, keyed by package name.
 **inf**
 
-### Config plugins and a `tizen` section
+### Config plugins and a `webos` section
 
 | Fact | Tag |
 |------|-----|
@@ -328,17 +328,17 @@ packages (expo-video, expo-image) stay in this package, keyed by package name.
 | `evalModsAsync` runs every key of `config.mods`, skipping platforms not in `platforms` (`@expo/config-plugins/build/plugins/mod-compiler.js:172-178`) | **src** |
 | The first mod of a (platform, name) pair must be a provider, else `MISSING_PROVIDER` (`mod-compiler.js:200-208`) | **src** |
 | `withBaseMod`, `withMod`, `evalModsAsync` and `compileModsAsync` are exported (`build/index.d.ts:24,29`); `ModPlatform` is typed `android` or `ios` (`Plugin.types.d.ts:89,179`) | **src** |
-| `getConfig` applies plugins unless `skipPlugins` (`@expo/config/build/Config.js:221`); `rn-tizen` does not skip them (`src/app/app-project.ts:27-29`) | **src** |
+| `getConfig` applies plugins unless `skipPlugins` (`@expo/config/build/Config.js:221`); `rn-webos` does not skip them (`src/app/app-project.ts:27-29`) | **src** |
 
 Two roads (**inf**, from the rows above). Today a plugin can set
-`config.tizen.privileges` and `rn-tizen` reads it, with no mod. For generated
-files (`tizen-manifest.xml`, the shell project), `rn-tizen` can register base
-providers with `withBaseMod(config, { platform: "tizen", mod: "manifest",
+`config.webos.privileges` and `rn-webos` reads it, with no mod. For generated
+files (`webos-manifest.xml`, the shell project), `rn-webos` can register base
+providers with `withBaseMod(config, { platform: "webos", mod: "manifest",
 isProvider: true, action })` and run `evalModsAsync(config, { projectRoot,
-platforms: ["tizen"] })`, with a cast on the platform type. Neither is documented,
+platforms: ["webos"] })`, with a cast on the platform type. Neither is documented,
 so pin the `@expo/config-plugins` range they were tested on.
 
-## Implications for react-native-tizen
+## Implications for react-native-webos
 
 ### Gaps, in priority order
 
@@ -347,8 +347,8 @@ so pin the `@expo/config-plugins` range they were tested on.
 | P2 | `app.config` in the simulator | `src/simulator/stage-app.ts` stages no `app.config`, so `Constants.expoConfig` is null there; a package has it | Call `writeAppConfig` when staging |
 | P3 | `reloadAppAsync` | Rejects with `ERR_UNAVAILABLE` | A host reload path |
 | P3 | Streaming fetch | `HttpEngine` hands over the body whole, so `expo/fetch` streams one chunk and `start()` settles at the end of the transfer | Incremental callbacks in the engine |
-| P4 | Linking third-party Tizen modules | Section 5 | Autolinking search, CMake, generated provider |
-| Done | `ExpoDevice`, `ExpoFontLoader`, `ExpoKeepAwake`, `ExpoImage`, `FileSystem`, `ExponentConstants`, `ExpoFetchModule`, `ExpoBlur` views, `ExpoVideo` (`tizen-media-playback.md` section 7); shared objects, classes with accessors, async functions, events, Expo views and their methods | | `runtime/host/expo/` |
+| P4 | Linking third-party webOS modules | Section 5 | Autolinking search, CMake, generated provider |
+| Done | `ExpoDevice`, `ExpoFontLoader`, `ExpoKeepAwake`, `ExpoImage`, `FileSystem`, `ExponentConstants`, `ExpoFetchModule`, `ExpoBlur` views, `ExpoVideo` (`webos-media-playback.md` section 7); shared objects, classes with accessors, async functions, events, Expo views and their methods | | `runtime/host/expo/` |
 
 ### Bugs in the current Expo runtime
 
@@ -359,7 +359,7 @@ so pin the `@expo/config-plugins` range they were tested on.
 | A no-op SharedObject releaser and no ids | `SharedObjectRegistry`: ids from 1 under a mutex, never reused; `release()` and the GC both delete; the releaser touches no runtime |
 | `getViewConfig` returned `undefined` | The view registry answers it (section 2) |
 | `asyncFunction` ran on the JavaScript thread | Bodies run on a background pool or the main loop and settle through the CallInvoker (`Invoke.h`) |
-| ExpoAsset wrote in place, unchecked; ignored `md5Hash` on a hit; keyed by `std::hash`; fell back to `/tmp` | Temporary file then rename, checked; re-downloads on an MD5 mismatch; MD5 of the URL as on iOS. When `app_get_data_path` or `app_get_cache_path` returns null, which Tizen documents only for insufficient memory (`appfw/app_common.h:312,324`), the directory is one `mkdtemp` makes, private (0700) and unpredictable, under the temporary directory, instead of a fixed name there |
+| ExpoAsset wrote in place, unchecked; ignored `md5Hash` on a hit; keyed by `std::hash`; fell back to `/tmp` | Temporary file then rename, checked; re-downloads on an MD5 mismatch; MD5 of the URL as on iOS. When `app_get_data_path` or `app_get_cache_path` returns null, which webOS documents only for insufficient memory (`appfw/app_common.h:312,324`), the directory is one `mkdtemp` makes, private (0700) and unpredictable, under the temporary directory, instead of a fixed name there |
 | `reloadAppAsync` threw synchronously | Returns a rejected promise (P3 above) |
 | `expoModulesCoreVersion` was a string; no `uuidv5`, `cacheDir`, `documentsDir` | Installed as the contract types them |
 | `Expo.cmake` copied Apple's `NativeState.h` and left out `common/cpp/fabric` | Both fixed: `EventEmitter.h` takes the `jsi::NativeState` branch, as on Android |
@@ -384,7 +384,7 @@ every platform, and keeps `jsi` behind it (`ModuleDefinition.h`, `Invoke.h`,
 | `OnStartObserving`, `OnStopObserving` | `.onStartObserving(f)`, `.onStopObserving(f)` | JS thread |
 | events | `sendEvent("name", payload)`, `sendEvent(object, "name", payload)`, `Context::emit` | any thread; delivered on the JS thread |
 | `Class`, `Constructor`, `Property`, `Function` | `.sharedClass(ClassDefinition<File>("FileSystemFile").constructor(f).property("exists", g).function("text", h))`; methods take `File &` first. `.property("muted", get, set)` adds a setter, `set(T &, value)` | as above |
-| `View`, `Prop`, `Events`, `AsyncFunction` | `RN_TIZEN_EXPO_VIEW(ViewDefinition<ImageView>("ExpoImage").prop("source", &ImageView::setSource).events({"onLoad"}))`; `.asyncFunction("enterFullscreen", &VideoView::enterFullscreen)` for a method called through the view's ref | main thread |
+| `View`, `Prop`, `Events`, `AsyncFunction` | `RN_WEBOS_EXPO_VIEW(ViewDefinition<ImageView>("ExpoImage").prop("source", &ImageView::setSource).events({"onLoad"}))`; `.asyncFunction("enterFullscreen", &VideoView::enterFullscreen)` for a method called through the view's ref | main thread |
 
 Conversions: `bool`, numbers, `std::string`, `std::optional`, `std::vector`,
 `std::map<std::string, T>`, `folly::dynamic`, `Bytes` (Uint8Array, or any typed
@@ -394,16 +394,16 @@ returns the paired object or a new instance of `T`'s class. A thrown
 `std::exception` becomes a JavaScript `Error`; a `CodedError` sets `code`.
 
 ```cpp
-class ExpoKeepAwakeModule final : public rntizen::expo::Module {
+class ExpoKeepAwakeModule final : public rnwebos::expo::Module {
  public:
-  rntizen::expo::ModuleDefinition definition() override {
-    return rntizen::expo::ModuleDefinition("ExpoKeepAwake")
+  rnwebos::expo::ModuleDefinition definition() override {
+    return rnwebos::expo::ModuleDefinition("ExpoKeepAwake")
         .asyncFunction("activate", [this](std::string tag) { return update(tag, true); }, Queue::Main)
         .asyncFunction("deactivate", [this](std::string tag) { return update(tag, false); }, Queue::Main);
   }
 };
 
-RN_TIZEN_EXPO_MODULE(ExpoKeepAwake, ExpoKeepAwakeModule);
+RN_WEBOS_EXPO_MODULE(ExpoKeepAwake, ExpoKeepAwakeModule);
 ```
 
 What holds the pieces together:
@@ -421,7 +421,7 @@ What holds the pieces together:
 
 ### Verified in simulator
 
-`rn-tizen simulator`, Ubuntu 26.04 aarch64 with its EFL, 2026-11-02, from the
+`rn-webos simulator`, Ubuntu 26.04 aarch64 with its EFL, 2026-11-02, from the
 example's `src/screens/expo/` screens (`main.ts` there is their entry):
 
 | What | Seen |
@@ -433,7 +433,7 @@ example's `src/screens/expo/` screens (`main.ts` there is their entry):
 | Async functions | settle after the call returns; `File.write` leaves `exists` false until awaited |
 | `reloadAppAsync` | rejects |
 | `expo/fetch` | `text()`, `json()`, headers, `response.body` as a stream, abort rejecting |
-| `ExpoDevice`, `ExponentConstants` | `deviceType` 4, the model, Tizen 9.0, memory, `aarch64`; `expoConfig.name` from a staged `app.config`; `executionEnvironment` `bare` |
+| `ExpoDevice`, `ExponentConstants` | `deviceType` 4, the model, webOS 9.0, memory, `aarch64`; `expoConfig.name` from a staged `app.config`; `executionEnvironment` `bare` |
 | `ExpoKeepAwake` | finds the window through `elm_win` and `elm_win_noblank_get` reads back true |
 | `FileSystem` | `Paths`, `Directory.create`, `writeSync` then `exists`, `text`, `textSync`, `size`, `md5`, append, `bytes`, `list`, `copy`, `moveSync`, `delete`, `Paths.info`, disk space |
 | `ExpoFontLoader` through `ExpoAsset` | a TTF downloaded from a URL, then `loadAsync`; text with `fontFamily: 'Pacifico'` draws in it |
@@ -455,4 +455,4 @@ simulator does not have.
   Auto Protection Time, and whether `SYSTEM_SETTINGS_KEY_DEVICE_NAME` answers on a
   TV: record both on hardware.
 - Whether `app.config` should travel inside the bundle rather than beside it, so
-  `rn-tizen simulator run --bundle` and a package agree.
+  `rn-webos simulator run --bundle` and a package agree.

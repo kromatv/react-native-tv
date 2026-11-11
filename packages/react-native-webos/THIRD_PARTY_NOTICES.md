@@ -1,13 +1,13 @@
 # Third-party notices
 
-react-native-tizen is MIT licensed ([`LICENSE`](LICENSE)). It builds on the
+react-native-webos is MIT licensed ([`LICENSE`](LICENSE)). It builds on the
 software below, whose licences ask that their notices travel with it.
-`rn-tizen package` copies this file into every package it builds, as
+`rn-webos package` copies this file into every package it builds, as
 `res/THIRD_PARTY_NOTICES.md`.
 
-## In every package `rn-tizen` builds
+## In every package `rn-webos` builds
 
-`lib/libreact-native-tizen.so` links these statically, `res/icudt78l.dat` is
+`lib/libreact-native-webos.so` links these statically, `res/icudt78l.dat` is
 ICU's data, and the JavaScript bundle carries the FormatJS polyfills.
 
 | Component | Version | Licence | Copyright |
@@ -40,11 +40,11 @@ app's.
 
 | Path | Derived from | Licence | Copyright |
 |---|---|---|---|
-| `react-native-overrides/Libraries/Components/ScrollView/ScrollViewNativeComponent.tizen.ts` | React Native's `ScrollViewNativeComponent.js` (Android view config) | MIT | Meta Platforms, Inc. and affiliates |
-| `react-native-overrides/Libraries/Image/ImageViewNativeComponent.tizen.ts` | React Native's `ImageViewNativeComponent.js` (Android view config) | MIT | Meta Platforms, Inc. and affiliates |
+| `react-native-overrides/Libraries/Components/ScrollView/ScrollViewNativeComponent.webos.ts` | React Native's `ScrollViewNativeComponent.js` (Android view config) | MIT | Meta Platforms, Inc. and affiliates |
+| `react-native-overrides/Libraries/Image/ImageViewNativeComponent.webos.ts` | React Native's `ImageViewNativeComponent.js` (Android view config) | MIT | Meta Platforms, Inc. and affiliates |
 | `react-native-overrides/Libraries/Alert/android-alert.ts` | React Native's `Alert.js` (Android branch) | MIT | Meta Platforms, Inc. and affiliates |
-| `react-native-overrides/Libraries/Utilities/Platform.tizen.ts` | React Native's `Platform.android.js` | MIT | Meta Platforms, Inc. and affiliates |
-| `simulator/shims/include/player.h`, `app.h`, `app_common.h`, `system_info.h` | declarations from Tizen 9.0's `media/player.h`, `appfw/app.h`, `appfw/app_common.h`, `system/system_info.h` | Apache-2.0 | Samsung Electronics Co., Ltd |
+| `react-native-overrides/Libraries/Utilities/Platform.webos.ts` | React Native's `Platform.android.js` | MIT | Meta Platforms, Inc. and affiliates |
+| `simulator/shims/include/player.h`, `app.h`, `app_common.h`, `system_info.h` | declarations from webOS 9.0's `media/player.h`, `appfw/app.h`, `appfw/app_common.h`, `system/system_info.h` | Apache-2.0 | Samsung Electronics Co., Ltd |
 
 The simulator headers are built into the simulator only, never into a package.
 
@@ -206,7 +206,7 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-### Apache License 2.0: Folly, Tizen's headers, and llvh with the LLVM exceptions below
+### Apache License 2.0: Folly, webOS's headers, and llvh with the LLVM exceptions below
 
 ```text
 

@@ -1,6 +1,6 @@
 # Benchmarks
 
-What react-native-tizen costs on a real TV: how long a cold start takes to
+What react-native-webos costs on a real TV: how long a cold start takes to
 draw, the frame rate of a long list and of a native-driver animation, the
 memory the app holds, and the size of its package. Every number here was
 measured on the TV below with the commands below. None is estimated.
@@ -10,12 +10,12 @@ measured on the TV below with the commands below. None is estimated.
 | | |
 |---|---|
 | TV | Samsung GQ75LS03DAUXZG (The Frame, 2024) |
-| Tizen | 9.0, armv7 (`cpu_arch:armv7` in sdb's capabilities) |
-| Package floor | 9.0, the default at f6a4af1: the runtime linked against the 9.0 rootstrap, the shell built for `tizen90` |
-| UI plane | 1920x1080. The animator ticks at 50 Hz (`hz` in `rn-tizen perf`) |
+| webOS | 9.0, armv7 (`cpu_arch:armv7` in sdb's capabilities) |
+| Package floor | 9.0, the default at f6a4af1: the runtime linked against the 9.0 rootstrap, the shell built for `webos90` |
+| UI plane | 1920x1080. The animator ticks at 50 Hz (`hz` in `rn-webos perf`) |
 | Network | the TV and the Mac on the same home LAN |
 | Build machine | Apple M2 Max, macOS 27.2 |
-| react-native-tizen | `main` at f6a4af1, plus the bench entry from this page's pull request |
+| react-native-webos | `main` at f6a4af1, plus the bench entry from this page's pull request |
 | App | `example/` with the entry `src/screens/bench/main.ts`: Expo SDK 58, react-native-tvos 0.88.0-0, React 19.3, locales `en` and `fr` |
 | Date | 2026-11-04 |
 
@@ -30,11 +30,11 @@ measured on the TV below with the commands below. None is estimated.
 | Resident memory, release build, list still | 63.7 MB | 3 runs |
 | Resident memory, release build, scrolling at 200 ms | 94.4 MB, peak 103.9 MB | 3 runs |
 | `.tpk` size, release build | 8.0 MB (7,997,694 bytes) | 1 build |
-| The same screen as a Tizen web app (react-native-web), cold start | 2,075 ms (1,390 to 2,892) | 17 launches |
+| The same screen as a webOS web app (react-native-web), cold start | 2,075 ms (1,390 to 2,892) | 17 launches |
 | The web app's `.wgt` | 0.16 MB (163,032 bytes) | 1 build |
 
 Frame counts come from a development build, because only a development build
-answers `rn-tizen perf`. It runs the development runtime, which carries Hermes'
+answers `rn-webos perf`. It runs the development runtime, which carries Hermes'
 debugger and the dev server tooling. A release build was not measured for
 frames.
 
@@ -74,7 +74,7 @@ the app calls `BackHandler.exitApp()`. Every launch got a new process id from
 the TV, so each one started a new process.
 
 The time covers the TV's launcher, the .NET shell, loading
-`libreact-native-tizen.so`, Hermes loading the bytecode, the first React
+`libreact-native-webos.so`, Hermes loading the bytecode, the first React
 render, Fabric's first mount, the first frame, and one HTTP request on the LAN.
 The TV answered `0 execute` after a median of 779 ms, and the first frame
 arrived a median of 438 ms after that answer. The first launch after the
@@ -84,7 +84,7 @@ and 60 s apart gave medians of 1,206 ms and 1,196 ms.
 ### Frame rate
 
 The development package was installed and launched 3 times, each time with
-`rn-tizen perf --duration 135 --out <file>` running from the launch to the end
+`rn-webos perf --duration 135 --out <file>` running from the launch to the end
 of the timeline. `perf` reports a sample about every 1.24 s. Each sample was
 assigned to a phase by the time it printed, and the first 2 s of each phase
 were left out.
@@ -108,10 +108,10 @@ At one row every 50 ms the JavaScript thread is busy the whole time, and about
 one frame a second drops. During the animation the JavaScript thread is idle:
 the native driver runs it on the main loop.
 
-### The same screen as a Tizen web app
+### The same screen as a webOS web app
 
 The bench's components were also built for the web with react-native-web,
-packaged as a Tizen web app, installed on the same TV and launched with the
+packaged as a webOS web app, installed on the same TV and launched with the
 same harness, 12 times 8 s apart and 5 times 60 s apart.
 
 - The web app is a blank Expo SDK 58 app (`create-expo-app --template
@@ -119,7 +119,7 @@ same harness, 12 times 8 s apart and 5 times 60 s apart.
   @expo/metro-runtime`) holding copies of `list-bench.tsx`,
   `animation-bench.tsx`, `bench-screens.tsx` and `bench-timeline.ts`. Two
   files differ. `useTVEventHandler` comes from a `keydown` listener, and the
-  report hook exits with `tizen.application.getCurrentApplication().exit()`
+  report hook exits with `webos.application.getCurrentApplication().exit()`
   and reads no memory. The list has the same fixed height.
 - `EXPO_PUBLIC_BENCH_REPORT_URL=... npx expo export -p web` wrote 517 KB of
   minified JavaScript. Its script path was made relative, and a `config.xml`
@@ -140,7 +140,7 @@ carries its browser engine. The native package carries Hermes, React Native and
 ICU.
 
 Frame rate and memory were not compared. A web app cannot read the canvas
-render counter `rn-tizen perf` reads, and `requestAnimationFrame` callbacks
+render counter `rn-webos perf` reads, and `requestAnimationFrame` callbacks
 count the page's free main thread, not frames drawn. Its process's resident
 memory is out of the page's reach.
 
@@ -159,18 +159,18 @@ that phase, and the table gives the median of the 3 runs.
 | Peak (`VmHWM`) | 103.9 MB | 104.2 MB |
 
 `VmRSS` counts every page the process holds: the .NET runtime of the shell,
-`libreact-native-tizen.so`, EFL, the GPU driver's mappings, Hermes and the
+`libreact-native-webos.so`, EFL, the GPU driver's mappings, Hermes and the
 app's views.
 
 ### Package size
 
-`rn-tizen package` with the bench entry, release build:
+`rn-webos package` with the bench entry, release build:
 
 | File | Size | In the `.tpk` (deflated) |
 |---|---|---|
-| `lib/libreact-native-tizen.so` | 17.2 MB | 6.0 MB |
+| `lib/libreact-native-webos.so` | 17.2 MB | 6.0 MB |
 | `res/icudt78l.dat` (ICU data for `en` and `fr`) | 2.6 MB | 1.0 MB |
-| `res/index.tizen.hbc` (Hermes bytecode) | 2.0 MB | 0.9 MB |
+| `res/index.webos.hbc` (Hermes bytecode) | 2.0 MB | 0.9 MB |
 | The rest: the .NET shell, the preview service, signatures, notices, icon | | 0.05 MB |
 | **The `.tpk`** | | **8.0 MB** |
 
@@ -182,23 +182,23 @@ locales the example lists.
 
 From `example/`, with a TV in Developer mode and a signing profile. The runs
 above used a 9.0 floor, so the commands pass `--platform 9.0`; since 6.0
-became the default floor, every package's shell lands in `tizen80/`:
+became the default floor, every package's shell lands in `webos80/`:
 
 ```sh
 export EXPO_PUBLIC_BENCH_REPORT_URL=http://<this machine>:47200 EXPO_PUBLIC_BENCH_TIMELINE=1
 
 # release: cold start and memory
-rn-tizen package --platform 9.0 --entry src/screens/bench/main.ts
-cp tizen/bin/Release/tizen80/org.rntizen.example-1.0.0.tpk /tmp/bench-release.tpk
-rn-tizen install /tmp/bench-release.tpk --device <tv ip>
+rn-webos package --platform 9.0 --entry src/screens/bench/main.ts
+cp webos/bin/Release/webos80/org.rnwebos.example-1.0.0.tpk /tmp/bench-release.tpk
+rn-webos install /tmp/bench-release.tpk --device <tv ip>
 BENCH_SETTLE_MS=8000 bun scripts/bench-server.ts cold-start <tv ip> /tmp/bench-release.tpk 12
 bun scripts/bench-server.ts listen > release.jsonl &
-rn-tizen install /tmp/bench-release.tpk --device <tv ip> --keep-signature --launch
+rn-webos install /tmp/bench-release.tpk --device <tv ip> --keep-signature --launch
 
 # development: frames
-rn-tizen package --dev --platform 9.0 --device <tv ip> --entry src/screens/bench/main.ts
-rn-tizen install tizen/bin/Release/tizen80/org.rntizen.example-1.0.0.tpk --device <tv ip> --keep-signature --launch
-rn-tizen perf --device <tv ip> --duration 135 --out perf.jsonl
+rn-webos package --dev --platform 9.0 --device <tv ip> --entry src/screens/bench/main.ts
+rn-webos install webos/bin/Release/webos80/org.rnwebos.example-1.0.0.tpk --device <tv ip> --keep-signature --launch
+rn-webos perf --device <tv ip> --duration 135 --out perf.jsonl
 ```
 
 ## Raw results

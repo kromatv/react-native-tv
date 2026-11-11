@@ -6,7 +6,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -62,10 +62,10 @@ TEST_CASE("buildWebSocketHandshake asks to upgrade and adds Origin and User-Agen
   CHECK(request.find("Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n") != std::string::npos);
   CHECK(request.find("Sec-WebSocket-Protocol: a,b\r\n") != std::string::npos);
   CHECK(request.find("Origin: http://example.com\r\n") != std::string::npos);
-  CHECK(request.find("User-Agent: react-native-tizen\r\n") != std::string::npos);
+  CHECK(request.find("User-Agent: react-native-webos\r\n") != std::string::npos);
   CHECK(request.ends_with("X-Id: 7\r\n\r\n"));
   CHECK(own.find("Origin: http") == std::string::npos);
-  CHECK(own.find("react-native-tizen") == std::string::npos);
+  CHECK(own.find("react-native-webos") == std::string::npos);
   CHECK(own.find("Sec-WebSocket-Protocol") == std::string::npos);
 }
 
@@ -97,4 +97,4 @@ TEST_CASE("checkWebSocketHandshake names what is wrong with an answer") {
       NetworkError);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

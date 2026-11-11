@@ -41,7 +41,7 @@ describe('printSimulatorStatus', () => {
   it('says how to create a VM that does not exist', async () => {
     vi.mocked(instanceState).mockResolvedValue(null);
 
-    expect(await printed()).toContain('not created: rn-tizen simulator run');
+    expect(await printed()).toContain('not created: rn-webos simulator run');
     expect(readSimulatorStatus).not.toHaveBeenCalled();
   });
 
@@ -70,6 +70,6 @@ describe('printSimulatorStatus', () => {
     vi.mocked(instanceState).mockResolvedValue({ status: 'Running' });
     vi.mocked(readSimulatorStatus).mockResolvedValue({ runtimes: [], instances: [] });
 
-    expect(await printed()).toContain('none built: rn-tizen simulator build');
+    expect(await printed()).toContain('none built: rn-webos simulator build');
   });
 });

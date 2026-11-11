@@ -66,16 +66,16 @@ describe('ControlLinks', () => {
 
   it('finds the app asked for, takes a build that names none for any, and refuses to guess between apps', async () => {
     const links = new ControlLinks();
-    const example = link('192.168.1.50', 'org.rntizen.example');
+    const example = link('192.168.1.50', 'org.rnwebos.example');
     const kroma = link('192.168.1.50', 'tv.kroma.app');
     links.add(example);
     links.add(kroma);
 
-    expect(await links.find(null, 'org.rntizen.example', 0)).toBe(example);
+    expect(await links.find(null, 'org.rnwebos.example', 0)).toBe(example);
     expect(await links.find(null, 'tv.kroma.app', 0)).toBe(kroma);
     expect(await links.find(null, 'org.other', 0)).toBeNull();
     expect(() => links.find(null, null, 0)).toThrow(
-      '2 apps are connected: org.rntizen.example, tv.kroma.app',
+      '2 apps are connected: org.rnwebos.example, tv.kroma.app',
     );
     const old = link('192.168.1.51');
     links.add(old);

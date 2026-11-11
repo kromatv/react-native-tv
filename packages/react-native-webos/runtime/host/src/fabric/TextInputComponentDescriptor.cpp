@@ -3,7 +3,7 @@
 
 #include <react/renderer/core/ConcreteComponentDescriptor.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -29,6 +29,6 @@ class TextInputComponentDescriptor final : public facebook::react::ConcreteCompo
 
 } // namespace
 
-} // namespace rntizen
+} // namespace rnwebos
 
-RN_TIZEN_COMPONENT_DESCRIPTOR(rntizen::TextInputComponentDescriptor);
+RN_WEBOS_COMPONENT_DESCRIPTOR(rnwebos::TextInputComponentDescriptor);

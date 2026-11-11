@@ -7,7 +7,7 @@
 #include <map>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// What mounting one kind of component cost the main loop: its mutations and their time.
 struct ComponentMountCost {
@@ -51,4 +51,4 @@ void recordTransaction(
 /// What was recorded since the last call, which starts a new window.
 TransactionStats takeTransactionStats();
 
-} // namespace rntizen
+} // namespace rnwebos

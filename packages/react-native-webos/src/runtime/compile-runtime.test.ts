@@ -17,7 +17,7 @@ vi.mock('../codegen/react-native-specs.ts', () => ({
   generateReactNativeSpecs: vi.fn(async () => ({ includeDir: '', sources: [] })),
 }));
 
-const SDK = { root: '/tizen-studio', sdb: '/sdb', tizenCli: '/tizen', packageManager: '/pm' };
+const SDK = { root: '/webos-studio', sdb: '/sdb', webosCli: '/webos', packageManager: '/pm' };
 const TARGET = { arch: 'armv7l', platformVersion: '9.0' } as const;
 let dir: string;
 
@@ -35,8 +35,8 @@ function inputs() {
 }
 
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'rn-tizen-compile-'));
-  vi.stubEnv('RN_TIZEN_CACHE_DIR', join(dir, 'cache'));
+  dir = mkdtempSync(join(tmpdir(), 'rn-webos-compile-'));
+  vi.stubEnv('RN_WEBOS_CACHE_DIR', join(dir, 'cache'));
 });
 
 afterEach(() => {
@@ -57,8 +57,8 @@ describe('compileRuntime', () => {
     expect(buildCMakeProject).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
-        targets: ['react-native-tizen'],
-        definitions: expect.objectContaining({ RN_TIZEN_LIBRARIES_FILE: '/libraries.json' }),
+        targets: ['react-native-webos'],
+        definitions: expect.objectContaining({ RN_WEBOS_LIBRARIES_FILE: '/libraries.json' }),
       }),
     );
   });
@@ -75,7 +75,7 @@ describe('compileRuntime', () => {
 
     const flavours = vi
       .mocked(buildCMakeProject)
-      .mock.calls.map(([, project]) => project.definitions['RN_TIZEN_DEVELOPMENT']);
+      .mock.calls.map(([, project]) => project.definitions['RN_WEBOS_DEVELOPMENT']);
     expect(flavours).toEqual(['ON', 'OFF']);
   });
 

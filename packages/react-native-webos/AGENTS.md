@@ -28,7 +28,7 @@ and the pull request says which.
   dash as a connector and no curly quotes either. Use a comma, a colon or a full
   stop.
 - Commit messages are conventional and short: `fix(input): map the Back key on
-  Tizen 8`. The body, when there is one, says why.
+  webOS 8`. The body, when there is one, says why.
 - A pull request's title becomes its squash commit and, for `feat`, `fix`,
   `perf`, `revert` and `docs`, its line in `CHANGELOG.md`: write it for a user
   of the package. `CONTRIBUTING.md`, Releases, has the types and what they bump.
@@ -40,7 +40,7 @@ The default is no comment. Name things so the code says what it does.
 - A doc comment (`/** */` in TypeScript, `///` in C++ and C#) goes on exported
   API only, when the signature does not show its contract. One or two sentences.
   No `@param`, `@returns` or `@type`.
-- A why-comment is for a constraint the code cannot express: a rule of Tizen, EFL,
+- A why-comment is for a constraint the code cannot express: a rule of webOS, EFL,
   Hermes, React Native, Expo or Samsung's store, or a workaround for a vendor bug.
   Name the platform and what breaks without it, in one or two lines.
 - Never narrate your work, restate a line, add a section banner, write a file
@@ -76,7 +76,7 @@ Evas rule, an event payload. Follow the
 2. If the fact is missing, find it in the vendor's documentation, the SDK
    headers or the source of a project that ships on the platform.
 3. Add it to the reference, cited, in the same change. A behaviour seen on
-   hardware goes in with the TV's model, year and Tizen version.
+   hardware goes in with the TV's model, year and webOS version.
 
 [`docs/decisions.md`](docs/decisions.md) holds the choices the package is built
 on. Change one only by changing that file in the same change.
@@ -84,4 +84,4 @@ on. Change one only by changing that file in the same change.
 ## Never commit
 
 Signing material (`.p12`, certificate profiles, their passwords), a generated
-`tizen/` project, build output or anything under `node_modules/`.
+`webos/` project, build output or anything under `node_modules/`.

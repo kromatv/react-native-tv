@@ -1,6 +1,6 @@
 import { createInterface } from 'node:readline/promises';
 
-/** Whether `rn-tizen` can ask the user something: both ends of the terminal are a TTY. */
+/** Whether `rn-webos` can ask the user something: both ends of the terminal are a TTY. */
 export function canAsk(
   input: { readonly isTTY?: boolean } = process.stdin,
   output: { readonly isTTY?: boolean } = process.stdout,

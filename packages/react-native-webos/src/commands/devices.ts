@@ -4,9 +4,9 @@ import { probeTv, type TvProbe } from '../discovery/probe-tv.ts';
 import { scanForTvs, type FoundTv } from '../discovery/scan-tvs.ts';
 import { FixableError } from '../errors.ts';
 import { SDB_PORT, type SdbAddress } from '../sdb/sdb-connection.ts';
-import { parseDeviceAddress } from '../tizen/device-address.ts';
-import { connectDevice } from '../tizen/devices.ts';
-import { readKnownDevices, rememberDevices } from '../tizen/known-devices.ts';
+import { parseDeviceAddress } from '../webos/device-address.ts';
+import { connectDevice } from '../webos/devices.ts';
+import { readKnownDevices, rememberDevices } from '../webos/known-devices.ts';
 
 const OPTIONS = {
   connect: {
@@ -39,10 +39,10 @@ function sdb(tv: TvProbe): string {
     const capabilities = state.capabilities;
     return capabilities === null
       ? 'ready'
-      : `ready: ${capabilities.cpuArch}, Tizen ${capabilities.platformVersion}`;
+      : `ready: ${capabilities.cpuArch}, webOS ${capabilities.platformVersion}`;
   }
   if (state.state === 'refused')
-    return 'busy: another computer or Tizen Studio holds its sdb connection';
+    return 'busy: another computer or webOS Studio holds its sdb connection';
   if (state.state === 'closed')
     return `closed: port ${SDB_PORT} opens once Developer mode is on and the TV restarted`;
   return 'accepted the connection but never answered';
@@ -56,15 +56,15 @@ function print(reporter: Reporter, tv: TvProbe): void {
   if (tv.sdb.state === 'ready' && tv.sdb.duid !== null) reporter.field('DUID', tv.sdb.duid);
 }
 
-/** `rn-tizen devices`: finds the Samsung TVs on the network and the ones reached before, and probes each. */
+/** `rn-webos devices`: finds the Samsung TVs on the network and the ones reached before, and probes each. */
 export const devicesCommand: Command = {
   name: 'devices',
   summary: 'Find Samsung TVs on the network and check Developer mode, sdb and the DUID of each',
   options: OPTIONS,
   examples: [
-    'rn-tizen devices',
-    'rn-tizen devices --connect 192.168.1.50',
-    'rn-tizen devices --no-scan',
+    'rn-webos devices',
+    'rn-webos devices --connect 192.168.1.50',
+    'rn-webos devices --no-scan',
   ],
   async run(args) {
     const values = parseCommandArgs('devices', args, OPTIONS);
@@ -97,7 +97,7 @@ export const devicesCommand: Command = {
     const candidates = [...found, ...known.map(unknownTv)];
     if (candidates.length === 0) {
       reporter.line('No Samsung TV found.');
-      reporter.note('Connect one by address with: rn-tizen devices --connect <tv ip>');
+      reporter.note('Connect one by address with: rn-webos devices --connect <tv ip>');
       return;
     }
     const probes = await reporter.step(

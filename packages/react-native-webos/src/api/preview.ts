@@ -22,7 +22,7 @@ interface NativePreview extends TurboModule {
   setSource(json: string | null): void;
 }
 
-const native = TurboModuleRegistry.get<NativePreview>('RNTizenSmartHubPreview');
+const native = TurboModuleRegistry.get<NativePreview>('RNWebOSSmartHubPreview');
 
 const NO_SMART_HUB: PublishResult = {
   published: false,

@@ -15,7 +15,7 @@
 #include <thread>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -191,4 +191,4 @@ TEST_CASE("ControlLink drops a listener whose request grows past 4 KiB") {
   }
 }
 
-} // namespace rntizen
+} // namespace rnwebos

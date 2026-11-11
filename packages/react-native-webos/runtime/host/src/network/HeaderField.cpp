@@ -2,7 +2,7 @@
 
 #include <algorithm>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -52,4 +52,4 @@ std::optional<std::string> invalidHeader(const std::vector<std::pair<std::string
   return std::nullopt;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

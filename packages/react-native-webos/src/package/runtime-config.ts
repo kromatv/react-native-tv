@@ -1,9 +1,9 @@
 import { z } from 'zod';
-import type { TizenAppConfig } from '../config/tizen-config.ts';
+import type { WebOSAppConfig } from '../config/webos-config.ts';
 import { hasPreviewService, previewServiceAppId } from './feature-manifest.ts';
 
 /** The file the native host reads at startup, from the package's `res` directory. */
-export const RUNTIME_CONFIG_FILE = 'react-native-tizen.json';
+export const RUNTIME_CONFIG_FILE = 'react-native-webos.json';
 
 /** The port a development build streams its logs to, unless told otherwise. */
 export const DEFAULT_LOG_PORT = 8099;
@@ -35,7 +35,7 @@ const runtimeConfigSchema = z.object({
 
 type RuntimeConfig = z.infer<typeof runtimeConfigSchema>;
 
-function previewFields(config: Pick<TizenAppConfig, 'packageId' | 'features'>) {
+function previewFields(config: Pick<WebOSAppConfig, 'packageId' | 'features'>) {
   const { preview } = config.features;
   if (preview === null) return {};
   if (preview.kind === 'public') return { preview: { kind: preview.kind } };
@@ -59,7 +59,7 @@ function previewFields(config: Pick<TizenAppConfig, 'packageId' | 'features'>) {
 export function runtimeConfig(
   bundleFile: string,
   log: LogEndpoint | null,
-  config: Pick<TizenAppConfig, 'packageId' | 'features'>,
+  config: Pick<WebOSAppConfig, 'packageId' | 'features'>,
   bundleUrl?: string,
 ): RuntimeConfig {
   const { voice, resolution, backgroundMedia } = config.features;

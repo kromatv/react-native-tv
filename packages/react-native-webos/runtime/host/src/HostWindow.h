@@ -4,7 +4,7 @@
 
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// Opens the app's Elementary window, black and `width` by `height`, asks for
 /// the GPU, and logs the rendering engine and fonts it got. Main thread only.
@@ -19,4 +19,4 @@ Evas_Object *hostWindow();
 /// Main thread only.
 void setHostWindowTransparent(bool transparent);
 
-} // namespace rntizen
+} // namespace rnwebos

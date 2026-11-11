@@ -4,7 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -76,4 +76,4 @@ bool trackSfntAdvances(std::string &bytes, int units) {
   return true;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

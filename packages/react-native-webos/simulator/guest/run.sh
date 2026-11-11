@@ -64,12 +64,12 @@ wait_for_window() {
 }
 
 if [[ ! -x "$LAUNCHER" ]]; then
-  echo "No launcher at $LAUNCHER: run \`rn-tizen simulator run$INSTANCE_FLAG\` from the app first." >&2
+  echo "No launcher at $LAUNCHER: run \`rn-webos simulator run$INSTANCE_FLAG\` from the app first." >&2
   exit 1
 fi
 touch "$RUNTIME_BUILD_DIR/$RUNTIME_USED_FILE"
-if [[ ! -f "$APP_DIR/react-native-tizen.json" ]]; then
-  echo "No app is staged in instance $INSTANCE: run \`rn-tizen simulator run$INSTANCE_FLAG\` from the app first." >&2
+if [[ ! -f "$APP_DIR/react-native-webos.json" ]]; then
+  echo "No app is staged in instance $INSTANCE: run \`rn-webos simulator run$INSTANCE_FLAG\` from the app first." >&2
   exit 1
 fi
 

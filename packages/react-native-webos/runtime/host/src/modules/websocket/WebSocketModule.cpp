@@ -10,7 +10,7 @@
 #include <algorithm>
 #include <stdexcept>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -150,6 +150,6 @@ void WebSocketModule::addListener(Runtime &, const std::string &) {}
 
 void WebSocketModule::removeListeners(Runtime &, double) {}
 
-RN_TIZEN_PLATFORM_MODULE("WebSocketModule", WebSocketModule);
+RN_WEBOS_PLATFORM_MODULE("WebSocketModule", WebSocketModule);
 
-} // namespace rntizen
+} // namespace rnwebos

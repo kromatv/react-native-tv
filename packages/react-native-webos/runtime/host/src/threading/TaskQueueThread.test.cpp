@@ -8,7 +8,7 @@
 #include <thread>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -164,4 +164,4 @@ TEST_CASE("busyTime adds up how long tasks ran while measured") {
   CHECK(queue.busyTime() >= 10ms);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

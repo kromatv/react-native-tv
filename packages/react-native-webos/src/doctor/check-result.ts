@@ -6,7 +6,7 @@ import { MissingProgramError } from '../exec.ts';
 /** How a check went. A warning does not fail `doctor`. */
 export type CheckStatus = 'ok' | 'warn' | 'fail' | 'skip';
 
-/** One line of `rn-tizen doctor`, with the fix when it did not pass. */
+/** One line of `rn-webos doctor`, with the fix when it did not pass. */
 export interface CheckResult {
   readonly title: string;
   readonly status: CheckStatus;

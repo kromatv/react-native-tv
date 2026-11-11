@@ -7,7 +7,7 @@
 #include <optional>
 #include <vector>
 
-namespace rntizen::svg {
+namespace rnwebos::svg {
 
 /// One Evas VG object holding an `<Svg>`'s shapes, in coordinates relative to
 /// the object's top-left corner. Shapes and gradients are reused from one paint
@@ -45,4 +45,4 @@ class SvgCanvas {
   std::vector<Evas_Vg_Gradient_Radial *> radials_;
 };
 
-} // namespace rntizen::svg
+} // namespace rnwebos::svg

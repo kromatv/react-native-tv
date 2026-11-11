@@ -9,7 +9,7 @@
 #include <chrono>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -64,4 +64,4 @@ TEST_CASE("openDevelopmentLinks opens a development build's control link beside 
   CHECK(folly::parseJson(hello) == folly::dynamic::object("type", "control")("version", 1)("app", kPackageId));
 }
 
-} // namespace rntizen
+} // namespace rnwebos

@@ -16,7 +16,7 @@ const discovery = {
   name: 'server-discovery',
   version: '1.0.0',
   dir: '/app/modules/server-discovery',
-  implementation: '/app/modules/server-discovery/tizen/CMakeLists.txt',
+  implementation: '/app/modules/server-discovery/webos/CMakeLists.txt',
 };
 
 const code = (libraries: RuntimeCode['libraries']): RuntimeCode => ({

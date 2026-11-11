@@ -62,7 +62,7 @@ type Role =
   | { readonly kind: 'ignored' };
 
 const PORT_IN_USE_HINT =
-  'Another `rn-tizen logs` or `rn-tizen run` is probably listening: stop it, or pass --log-port to package and run on another port.';
+  'Another `rn-webos logs` or `rn-webos run` is probably listening: stop it, or pass --log-port to package and run on another port.';
 
 function addressOf(socket: Socket): string {
   return socket.remoteAddress?.replace(/^::ffff:/, '') ?? 'the TV';
@@ -78,7 +78,7 @@ function noLinkError(device: string | null, app: string | null, port: number): F
   const where = device === null ? build : `${build} on ${device}`;
   return new FixableError(
     `${where} is connected to port ${port}`,
-    `Launch it with rn-tizen run, or from the TV's apps, packaged with this port. A release build has no screenshots.`,
+    `Launch it with rn-webos run, or from the TV's apps, packaged with this port. A release build has no screenshots.`,
   );
 }
 

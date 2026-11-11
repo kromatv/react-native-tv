@@ -40,7 +40,7 @@
     "typescript/no-explicit-any": "error",
     "unicorn/no-document-cookie": "error"
   },
-  "ignorePatterns": ["**/dist", "**/build", "example/tizen"],
+  "ignorePatterns": ["**/dist", "**/build", "example/webos"],
   "overrides": [
     {
       "files": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.cjs", "**/*.mjs"],
@@ -198,7 +198,7 @@
     },
     {
       "files": [
-        "src/config/tizen-config.ts",
+        "src/config/webos-config.ts",
         "src/config/tv-features.ts",
         "src/package/feature-manifest.ts",
         "example/src/screens/modules/echo-endpoint.ts"

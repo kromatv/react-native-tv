@@ -9,7 +9,7 @@
 #include <string>
 #include <string_view>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// The socket an app in development keeps open to its dev server's
 /// `/message`, speaking protocol version 2: the server broadcasts `reload`
@@ -43,4 +43,4 @@ class PackagerConnection final {
   std::shared_ptr<PackagerConnection *> lifetime_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

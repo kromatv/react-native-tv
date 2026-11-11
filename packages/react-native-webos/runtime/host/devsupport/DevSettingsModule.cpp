@@ -4,7 +4,7 @@
 
 #include "modules/PlatformModuleRegistry.h"
 
-namespace rntizen {
+namespace rnwebos {
 
 using facebook::jsi::Runtime;
 
@@ -41,6 +41,6 @@ void DevSettingsModule::removeListeners(Runtime &, double) {}
 
 void DevSettingsModule::setIsShakeToShowDevMenuEnabled(Runtime &, bool) {}
 
-RN_TIZEN_PLATFORM_MODULE("DevSettings", DevSettingsModule);
+RN_WEBOS_PLATFORM_MODULE("DevSettings", DevSettingsModule);
 
-} // namespace rntizen
+} // namespace rnwebos

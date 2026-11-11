@@ -1,6 +1,6 @@
 #include "WebSocketSockets.h"
 
-namespace rntizen {
+namespace rnwebos {
 
 WebSocketSockets &WebSocketSockets::shared() {
   static WebSocketSockets sockets;
@@ -51,4 +51,4 @@ bool WebSocketSockets::deliversBlobs(int socketId) const {
   return blobSockets_.contains(socketId);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

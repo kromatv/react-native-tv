@@ -2,14 +2,14 @@ import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import type { TizenTarget } from '../tizen/target.ts';
+import type { WebOSTarget } from '../webos/target.ts';
 import { runtimeBuildDirs } from './build-runtime.ts';
 
-const target: TizenTarget = { arch: 'armv7l', platformVersion: '9.0' };
+const target: WebOSTarget = { arch: 'armv7l', platformVersion: '9.0' };
 const dirs: string[] = [];
 
 function checkout(): { runtime: string; reactNative: string } {
-  const root = mkdtempSync(join(tmpdir(), 'rn-tizen-checkout-'));
+  const root = mkdtempSync(join(tmpdir(), 'rn-webos-checkout-'));
   dirs.push(root);
   const runtime = join(root, 'runtime');
   const reactNative = join(root, 'node_modules', 'react-native');
@@ -33,7 +33,7 @@ describe('runtimeBuildDirs', () => {
     const { root } = runtimeBuildDirs(reactNativeAt(reactNative), target, 'development', runtime);
 
     expect(root).toMatch(
-      /[/\\]react-native-tvos-0\.88\.0-0-armv7l-tizen9\.0-development-[0-9a-f]{12}$/,
+      /[/\\]react-native-tvos-0\.88\.0-0-armv7l-webos9\.0-development-[0-9a-f]{12}$/,
     );
   });
 

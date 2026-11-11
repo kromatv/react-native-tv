@@ -4,20 +4,20 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { writePkcs12 } from '../signing/pkcs12-write.ts';
 import { testSigner } from '../signing/signing.fixtures.ts';
-import { checkCertificates } from './tizen-checks.ts';
+import { checkCertificates } from './webos-checks.ts';
 
 let dir = '';
 let previous: string | undefined;
 
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'rn-tizen-doctor-'));
-  previous = process.env.TIZEN_SDK_DATA_DIR;
-  process.env.TIZEN_SDK_DATA_DIR = dir;
+  dir = mkdtempSync(join(tmpdir(), 'rn-webos-doctor-'));
+  previous = process.env.WEBOS_SDK_DATA_DIR;
+  process.env.WEBOS_SDK_DATA_DIR = dir;
 });
 
 afterEach(() => {
-  if (previous === undefined) delete process.env.TIZEN_SDK_DATA_DIR;
-  else process.env.TIZEN_SDK_DATA_DIR = previous;
+  if (previous === undefined) delete process.env.WEBOS_SDK_DATA_DIR;
+  else process.env.WEBOS_SDK_DATA_DIR = previous;
   rmSync(dir, { recursive: true, force: true });
 });
 

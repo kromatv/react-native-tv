@@ -11,7 +11,7 @@
 
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// What a view draws of its own box, as members of its smart object: shadows,
 /// background color and gradients, border, outline, and the clipper its
@@ -52,4 +52,4 @@ class ViewBox final {
   BoxStyle style_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

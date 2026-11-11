@@ -2,7 +2,7 @@
 
 #include "FileSystemPath.h"
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 /// The native side of expo-file-system's `File`.
 class FileSystemFile final : public FileSystemPath {
@@ -43,4 +43,4 @@ class FileSystemDirectory final : public FileSystemPath {
   std::vector<folly::dynamic> listAsRecords() const;
 };
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

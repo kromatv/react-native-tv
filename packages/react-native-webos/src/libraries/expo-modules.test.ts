@@ -5,9 +5,9 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { expoModuleTargetName } from './expo-modules.ts';
 import { findNativeLibraries } from './find-native-libraries.ts';
 
-const TIZEN_MODULE = {
-  platforms: ['apple', 'android', 'tizen'],
-  tizen: { cmake: 'tizen/CMakeLists.txt' },
+const WEBOS_MODULE = {
+  platforms: ['apple', 'android', 'webos'],
+  webos: { cmake: 'webos/CMakeLists.txt' },
 };
 
 let app: string;
@@ -23,7 +23,7 @@ function localModule(dir: string, config: unknown): string {
 }
 
 beforeEach(() => {
-  app = realpathSync(mkdtempSync(join(tmpdir(), 'rn-tizen-expo-modules-')));
+  app = realpathSync(mkdtempSync(join(tmpdir(), 'rn-webos-expo-modules-')));
 });
 
 afterEach(() => {
@@ -31,9 +31,9 @@ afterEach(() => {
 });
 
 describe('findNativeLibraries, for Expo modules', () => {
-  it('finds a local module under modules/ with its own Tizen CMakeLists.txt', () => {
+  it('finds a local module under modules/ with its own webOS CMakeLists.txt', () => {
     writeJson(join(app, 'package.json'), { name: 'app' });
-    const dir = localModule('modules/server-discovery', TIZEN_MODULE);
+    const dir = localModule('modules/server-discovery', WEBOS_MODULE);
 
     const [library] = findNativeLibraries(app, []).libraries;
 
@@ -43,11 +43,11 @@ describe('findNativeLibraries, for Expo modules', () => {
       dir,
       targetName: 'expo_server_discovery',
       codegen: null,
-      declaredTizenCMake: join(dir, 'tizen', 'CMakeLists.txt'),
+      declaredWebOSCMake: join(dir, 'webos', 'CMakeLists.txt'),
     });
   });
 
-  it('skips a local module that does not list tizen', () => {
+  it('skips a local module that does not list webos', () => {
     writeJson(join(app, 'package.json'), { name: 'app' });
     localModule('modules/siri-search', { platforms: ['apple'] });
 
@@ -59,21 +59,21 @@ describe('findNativeLibraries, for Expo modules', () => {
       name: 'app',
       expo: { autolinking: { nativeModulesDir: './native' } },
     });
-    localModule('native/launcher', TIZEN_MODULE);
-    localModule('modules/ignored', TIZEN_MODULE);
+    localModule('native/launcher', WEBOS_MODULE);
+    localModule('modules/ignored', WEBOS_MODULE);
 
     expect(findNativeLibraries(app, []).libraries.map((library) => library.name)).toEqual([
       'launcher',
     ]);
   });
 
-  it('finds a dependency that is a Tizen Expo module', () => {
+  it('finds a dependency that is a webOS Expo module', () => {
     writeJson(join(app, 'package.json'), { name: 'app', dependencies: { 'expo-beacon': '1' } });
     writeJson(join(app, 'node_modules/expo-beacon/package.json'), {
       name: 'expo-beacon',
       version: '2.0.0',
     });
-    writeJson(join(app, 'node_modules/expo-beacon/expo-module.config.json'), TIZEN_MODULE);
+    writeJson(join(app, 'node_modules/expo-beacon/expo-module.config.json'), WEBOS_MODULE);
 
     const [library] = findNativeLibraries(app, []).libraries;
 
@@ -81,15 +81,15 @@ describe('findNativeLibraries, for Expo modules', () => {
     expect(library?.version).toBe('2.0.0');
   });
 
-  it('warns about a module that lists tizen without a cmake path', () => {
+  it('warns about a module that lists webos without a cmake path', () => {
     writeJson(join(app, 'package.json'), { name: 'app' });
-    localModule('modules/half', { platforms: ['tizen'] });
+    localModule('modules/half', { platforms: ['webos'] });
 
     const scan = findNativeLibraries(app, []);
 
     expect(scan.libraries).toEqual([]);
     expect(scan.warnings).toEqual([
-      'half: its expo-module.config.json lists tizen but no "tizen": { "cmake" }; ignored',
+      'half: its expo-module.config.json lists webos but no "webos": { "cmake" }; ignored',
     ]);
   });
 });

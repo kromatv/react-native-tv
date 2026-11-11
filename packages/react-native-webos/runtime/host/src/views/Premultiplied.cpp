@@ -2,7 +2,7 @@
 
 #include <algorithm>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -21,4 +21,4 @@ std::uint32_t alphaPixel(float alpha) {
   return a << 24 | a << 16 | a << 8 | a;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

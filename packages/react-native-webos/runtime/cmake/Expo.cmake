@@ -1,4 +1,4 @@
-# Expo Modules on Tizen: the platform-independent C++ of the app's own
+# Expo Modules on webOS: the platform-independent C++ of the app's own
 # expo-modules-core (the EventEmitter, NativeModule, SharedObject and SharedRef
 # classes behind `globalThis.expo`, and the Fabric pieces every Expo view is
 # described with). Skipped for a React Native app without Expo.

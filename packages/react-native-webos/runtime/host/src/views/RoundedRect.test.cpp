@@ -4,7 +4,7 @@
 
 #include <array>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -73,4 +73,4 @@ TEST_CASE("roundedCoverage is whole away from the corners and matches the sample
   CHECK(roundedCoverage(kRound8, 40, 20, 38, 18) == shape.coverage(38, 18));
 }
 
-} // namespace rntizen
+} // namespace rnwebos

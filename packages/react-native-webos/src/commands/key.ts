@@ -22,7 +22,7 @@ const OPTIONS = {
 
 function pair(reporter: Reporter, host: string): Promise<RemoteSession> {
   reporter.note(
-    `rn-tizen has not paired with the TV at ${host} yet: choose Allow when the TV asks.`,
+    `rn-webos has not paired with the TV at ${host} yet: choose Allow when the TV asks.`,
   );
   return reporter.step(
     'Pair',
@@ -62,23 +62,23 @@ async function press(
   }
 }
 
-/** `rn-tizen key`: presses remote keys on a TV through its network remote, in order. */
+/** `rn-webos key`: presses remote keys on a TV through its network remote, in order. */
 export const keyCommand: Command = {
   name: 'key',
   summary: "Press remote keys on a TV, in order, through the TV's network remote",
   options: OPTIONS,
   examples: [
-    'rn-tizen key Down Down Enter --device 192.168.1.50',
-    'rn-tizen key Back --device 192.168.1.50',
-    'rn-tizen key 1 --device 192.168.1.50       digits 0 to 9',
-    'rn-tizen key KEY_CH_LIST --device 192.168.1.50   any KEY_* code as written',
+    'rn-webos key Down Down Enter --device 192.168.1.50',
+    'rn-webos key Back --device 192.168.1.50',
+    'rn-webos key 1 --device 192.168.1.50       digits 0 to 9',
+    'rn-webos key KEY_CH_LIST --device 192.168.1.50   any KEY_* code as written',
   ],
   async run(args) {
     const { positionals, options } = splitActionArgs(args);
     const flags = parseCommandArgs('key', options, OPTIONS);
     if (positionals.length === 0) {
       throw new UsageError(
-        'key needs the keys to press, e.g. `rn-tizen key Down Enter --device <ip>`',
+        'key needs the keys to press, e.g. `rn-webos key Down Enter --device <ip>`',
         'key',
       );
     }

@@ -6,7 +6,7 @@
 
 #include <cmath>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// A point on the canvas, in device pixels.
 struct PixelPoint {
@@ -40,4 +40,4 @@ inline void setGeometry(Evas_Object *object, const PixelRect &rect) {
   evas_object_geometry_set(object, rect.x, rect.y, rect.width, rect.height);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

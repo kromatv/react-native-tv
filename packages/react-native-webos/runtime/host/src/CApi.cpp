@@ -1,4 +1,4 @@
-#include <react-native-tizen/react-native-tizen.h>
+#include <react-native-webos/react-native-webos.h>
 
 #include "ReactHost.h"
 #include "intl/IcuData.h"
@@ -13,8 +13,8 @@
 #include <memory>
 #include <string>
 
-struct rn_tizen_host {
-  std::unique_ptr<rntizen::ReactHost> host;
+struct rn_webos_host {
+  std::unique_ptr<rnwebos::ReactHost> host;
 };
 
 namespace {
@@ -29,7 +29,7 @@ char *copyString(const std::string &text) {
 template <typename Result>
 Result onMainThread(Result fallback, const std::function<Result()> &body) {
   Result result = fallback;
-  rntizen::runOnMainThreadSync([&result, &body] { result = body(); });
+  rnwebos::runOnMainThreadSync([&result, &body] { result = body(); });
   return result;
 }
 
@@ -39,64 +39,64 @@ extern "C" {
 
 // Evas reads `font_size` as points at 75 DPI unless told otherwise, which draws
 // every glyph 4% larger than React Native's pixels (docs/reference/efl-rendering.md).
-void rn_tizen_initialize(void) {
+void rn_webos_initialize(void) {
   setenv("EVAS_FONT_DPI", "72", 0);
 }
 
-rn_tizen_host *rn_tizen_host_create(const char *resource_dir) {
+rn_webos_host *rn_webos_host_create(const char *resource_dir) {
   if (resource_dir == nullptr) {
-    rntizen::log(rntizen::LogLevel::Error, "rn_tizen_host_create: resource_dir is NULL");
+    rnwebos::log(rnwebos::LogLevel::Error, "rn_webos_host_create: resource_dir is NULL");
     return nullptr;
   }
-  rntizen::useIcuData(resource_dir);
+  rnwebos::useIcuData(resource_dir);
   try {
-    return std::make_unique<rn_tizen_host>(std::make_unique<rntizen::ReactHost>(resource_dir)).release();
+    return std::make_unique<rn_webos_host>(std::make_unique<rnwebos::ReactHost>(resource_dir)).release();
   } catch (const std::exception &error) {
-    rntizen::log(rntizen::LogLevel::Error, std::string("React Native failed to start: ") + error.what());
+    rnwebos::log(rnwebos::LogLevel::Error, std::string("React Native failed to start: ") + error.what());
     return nullptr;
   }
 }
 
-void rn_tizen_host_pause(rn_tizen_host *host) {
+void rn_webos_host_pause(rn_webos_host *host) {
   if (host != nullptr) host->host->pause();
 }
 
-void rn_tizen_host_resume(rn_tizen_host *host) {
+void rn_webos_host_resume(rn_webos_host *host) {
   if (host != nullptr) host->host->resume();
 }
 
-void rn_tizen_host_set_initial_url(rn_tizen_host *host, const char *url) {
+void rn_webos_host_set_initial_url(rn_webos_host *host, const char *url) {
   if (host != nullptr && url != nullptr) host->host->setInitialUrl(url);
 }
 
-void rn_tizen_host_open_url(rn_tizen_host *host, const char *url) {
+void rn_webos_host_open_url(rn_webos_host *host, const char *url) {
   if (host != nullptr && url != nullptr) host->host->openUrl(url);
 }
 
-void rn_tizen_host_set_launched_from_tile(rn_tizen_host *host, int from_tile) {
+void rn_webos_host_set_launched_from_tile(rn_webos_host *host, int from_tile) {
   if (host != nullptr) host->host->tv().setLaunchedFromTile(from_tile != 0);
 }
 
-void rn_tizen_host_set_voice_available(rn_tizen_host *host, int available) {
+void rn_webos_host_set_voice_available(rn_webos_host *host, int available) {
   if (host != nullptr) host->host->tv().setVoiceAvailable(available != 0);
 }
 
-char *rn_tizen_host_voice_state(rn_tizen_host *host) {
+char *rn_webos_host_voice_state(rn_webos_host *host) {
   if (host == nullptr) return copyString("None");
   return copyString(onMainThread<std::string>("None", [host] { return host->host->voice().appState(); }));
 }
 
-char *rn_tizen_host_voice_context(rn_tizen_host *host) {
+char *rn_webos_host_voice_context(rn_webos_host *host) {
   if (host == nullptr) return copyString("[]");
   return copyString(onMainThread<std::string>("[]", [host] { return host->host->voice().contentContext(); }));
 }
 
-int rn_tizen_host_voice_command(rn_tizen_host *host, const char *json) {
+int rn_webos_host_voice_command(rn_webos_host *host, const char *json) {
   if (host == nullptr || json == nullptr) return 0;
   return onMainThread<int>(0, [host, json] { return host->host->voice().handle(json) ? 1 : 0; });
 }
 
-void rn_tizen_host_set_preview_publisher(rn_tizen_host *host, rn_tizen_preview_publisher publisher) {
+void rn_webos_host_set_preview_publisher(rn_webos_host *host, rn_webos_preview_publisher publisher) {
   if (host == nullptr) return;
   if (publisher == nullptr) {
     host->host->tv().setPreviewPublisher(nullptr);
@@ -105,19 +105,19 @@ void rn_tizen_host_set_preview_publisher(rn_tizen_host *host, rn_tizen_preview_p
   host->host->tv().setPreviewPublisher([publisher](const std::string &json) { return publisher(json.c_str()); });
 }
 
-void rn_tizen_log(int level, const char *message) {
-  using enum rntizen::LogLevel;
+void rn_webos_log(int level, const char *message) {
+  using enum rnwebos::LogLevel;
   if (message == nullptr) return;
   const auto levels = std::array{Debug, Info, Warning, Error};
-  rntizen::log(levels[std::clamp(level, 0, 3)], message);
+  rnwebos::log(levels[std::clamp(level, 0, 3)], message);
 }
 
-void rn_tizen_string_free(char *text) {
+void rn_webos_string_free(char *text) {
   const std::unique_ptr<char[]> owned(text);
 }
 
-void rn_tizen_host_destroy(rn_tizen_host *host) {
-  const std::unique_ptr<rn_tizen_host> owned(host);
+void rn_webos_host_destroy(rn_webos_host *host) {
+  const std::unique_ptr<rn_webos_host> owned(host);
 }
 
 } // extern "C"

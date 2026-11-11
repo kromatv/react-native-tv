@@ -5,7 +5,7 @@
 #include <array>
 #include <cmath>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -125,4 +125,4 @@ TEST_CASE("slope is the most the line fraction changes over one pixel") {
   CHECK(linear(90.0f, 200, 100).slope() == doctest::Approx(1.0f / 200));
 }
 
-} // namespace rntizen
+} // namespace rnwebos

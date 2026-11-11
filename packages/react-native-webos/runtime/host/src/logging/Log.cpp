@@ -7,7 +7,7 @@
 #include <mutex>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -81,4 +81,4 @@ void setLogSink(std::shared_ptr<LogSink> sink) {
   installed.sink = std::move(sink);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

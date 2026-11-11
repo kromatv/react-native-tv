@@ -17,7 +17,7 @@ describe('applicationExtras', () => {
 
   it('asks the window manager for a 4K UI plane', () => {
     expect(applicationExtras({ ...none, resolution: '4k' })).toBe(
-      '\n    <metadata key="http://tizen.org/metadata/app_ui_type/base_screen_resolution" value="4k_only" />',
+      '\n    <metadata key="http://webos.org/metadata/app_ui_type/base_screen_resolution" value="4k_only" />',
     );
   });
 

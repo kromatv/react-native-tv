@@ -29,15 +29,15 @@ vi.mock('../libraries/prepare-native-libraries.ts', async (importOriginal) => ({
   prepareNativeLibraries: vi.fn(),
 }));
 
-const SDK = { root: '/tizen-studio', sdb: '/sdb', tizenCli: '/tizen', packageManager: '/pm' };
+const SDK = { root: '/webos-studio', sdb: '/sdb', webosCli: '/webos', packageManager: '/pm' };
 let dir: string;
 let out: ReturnType<typeof capturedOutput>;
 
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'rn-tizen-runtime-steps-'));
-  vi.stubEnv('RN_TIZEN_CACHE_DIR', dir);
+  dir = mkdtempSync(join(tmpdir(), 'rn-webos-runtime-steps-'));
+  vi.stubEnv('RN_WEBOS_CACHE_DIR', dir);
   out = capturedOutput();
-  const library = join(dir, 'libreact-native-tizen.so');
+  const library = join(dir, 'libreact-native-webos.so');
   writeFileSync(library, 'elf');
   vi.mocked(setupTarget).mockResolvedValue({
     path: '/sysroot',
@@ -71,7 +71,7 @@ describe('runtimeSteps', () => {
       'development',
     );
 
-    expect(library).toBe(join(dir, 'libreact-native-tizen.so'));
+    expect(library).toBe(join(dir, 'libreact-native-webos.so'));
     expect(compileRuntime).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ sdk: SDK, nativeLibrariesFile: '/libraries.json' }),

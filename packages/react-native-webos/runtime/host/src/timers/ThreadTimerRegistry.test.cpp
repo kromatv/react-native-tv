@@ -9,7 +9,7 @@
 #include <memory>
 #include <thread>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -95,4 +95,4 @@ TEST_CASE("a timer created after quit never fires") {
   CHECK(timers.calls == 0);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

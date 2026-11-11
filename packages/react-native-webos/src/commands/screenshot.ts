@@ -35,15 +35,15 @@ function defaultPath(device: string | null): string {
   return join(cacheDir(), 'tv', device ?? 'any', 'screenshot.png');
 }
 
-/** `rn-tizen screenshot`: saves what a development build draws as a PNG. */
+/** `rn-webos screenshot`: saves what a development build draws as a PNG. */
 export const screenshotCommand: Command = {
   name: 'screenshot',
   summary: "Save what a development build on a TV draws as a PNG (the app's UI only)",
   options: OPTIONS,
   examples: [
-    'rn-tizen screenshot --device 192.168.1.50 --out shot.png',
-    'rn-tizen screenshot',
-    'rn-tizen screenshot --package com.example.myapp',
+    'rn-webos screenshot --device 192.168.1.50 --out shot.png',
+    'rn-webos screenshot',
+    'rn-webos screenshot --package com.example.myapp',
   ],
   async run(args, context) {
     const flags = parseCommandArgs('screenshot', args, OPTIONS);

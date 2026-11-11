@@ -11,7 +11,7 @@
 #include <cstddef>
 #include <optional>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -74,6 +74,6 @@ facebook::jsi::Value FileReaderModule::readAsText(
   return resolvedPromise(runtime, facebook::jsi::String::createFromUtf8(runtime, *text));
 }
 
-RN_TIZEN_PLATFORM_MODULE("FileReaderModule", FileReaderModule);
+RN_WEBOS_PLATFORM_MODULE("FileReaderModule", FileReaderModule);
 
-} // namespace rntizen
+} // namespace rnwebos

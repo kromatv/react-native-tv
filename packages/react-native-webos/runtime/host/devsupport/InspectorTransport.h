@@ -7,7 +7,7 @@
 #include <memory>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// What jsinspector-modern's InspectorPackagerConnection needs from a
 /// platform: WebSockets to the dev server's inspector proxy, and delayed
@@ -22,4 +22,4 @@ class InspectorTransport final : public facebook::react::jsinspector_modern::Ins
   void scheduleCallback(std::function<void()> callback, std::chrono::milliseconds delay) override;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

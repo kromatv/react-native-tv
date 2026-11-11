@@ -7,7 +7,7 @@ const EXAMPLE_MODULES = fileURLToPath(new URL('../../example/node_modules', impo
 
 /** A temporary app with the example's packages, whose Expo config is `expo`. */
 export function appDir(expo: Record<string, unknown>): string {
-  const dir = mkdtempSync(join(tmpdir(), 'rn-tizen-app-'));
+  const dir = mkdtempSync(join(tmpdir(), 'rn-webos-app-'));
   symlinkSync(EXAMPLE_MODULES, join(dir, 'node_modules'), 'dir');
   writeFileSync(
     join(dir, 'package.json'),

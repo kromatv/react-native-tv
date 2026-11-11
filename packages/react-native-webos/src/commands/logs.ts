@@ -23,15 +23,15 @@ const OPTIONS = {
   ...COMMON_OPTIONS,
 } as const;
 
-/** `rn-tizen logs`: prints what a development build streams, until Ctrl+C. */
+/** `rn-webos logs`: prints what a development build streams, until Ctrl+C. */
 export const logsCommand: Command = {
   name: 'logs',
   summary: 'Print the logs a development build streams, until Ctrl+C',
   options: OPTIONS,
   examples: [
-    'rn-tizen logs',
-    'rn-tizen logs --level debug',
-    'rn-tizen logs --package com.example.myapp',
+    'rn-webos logs',
+    'rn-webos logs --level debug',
+    'rn-webos logs --package com.example.myapp',
   ],
   async run(args, context) {
     const values = parseCommandArgs('logs', args, OPTIONS);
@@ -41,7 +41,7 @@ export const logsCommand: Command = {
       paint: reporter.paint,
       minimum,
       held: false,
-      transform: crashSymbolizer(join(context.cwd, 'tizen', 'lib', RUNTIME_LIBRARY)),
+      transform: crashSymbolizer(join(context.cwd, 'webos', 'lib', RUNTIME_LIBRARY)),
     });
     const dir = resolve(context.cwd, values.project ?? '.');
     const app = targetPackage(values.package, dir, 'logs');
@@ -51,7 +51,7 @@ export const logsCommand: Command = {
       `Listening on ${address}:${server.port} for ${app ?? 'every app'}. Press Ctrl+C to stop.`,
     );
     reporter.note(
-      'Launch a development build on the TV (rn-tizen run, or from its apps) to see its logs.',
+      'Launch a development build on the TV (rn-webos run, or from its apps) to see its logs.',
     );
     await untilInterrupted();
     await server.close();

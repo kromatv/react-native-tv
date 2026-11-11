@@ -5,9 +5,9 @@
 #include <optional>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
-/// The props of `AndroidTextInput` the Tizen view reads: React Native's
+/// The props of `AndroidTextInput` the webOS view reads: React Native's
 /// cross-platform text input props plus the keyboard ones Android parses in
 /// `AndroidTextInputProps`, whose header needs Android's serializable props.
 /// `showSoftInputOnFocus` stays unset when JavaScript leaves it out, so the
@@ -29,4 +29,4 @@ class TextInputProps final : public facebook::react::BaseTextInputProps {
   std::string returnKeyType{};
 };
 
-} // namespace rntizen
+} // namespace rnwebos

@@ -9,7 +9,7 @@
 
 #include <cstdlib>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -45,15 +45,15 @@ TEST_CASE("readDeviceProfile reads the model, the platform and the screen from s
   const auto profile = readDeviceProfile();
   CHECK(profile.modelName == "Simulator");
   CHECK(profile.platformVersion == "9.0");
-  CHECK(profile.buildString == "rn-tizen-simulator");
+  CHECK(profile.buildString == "rn-webos-simulator");
   CHECK(profile.screenWidth == 1920);
   CHECK(profile.screenHeight == 1080);
 
-  setenv("RN_TIZEN_SIMULATOR_SCREEN_SIZE", "1280x720", 1);
+  setenv("RN_WEBOS_SIMULATOR_SCREEN_SIZE", "1280x720", 1);
   const auto smaller = readDeviceProfile();
-  unsetenv("RN_TIZEN_SIMULATOR_SCREEN_SIZE");
+  unsetenv("RN_WEBOS_SIMULATOR_SCREEN_SIZE");
   CHECK(smaller.screenWidth == 1280);
   CHECK(smaller.screenHeight == 720);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

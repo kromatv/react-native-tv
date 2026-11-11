@@ -5,7 +5,7 @@
 
 #include <algorithm>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -101,4 +101,4 @@ BoxStyle resolveBoxStyle(
   };
 }
 
-} // namespace rntizen
+} // namespace rnwebos

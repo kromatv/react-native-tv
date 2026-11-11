@@ -21,7 +21,7 @@ async function deviceChecks(): Promise<readonly Check[]> {
     attempt('Device.osName and osVersion', () =>
       check(
         'Device.osName and osVersion',
-        Device.osName === 'Tizen',
+        Device.osName === 'webOS',
         `${Device.osName} ${Device.osVersion}`,
       ),
     ),
@@ -42,7 +42,7 @@ async function deviceChecks(): Promise<readonly Check[]> {
     attempt('Constants.expoConfig', () =>
       check(
         'Constants.expoConfig',
-        Constants.expoConfig?.slug === 'react-native-tizen-example',
+        Constants.expoConfig?.slug === 'react-native-webos-example',
         Constants.expoConfig?.name ?? null,
       ),
     ),

@@ -1,24 +1,24 @@
 #!/usr/bin/env bash
-# Builds libreact-native-tizen.so and the launcher for the simulator from the
+# Builds libreact-native-webos.so and the launcher for the simulator from the
 # package's runtime/, into the build of one set of native libraries. The first
 # run also builds Hermes' compiler for this VM. One build of a directory runs
 # at a time; another waits for it, while other directories build alongside.
 #
-#   RN_TIZEN_SIMULATOR_RUNTIME  the build's key: rn-tizen derives it from the
+#   RN_WEBOS_SIMULATOR_RUNTIME  the build's key: rn-webos derives it from the
 #                               app's native libraries (empty: the build from
 #                               before keys)
 #
 # Configures when these are set and differ from the last configure, otherwise
 # only runs Ninja, so a host C++ change rebuilds incrementally:
-#   RN_TIZEN_CACHE_DIR REACT_NATIVE_DIR RN_TIZEN_CODEGEN_DIR
+#   RN_WEBOS_CACHE_DIR REACT_NATIVE_DIR RN_WEBOS_CODEGEN_DIR
 #   EXPO_MODULES_CORE_DIR EXPO_MODULES_JSI_DIR (both empty for an app without Expo)
-#   RN_TIZEN_LIBRARIES_FILE (the app's native libraries; empty for none)
+#   RN_WEBOS_LIBRARIES_FILE (the app's native libraries; empty for none)
 #   BUILD_TYPE (default RelWithDebInfo)
 set -euo pipefail
 # shellcheck source=SCRIPTDIR/runtimes.sh
 source "$(dirname "${BASH_SOURCE[0]}")/runtimes.sh"
 
-RUNTIME_CAP="${RN_TIZEN_SIMULATOR_RUNTIMES:-4}"
+RUNTIME_CAP="${RN_WEBOS_SIMULATOR_RUNTIMES:-4}"
 RECENT_MINUTES=30
 
 hermes_pin() {
@@ -40,7 +40,7 @@ compile_hermes_host() {
   url="$(hermes_pin url)"
   sha="$(hermes_pin sha256)"
   archive_name="hermes-$(basename "$url")"
-  archive="$RN_TIZEN_CACHE_DIR/downloads/hermes/$archive_name"
+  archive="$RN_WEBOS_CACHE_DIR/downloads/hermes/$archive_name"
   source="$SOURCE_DIR/${archive_name%.tar.gz}"
   if [[ ! -f "$archive" ]]; then
     mkdir -p "$(dirname "$archive")"
@@ -61,18 +61,18 @@ compile_hermes_host() {
 
 configure_runtime() {
   local definitions=(
-    -DRN_TIZEN_SIMULATOR=ON
+    -DRN_WEBOS_SIMULATOR=ON
     -DCMAKE_BUILD_TYPE="${BUILD_TYPE:-RelWithDebInfo}"
     -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_LINKER_TYPE=LLD
-    -DRN_TIZEN_CACHE_DIR="$RN_TIZEN_CACHE_DIR"
+    -DRN_WEBOS_CACHE_DIR="$RN_WEBOS_CACHE_DIR"
     -DREACT_NATIVE_DIR="$REACT_NATIVE_DIR"
-    -DRN_TIZEN_CODEGEN_DIR="$RN_TIZEN_CODEGEN_DIR"
-    -DRN_TIZEN_HERMES_HOST_COMPILERS="$HERMES_HOST_BUILD_DIR/ImportHostCompilers.cmake"
+    -DRN_WEBOS_CODEGEN_DIR="$RN_WEBOS_CODEGEN_DIR"
+    -DRN_WEBOS_HERMES_HOST_COMPILERS="$HERMES_HOST_BUILD_DIR/ImportHostCompilers.cmake"
     -DEXPO_MODULES_CORE_DIR="${EXPO_MODULES_CORE_DIR:-}"
     -DEXPO_MODULES_JSI_DIR="${EXPO_MODULES_JSI_DIR:-}"
-    -DRN_TIZEN_LIBRARIES_FILE="${RN_TIZEN_LIBRARIES_FILE:-}"
+    -DRN_WEBOS_LIBRARIES_FILE="${RN_WEBOS_LIBRARIES_FILE:-}"
   )
-  local stamp="$RUNTIME_BUILD_DIR/.rn-tizen-simulator-configure"
+  local stamp="$RUNTIME_BUILD_DIR/.rn-webos-simulator-configure"
   # Checkouts share a build directory per key: without the source tree in the
   # stamp, a build would keep compiling the checkout that configured it first.
   local configured="$RUNTIME_DIR ${definitions[*]}"
@@ -84,7 +84,7 @@ configure_runtime() {
   printf '%s' "$configured" >"$stamp"
 }
 
-key="${RN_TIZEN_SIMULATOR_RUNTIME:-}"
+key="${RN_WEBOS_SIMULATOR_RUNTIME:-}"
 if [[ -n "$key" && ! "$key" =~ $RUNTIME_KEY ]]; then
   echo "Not a runtime key: $key" >&2
   exit 2
@@ -99,19 +99,19 @@ if ! flock --nonblock "$build_lock"; then
 fi
 
 if [[ -n "${REACT_NATIVE_DIR:-}" ]]; then
-  : "${RN_TIZEN_CACHE_DIR:?RN_TIZEN_CACHE_DIR must be set with REACT_NATIVE_DIR}"
-  : "${RN_TIZEN_CODEGEN_DIR:?RN_TIZEN_CODEGEN_DIR must be set with REACT_NATIVE_DIR}"
+  : "${RN_WEBOS_CACHE_DIR:?RN_WEBOS_CACHE_DIR must be set with REACT_NATIVE_DIR}"
+  : "${RN_WEBOS_CODEGEN_DIR:?RN_WEBOS_CODEGEN_DIR must be set with REACT_NATIVE_DIR}"
   build_hermes_host
   configure_runtime
 elif [[ ! -f "$RUNTIME_BUILD_DIR/build.ninja" ]]; then
-  echo "No configured build in $RUNTIME_BUILD_DIR: run \`rn-tizen simulator build\` from the Mac first." >&2
+  echo "No configured build in $RUNTIME_BUILD_DIR: run \`rn-webos simulator build\` from the Mac first." >&2
   exit 1
 fi
 
 # Every runtime build compiles the same sources from its own directory: hashed
 # relative to it, one directory's objects serve the next.
 export CCACHE_BASEDIR="$RUNTIME_BUILD_DIR" CCACHE_NOHASHDIR=1
-cmake --build "$RUNTIME_BUILD_DIR" --target react-native-tizen rn-tizen-simulator
+cmake --build "$RUNTIME_BUILD_DIR" --target react-native-webos rn-webos-simulator
 touch "$RUNTIME_BUILD_DIR/$RUNTIME_USED_FILE"
 exec {build_lock}>&-
 prune_runtimes "$RUNTIME_CAP" "$RECENT_MINUTES" | sed 's/^/Removed the unused simulator runtime /'

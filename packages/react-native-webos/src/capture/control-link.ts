@@ -8,8 +8,8 @@ import {
   type ScreenFrame,
 } from './capture-protocol.ts';
 
-const LOGS_HINT = 'Its logs say why: rn-tizen logs --level debug.';
-const VERSION_HINT = 'Build the app again with this version of rn-tizen.';
+const LOGS_HINT = 'Its logs say why: rn-webos logs --level debug.';
+const VERSION_HINT = 'Build the app again with this version of rn-webos.';
 
 interface PendingCapture {
   readonly resolve: (frame: ScreenFrame) => void;
@@ -18,8 +18,8 @@ interface PendingCapture {
 }
 
 /**
- * The control connection a development build keeps open to `rn-tizen`, beside
- * its log stream: `rn-tizen` asks, the app answers with its screen, or turns
+ * The control connection a development build keeps open to `rn-webos`, beside
+ * its log stream: `rn-webos` asks, the app answers with its screen, or turns
  * its perf samples on.
  */
 export class ControlLink {

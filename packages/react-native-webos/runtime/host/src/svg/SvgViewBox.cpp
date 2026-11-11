@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <string_view>
 
-namespace rntizen::svg {
+namespace rnwebos::svg {
 
 namespace {
 
@@ -57,4 +57,4 @@ Affine viewBoxTransform(const SvgViewBox &viewBox, double width, double height) 
   return Affine::translation(translateX, translateY) * Affine::scaling(scaleX, scaleY);
 }
 
-} // namespace rntizen::svg
+} // namespace rnwebos::svg

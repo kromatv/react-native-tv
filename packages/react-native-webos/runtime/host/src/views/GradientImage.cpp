@@ -10,7 +10,7 @@
 #include <cmath>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -176,4 +176,4 @@ const NinePatch &gradientPatch(const facebook::react::BackgroundImage &image, co
   return cachedPatch(keyFor(image, box), [&image, &box] { return paint(image, box); });
 }
 
-} // namespace rntizen
+} // namespace rnwebos

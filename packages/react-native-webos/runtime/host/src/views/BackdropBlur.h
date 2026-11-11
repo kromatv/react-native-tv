@@ -4,7 +4,7 @@
 
 #include <Evas.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// What is drawn behind a box, blurred: an Evas snapshot image under a `blur`
 /// filter. Evas keeps the blurred picture until something under the snapshot
@@ -36,4 +36,4 @@ class BackdropBlur final {
   int radius_{0};
 };
 
-} // namespace rntizen
+} // namespace rnwebos

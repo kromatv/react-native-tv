@@ -6,7 +6,7 @@
 #include <map>
 #include <tuple>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -31,4 +31,4 @@ FontMetrics fontMetrics(const std::string &family, const std::string &weight, bo
   return cache.try_emplace(std::move(key), metrics).first->second;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

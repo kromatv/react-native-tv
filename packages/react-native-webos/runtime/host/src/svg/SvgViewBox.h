@@ -4,7 +4,7 @@
 
 #include <string>
 
-namespace rntizen::svg {
+namespace rnwebos::svg {
 
 /// An `<Svg>`'s `viewBox` and `preserveAspectRatio`, as react-native-svg's
 /// `extractViewBox` splits them. An empty `align` means no viewBox was given.
@@ -24,4 +24,4 @@ struct SvgViewBox {
 /// SVG 2's "Computing the equivalent transform of an SVG viewport".
 Affine viewBoxTransform(const SvgViewBox &viewBox, double width, double height);
 
-} // namespace rntizen::svg
+} // namespace rnwebos::svg

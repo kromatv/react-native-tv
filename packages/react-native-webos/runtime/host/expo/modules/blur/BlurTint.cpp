@@ -5,7 +5,7 @@
 #include <map>
 #include <numbers>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -66,4 +66,4 @@ int blurRadiusPixels(double intensity, double reductionFactor, double pointScale
   return static_cast<int>(std::lround(3 * androidSigma(radius) * pointScale));
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

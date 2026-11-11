@@ -7,7 +7,7 @@ import { stageFile } from './stage-file.ts';
 let root: string;
 
 beforeEach(() => {
-  root = mkdtempSync(join(tmpdir(), 'rn-tizen-stage-'));
+  root = mkdtempSync(join(tmpdir(), 'rn-webos-stage-'));
 });
 
 afterEach(() => {

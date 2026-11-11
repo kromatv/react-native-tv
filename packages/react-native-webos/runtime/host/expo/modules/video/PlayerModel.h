@@ -4,7 +4,7 @@
 #include <string_view>
 #include <vector>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 /// expo-video's `VideoPlayerStatus`.
 enum class PlayerStatus { Idle, Loading, ReadyToPlay, Error };
@@ -46,4 +46,4 @@ enum class ContentFit { Contain, Cover, Fill };
 
 ContentFit contentFitFrom(std::string_view name);
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

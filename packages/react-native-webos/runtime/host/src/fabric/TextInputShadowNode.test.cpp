@@ -15,7 +15,7 @@
 #include <string_view>
 #include <utility>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -163,4 +163,4 @@ TEST_CASE_FIXTURE(Field, "a tree change that only resizes the field keeps the ty
   CHECK(input->getStateData().mostRecentEventCount == 0);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

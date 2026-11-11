@@ -4,7 +4,7 @@
 
 #include <format>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -98,4 +98,4 @@ std::pair<int, std::string> decodeWebSocketClose(std::string_view payload) {
   return {code, std::string(payload.substr(2))};
 }
 
-} // namespace rntizen
+} // namespace rnwebos

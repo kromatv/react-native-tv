@@ -21,7 +21,7 @@ let output: ReturnType<typeof captureProcessOutput>;
 let server: LogServer;
 
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'rn-tizen-listen-'));
+  dir = mkdtempSync(join(tmpdir(), 'rn-webos-listen-'));
   output = captureProcessOutput();
   server = { port: 8102, capture: vi.fn(), close: vi.fn(async () => undefined) };
   vi.mocked(listenForLogs).mockResolvedValue(server);
@@ -32,7 +32,7 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-describe('rn-tizen logs', () => {
+describe('rn-webos logs', () => {
   it('listens on --port until Ctrl+C, then closes', async () => {
     await logsCommand.run(['--port', '8102', '--level', 'debug'], { cwd: dir });
 
@@ -47,7 +47,7 @@ describe('rn-tizen logs', () => {
     expect(listenForLogs).toHaveBeenCalledWith(8099, expect.anything(), { app: 'com.example.tv' });
     expect(output.stdout()).toContain('for com.example.tv.');
     await expect(logsCommand.run(['--package', 'tv'], { cwd: dir })).rejects.toThrow(
-      '--package is not a Tizen package id',
+      '--package is not a webOS package id',
     );
   });
 
@@ -58,12 +58,12 @@ describe('rn-tizen logs', () => {
   });
 });
 
-describe('rn-tizen perf', () => {
+describe('rn-webos perf', () => {
   it('listens only to the TV --device names, and saves what it heard to --out', async () => {
     await perfCommand.run(['--device', '192.168.1.50', '--out', 'boot.jsonl'], { cwd: dir });
 
     expect(listenForLogs).toHaveBeenCalledWith(8099, expect.anything(), {
-      inUseHint: expect.stringContaining('rn-tizen perf listens on the log port itself'),
+      inUseHint: expect.stringContaining('rn-webos perf listens on the log port itself'),
       peer: '192.168.1.50',
       app: null,
     });
@@ -78,7 +78,7 @@ describe('rn-tizen perf', () => {
   });
 });
 
-describe('rn-tizen screenshot', () => {
+describe('rn-webos screenshot', () => {
   it('saves the frame the app sends as a PNG at --out', async () => {
     vi.mocked(captureScreen).mockResolvedValue({
       width: 1,

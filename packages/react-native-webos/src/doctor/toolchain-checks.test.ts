@@ -50,7 +50,7 @@ describe('checkLlvm', () => {
     expect(await checkLlvm(answering(''))).toMatchObject({
       status: 'fail',
       detail: 'missing llvm-ar, ld.lld',
-      fix: expect.stringContaining('TIZEN_LLVM_DIR'),
+      fix: expect.stringContaining('WEBOS_LLVM_DIR'),
     });
   });
 });

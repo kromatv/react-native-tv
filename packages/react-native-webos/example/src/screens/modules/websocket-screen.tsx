@@ -23,14 +23,14 @@ function sameBytes(left: Uint8Array, right: Uint8Array): boolean {
 async function webSocketChecks(): Promise<readonly Check[]> {
   return [
     await attempt('ws open, protocol, headers, Origin', async () => {
-      const session = await openSession(ECHO_SOCKET, ['echo.v1', 'other'], { 'X-Probe': 'tizen' });
+      const session = await openSession(ECHO_SOCKET, ['echo.v1', 'other'], { 'X-Probe': 'webos' });
       const headers = headersOf(await session.next());
       session.socket.close();
       const expectedOrigin = ECHO_HTTP.replace(/\/$/, '');
       return check(
         'ws open, protocol, headers, Origin',
         session.socket.protocol === 'echo.v1' &&
-          headers['x-probe'] === 'tizen' &&
+          headers['x-probe'] === 'webos' &&
           headers['origin'] === expectedOrigin,
         { protocol: session.socket.protocol, probe: headers['x-probe'], origin: headers['origin'] },
       );
@@ -113,10 +113,10 @@ async function webSocketChecks(): Promise<readonly Check[]> {
     }),
     await attempt('wss echo (public, TLS)', async () => {
       const session = await openSession(PUBLIC_WSS_ECHO);
-      session.socket.send('tizen over wss');
+      session.socket.send('webos over wss');
       const echoed = await session.next();
       session.socket.close();
-      return check('wss echo (public, TLS)', echoed === 'tizen over wss', echoed);
+      return check('wss echo (public, TLS)', echoed === 'webos over wss', echoed);
     }),
     await attempt('ws refused connection fails', async () => {
       const outcome = await within(

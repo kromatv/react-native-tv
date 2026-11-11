@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// The strip across the top of the screen that says "Loading from ..." or
 /// "Refreshing...", which Android draws for `DevLoadingView`. Colors are
@@ -28,4 +28,4 @@ class LoadingBanner final {
   Evas_Textblock_Style *style_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

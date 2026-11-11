@@ -5,7 +5,7 @@
 #include <filesystem>
 #include <fstream>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -139,4 +139,4 @@ TEST_CASE("a Directory keeps a child's name whole, with the characters a URI esc
         "true");
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

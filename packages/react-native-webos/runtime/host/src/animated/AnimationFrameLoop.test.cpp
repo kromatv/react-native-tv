@@ -10,7 +10,7 @@
 #include <memory>
 #include <thread>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -187,4 +187,4 @@ TEST_CASE("AnimationFrameLoop destroyed on another thread removes its animator o
   CHECK(frames == 0);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

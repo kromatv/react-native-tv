@@ -23,7 +23,7 @@ function namesFound(excluded: readonly string[] = []): string[] {
 }
 
 beforeEach(() => {
-  app = mkdtempSync(join(tmpdir(), 'rn-tizen-libraries-'));
+  app = mkdtempSync(join(tmpdir(), 'rn-webos-libraries-'));
 });
 
 afterEach(() => {
@@ -70,26 +70,26 @@ describe('findNativeLibraries', () => {
     expect(namesFound([reactNative])).toEqual([]);
   });
 
-  it("takes a package's own Tizen CMakeLists.txt from its tizen field", () => {
+  it("takes a package's own webOS CMakeLists.txt from its webos field", () => {
     writePackage(app, { name: 'app', dependencies: { camera: '1' } });
     const camera = dependency('camera', {
       codegenConfig: { name: 'camera', ...SPECS },
-      tizen: { cmake: 'tizen/CMakeLists.txt' },
+      webos: { cmake: 'webos/CMakeLists.txt' },
     });
 
     const [library] = findNativeLibraries(app, []).libraries;
 
-    expect(library?.declaredTizenCMake).toBe(join(camera, 'tizen', 'CMakeLists.txt'));
+    expect(library?.declaredWebOSCMake).toBe(join(camera, 'webos', 'CMakeLists.txt'));
   });
 
-  it('ignores, with a warning, a tizen field without a cmake path', () => {
+  it('ignores, with a warning, a webos field without a cmake path', () => {
     writePackage(app, { name: 'app', dependencies: { camera: '1' } });
-    dependency('camera', { codegenConfig: { name: 'camera', ...SPECS }, tizen: { cmake: 3 } });
+    dependency('camera', { codegenConfig: { name: 'camera', ...SPECS }, webos: { cmake: 3 } });
 
     const scan = findNativeLibraries(app, []);
 
-    expect(scan.libraries[0]?.declaredTizenCMake).toBeNull();
-    expect(scan.warnings).toEqual(['camera: its "tizen" field needs a "cmake" path; ignored']);
+    expect(scan.libraries[0]?.declaredWebOSCMake).toBeNull();
+    expect(scan.warnings).toEqual(['camera: its "webos" field needs a "cmake" path; ignored']);
   });
 
   it('skips, with a warning, a codegenConfig codegen cannot read', () => {

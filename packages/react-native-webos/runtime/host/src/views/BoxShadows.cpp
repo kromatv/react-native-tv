@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <utility>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -88,4 +88,4 @@ Edges BoxShadows::overflow() const {
   return edges;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

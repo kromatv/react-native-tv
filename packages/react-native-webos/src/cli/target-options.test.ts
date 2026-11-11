@@ -6,7 +6,7 @@ import { chooseTarget } from './target-options.ts';
 const TV = { cpuArch: 'armv7', platformVersion: '9.0', profile: 'tv' };
 
 describe('chooseTarget', () => {
-  it('builds for armv7l at the Tizen 6.0 floor when nothing says otherwise', () => {
+  it('builds for armv7l at the webOS 6.0 floor when nothing says otherwise', () => {
     expect(chooseTarget({ command: 'package' })).toEqual({
       arch: 'armv7l',
       platformVersion: '6.0',
@@ -60,7 +60,7 @@ describe('chooseTarget', () => {
     const device = { ...TV, platformVersion: '5.5' };
 
     expect(() => chooseTarget({ command: 'run', device })).toThrow(
-      'The TV runs Tizen 5.5, which is older than Tizen 6.0',
+      'The TV runs webOS 5.5, which is older than webOS 6.0',
     );
   });
 });

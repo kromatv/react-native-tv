@@ -5,7 +5,7 @@
 #include <cmath>
 #include <vector>
 
-namespace rntizen::svg {
+namespace rnwebos::svg {
 
 namespace {
 
@@ -124,4 +124,4 @@ TEST_CASE("parsePathData drops data that does not start with a move") {
   CHECK(parsePathData("").empty());
 }
 
-} // namespace rntizen::svg
+} // namespace rnwebos::svg

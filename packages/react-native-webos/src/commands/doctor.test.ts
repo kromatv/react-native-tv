@@ -1,16 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { appFloor, checkApp } from '../doctor/app-check.ts';
 import { passed, type CheckResult } from '../doctor/check-result.ts';
-import * as tizenChecks from '../doctor/tizen-checks.ts';
+import * as webosChecks from '../doctor/webos-checks.ts';
 import * as toolchainChecks from '../doctor/toolchain-checks.ts';
 import { FixableError } from '../errors.ts';
 import { captureProcessOutput } from '../fakes.fixtures.ts';
-import { locateTizenSdk } from '../tizen/tizen-sdk.ts';
+import { locateWebOSSdk } from '../webos/webos-sdk.ts';
 import { doctorCommand } from './doctor.ts';
 
-vi.mock('../tizen/tizen-sdk.ts', () => ({ locateTizenSdk: vi.fn() }));
+vi.mock('../webos/webos-sdk.ts', () => ({ locateWebOSSdk: vi.fn() }));
 vi.mock('../doctor/app-check.ts', () => ({ appFloor: vi.fn(() => undefined), checkApp: vi.fn() }));
-vi.mock('../doctor/tizen-checks.ts', () => ({
+vi.mock('../doctor/webos-checks.ts', () => ({
   checkCertificates: vi.fn(),
   checkDevices: vi.fn(),
   checkGcc: vi.fn(),
@@ -25,11 +25,11 @@ vi.mock('../doctor/toolchain-checks.ts', () => ({
   checkNode: vi.fn(),
 }));
 
-const SDK = { root: '/tizen-studio', packageManager: '/pm' };
+const SDK = { root: '/webos-studio', packageManager: '/pm' };
 let output: ReturnType<typeof captureProcessOutput>;
 
 function everyCheckPasses(): void {
-  for (const check of [...Object.values(tizenChecks), ...Object.values(toolchainChecks)]) {
+  for (const check of [...Object.values(webosChecks), ...Object.values(toolchainChecks)]) {
     vi.mocked(check).mockResolvedValue(passed('Check', 'fine'));
   }
   vi.mocked(checkApp).mockResolvedValue({
@@ -41,7 +41,7 @@ function everyCheckPasses(): void {
 
 beforeEach(() => {
   output = captureProcessOutput();
-  vi.mocked(locateTizenSdk).mockReturnValue(SDK);
+  vi.mocked(locateWebOSSdk).mockReturnValue(SDK);
   everyCheckPasses();
   process.exitCode = undefined;
 });
@@ -51,13 +51,13 @@ afterEach(() => {
   process.exitCode = undefined;
 });
 
-describe('rn-tizen doctor', () => {
+describe('rn-webos doctor', () => {
   it('prints every check and says the machine is ready for the target', async () => {
     await doctorCommand.run(['--arch', 'aarch64', '--project', 'app'], { cwd: '/work' });
 
-    expect(output.stdout()).toContain('Tizen Studio      /tizen-studio');
-    expect(output.stdout()).toContain('Ready to build for Tizen 6.0 on aarch64.');
-    expect(tizenChecks.checkGcc).toHaveBeenCalledWith(SDK, {
+    expect(output.stdout()).toContain('webOS Studio      /webos-studio');
+    expect(output.stdout()).toContain('Ready to build for webOS 6.0 on aarch64.');
+    expect(webosChecks.checkGcc).toHaveBeenCalledWith(SDK, {
       arch: 'aarch64',
       platformVersion: '6.0',
     });
@@ -95,19 +95,19 @@ describe('rn-tizen doctor', () => {
     expect(output.stdout()).toContain('1 check failed.');
   });
 
-  it('skips the Tizen Studio checks when Tizen Studio is missing, and fails that one', async () => {
-    vi.mocked(locateTizenSdk).mockImplementation(() => {
-      throw new FixableError('Tizen Studio not found at /nowhere', 'Install Tizen Studio');
+  it('skips the webOS Studio checks when webOS Studio is missing, and fails that one', async () => {
+    vi.mocked(locateWebOSSdk).mockImplementation(() => {
+      throw new FixableError('webOS Studio not found at /nowhere', 'Install webOS Studio');
     });
 
     await doctorCommand.run([], { cwd: '/work' });
 
-    expect(tizenChecks.checkGcc).not.toHaveBeenCalled();
-    expect(output.stdout()).toMatch(/- GCC runtime {7}needs Tizen Studio/);
+    expect(webosChecks.checkGcc).not.toHaveBeenCalled();
+    expect(output.stdout()).toMatch(/- GCC runtime {7}needs webOS Studio/);
     expect(output.stdout()).toContain(
-      'needs Tizen Studio, then IOT-Headed-6.0-NativeAppDevelopment-CLI',
+      'needs webOS Studio, then IOT-Headed-6.0-NativeAppDevelopment-CLI',
     );
-    expect(output.stdout()).toContain('Tizen Studio not found at /nowhere');
+    expect(output.stdout()).toContain('webOS Studio not found at /nowhere');
     expect(output.stdout()).toContain('1 check failed.');
   });
 
@@ -117,15 +117,15 @@ describe('rn-tizen doctor', () => {
     await doctorCommand.run([], { cwd: '/work' });
     await doctorCommand.run(['--platform', '7.0'], { cwd: '/work' });
 
-    expect(vi.mocked(tizenChecks.checkRootstrap).mock.calls.map((call) => call[1])).toEqual([
+    expect(vi.mocked(webosChecks.checkRootstrap).mock.calls.map((call) => call[1])).toEqual([
       { arch: 'armv7l', platformVersion: '8.0' },
       { arch: 'armv7l', platformVersion: '7.0' },
     ]);
     expect(appFloor).toHaveBeenCalledOnce();
   });
 
-  it('lets a bug in locating Tizen Studio through', async () => {
-    vi.mocked(locateTizenSdk).mockImplementation(() => {
+  it('lets a bug in locating webOS Studio through', async () => {
+    vi.mocked(locateWebOSSdk).mockImplementation(() => {
       throw new TypeError('broken');
     });
 

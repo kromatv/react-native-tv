@@ -4,7 +4,7 @@
 
 #include <doctest/doctest.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -43,4 +43,4 @@ TEST_CASE("lineSpan stops at maxLines, or at the last line when there are fewer"
   CHECK(roomy.bottom == lineBottom(paragraph, 2));
 }
 
-} // namespace rntizen
+} // namespace rnwebos

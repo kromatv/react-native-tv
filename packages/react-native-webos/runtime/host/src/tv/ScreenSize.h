@@ -2,7 +2,7 @@
 
 #include <Evas.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// A size in pixels.
 struct PixelSize {
@@ -16,4 +16,4 @@ struct PixelSize {
 /// and the canvas it got. Main thread only, right after the window is created.
 PixelSize fitWindowToScreen(Evas_Object *window, bool uhd, PixelSize systemInfo);
 
-} // namespace rntizen
+} // namespace rnwebos

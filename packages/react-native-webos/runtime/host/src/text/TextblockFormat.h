@@ -6,7 +6,7 @@
 #include <optional>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// How one run of text is drawn.
 struct FragmentFormat {
@@ -33,4 +33,4 @@ std::string paragraphFormat(
     std::optional<facebook::react::TextAlignment> alignment,
     facebook::react::Float scale);
 
-} // namespace rntizen
+} // namespace rnwebos

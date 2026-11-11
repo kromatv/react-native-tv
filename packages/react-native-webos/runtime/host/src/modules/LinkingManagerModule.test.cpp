@@ -7,7 +7,7 @@
 
 #include <memory>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -44,10 +44,10 @@ TEST_CASE("without a launch URL getInitialURL answers null, and nothing else can
   CHECK(settled(rt, call(rt, *module, "getInitialURL")) == "resolved: null");
   CHECK(settled(rt, call(rt, *module, "canOpenURL", url)) == "resolved: false");
   CHECK(settled(rt, call(rt, *module, "openURL", url)) ==
-        "rejected: Cannot open https://example.com: Linking.openURL is not supported on Tizen yet");
-  CHECK(settled(rt, call(rt, *module, "openSettings")) == "rejected: Linking.openSettings is not supported on Tizen");
+        "rejected: Cannot open https://example.com: Linking.openURL is not supported on webOS yet");
+  CHECK(settled(rt, call(rt, *module, "openSettings")) == "rejected: Linking.openSettings is not supported on webOS");
   CHECK(call(rt, *module, "addListener", String::createFromUtf8(rt, "url")).isUndefined());
   CHECK(call(rt, *module, "removeListeners", 1).isUndefined());
 }
 
-} // namespace rntizen
+} // namespace rnwebos

@@ -68,7 +68,7 @@ export function isElfSharedObject(elf: Uint8Array): boolean {
 }
 
 /**
- * Rebinds, in place, every LOCAL symbol a Tizen rootstrap leaves in the global
+ * Rebinds, in place, every LOCAL symbol a webOS rootstrap leaves in the global
  * part of a `.dynsym` table. The rootstrap's stub libraries neuter their imports
  * that way; GNU ld skips them, lld refuses the whole library. The entries become
  * WEAK, which neither linker resolves anything against. Returns how many changed.

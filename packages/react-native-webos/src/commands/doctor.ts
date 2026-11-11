@@ -9,7 +9,7 @@ import {
   checkGcc,
   checkCertificates,
   checkRootstrap,
-} from '../doctor/tizen-checks.ts';
+} from '../doctor/webos-checks.ts';
 import {
   checkCcache,
   checkCMake,
@@ -19,8 +19,8 @@ import {
   checkNode,
 } from '../doctor/toolchain-checks.ts';
 import { FixableError } from '../errors.ts';
-import { locateTizenSdk, type TizenSdk } from '../tizen/tizen-sdk.ts';
-import { rootstrapFor, type TizenTarget } from '../tizen/target.ts';
+import { locateWebOSSdk, type WebOSSdk } from '../webos/webos-sdk.ts';
+import { rootstrapFor, type WebOSTarget } from '../webos/target.ts';
 
 const OPTIONS = { ...TARGET_OPTIONS, ...PROJECT_OPTIONS, ...COMMON_OPTIONS };
 const TITLE_WIDTH = 18;
@@ -32,24 +32,24 @@ const MARKS: Record<CheckStatus, readonly [string, 'green' | 'yellow' | 'red' | 
   skip: ['-', 'gray'],
 };
 
-function sdkChecks(sdk: TizenSdk | null, target: TizenTarget): Promise<CheckResult>[] {
+function sdkChecks(sdk: WebOSSdk | null, target: WebOSTarget): Promise<CheckResult>[] {
   if (sdk === null) {
-    const rootstrap = `needs Tizen Studio, then ${rootstrapFor(target).sdkPackage}`;
+    const rootstrap = `needs webOS Studio, then ${rootstrapFor(target).sdkPackage}`;
     return [
-      Promise.resolve({ title: 'GCC runtime', status: 'skip', detail: 'needs Tizen Studio' }),
+      Promise.resolve({ title: 'GCC runtime', status: 'skip', detail: 'needs webOS Studio' }),
       Promise.resolve({ title: 'Rootstrap', status: 'skip', detail: rootstrap }),
     ];
   }
   return [checkGcc(sdk, target), checkRootstrap(sdk, target)];
 }
 
-function locate(): { sdk: TizenSdk | null; result: CheckResult } {
+function locate(): { sdk: WebOSSdk | null; result: CheckResult } {
   try {
-    const sdk = locateTizenSdk();
-    return { sdk, result: passed('Tizen Studio', sdk.root) };
+    const sdk = locateWebOSSdk();
+    return { sdk, result: passed('webOS Studio', sdk.root) };
   } catch (error) {
     if (!(error instanceof FixableError)) throw error;
-    return { sdk: null, result: failed('Tizen Studio', error.message, error.hint) };
+    return { sdk: null, result: failed('webOS Studio', error.message, error.hint) };
   }
 }
 
@@ -61,12 +61,12 @@ function print(reporter: Reporter, result: CheckResult): void {
   if (result.fix !== undefined) reporter.line(`    ${reporter.paint('cyan', result.fix)}`);
 }
 
-/** `rn-tizen doctor`: checks this machine can build, sign and install a package. */
+/** `rn-webos doctor`: checks this machine can build, sign and install a package. */
 export const doctorCommand: Command = {
   name: 'doctor',
   summary: 'Check this machine can build, sign and install for Samsung TVs',
   options: OPTIONS,
-  examples: ['rn-tizen doctor', 'rn-tizen doctor --arch aarch64'],
+  examples: ['rn-webos doctor', 'rn-webos doctor --arch aarch64'],
   async run(args, context) {
     const values = parseCommandArgs('doctor', args, OPTIONS);
     const reporter = new Reporter({ verbose: values.verbose ?? false });
@@ -99,7 +99,7 @@ export const doctorCommand: Command = {
       reporter.line(
         reporter.paint(
           'green',
-          `Ready to build for Tizen ${target.platformVersion} on ${target.arch}.`,
+          `Ready to build for webOS ${target.platformVersion} on ${target.arch}.`,
         ),
       );
       return;

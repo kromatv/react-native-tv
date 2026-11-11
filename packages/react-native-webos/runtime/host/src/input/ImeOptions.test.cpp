@@ -6,7 +6,7 @@
 #include <tuple>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -109,4 +109,4 @@ TEST_CASE("a secure numeric field keeps its number layout, as Android's numeric 
   CHECK(options.secure);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

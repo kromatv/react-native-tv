@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { rememberDevice } from '../tizen/known-devices.ts';
+import { rememberDevice } from '../webos/known-devices.ts';
 import handler from './devtools-server.ts';
 import { CommandInputError, jobPageUrl, planCommand } from './devtools-commands.ts';
 import { jobsDir, listJobs, readJob, readLog, writeJob, type Job } from './jobs.ts';
@@ -11,10 +11,10 @@ let state = '';
 const saved: Record<string, string | undefined> = {};
 
 beforeEach(() => {
-  state = mkdtempSync(join(tmpdir(), 'rn-tizen-devtools-'));
-  for (const name of ['XDG_STATE_HOME', 'RN_TIZEN_CACHE_DIR']) saved[name] = process.env[name];
+  state = mkdtempSync(join(tmpdir(), 'rn-webos-devtools-'));
+  for (const name of ['XDG_STATE_HOME', 'RN_WEBOS_CACHE_DIR']) saved[name] = process.env[name];
   process.env.XDG_STATE_HOME = join(state, 'state');
-  process.env.RN_TIZEN_CACHE_DIR = join(state, 'cache');
+  process.env.RN_WEBOS_CACHE_DIR = join(state, 'cache');
 });
 
 afterEach(() => {
@@ -66,7 +66,7 @@ describe('planCommand', () => {
 
   it('points at the plugin page inside the dev server', () => {
     expect(jobPageUrl(DEV_SERVER, 'abc-1')).toBe(
-      'http://192.168.1.20:8081/_expo/plugins/@kromatv/react-native-tizen/?job=abc-1',
+      'http://192.168.1.20:8081/_expo/plugins/@kromatv/react-native-webos/?job=abc-1',
     );
   });
 });

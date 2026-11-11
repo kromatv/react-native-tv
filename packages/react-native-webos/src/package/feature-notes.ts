@@ -1,7 +1,7 @@
 import type { TvFeatures } from '../config/tv-features.ts';
 
 /**
- * What `rn-tizen package` says about the app's TV features: what Tizen
+ * What `rn-webos package` says about the app's TV features: what webOS
  * ignores, and what a store build should know before review.
  */
 export function featureNotes(features: TvFeatures, release: boolean): readonly string[] {

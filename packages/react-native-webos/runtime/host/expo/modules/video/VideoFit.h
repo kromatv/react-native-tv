@@ -6,7 +6,7 @@
 
 #include <optional>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 /// The part of the decoded frame the plane shows, in 0..1 ratios of its size.
 struct SourceCrop {
@@ -33,4 +33,4 @@ struct PlaneGeometry {
 std::optional<PlaneGeometry> fitVideo(
     const PixelRect &view, const PixelRect &window, int videoWidth, int videoHeight, ContentFit fit);
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

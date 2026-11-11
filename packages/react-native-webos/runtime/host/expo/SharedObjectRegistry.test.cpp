@@ -4,7 +4,7 @@
 
 #include <memory>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -55,4 +55,4 @@ TEST_CASE("SharedObjectRegistry releases an object once, resets its id and repor
   registry.release(object->sharedObjectId());
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

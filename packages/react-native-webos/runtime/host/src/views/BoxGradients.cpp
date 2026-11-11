@@ -5,7 +5,7 @@
 
 #include <algorithm>
 
-namespace rntizen {
+namespace rnwebos {
 
 BoxGradients::BoxGradients(Evas *evas, Evas_Object *smart) : evas_(evas), smart_(smart) {}
 
@@ -59,4 +59,4 @@ void BoxGradients::paint(const PixelRect &area) {
   stale_ = false;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

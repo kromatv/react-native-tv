@@ -8,7 +8,7 @@
 
 #include <memory>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 class SubtitleOverlay;
 class VideoPlayer;
@@ -27,7 +27,7 @@ class VideoView final : public ExpoView {
 
   void enterFullscreen();
   void exitFullscreen();
-  /// Throws: Tizen has no picture in picture.
+  /// Throws: webOS has no picture in picture.
   [[noreturn]] void startPictureInPicture();
   void stopPictureInPicture();
 
@@ -54,4 +54,4 @@ class VideoView final : public ExpoView {
   std::shared_ptr<VideoView *> alive_;
 };
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

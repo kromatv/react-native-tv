@@ -6,7 +6,7 @@
 #include <optional>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// An Evas textblock's style and markup for one paragraph. The measurer and
 /// the paragraph view both build theirs here, so layout and pixels agree.
@@ -26,4 +26,4 @@ TextblockContent textblockContent(
     const facebook::react::ParagraphAttributes &paragraphAttributes,
     facebook::react::Float scale);
 
-} // namespace rntizen
+} // namespace rnwebos

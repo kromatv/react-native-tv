@@ -14,7 +14,7 @@
 #include <charconv>
 #include <system_error>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -169,6 +169,6 @@ void NetworkingModule::addListener(Runtime &, facebook::jsi::String) {}
 
 void NetworkingModule::removeListeners(Runtime &, double) {}
 
-RN_TIZEN_PLATFORM_MODULE("Networking", NetworkingModule);
+RN_WEBOS_PLATFORM_MODULE("Networking", NetworkingModule);
 
-} // namespace rntizen
+} // namespace rnwebos

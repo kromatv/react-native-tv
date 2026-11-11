@@ -5,7 +5,7 @@
 #include <limits>
 #include <numbers>
 
-namespace rntizen::svg {
+namespace rnwebos::svg {
 
 namespace {
 
@@ -229,4 +229,4 @@ Path linePath(Point from, Point to) {
   return path;
 }
 
-} // namespace rntizen::svg
+} // namespace rnwebos::svg

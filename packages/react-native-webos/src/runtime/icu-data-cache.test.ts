@@ -31,9 +31,9 @@ function writeFullData(): void {
 }
 
 beforeEach(() => {
-  cache = mkdtempSync(join(tmpdir(), 'rn-tizen-icu-'));
+  cache = mkdtempSync(join(tmpdir(), 'rn-webos-icu-'));
   full = join(cache, 'icu', version, icuDataFileName(version));
-  vi.stubEnv('RN_TIZEN_CACHE_DIR', cache);
+  vi.stubEnv('RN_WEBOS_CACHE_DIR', cache);
 });
 
 afterEach(() => {

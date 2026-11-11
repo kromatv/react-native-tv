@@ -11,7 +11,7 @@
 #include <cmath>
 #include <string_view>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -219,10 +219,10 @@ Eina_Bool ExpoImageView::fadeStep(void *data, double position) {
   return EINA_TRUE;
 }
 
-RN_TIZEN_EXPO_VIEW(ViewDefinition<ExpoImageView>("ExpoImage")
+RN_WEBOS_EXPO_VIEW(ViewDefinition<ExpoImageView>("ExpoImage")
                        .prop("source", &ExpoImageView::setSource)
                        .prop("contentFit", &ExpoImageView::setContentFit)
                        .prop("transition", &ExpoImageView::setTransition)
                        .events({"onLoadStart", "onProgress", "onLoad", "onError", "onDisplay"}));
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

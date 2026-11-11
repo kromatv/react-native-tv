@@ -12,7 +12,7 @@
 #include <cctype>
 #include <mutex>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -93,4 +93,4 @@ std::optional<folly::dynamic> expoViewConfig(const std::string &moduleName, cons
   return folly::dynamic::object("validAttributes", std::move(attributes))("directEventTypes", std::move(events));
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

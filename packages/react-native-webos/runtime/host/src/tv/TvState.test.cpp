@@ -4,7 +4,7 @@
 
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 TEST_CASE("TvState counts command and search listeners apart") {
   TvState state(true, std::nullopt);
@@ -46,4 +46,4 @@ TEST_CASE("TvState keeps what the shell and JavaScript last reported") {
   CHECK(state.previewPublisher()("{}") == 2);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

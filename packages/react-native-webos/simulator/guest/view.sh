@@ -17,7 +17,7 @@ wait_for_port() {
 }
 
 if ! is_running "$XVFB_PID_FILE"; then
-  echo "The virtual screen of instance $INSTANCE is not running: start the app with \`rn-tizen simulator run$INSTANCE_FLAG\`." >&2
+  echo "The virtual screen of instance $INSTANCE is not running: start the app with \`rn-webos simulator run$INSTANCE_FLAG\`." >&2
   exit 1
 fi
 

@@ -2,7 +2,7 @@
 
 #include "HostWindow.h"
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -27,4 +27,4 @@ void videoViewShown(bool shown) {
   setHostWindowTransparent(transparent);
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

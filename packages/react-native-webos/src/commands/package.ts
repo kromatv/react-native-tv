@@ -20,15 +20,15 @@ const OPTIONS = {
   ...COMMON_OPTIONS,
 };
 
-/** `rn-tizen package`: builds a signed `.tpk` of the app. */
+/** `rn-webos package`: builds a signed `.tpk` of the app. */
 export const packageCommand: Command = {
   name: 'package',
   summary: 'Build a signed .tpk of the app, native runtime included',
   options: OPTIONS,
   examples: [
-    'rn-tizen package',
-    'rn-tizen package --profile Store',
-    'rn-tizen package --dev --device 192.168.1.50',
+    'rn-webos package',
+    'rn-webos package --profile Store',
+    'rn-webos package --dev --device 192.168.1.50',
   ],
   async run(args, context) {
     const flags = parseCommandArgs('package', args, OPTIONS);
@@ -55,6 +55,6 @@ export const packageCommand: Command = {
       `${reporter.paint(['green', 'bold'], 'Package')} ${formatPath(tpk, context.cwd)} ${reporter.paint('gray', size)}`,
     );
     const target = device === null ? '<tv ip>' : device.serial;
-    reporter.note(`Install and launch it with: rn-tizen run --device ${target}`);
+    reporter.note(`Install and launch it with: rn-webos run --device ${target}`);
   },
 };

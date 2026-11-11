@@ -8,7 +8,7 @@
 #include <memory>
 #include <string>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -47,4 +47,4 @@ TEST_CASE("ExpoModuleRegistry lets a later registration of a name replace the fi
   CHECK(std::dynamic_pointer_cast<SecondRegistryModule>(registry.create("RegistryReplacedModule")) != nullptr);
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

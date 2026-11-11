@@ -41,8 +41,8 @@ let app: string;
 let output: string;
 
 beforeEach(() => {
-  app = mkdtempSync(join(tmpdir(), 'rn-tizen-app-'));
-  output = mkdtempSync(join(tmpdir(), 'rn-tizen-out-'));
+  app = mkdtempSync(join(tmpdir(), 'rn-webos-app-'));
+  output = mkdtempSync(join(tmpdir(), 'rn-webos-out-'));
   writeFileSync(join(app, 'package.json'), JSON.stringify({ name: 'app' }));
 });
 
@@ -108,7 +108,7 @@ describe('prepareNativeLibraries with a codegen library', () => {
 });
 
 describe('prepareNativeLibraries with an Expo module', () => {
-  it('runs no codegen for an Expo module with a Tizen implementation, and lists it', async () => {
+  it('runs no codegen for an Expo module with a webOS implementation, and lists it', async () => {
     const reactNative = { name: 'react-native', version: '0.88.0', dir: app };
     writeFileSync(
       join(app, 'package.json'),
@@ -122,7 +122,7 @@ describe('prepareNativeLibraries with an Expo module', () => {
     );
     writeFileSync(
       join(module, 'expo-module.config.json'),
-      JSON.stringify({ platforms: ['tizen'], tizen: { cmake: 'tizen/CMakeLists.txt' } }),
+      JSON.stringify({ platforms: ['webos'], webos: { cmake: 'webos/CMakeLists.txt' } }),
     );
 
     const prepared = await prepareNativeLibraries(app, reactNative, output);
@@ -131,7 +131,7 @@ describe('prepareNativeLibraries with an Expo module', () => {
       expect.objectContaining({
         name: 'haptics',
         codegenName: 'expo_haptics',
-        implementation: join(realpathSync(module), 'tizen', 'CMakeLists.txt'),
+        implementation: join(realpathSync(module), 'webos', 'CMakeLists.txt'),
       }),
     ]);
     expect(existsSync(join(output, 'expo_haptics'))).toBe(true);
@@ -143,7 +143,7 @@ describe('describeLibraries', () => {
     expect(describeLibraries([])).toBe('none');
   });
 
-  it('marks a library with no Tizen implementation as codegen only', () => {
+  it('marks a library with no webOS implementation as codegen only', () => {
     expect(describeLibraries([LIBRARY, { ...LIBRARY, name: 'maps', implementation: null }])).toBe(
       'react-native-svg, maps (codegen only)',
     );

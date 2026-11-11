@@ -19,7 +19,7 @@ describe('bundledImplementations', () => {
   });
 
   it('ignores a directory without a library.json', () => {
-    dir = mkdtempSync(join(tmpdir(), 'rn-tizen-bundled-'));
+    dir = mkdtempSync(join(tmpdir(), 'rn-webos-bundled-'));
     mkdirSync(join(dir, 'views'));
     mkdirSync(join(dir, 'video'));
     writeFileSync(join(dir, 'video', 'library.json'), JSON.stringify({ package: 'expo-video' }));

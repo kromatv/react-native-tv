@@ -16,7 +16,7 @@ export function appFloor(dir: string): string | undefined {
   }
 }
 
-/** The app in `dir`, when there is one: its Tizen config and its dependencies. */
+/** The app in `dir`, when there is one: its webOS config and its dependencies. */
 export function checkApp(dir: string): Promise<CheckResult> {
   if (!CONFIG_FILES.some((name) => existsSync(join(dir, name)))) {
     return Promise.resolve({

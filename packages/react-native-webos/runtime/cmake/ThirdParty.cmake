@@ -64,7 +64,7 @@ add_library(glog_init INTERFACE)
 target_link_libraries(glog_init INTERFACE glog)
 add_library(log INTERFACE)
 
-set(RN_TIZEN_FOLLY_FLAGS
+set(RN_WEBOS_FOLLY_FLAGS
   -DFOLLY_NO_CONFIG=1
   -DFOLLY_HAVE_CLOCK_GETTIME=1
   -DFOLLY_CFG_NO_COROUTINES=1
@@ -85,6 +85,6 @@ list(TRANSFORM _folly_sources PREPEND "${folly_SOURCE_DIR}/folly/")
 
 add_library(folly_runtime STATIC ${_folly_sources})
 target_include_directories(folly_runtime SYSTEM PUBLIC "${folly_SOURCE_DIR}")
-target_compile_options(folly_runtime PUBLIC ${RN_TIZEN_FOLLY_FLAGS})
+target_compile_options(folly_runtime PUBLIC ${RN_WEBOS_FOLLY_FLAGS})
 target_compile_options(folly_runtime PRIVATE -fexceptions -frtti -Wno-sign-compare)
 target_link_libraries(folly_runtime PUBLIC glog double-conversion boost fmt fast_float)

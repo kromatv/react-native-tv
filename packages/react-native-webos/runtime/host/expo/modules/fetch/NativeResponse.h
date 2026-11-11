@@ -9,7 +9,7 @@
 #include <utility>
 #include <vector>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 /// Bytes JavaScript receives as an ArrayBuffer rather than a Uint8Array.
 struct ArrayBufferBytes {
@@ -73,4 +73,4 @@ class NativeResponse final : public SharedObject {
 
 ClassDefinition<NativeResponse> nativeResponseClass(std::shared_ptr<Context> context);
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

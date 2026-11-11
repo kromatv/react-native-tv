@@ -11,7 +11,7 @@
 #include <optional>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// Creates one of this platform's TurboModules for a runtime.
 using PlatformModuleFactory = std::function<std::shared_ptr<facebook::react::TurboModule>(
@@ -29,7 +29,7 @@ bool registerPlatformModuleType(const char *name) {
   return true;
 }
 
-} // namespace rntizen
+} // namespace rnwebos
 
 /// Registers `Type`, constructed from (jsInvoker, ModuleContext), as the TurboModule `name`.
-#define RN_TIZEN_PLATFORM_MODULE(name, Type) RN_TIZEN_REGISTRATION(::rntizen::registerPlatformModuleType<Type>(name))
+#define RN_WEBOS_PLATFORM_MODULE(name, Type) RN_WEBOS_REGISTRATION(::rnwebos::registerPlatformModuleType<Type>(name))

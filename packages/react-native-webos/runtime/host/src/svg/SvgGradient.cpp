@@ -4,7 +4,7 @@
 #include <cmath>
 #include <cstdint>
 
-namespace rntizen::svg {
+namespace rnwebos::svg {
 
 namespace {
 
@@ -92,4 +92,4 @@ ResolvedPaint resolveGradient(
   return linear(definition, m, viewportWidth, viewportHeight, std::move(stops));
 }
 
-} // namespace rntizen::svg
+} // namespace rnwebos::svg

@@ -7,7 +7,7 @@
 #include <bit>
 #include <cstring>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -97,4 +97,4 @@ void CrashReport::appendDecimal(int value) {
   while (count > 0) append({&digits[--count], 1});
 }
 
-} // namespace rntizen
+} // namespace rnwebos

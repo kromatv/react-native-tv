@@ -4,14 +4,14 @@
 #include "TvFeatures.h"
 #include "TvState.h"
 
-namespace rntizen {
+namespace rnwebos {
 
 using facebook::jsi::Runtime;
 using facebook::jsi::Value;
 using facebook::react::TurboModule;
 
 VoiceModule::VoiceModule(std::shared_ptr<facebook::react::CallInvoker> jsInvoker, const ModuleContext &context)
-    : TurboModule("RNTizenVoice", std::move(jsInvoker)),
+    : TurboModule("RNWebOSVoice", std::move(jsInvoker)),
       state_(context.tv),
       platformVersion_(context.device.platformVersion) {
   methodMap_["isAvailable"] = MethodMetadata{.argCount = 0, .invoker = &isAvailable};
@@ -79,6 +79,6 @@ Value VoiceModule::removeListener(Runtime &runtime, TurboModule &turboModule, co
   return changeListeners(runtime, turboModule, arguments, count, -1);
 }
 
-RN_TIZEN_PLATFORM_MODULE("RNTizenVoice", VoiceModule);
+RN_WEBOS_PLATFORM_MODULE("RNWebOSVoice", VoiceModule);
 
-} // namespace rntizen
+} // namespace rnwebos

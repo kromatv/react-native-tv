@@ -12,7 +12,7 @@ export function isRemoteToken(value: string): boolean {
   return TOKEN.test(value);
 }
 
-/** Where the token a TV issued to `rn-tizen` is kept, readable by this user only. */
+/** Where the token a TV issued to `rn-webos` is kept, readable by this user only. */
 export function tokenPath(host: string, env: NodeJS.ProcessEnv = process.env): string {
   return join(stateDir(env), 'remote', `${host}.token`);
 }
@@ -32,7 +32,7 @@ function readTokenFile(path: string): string | null {
 
 /**
  * The saved token for the TV at `host`, or null when it never paired or the file
- * is not a token. A token an older `rn-tizen` kept in the cache moves here.
+ * is not a token. A token an older `rn-webos` kept in the cache moves here.
  */
 export function readToken(host: string, env: NodeJS.ProcessEnv = process.env): string | null {
   const token = readTokenFile(tokenPath(host, env));

@@ -9,7 +9,7 @@
 #include <utility>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -21,7 +21,7 @@ std::map<PatchKey, std::vector<Ready>> &waiting() {
 }
 
 TaskQueueThread &painter() {
-  static auto *thread = new TaskQueueThread("rn-tizen-patches");
+  static auto *thread = new TaskQueueThread("rn-webos-patches");
   return *thread;
 }
 
@@ -62,4 +62,4 @@ void requestShadowPatch(const Corners &corners, int blur, Ready ready) {
   });
 }
 
-} // namespace rntizen
+} // namespace rnwebos

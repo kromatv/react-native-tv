@@ -2,7 +2,7 @@
 
 #include <react/renderer/core/propsConversions.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 using facebook::react::convertRawProp;
 
@@ -24,4 +24,4 @@ TextInputProps::TextInputProps(
       keyboardType(convertRawProp(context, rawProps, "keyboardType", sourceProps.keyboardType, std::string{})),
       returnKeyType(convertRawProp(context, rawProps, "returnKeyType", sourceProps.returnKeyType, std::string{})) {}
 
-} // namespace rntizen
+} // namespace rnwebos

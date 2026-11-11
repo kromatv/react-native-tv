@@ -3,7 +3,7 @@
 #include <format>
 #include <string>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -60,4 +60,4 @@ std::optional<int> trackIndexOf(TrackKind kind, const folly::dynamic &track, con
   return std::nullopt;
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

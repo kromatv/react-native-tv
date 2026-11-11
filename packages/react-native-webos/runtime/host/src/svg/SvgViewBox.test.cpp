@@ -2,7 +2,7 @@
 
 #include <doctest/doctest.h>
 
-namespace rntizen::svg {
+namespace rnwebos::svg {
 
 namespace {
 
@@ -65,4 +65,4 @@ TEST_CASE("the viewBox origin moves to the view's origin") {
   checkPoint(viewBoxTransform(shifted, 100, 50).apply({.x = 10, .y = 20}), 0, 0);
 }
 
-} // namespace rntizen::svg
+} // namespace rnwebos::svg

@@ -1,5 +1,5 @@
 # The ReactCommon pieces whose implementation is per platform, built from the
-# shared sources plus the Tizen implementation in this directory.
+# shared sources plus the webOS implementation in this directory.
 
 set(_text_dir "${REACT_COMMON_DIR}/react/renderer/textlayoutmanager")
 file(GLOB _text_sources CONFIGURE_DEPENDS "${_text_dir}/*.cpp")

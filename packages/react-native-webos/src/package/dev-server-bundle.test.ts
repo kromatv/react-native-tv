@@ -7,9 +7,9 @@ import { Reporter } from '../cli/reporter.ts';
 import { devBuildHost, devBundleUrl, devServerBundleStep } from './dev-server-bundle.ts';
 
 describe('devBundleUrl', () => {
-  it("asks Expo's dev server for its virtual entry, for the tizen platform", () => {
+  it("asks Expo's dev server for its virtual entry, for the webos platform", () => {
     expect(devBundleUrl('http://192.168.1.20:8081', '192.168.1.20', 'org.example.app')).toBe(
-      'http://192.168.1.20:8081/.expo/.virtual-metro-entry.bundle?platform=tizen&dev=true&lazy=true&minify=false&app=org.example.app&modulesOnly=false&runModule=true&excludeSource=true&sourcePaths=url-server&transform.engine=hermes&unstable_transformProfile=hermes-stable',
+      'http://192.168.1.20:8081/.expo/.virtual-metro-entry.bundle?platform=webos&dev=true&lazy=true&minify=false&app=org.example.app&modulesOnly=false&runModule=true&excludeSource=true&sourcePaths=url-server&transform.engine=hermes&unstable_transformProfile=hermes-stable',
     );
   });
 
@@ -37,7 +37,7 @@ describe('devBuildHost', () => {
 
 describe('devServerBundleStep', () => {
   it('writes an empty bundle that names the dev server, and prints its URL', async () => {
-    const dir = mkdtempSync(join(tmpdir(), 'rn-tizen-dev-bundle-'));
+    const dir = mkdtempSync(join(tmpdir(), 'rn-webos-dev-bundle-'));
     let printed = '';
     vi.spyOn(process.stdout, 'write').mockImplementation((chunk) => {
       printed += String(chunk);

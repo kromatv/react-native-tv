@@ -28,7 +28,7 @@ body:
     id: platform
     attributes:
       label: Platform facts
-      description: What Tizen, EFL or Samsung document about it, with links, and the TV models or Tizen versions it has to run on.
+      description: What webOS, EFL or Samsung document about it, with links, and the TV models or webOS versions it has to run on.
 
   - type: textarea
     id: alternatives

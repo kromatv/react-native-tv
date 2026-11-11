@@ -6,7 +6,7 @@
 
 #include <functional>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// An animated scroll: moves an offset from one point to another over a
 /// quarter of a second, decelerating, one step per frame on the main loop.
@@ -34,4 +34,4 @@ class ScrollAnimation final {
   Step step_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

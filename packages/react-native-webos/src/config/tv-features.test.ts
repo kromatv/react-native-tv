@@ -1,27 +1,27 @@
 import { describe, expect, it } from 'vitest';
-import { resolveTizenConfig } from './tizen-config.ts';
+import { resolveWebOSConfig } from './webos-config.ts';
 
-const expo = (tizen: Record<string, unknown>, extra: Record<string, unknown> = {}) => ({
+const expo = (webos: Record<string, unknown>, extra: Record<string, unknown> = {}) => ({
   name: 'My App',
   version: '1.0.0',
-  tizen: { package: 'org.example.app', ...tizen },
+  webos: { package: 'org.example.app', ...webos },
   ...extra,
 });
 
-describe('expo.tizen.voice', () => {
+describe('expo.webos.voice', () => {
   it('turns voice on and asks for Samsung voice privileges', () => {
-    const config = resolveTizenConfig(expo({ voice: true }));
+    const config = resolveWebOSConfig(expo({ voice: true }));
 
     expect(config.features.voice).toEqual({ searchUrl: null });
     expect(config.privileges).toEqual([
-      'http://tizen.org/privilege/internet',
+      'http://webos.org/privilege/internet',
       'http://developer.samsung.com/privilege/voicecontrol',
       'http://developer.samsung.com/privilege/microphone',
     ]);
   });
 
   it('keeps a search URL with known placeholders', () => {
-    const config = resolveTizenConfig(
+    const config = resolveWebOSConfig(
       expo({ voice: { searchUrl: 'myapp://search?q={query}&g={genre}' } }),
     );
 
@@ -30,20 +30,20 @@ describe('expo.tizen.voice', () => {
 
   it('refuses a search URL with an unknown placeholder', () => {
     expect(() =>
-      resolveTizenConfig(expo({ voice: { searchUrl: 'myapp://search?q={name}' } })),
-    ).toThrow('expo.tizen.voice.searchUrl: unknown placeholder');
+      resolveWebOSConfig(expo({ voice: { searchUrl: 'myapp://search?q={name}' } })),
+    ).toThrow('expo.webos.voice.searchUrl: unknown placeholder');
   });
 
   it('refuses a search URL with no placeholder', () => {
-    expect(() => resolveTizenConfig(expo({ voice: { searchUrl: 'myapp://search' } }))).toThrow(
+    expect(() => resolveWebOSConfig(expo({ voice: { searchUrl: 'myapp://search' } }))).toThrow(
       'expected at least one placeholder',
     );
   });
 });
 
-describe('expo.tizen.preview', () => {
+describe('expo.webos.preview', () => {
   it('takes a public preview from an endpoint', () => {
-    const config = resolveTizenConfig(
+    const config = resolveWebOSConfig(
       expo({ preview: { endpoint: 'https://example.com/preview.json' } }),
     );
 
@@ -51,40 +51,40 @@ describe('expo.tizen.preview', () => {
       kind: 'public',
       endpoint: 'https://example.com/preview.json',
     });
-    expect(config.privileges).toEqual(['http://tizen.org/privilege/internet']);
+    expect(config.privileges).toEqual(['http://webos.org/privilege/internet']);
   });
 
   it('takes a personal preview and asks to launch its service app', () => {
-    const config = resolveTizenConfig(expo({ preview: { refreshMinutes: 30 } }));
+    const config = resolveWebOSConfig(expo({ preview: { refreshMinutes: 30 } }));
 
     expect(config.features.preview).toEqual({ kind: 'personal', refreshMinutes: 30 });
-    expect(config.privileges).toContain('http://tizen.org/privilege/appmanager.launch');
+    expect(config.privileges).toContain('http://webos.org/privilege/appmanager.launch');
   });
 
   it('refuses a refresh more often than Samsung allows', () => {
-    expect(() => resolveTizenConfig(expo({ preview: { refreshMinutes: 5 } }))).toThrow(
-      'expo.tizen.preview',
+    expect(() => resolveWebOSConfig(expo({ preview: { refreshMinutes: 5 } }))).toThrow(
+      'expo.webos.preview',
     );
   });
 });
 
-describe('expo.tizen.resolution', () => {
+describe('expo.webos.resolution', () => {
   it('defaults to 1080p', () => {
-    expect(resolveTizenConfig(expo({})).features.resolution).toBe('1080p');
+    expect(resolveWebOSConfig(expo({})).features.resolution).toBe('1080p');
   });
 
   it('takes 4k', () => {
-    expect(resolveTizenConfig(expo({ resolution: '4k' })).features.resolution).toBe('4k');
+    expect(resolveWebOSConfig(expo({ resolution: '4k' })).features.resolution).toBe('4k');
   });
 
   it('refuses another resolution', () => {
-    expect(() => resolveTizenConfig(expo({ resolution: '8k' }))).toThrow('expo.tizen.resolution');
+    expect(() => resolveWebOSConfig(expo({ resolution: '8k' }))).toThrow('expo.webos.resolution');
   });
 });
 
 describe('expo-video config plugin options', () => {
   it('reads supportsBackgroundPlayback and supportsPictureInPicture', () => {
-    const config = resolveTizenConfig(
+    const config = resolveWebOSConfig(
       expo(
         {},
         {
@@ -100,7 +100,7 @@ describe('expo-video config plugin options', () => {
   });
 
   it('turns nothing on for expo-video without options', () => {
-    const config = resolveTizenConfig(expo({}, { plugins: ['expo-video'] }));
+    const config = resolveWebOSConfig(expo({}, { plugins: ['expo-video'] }));
 
     expect(config.features).toMatchObject({ backgroundMedia: false, pictureInPicture: false });
   });

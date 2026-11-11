@@ -9,7 +9,7 @@
 #include <memory>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 struct AlertRequest;
 struct ErrorReport;
@@ -31,4 +31,4 @@ struct ModuleContext {
   std::shared_ptr<TvState> tv;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

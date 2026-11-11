@@ -74,7 +74,7 @@ function saveScreenshot() {
   const canvas = screen.querySelector('canvas');
   if (canvas === null) return;
   const link = document.createElement('a');
-  link.download = `tizen-simulator-${new Date().toISOString().replaceAll(':', '-')}.png`;
+  link.download = `webos-simulator-${new Date().toISOString().replaceAll(':', '-')}.png`;
   link.href = canvas.toDataURL('image/png');
   link.click();
 }

@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <optional>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// `hb_ot_var_axis_info_t`, whose layout is HarfBuzz's public ABI.
 struct HbAxisInfo {
@@ -23,8 +23,8 @@ struct HbFace;
 struct HbSubsetInput;
 
 /// The HarfBuzz calls that instance a variable font, resolved from
-/// libharfbuzz.so.0 and libharfbuzz-subset.so.0 at run time: Tizen 9 ships both
-/// (HarfBuzz 8.2.2) but they are not Tizen native API.
+/// libharfbuzz.so.0 and libharfbuzz-subset.so.0 at run time: webOS 9 ships both
+/// (HarfBuzz 8.2.2) but they are not webOS native API.
 struct HarfBuzzSubset {
   HbBlob *(*blobCreateFromFile)(const char *path);
   void (*blobDestroy)(HbBlob *blob);
@@ -53,4 +53,4 @@ consteval std::uint32_t hbTag(char a, char b, char c, char d) {
       (static_cast<std::uint32_t>(c) << 8) | static_cast<std::uint32_t>(d);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

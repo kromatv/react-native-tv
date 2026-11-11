@@ -7,7 +7,7 @@
 #include <react/renderer/scheduler/Scheduler.h>
 #include <react/utils/ContextContainer.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// Applies the props the native animated driver computed for `tag` (opacity,
 /// transform...) to its mounted view, now and without a commit: the view's
@@ -22,4 +22,4 @@ void applyAnimatedProps(
     facebook::react::Tag tag,
     const folly::dynamic &props);
 
-} // namespace rntizen
+} // namespace rnwebos

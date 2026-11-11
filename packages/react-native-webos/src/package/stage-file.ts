@@ -10,7 +10,7 @@ async function sameBytes(left: string, right: string): Promise<boolean> {
 
 /**
  * Copies `from` to `to` unless `to` already holds the same bytes, and dates a
- * new copy now. The Tizen .NET SDK copies a file into the package only when it
+ * new copy now. The webOS .NET SDK copies a file into the package only when it
  * is newer than its last copy there, so a copy that kept an older time, such as
  * a release runtime built before the development one, would never reach it.
  */

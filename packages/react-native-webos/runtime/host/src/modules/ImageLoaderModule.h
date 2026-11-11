@@ -4,7 +4,7 @@
 
 #include <FBReactNativeSpec/FBReactNativeSpecJSI.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// `ImageLoader`, which `<Image>` requires as soon as it loads. Images are
 /// decoded by the Image view itself, so prefetching succeeds without work and
@@ -24,4 +24,4 @@ class ImageLoaderModule final : public facebook::react::NativeImageLoaderAndroid
   facebook::jsi::Value queryCache(facebook::jsi::Runtime &runtime, facebook::jsi::Array uris);
 };
 
-} // namespace rntizen
+} // namespace rnwebos

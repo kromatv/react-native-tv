@@ -7,7 +7,7 @@
 
 #include <cstdlib>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -71,4 +71,4 @@ void setHostWindowTransparent(bool transparent) {
   log(LogLevel::Info, std::string("Window alpha ") + (elm_win_alpha_get(window_) == EINA_TRUE ? "on" : "off"));
 }
 
-} // namespace rntizen
+} // namespace rnwebos

@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
 import { loadAppProject, type AppProject } from '../app/app-project.ts';
-import { claimTizenDir } from '../app/tizen-dir.ts';
+import { claimWebOSDir } from '../app/webos-dir.ts';
 import { entryPath, type CommandContext } from '../cli/command.ts';
 import { parseLevel, untilInterrupted } from '../cli/log-level-option.ts';
 import { parsePort } from '../cli/log-options.ts';
@@ -18,7 +18,7 @@ import { buildSimulatorRuntime } from '../simulator/simulator-runtime.ts';
 import { stageApp, type SimulatorBundle } from '../simulator/stage-app.ts';
 import { openInBrowser, startViewer, viewerUrl } from '../simulator/viewer.ts';
 
-/** The flags `rn-tizen simulator run` and `build` read. */
+/** The flags `rn-webos simulator run` and `build` read. */
 export interface SimulatorRunFlags {
   readonly project?: string;
   readonly entry?: string;
@@ -73,7 +73,7 @@ function givenBytecode(path: string): SimulatorBundle {
   if (existsSync(path)) return { bytecode: path };
   throw new FixableError(
     `The bytecode ${path} does not exist`,
-    'Pass --bundle the .hbc that `rn-tizen bundle` wrote, or leave it out to bundle the app.',
+    'Pass --bundle the .hbc that `rn-webos bundle` wrote, or leave it out to bundle the app.',
   );
 }
 
@@ -99,7 +99,7 @@ async function simulatorBundle(
 ): Promise<SimulatorBundle> {
   const devServer = flags['dev-server'];
   if (devServer !== undefined) {
-    claimTizenDir(app.tizenDir);
+    claimWebOSDir(app.webosDir);
     return devServerBundleStep(reporter, app, bundleDir(app), devServer, hostAddress);
   }
   if (flags.bundle !== undefined) return givenBytecode(resolve(context.cwd, flags.bundle));
@@ -107,7 +107,7 @@ async function simulatorBundle(
 }
 
 /**
- * `rn-tizen simulator run`: builds what changed, bundles the app, starts it on
+ * `rn-webos simulator run`: builds what changed, bundles the app, starts it on
  * the virtual TV of `instance` and prints its logs until Ctrl+C. The app keeps
  * running after that, for `key`, `screenshot` and `view`; no other instance
  * is touched.

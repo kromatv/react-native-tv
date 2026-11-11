@@ -2,7 +2,7 @@
 
 #include "../Malloced.h"
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -25,7 +25,7 @@ std::string markupFor(const ErrorReport &report) {
   for (std::size_t index = 0; index < report.stack.size() && index < kMaxStackLines; ++index) {
     markup += "<frame>" + escaped(report.stack[index]) + "</frame><br/>";
   }
-  return markup + "<br/><hint>The full report is in rn-tizen logs. Press Back to close the app.</hint>";
+  return markup + "<br/><hint>The full report is in rn-webos logs. Press Back to close the app.</hint>";
 }
 
 } // namespace
@@ -61,4 +61,4 @@ bool ErrorScreen::isShown() const {
   return background_ != nullptr && evas_object_visible_get(background_) == EINA_TRUE;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

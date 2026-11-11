@@ -8,7 +8,7 @@ import { generateReactNativeSpecs } from './react-native-specs.ts';
 let output: string;
 
 beforeEach(() => {
-  output = mkdtempSync(join(tmpdir(), 'rn-tizen-rn-specs-'));
+  output = mkdtempSync(join(tmpdir(), 'rn-webos-rn-specs-'));
 });
 
 afterEach(() => {

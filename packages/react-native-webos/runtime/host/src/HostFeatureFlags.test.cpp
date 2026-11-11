@@ -3,7 +3,7 @@
 #include <doctest/doctest.h>
 #include <react/featureflags/ReactNativeFeatureFlags.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 TEST_CASE("overrideFeatureFlagsOnce turns on the OSS Stable flags and the C++ animated driver, once per process") {
   using facebook::react::ReactNativeFeatureFlags;
@@ -17,4 +17,4 @@ TEST_CASE("overrideFeatureFlagsOnce turns on the OSS Stable flags and the C++ an
   ReactNativeFeatureFlags::dangerouslyReset();
 }
 
-} // namespace rntizen
+} // namespace rnwebos

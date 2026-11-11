@@ -6,7 +6,7 @@
 #include <filesystem>
 #include <format>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace fs = std::filesystem;
 
@@ -109,4 +109,4 @@ bool optionFlag(const std::optional<folly::dynamic> &options, const char *name) 
   return value != nullptr && value->isBool() && value->getBool();
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

@@ -8,7 +8,7 @@
 
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -54,4 +54,4 @@ TEST_CASE("The dev support modules answer every call with no dev server, doing n
   CHECK(hasMethod(*runtime, loadingView, "showMessage"));
 }
 
-} // namespace rntizen
+} // namespace rnwebos

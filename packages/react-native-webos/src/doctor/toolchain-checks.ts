@@ -18,7 +18,7 @@ async function versionOf(task: Task, command: readonly string[]): Promise<string
   return parseVersion(output) ?? output.trim().split('\n')[0] ?? 'unknown';
 }
 
-/** Homebrew's (or `TIZEN_LLVM_DIR`'s) clang and lld, which cross-compile for Tizen. */
+/** Homebrew's (or `WEBOS_LLVM_DIR`'s) clang and lld, which cross-compile for webOS. */
 export function checkLlvm(task: Task): Promise<CheckResult> {
   return checking('LLVM', async () => {
     const tools = findLlvmTools();
@@ -29,7 +29,7 @@ export function checkLlvm(task: Task): Promise<CheckResult> {
       return failed(
         'LLVM',
         `missing ${missing.join(', ')}`,
-        `${installHint('clang')}, or set TIZEN_LLVM_DIR`,
+        `${installHint('clang')}, or set WEBOS_LLVM_DIR`,
       );
     }
     return passed('LLVM', `clang ${await versionOf(task, [tools.clang, '--version'])}, ld.lld`);

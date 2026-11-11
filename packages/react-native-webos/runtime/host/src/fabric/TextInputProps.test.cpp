@@ -9,7 +9,7 @@
 #include <memory>
 #include <optional>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -65,4 +65,4 @@ TEST_CASE("TextInputProps keeps the keyboard props an update leaves out") {
   CHECK(props->returnKeyType == "go");
 }
 
-} // namespace rntizen
+} // namespace rnwebos

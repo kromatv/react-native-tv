@@ -7,13 +7,13 @@ import { generateReactNativeSpecs } from '../codegen/react-native-specs.ts';
 import { RUNTIME_DIR } from '../package-paths.ts';
 import { stampAt } from '../stamp.ts';
 import type { Task } from '../task.ts';
-import type { TizenSdk } from '../tizen/tizen-sdk.ts';
-import type { TizenTarget } from '../tizen/target.ts';
-import { buildCMakeProject, sourcesKey, tizenDefinitions } from './cmake.ts';
+import type { WebOSSdk } from '../webos/webos-sdk.ts';
+import type { WebOSTarget } from '../webos/target.ts';
+import { buildCMakeProject, sourcesKey, webosDefinitions } from './cmake.ts';
 import type { HermesHostCompilers } from './hermes-host.ts';
 
 /** The native library the .NET shell loads. */
-export const RUNTIME_LIBRARY = 'libreact-native-tizen.so';
+export const RUNTIME_LIBRARY = 'libreact-native-webos.so';
 
 /**
  * Which runtime a package gets: a development build's talks to a dev server, a
@@ -36,11 +36,11 @@ interface RuntimeBuildDirs {
  */
 export function runtimeBuildDirs(
   reactNative: ResolvedPackage,
-  target: TizenTarget,
+  target: WebOSTarget,
   flavour: RuntimeFlavour,
   runtimeDir: string = RUNTIME_DIR,
 ): RuntimeBuildDirs {
-  const key = `${reactNative.name}-${reactNative.version}-${target.arch}-tizen${target.platformVersion}-${flavour}-${sourcesKey(runtimeDir, reactNative.dir)}`;
+  const key = `${reactNative.name}-${reactNative.version}-${target.arch}-webos${target.platformVersion}-${flavour}-${sourcesKey(runtimeDir, reactNative.dir)}`;
   const root = join(cacheDir(), 'runtime', key);
   const cmake = join(root, 'build');
   return {
@@ -57,7 +57,7 @@ export function runtimeBuildDirs(
  * this exact react-native. Returns whether it ran.
  */
 export async function ensureCodegen(reactNative: ResolvedPackage, dir: string): Promise<boolean> {
-  const stamp = stampAt(join(dir, '.rn-tizen-codegen.json'));
+  const stamp = stampAt(join(dir, '.rn-webos-codegen.json'));
   const fingerprint = JSON.stringify({ dir: reactNative.dir, version: reactNative.version });
   if (await stamp.matches(fingerprint)) return false;
   await generateReactNativeSpecs(reactNative.dir, dir);
@@ -66,8 +66,8 @@ export async function ensureCodegen(reactNative: ResolvedPackage, dir: string): 
 }
 
 interface RuntimeInputs {
-  readonly sdk: TizenSdk;
-  readonly target: TizenTarget;
+  readonly sdk: WebOSSdk;
+  readonly target: WebOSTarget;
   readonly flavour: RuntimeFlavour;
   readonly packages: AppPackages;
   readonly hermes: HermesHostCompilers;
@@ -76,7 +76,7 @@ interface RuntimeInputs {
 }
 
 /**
- * Compiles `libreact-native-tizen.so` against the app's own react-native and
+ * Compiles `libreact-native-webos.so` against the app's own react-native and
  * expo-modules-core, with the app's native libraries, in the given flavour.
  * Incremental: an unchanged build only checks timestamps.
  */
@@ -86,16 +86,16 @@ export async function compileRuntime(task: Task, inputs: RuntimeInputs): Promise
     source: RUNTIME_DIR,
     build: dirs.cmake,
     definitions: {
-      ...tizenDefinitions(inputs.sdk, inputs.target),
+      ...webosDefinitions(inputs.sdk, inputs.target),
       REACT_NATIVE_DIR: packages.reactNative.dir,
-      RN_TIZEN_CODEGEN_DIR: dirs.codegen,
-      RN_TIZEN_HERMES_HOST_COMPILERS: inputs.hermes.importFile,
+      RN_WEBOS_CODEGEN_DIR: dirs.codegen,
+      RN_WEBOS_HERMES_HOST_COMPILERS: inputs.hermes.importFile,
       EXPO_MODULES_CORE_DIR: packages.expoModulesCore.dir,
       EXPO_MODULES_JSI_DIR: packages.expoModulesJsi.dir,
-      RN_TIZEN_LIBRARIES_FILE: inputs.nativeLibrariesFile,
-      RN_TIZEN_DEVELOPMENT: inputs.flavour === 'development' ? 'ON' : 'OFF',
+      RN_WEBOS_LIBRARIES_FILE: inputs.nativeLibrariesFile,
+      RN_WEBOS_DEVELOPMENT: inputs.flavour === 'development' ? 'ON' : 'OFF',
     },
-    targets: ['react-native-tizen'],
+    targets: ['react-native-webos'],
   });
   if (!existsSync(dirs.library)) {
     throw new FixableError(

@@ -2,7 +2,7 @@
 
 #include "PlatformModuleRegistry.h"
 
-namespace rntizen {
+namespace rnwebos {
 
 StatusBarManagerModule::StatusBarManagerModule(
     std::shared_ptr<facebook::react::CallInvoker> jsInvoker,
@@ -20,6 +20,6 @@ void StatusBarManagerModule::setStyle(facebook::jsi::Runtime &, std::optional<fa
 
 void StatusBarManagerModule::setHidden(facebook::jsi::Runtime &, bool) {}
 
-RN_TIZEN_PLATFORM_MODULE("StatusBarManager", StatusBarManagerModule);
+RN_WEBOS_PLATFORM_MODULE("StatusBarManager", StatusBarManagerModule);
 
-} // namespace rntizen
+} // namespace rnwebos

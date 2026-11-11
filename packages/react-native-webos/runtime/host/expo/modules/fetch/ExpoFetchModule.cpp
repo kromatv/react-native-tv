@@ -9,7 +9,7 @@
 
 #include <atomic>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -108,6 +108,6 @@ class ExpoFetchModule final : public Module {
 
 } // namespace
 
-RN_TIZEN_EXPO_MODULE(ExpoFetchModule, ExpoFetchModule);
+RN_WEBOS_EXPO_MODULE(ExpoFetchModule, ExpoFetchModule);
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

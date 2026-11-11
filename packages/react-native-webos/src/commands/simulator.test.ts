@@ -41,7 +41,7 @@ function simulate(...args: string[]): Promise<void> {
 
 beforeEach(() => {
   output = captureProcessOutput();
-  vi.stubEnv('RN_TIZEN_SIMULATOR_INSTANCE', '');
+  vi.stubEnv('RN_WEBOS_SIMULATOR_INSTANCE', '');
 });
 
 afterEach(() => {
@@ -49,7 +49,7 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
-describe('rn-tizen simulator', () => {
+describe('rn-webos simulator', () => {
   it('asks for an action', async () => {
     await expect(simulate()).rejects.toThrow('simulator needs an action');
   });
@@ -85,8 +85,8 @@ describe('rn-tizen simulator', () => {
     await expect(simulate('key')).rejects.toThrow('simulator needs the keys to press');
   });
 
-  it('takes the instance from RN_TIZEN_SIMULATOR_INSTANCE', async () => {
-    vi.stubEnv('RN_TIZEN_SIMULATOR_INSTANCE', 'env-one');
+  it('takes the instance from RN_WEBOS_SIMULATOR_INSTANCE', async () => {
+    vi.stubEnv('RN_WEBOS_SIMULATOR_INSTANCE', 'env-one');
 
     await simulate('pause');
 
@@ -138,7 +138,7 @@ describe('rn-tizen simulator', () => {
   });
 
   it('saves a screenshot in the cache by default', async () => {
-    vi.stubEnv('RN_TIZEN_CACHE_DIR', '/cache');
+    vi.stubEnv('RN_WEBOS_CACHE_DIR', '/cache');
 
     await simulate('screenshot');
 

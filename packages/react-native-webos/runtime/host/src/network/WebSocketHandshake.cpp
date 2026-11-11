@@ -16,12 +16,12 @@
 #include <random>
 #include <stdexcept>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
 constexpr std::string_view kAcceptGuid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
-constexpr const char *kUserAgent = "react-native-tizen";
+constexpr const char *kUserAgent = "react-native-webos";
 
 std::string lowercase(std::string_view text) {
   std::string result(text);
@@ -87,7 +87,7 @@ WebSocketEndpoint parseWebSocketUrl(const std::string &url) {
   if (curl_url_set(parsed.get(), CURLUPART_URL, url.c_str(), CURLU_NON_SUPPORT_SCHEME) != CURLUE_OK) {
     throw std::invalid_argument(std::format("Invalid WebSocket URL {}", url));
   }
-  // curl before 8.0 (Tizen 6.0 to 8.0 ship 7.68 to 7.86) takes a non-const handle.
+  // curl before 8.0 (webOS 6.0 to 8.0 ship 7.68 to 7.86) takes a non-const handle.
   const auto urlPart = [&parsed](CURLUPart part) {
     char *value = nullptr;
     const auto code = curl_url_get(parsed.get(), part, &value, 0);
@@ -174,4 +174,4 @@ std::string checkWebSocketHandshake(
   return protocol;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

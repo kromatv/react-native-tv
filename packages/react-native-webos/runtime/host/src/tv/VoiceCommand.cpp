@@ -12,7 +12,7 @@
 #include <stdexcept>
 #include <string_view>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -108,4 +108,4 @@ std::optional<VoiceCommand> parseVoiceCommand(const std::string &json) {
   }
 }
 
-} // namespace rntizen
+} // namespace rnwebos

@@ -9,12 +9,12 @@ import {
 } from './capture-protocol.ts';
 
 const MAX_LINE_BYTES = 64 * 1024;
-const LOGS_HINT = "The terminal running rn-tizen run or rn-tizen logs prints the app's logs.";
+const LOGS_HINT = "The terminal running rn-webos run or rn-webos logs prints the app's logs.";
 
 function silentListener(port: number): FixableError {
   return new FixableError(
     `The program listening on port ${port} did not answer the screenshot request`,
-    'Stop it, or update it if it is an older rn-tizen, then run the command again.',
+    'Stop it, or update it if it is an older rn-webos, then run the command again.',
   );
 }
 
@@ -27,7 +27,7 @@ function frameOf(frame: StreamFrame, port: number): ScreenFrame {
 }
 
 /**
- * Asks the `rn-tizen run` or `rn-tizen logs` that holds `port` on this
+ * Asks the `rn-webos run` or `rn-webos logs` that holds `port` on this
  * computer to capture the screen of the app `app` on `device`, either the
  * listener's own choice when null.
  */
@@ -68,7 +68,7 @@ export function captureThroughRelay(
         reject(
           new FixableError(
             `Cannot reach port ${port} on this computer: ${error.message}`,
-            'Is rn-tizen run or rn-tizen logs still running?',
+            'Is rn-webos run or rn-webos logs still running?',
           ),
         ),
       ),

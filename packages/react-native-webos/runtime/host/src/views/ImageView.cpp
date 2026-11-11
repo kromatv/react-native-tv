@@ -8,7 +8,7 @@
 #include <react/renderer/components/image/ImageProps.h>
 #include <react/renderer/components/image/ImageShadowNode.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -189,6 +189,6 @@ void ImageView::layoutMembers() {
   evas_object_image_fill_set(image_, fill.x, fill.y, fill.width, fill.height);
 }
 
-RN_TIZEN_COMPONENT_VIEW("Image", ImageView);
+RN_WEBOS_COMPONENT_VIEW("Image", ImageView);
 
-} // namespace rntizen
+} // namespace rnwebos

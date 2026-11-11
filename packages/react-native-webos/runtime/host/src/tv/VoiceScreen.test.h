@@ -18,7 +18,7 @@
 #include <string>
 #include <vector>
 
-namespace rntizen::testing {
+namespace rnwebos::testing {
 
 /// A view a test mounts: its label, its frame in points, and what may hide it.
 struct ViewLook {
@@ -135,4 +135,4 @@ class VoiceScreen final {
   std::vector<SentTouch> touches_;
 };
 
-} // namespace rntizen::testing
+} // namespace rnwebos::testing

@@ -16,7 +16,7 @@ import {
   openPackage,
   readCapabilities,
   runShell,
-} from '../../src/tizen/index.ts';
+} from '../../src/webos/index.ts';
 
 const PORT = Number(process.env['BENCH_PORT'] ?? 47200);
 const FIRST_FRAME_TIMEOUT_MS = 60_000;

@@ -15,7 +15,7 @@ interface ErrorReport {
 }
 
 function usageReport(error: UsageError): ErrorReport {
-  const help = error.command === null ? 'rn-tizen --help' : `rn-tizen ${error.command} --help`;
+  const help = error.command === null ? 'rn-webos --help' : `rn-webos ${error.command} --help`;
   return {
     message: error.message,
     details: [],
@@ -55,7 +55,7 @@ export function describeError(error: unknown): ErrorReport {
   return {
     message: bug.message,
     details: (bug.stack ?? '').split('\n').slice(1),
-    hint: 'This looks like a bug in rn-tizen. Please report it with the output above.',
+    hint: 'This looks like a bug in rn-webos. Please report it with the output above.',
     exitCode: 1,
   };
 }

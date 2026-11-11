@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// What a fatal error screen says: a title, the message, and the JavaScript
 /// stack as one line per frame.
@@ -35,4 +35,4 @@ class ErrorScreen final {
   Evas_Textblock_Style *style_{nullptr};
 };
 
-} // namespace rntizen
+} // namespace rnwebos

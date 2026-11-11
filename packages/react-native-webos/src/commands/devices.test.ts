@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { checkDevices } from '../doctor/tizen-checks.ts';
+import { checkDevices } from '../doctor/webos-checks.ts';
 import {
   capabilityPayload,
   fakeTv,
@@ -18,7 +18,7 @@ let printed: string[] = [];
 
 beforeEach(() => {
   previous = process.env.XDG_STATE_HOME;
-  state = mkdtempSync(join(tmpdir(), 'rn-tizen-devices-'));
+  state = mkdtempSync(join(tmpdir(), 'rn-webos-devices-'));
   process.env.XDG_STATE_HOME = state;
   printed = [];
   vi.spyOn(process.stdout, 'write').mockImplementation((chunk) => {
@@ -48,7 +48,7 @@ async function tv(): Promise<FakeTv> {
   return started;
 }
 
-describe('rn-tizen devices', () => {
+describe('rn-webos devices', () => {
   it('says how to connect a TV when none is known', async () => {
     await devicesCommand.run(['--no-scan'], { cwd: state });
 
@@ -65,7 +65,7 @@ describe('rn-tizen devices', () => {
     await devicesCommand.run(['--no-scan'], { cwd: state });
 
     expect(printed.join('')).toContain('GQ75LS03DAUXZG');
-    expect(printed.join('')).toContain('ready: armv7, Tizen 9.0');
+    expect(printed.join('')).toContain('ready: armv7, webOS 9.0');
   });
 });
 

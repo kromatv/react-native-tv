@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "RN Tizen Example",
-    "slug": "react-native-tizen-example",
+    "name": "RN webOS Example",
+    "slug": "react-native-webos-example",
     "version": "1.0.0",
     "orientation": "landscape",
     "userInterfaceStyle": "dark",
@@ -10,11 +10,11 @@
       [
         "../app.plugin.js",
         {
-          "package": "org.rntizen.example",
-          "label": "RN Tizen Example",
+          "package": "org.rnwebos.example",
+          "label": "RN webOS Example",
           "locales": ["en", "fr"],
           "voice": {
-            "searchUrl": "rntizen-example://search?q={query}"
+            "searchUrl": "rnwebos-example://search?q={query}"
           },
           "preview": {
             "refreshMinutes": 10

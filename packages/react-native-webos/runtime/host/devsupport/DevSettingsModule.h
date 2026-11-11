@@ -7,10 +7,10 @@
 #include <memory>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// `DevSettings`, which every `__DEV__` bundle requires at startup through
-/// HMRClient. Reload and Fast Refresh go to the app's DevSupport; Tizen has no
+/// HMRClient. Reload and Fast Refresh go to the app's DevSupport; webOS has no
 /// developer menu, shake or profiler, so those calls do nothing.
 class DevSettingsModule final : public facebook::react::NativeDevSettingsCxxSpec<DevSettingsModule> {
  public:
@@ -29,4 +29,4 @@ class DevSettingsModule final : public facebook::react::NativeDevSettingsCxxSpec
   void setIsShakeToShowDevMenuEnabled(facebook::jsi::Runtime &runtime, bool enabled);
 };
 
-} // namespace rntizen
+} // namespace rnwebos

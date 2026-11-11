@@ -102,7 +102,7 @@ async function readCachedIcuData(full: string): Promise<IcuCommonData> {
     await rm(full, { force: true });
     const reason = error instanceof Error ? error.message : String(error);
     throw new FixableError(
-      `The ICU data in the cache was unreadable (${reason}), so rn-tizen removed it`,
+      `The ICU data in the cache was unreadable (${reason}), so rn-webos removed it`,
       'Run the command again: it extracts the data again from the verified archive.',
     );
   }

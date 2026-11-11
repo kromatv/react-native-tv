@@ -1,15 +1,15 @@
 import { z } from 'zod';
-import { TIZEN_PLUGIN } from '../config/tizen-settings.ts';
-import { readKnownDevices } from '../tizen/known-devices.ts';
+import { WEBOS_PLUGIN } from '../config/webos-settings.ts';
+import { readKnownDevices } from '../webos/known-devices.ts';
 
-/** A dev tools command turned into the `rn-tizen` arguments its job runs. */
+/** A dev tools command turned into the `rn-webos` arguments its job runs. */
 export interface JobPlan {
   readonly kind: string;
   readonly title: string;
   readonly args: readonly string[];
   /** Only one job of this kind runs at a time: a new one stops the last. */
   readonly exclusive: boolean;
-  /** The job bundles the app, so the app's Metro config must know the `tizen` platform. */
+  /** The job bundles the app, so the app's Metro config must know the `webos` platform. */
   readonly bundles: boolean;
 }
 
@@ -24,7 +24,7 @@ export class CommandInputError extends Error {}
 
 /** The page of the dev tools plugin inside the dev server, opened on one job. */
 export function jobPageUrl(devServer: string, id: string): string {
-  const url = new URL(`/_expo/plugins/${TIZEN_PLUGIN}/`, devServer);
+  const url = new URL(`/_expo/plugins/${WEBOS_PLUGIN}/`, devServer);
   url.searchParams.set('job', id);
   return url.toString();
 }

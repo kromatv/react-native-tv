@@ -2,7 +2,7 @@
 
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// `alpha`, `width` x `height` values, blurred by a Gaussian of deviation
 /// `sigma`, zero outside. From a deviation of 3, three box blurs per axis
@@ -11,4 +11,4 @@ namespace rntizen {
 /// side.
 std::vector<float> blurredAlpha(std::vector<float> alpha, int width, int height, int radius, float sigma);
 
-} // namespace rntizen
+} // namespace rnwebos

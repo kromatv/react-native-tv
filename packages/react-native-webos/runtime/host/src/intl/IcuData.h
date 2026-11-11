@@ -2,11 +2,11 @@
 
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// Points ICU at the `icudt<major>l.dat` the app ships in `resourceDir`, the
 /// data Hermes' Intl and Unicode functions read. Call it before the runtime
 /// starts.
 void useIcuData(const std::string &resourceDir);
 
-} // namespace rntizen
+} // namespace rnwebos

@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -108,4 +108,4 @@ TEST_CASE("a Close payload carries its code big-endian, then a reason of at most
   CHECK(decodeWebSocketClose("").first == 1005);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

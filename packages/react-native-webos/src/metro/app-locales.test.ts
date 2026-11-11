@@ -6,7 +6,7 @@ import { appIntlLocales } from './app-locales.ts';
 
 describe('appIntlLocales', () => {
   it('leaves the locales to the transformer when the app config cannot be read', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'rn-tizen-locales-'));
+    const dir = mkdtempSync(join(tmpdir(), 'rn-webos-locales-'));
     writeFileSync(join(dir, 'package.json'), '{"name":"x"}');
     try {
       expect(appIntlLocales(dir)).toBeNull();

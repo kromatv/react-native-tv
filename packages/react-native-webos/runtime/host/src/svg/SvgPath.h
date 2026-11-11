@@ -3,7 +3,7 @@
 #include <optional>
 #include <vector>
 
-namespace rntizen::svg {
+namespace rnwebos::svg {
 
 struct Point {
   double x{0};
@@ -86,4 +86,4 @@ Path ellipsePath(Point center, double rx, double ry);
 Path rectPath(Point origin, double width, double height, std::optional<double> rx, std::optional<double> ry);
 Path linePath(Point from, Point to);
 
-} // namespace rntizen::svg
+} // namespace rnwebos::svg

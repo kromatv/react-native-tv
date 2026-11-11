@@ -62,7 +62,7 @@ export function entryPath(
   return flags.entry === undefined ? undefined : resolve(context.cwd, flags.entry);
 }
 
-/** One `rn-tizen` subcommand. */
+/** One `rn-webos` subcommand. */
 export interface Command {
   readonly name: string;
   readonly summary: string;

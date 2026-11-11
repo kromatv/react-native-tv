@@ -10,7 +10,7 @@
 #include <fstream>
 #include <iterator>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -101,4 +101,4 @@ TEST_CASE("downloadFileAsync names the file by the URL's decoded name and return
   CHECK(expo.json("new FS.FileSystemFile(" + uri + ").textSync()") == R"("payload of /my%20file%23%31.txt")");
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

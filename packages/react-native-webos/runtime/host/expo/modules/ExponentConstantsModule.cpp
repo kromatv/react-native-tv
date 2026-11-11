@@ -8,7 +8,7 @@
 
 #include <folly/json.h>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -51,6 +51,6 @@ class ExponentConstantsModule final : public Module {
 
 } // namespace
 
-RN_TIZEN_EXPO_MODULE(ExponentConstants, ExponentConstantsModule);
+RN_WEBOS_EXPO_MODULE(ExponentConstants, ExponentConstantsModule);
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

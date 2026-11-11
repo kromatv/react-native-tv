@@ -4,7 +4,7 @@
 
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 TEST_CASE("decodeUtf8 decodes every sequence length") {
   CHECK(decodeUtf8("a\xC3\xA9\xE2\x82\xAC\xF0\x9F\x98\x80") == U"aé€\U0001F600");
@@ -38,4 +38,4 @@ TEST_CASE("encodeUtf8 reverses decodeUtf8") {
   CHECK(encodeUtf8(decodeUtf8(text)) == text);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

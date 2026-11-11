@@ -2,7 +2,7 @@ import type { X509Certificate } from 'node:crypto';
 import { statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import type { AppProject } from '../app/app-project.ts';
-import { claimTizenDir } from '../app/tizen-dir.ts';
+import { claimWebOSDir } from '../app/webos-dir.ts';
 import { bundleApp, type AppBundle } from '../bundle/bundle-app.ts';
 import { formatSize } from '../cli/format.ts';
 import { ensureIcuData } from '../runtime/icu-data.ts';
@@ -10,22 +10,22 @@ import type { Reporter } from '../cli/reporter.ts';
 import { devBuildHost, devServerBundleStep } from '../package/dev-server-bundle.ts';
 import { buildDotnetProject } from '../package/dotnet-build.ts';
 import { singleReactNativeIssue } from '../dependencies/react-native-copies.ts';
-import { tizenMetroIssue } from '../metro/metro-platforms.ts';
+import { webosMetroIssue } from '../metro/metro-platforms.ts';
 import { checkPackagedRuntime } from '../package/packaged-runtime.ts';
 import { featureNotes } from '../package/feature-notes.ts';
 import type { LogEndpoint } from '../package/runtime-config.ts';
-import { writeTizenProject } from '../package/tizen-project.ts';
-import type { PlatformProfile } from '../tizen/platform-profiles.ts';
+import { writeWebOSProject } from '../package/webos-project.ts';
+import type { PlatformProfile } from '../webos/platform-profiles.ts';
 import { signPackage } from '../signing/sign-package.ts';
-import { resolveSigning, type SigningRequest } from '../tizen/signing-identity.ts';
-import type { TizenSdk } from '../tizen/tizen-sdk.ts';
-import type { TizenTarget } from '../tizen/target.ts';
+import { resolveSigning, type SigningRequest } from '../webos/signing-identity.ts';
+import type { WebOSSdk } from '../webos/webos-sdk.ts';
+import type { WebOSTarget } from '../webos/target.ts';
 import { runtimeSteps } from './runtime-steps.ts';
 
 interface PackageRequest {
-  readonly sdk: TizenSdk;
+  readonly sdk: WebOSSdk;
   readonly app: AppProject;
-  readonly target: TizenTarget;
+  readonly target: WebOSTarget;
   readonly shell: PlatformProfile;
   readonly log: LogEndpoint | null;
   readonly signing: SigningRequest;
@@ -35,10 +35,10 @@ interface PackageRequest {
 
 /** Where the bundle of an app is written before it is packaged. */
 export function bundleDir(app: AppProject): string {
-  return join(app.tizenDir, 'build', 'bundle');
+  return join(app.webosDir, 'build', 'bundle');
 }
 
-/** Bundles the app into Hermes bytecode, as one step, into `outDir` or else the app's `tizen/`. */
+/** Bundles the app into Hermes bytecode, as one step, into `outDir` or else the app's `webos/`. */
 export function bundleStep(
   reporter: Reporter,
   app: AppProject,
@@ -48,7 +48,7 @@ export function bundleStep(
     'JavaScript bundle',
     (task) => {
       if (outDir !== undefined) return bundleApp(task, app, outDir);
-      claimTizenDir(app.tizenDir);
+      claimWebOSDir(app.webosDir);
       return bundleApp(task, app, bundleDir(app));
     },
     (bundle) => formatSize(statSync(bundle.bytecode).size),
@@ -76,7 +76,7 @@ export interface BuiltPackage {
 
 /**
  * Fails, a step each, unless the app loads one react-native and its Metro
- * config bundles for Tizen.
+ * config bundles for webOS.
  */
 export async function appSetupSteps(reporter: Reporter, app: AppProject): Promise<void> {
   await reporter.step(
@@ -90,25 +90,25 @@ export async function appSetupSteps(reporter: Reporter, app: AppProject): Promis
   await reporter.step(
     'Metro config',
     () => {
-      const issue = tizenMetroIssue(app.root);
+      const issue = webosMetroIssue(app.root);
       return issue === null ? Promise.resolve() : Promise.reject(issue);
     },
-    () => 'withTizen',
+    () => 'withWebOS',
   );
 }
 
 /**
  * Builds a signed `.tpk` from scratch or incrementally: the native runtime, the
- * bytecode bundle, the generated `tizen/` project, then .NET and signing.
+ * bytecode bundle, the generated `webos/` project, then .NET and signing.
  * Fails fast, before any compiling, when the app loads more than one
- * react-native, Metro cannot bundle for Tizen, or there is nothing to sign with.
+ * react-native, Metro cannot bundle for webOS, or there is nothing to sign with.
  */
 export async function packageSteps(
   reporter: Reporter,
   request: PackageRequest,
 ): Promise<BuiltPackage> {
   const { sdk, app, target, shell } = request;
-  claimTizenDir(app.tizenDir);
+  claimWebOSDir(app.webosDir);
   await appSetupSteps(reporter, app);
   const signing = await reporter.step(
     'Certificates',
@@ -130,9 +130,9 @@ export async function packageSteps(
         );
   const icuData = await icuDataStep(reporter, app);
   const projectDir = await reporter.step(
-    'Tizen project',
+    'webOS project',
     () =>
-      writeTizenProject({ app, profile: shell, runtimeLibrary, bundle, log: request.log, icuData }),
+      writeWebOSProject({ app, profile: shell, runtimeLibrary, bundle, log: request.log, icuData }),
     (dir) => relative(process.cwd(), dir) || '.',
   );
   const tpk = await reporter.step(

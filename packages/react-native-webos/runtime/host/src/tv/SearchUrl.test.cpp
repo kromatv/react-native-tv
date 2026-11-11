@@ -2,7 +2,7 @@
 
 #include <doctest/doctest.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 TEST_CASE("fillSearchUrl fills each placeholder with its field, percent-encoded") {
   const std::map<std::string, std::string, std::less<>> fields{
@@ -34,4 +34,4 @@ TEST_CASE("fillSearchUrl empties a missing field and keeps an unclosed brace") {
   CHECK(fillSearchUrl("/plain", fields) == "/plain");
 }
 
-} // namespace rntizen
+} // namespace rnwebos

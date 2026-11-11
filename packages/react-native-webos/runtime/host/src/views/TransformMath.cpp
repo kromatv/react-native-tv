@@ -3,7 +3,7 @@
 #include <array>
 #include <cmath>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -39,4 +39,4 @@ PixelPoint transformedPoint(const Transform &transform, PixelPoint point, const 
   };
 }
 
-} // namespace rntizen
+} // namespace rnwebos

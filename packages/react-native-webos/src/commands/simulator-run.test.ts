@@ -2,7 +2,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeApp } from '../app/app.fixtures.ts';
 import { loadAppProject } from '../app/app-project.ts';
-import { claimTizenDir } from '../app/tizen-dir.ts';
+import { claimWebOSDir } from '../app/webos-dir.ts';
 import { Reporter } from '../cli/reporter.ts';
 import { capturedOutput, type CapturedOutput } from '../fakes.fixtures.ts';
 import { listenForLogs, type LogServer } from '../logs/log-server.ts';
@@ -18,7 +18,7 @@ import { prepareSimulator, runInSimulator } from './simulator-run.ts';
 const ROOT = '/work/app';
 
 vi.mock('../app/app-project.ts', () => ({ loadAppProject: vi.fn() }));
-vi.mock('../app/tizen-dir.ts', () => ({ claimTizenDir: vi.fn() }));
+vi.mock('../app/webos-dir.ts', () => ({ claimWebOSDir: vi.fn() }));
 vi.mock('../logs/log-server.ts', () => ({ listenForLogs: vi.fn() }));
 vi.mock('../pipeline/package-steps.ts', () => ({
   bundleStep: vi.fn(),
@@ -58,8 +58,8 @@ beforeEach(() => {
   vi.mocked(loadAppProject).mockReturnValue(fakeApp(ROOT));
   vi.mocked(buildSimulatorRuntime).mockResolvedValue('0123456789ab');
   vi.mocked(bundleStep).mockResolvedValue({
-    javascript: '/b/index.tizen.js',
-    bytecode: '/b/index.tizen.hbc',
+    javascript: '/b/index.webos.js',
+    bytecode: '/b/index.webos.hbc',
     assetsDir: '/b/assets',
   });
   server = { port: instance.logPort, capture: vi.fn(), close: vi.fn(async () => undefined) };
@@ -103,7 +103,7 @@ describe('runInSimulator', () => {
     expect(stageApp).toHaveBeenCalledWith(
       instance,
       expect.anything(),
-      expect.objectContaining({ bytecode: '/b/index.tizen.hbc' }),
+      expect.objectContaining({ bytecode: '/b/index.webos.hbc' }),
       { host: '192.168.5.2', port: instance.logPort },
       { key: '0123456789ab', icuData: '/cache/icudt77l.dat' },
     );
@@ -140,10 +140,10 @@ describe('runInSimulator', () => {
 
   it('loads the bundle from the dev server with --dev-server', async () => {
     const devBundle = {
-      javascript: '/b/index.tizen.js',
-      bytecode: '/b/index.tizen.hbc',
+      javascript: '/b/index.webos.js',
+      bytecode: '/b/index.webos.hbc',
       assetsDir: '/b/assets',
-      bundleUrl: 'http://192.168.5.2:8081/.expo/.virtual-metro-entry.bundle?platform=tizen',
+      bundleUrl: 'http://192.168.5.2:8081/.expo/.virtual-metro-entry.bundle?platform=webos',
     };
     vi.mocked(devServerBundleStep).mockResolvedValue(devBundle);
 
@@ -155,7 +155,7 @@ describe('runInSimulator', () => {
     );
 
     expect(bundleStep).not.toHaveBeenCalled();
-    expect(claimTizenDir).toHaveBeenCalledWith(join(ROOT, 'tizen'));
+    expect(claimWebOSDir).toHaveBeenCalledWith(join(ROOT, 'webos'));
     expect(devServerBundleStep).toHaveBeenCalledWith(
       reporter,
       expect.anything(),

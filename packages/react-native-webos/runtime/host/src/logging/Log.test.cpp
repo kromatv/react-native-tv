@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -82,4 +82,4 @@ TEST_CASE("logLevelName names every level") {
   CHECK(logLevelName(LogLevel::Error) == "error");
 }
 
-} // namespace rntizen
+} // namespace rnwebos

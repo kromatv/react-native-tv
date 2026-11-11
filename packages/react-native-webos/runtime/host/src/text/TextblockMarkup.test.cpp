@@ -6,7 +6,7 @@
 
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -40,7 +40,7 @@ TEST_CASE("textblockContent of no text is the paragraph's style alone") {
 
   const auto content = textblockContent({}, {}, 1);
 
-  CHECK(content.style == "DEFAULT='font=Tizen font_size=14 color=#000000ff wrap=mixed align=auto'");
+  CHECK(content.style == "DEFAULT='font=webOS font_size=14 color=#000000ff wrap=mixed align=auto'");
   CHECK(content.markup.empty());
   CHECK_FALSE(content.tightLineShift.has_value());
 }
@@ -52,7 +52,7 @@ TEST_CASE("textblockContent leaves out an attachment") {
 
   const auto content = textblockContent(string, {}, 1);
 
-  CHECK(content.markup == "<font=Tizen font_size=14 font_weight=normal color=#000000ff>text</>");
+  CHECK(content.markup == "<font=webOS font_size=14 font_weight=normal color=#000000ff>text</>");
 }
 
 TEST_CASE("textblockContent shifts the paragraph by its first tight run") {
@@ -101,8 +101,8 @@ TEST_CASE("textblockContent wraps each run in its own format") {
   const auto content = textblockContent(string, {}, 1);
 
   CHECK(content.markup ==
-        "<font=Tizen font_size=14 font_weight=normal color=#000000ff>plain </>"
-        "<font=Tizen font_size=14 font_weight=bold color=#000000ff>bold</>");
+        "<font=webOS font_size=14 font_weight=normal color=#000000ff>plain </>"
+        "<font=webOS font_size=14 font_weight=bold color=#000000ff>bold</>");
 }
 
 TEST_CASE("textblockContent applies the text transform before escaping") {
@@ -122,8 +122,8 @@ TEST_CASE("textblockContent styles the paragraph with its first run's alignment"
 
   const auto content = textblockContent(paragraphOf("x", attributes), {}, 1);
 
-  CHECK(content.style.starts_with("DEFAULT='font=Tizen"));
+  CHECK(content.style.starts_with("DEFAULT='font=webOS"));
   CHECK(content.style.find("align=center'") != std::string::npos);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

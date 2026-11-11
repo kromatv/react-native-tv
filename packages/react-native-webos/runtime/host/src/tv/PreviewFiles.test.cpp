@@ -9,7 +9,7 @@
 #include <optional>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -58,4 +58,4 @@ TEST_CASE("writePreviewFile gives up on a preview it cannot write") {
   CHECK(fs::is_directory(data.path() / "preview.json"));
 }
 
-} // namespace rntizen
+} // namespace rnwebos

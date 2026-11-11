@@ -1,7 +1,7 @@
 import { jobsDir, listJobs, readJob, readLog, stopJob } from './jobs.ts';
-import { startTizenKeys } from './start-tizen-keys.ts';
+import { startWebOSKeys } from './start-webos-keys.ts';
 
-startTizenKeys();
+startWebOSKeys();
 
 const JOB_ROUTE = /^\/api\/jobs\/([a-z0-9-]{1,64})\/(log|stop)$/;
 

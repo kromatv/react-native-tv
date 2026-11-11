@@ -9,7 +9,7 @@
 #include <utility>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -74,4 +74,4 @@ std::string perfLine(const PerfSample &sample) {
   return "perf " + folly::toJson(fields);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

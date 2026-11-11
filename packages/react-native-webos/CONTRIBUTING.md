@@ -5,19 +5,19 @@ large change so we can agree on the approach first.
 
 ## What you need
 
-The TypeScript side (the `rn-tizen` CLI, the Metro integration, the tests) needs
+The TypeScript side (the `rn-webos` CLI, the Metro integration, the tests) needs
 only Bun. Building and running an app needs the rest. macOS on Apple silicon is
 the only host verified so far.
 
 - [Bun](https://bun.sh) 1.4 or newer. CI runs the version in `.bun-version`.
-- [Tizen Studio](https://developer.tizen.org/development/tizen-studio/download).
+- [webOS Studio](https://developer.webos.org/development/webos-studio/download).
   From its Package Manager, install `IOT-Headed-6.0-NativeAppDevelopment-CLI`,
-  the rootstrap for the default floor, Tizen 6.0, `NativeToolchain-Gcc-14.2`, the
+  the rootstrap for the default floor, webOS 6.0, `NativeToolchain-Gcc-14.2`, the
   GCC runtime the runtime links against, and the Samsung Certificate Extension.
   Each other floor needs its own rootstrap package (`IOT-Headed-<v>-...` for 6.0
-  to 7.0, `TIZEN-<v>-...` from 8.0); `bun src/cli/main.ts doctor --platform <v>`
-  names it. Set `TIZEN_SDK_DIR` if it is not in
-  `~/tizen-studio`. Its `sdb` and `tizen` tools are not used: `rn-tizen` speaks
+  to 7.0, `WEBOS-<v>-...` from 8.0); `bun src/cli/main.ts doctor --platform <v>`
+  names it. Set `WEBOS_SDK_DIR` if it is not in
+  `~/webos-studio`. Its `sdb` and `webos` tools are not used: `rn-webos` speaks
   to the TV and signs packages itself.
 - Homebrew's LLVM and lld, which cross-compile the runtime, plus the build tools:
 
@@ -26,31 +26,31 @@ the only host verified so far.
   ```
 
   CMake must be 3.24 or newer and the .NET SDK 6.0 or newer. ccache is optional.
-  Set `TIZEN_LLVM_DIR` to use a clang and lld that are not Homebrew's.
+  Set `WEBOS_LLVM_DIR` to use a clang and lld that are not Homebrew's.
 - Node.js, which runs Expo's CLI when the app is bundled. `npx expo start` in
-  the example needs 22.18 or newer: its Metro config imports `withTizen` from
+  the example needs 22.18 or newer: its Metro config imports `withWebOS` from
   `src/`, so Node must strip TypeScript types on its own.
-- A Samsung certificate profile, once: in Tizen Studio, Tools, Certificate
+- A Samsung certificate profile, once: in webOS Studio, Tools, Certificate
   Manager, create a Samsung profile with your TV's DUID and make it the active
-  profile. Samsung issues its author and distributor certificates; `rn-tizen`
+  profile. Samsung issues its author and distributor certificates; `rn-webos`
   reads them from that profile.
 - For the simulator: [Lima](https://lima-vm.io) 2.0 or newer (`brew install
   lima`) and about 8 GB of free disk.
 
-`rn-tizen doctor` checks all of this and prints the fix for anything missing.
+`rn-webos doctor` checks all of this and prints the fix for anything missing.
 
 ## Set up
 
 ```sh
-git clone https://github.com/kromatv/react-native-tizen.git
-cd react-native-tizen
+git clone https://github.com/kromatv/react-native-webos.git
+cd react-native-webos
 bun install
 ```
 
 The repository root is the package. `example/` is an Expo app in the same Bun
 workspace. `bun install` builds `dist/` (the `prepare` script), which the
 example's `app.json` loads the config plugin from through `../app.plugin.js`;
-its `metro.config.mjs` imports `../src/metro/with-tizen.ts` directly. Run the CLI
+its `metro.config.mjs` imports `../src/metro/with-webos.ts` directly. Run the CLI
 from source with `bun src/cli/main.ts <command>`, and point it at the example
 with `--project example`:
 
@@ -120,11 +120,11 @@ ahead of time.
 
 ## Platform facts
 
-Code that depends on how Tizen, EFL, React Native or Expo behave follows
+Code that depends on how webOS, EFL, React Native or Expo behave follows
 [`docs/reference/`](docs/reference/README.md). If the fact you need is not there,
 find it in the official documentation, the SDK headers or a project that ships
 on the platform, and add it to the reference, cited, in the same pull request.
-Something you saw on a TV goes in with the model, the year and the Tizen version.
+Something you saw on a TV goes in with the model, the year and the webOS version.
 [`docs/decisions.md`](docs/decisions.md) records the choices the package is built
 on; a change to one of them changes that file too.
 
@@ -132,14 +132,14 @@ on; a change to one of them changes that file too.
 
 - One change per pull request. It is squash-merged, so its title becomes the
   commit: conventional form, imperative, lowercase, such as
-  `fix(input): map the Back key on Tizen 8`.
+  `fix(input): map the Back key on webOS 8`.
 - Code, comments and docs are in English.
 - Comments are rare. Document exported API whose contract the signature does not
   show, and explain a platform constraint the code cannot. Nothing else.
 - A file over 300 lines is split at a natural seam.
 - Data from outside the process (files, the network, a TV, a child process) is
   parsed with zod.
-- Say how you tested: the simulator, a TV (model and Tizen version), or tests
+- Say how you tested: the simulator, a TV (model and webOS version), or tests
   only.
 
 ## Releases
@@ -185,7 +185,7 @@ read to that pull request's description, then run the `Release` workflow on
 
 ```text
 BEGIN_COMMIT_OVERRIDE
-fix(input): map the Back key on Tizen 8
+fix(input): map the Back key on webOS 8
 END_COMMIT_OVERRIDE
 ```
 
@@ -204,7 +204,7 @@ To choose the next version, end a squash commit's body with `Release-As: 1.0.0`.
   admins create `v*` tags.
 - npm only lets a package that exists name a trusted publisher, so the first
   version, `0.1.0-alpha.0`, was published by hand. Then
-  `npm trust github --file release.yml --repo kromatv/react-native-tizen --env npm --allow-publish`
+  `npm trust github --file release.yml --repo kromatv/react-native-webos --env npm --allow-publish`
   made the workflow its only publisher, and `npm access set mfa=publish` makes
   the package refuse tokens. No npm token is stored in GitHub.
 - The `npm` environment deploys from `main` only.

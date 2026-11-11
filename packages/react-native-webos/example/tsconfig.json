@@ -4,7 +4,7 @@
     "noEmit": true,
     "types": [],
     "paths": {
-      "@kromatv/react-native-tizen/*": ["../src/api/*.ts"]
+      "@kromatv/react-native-webos/*": ["../src/api/*.ts"]
     }
   },
   "include": ["main.ts", "src"]

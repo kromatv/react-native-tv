@@ -5,7 +5,7 @@
 #include <optional>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 TEST_CASE("a GET goes without the body JavaScript gave it") {
   const std::optional<std::string> body = "ignored";
@@ -46,4 +46,4 @@ TEST_CASE("a POST, PUT or PATCH without a body carries an empty one, other metho
   CHECK(curlMethodFor("OPTIONS", std::nullopt).customRequest == "OPTIONS");
 }
 
-} // namespace rntizen
+} // namespace rnwebos

@@ -6,7 +6,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// A JavaScript bundle, plain source or Hermes bytecode, and the URL it is reported under.
 struct Bundle {
@@ -27,4 +27,4 @@ Bundle loadBundleFile(const std::string &path);
 /// with the server's reply when it is not a 200.
 Bundle downloadBundle(const std::string &url);
 
-} // namespace rntizen
+} // namespace rnwebos

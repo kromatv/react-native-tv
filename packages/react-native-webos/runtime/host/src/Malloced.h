@@ -3,7 +3,7 @@
 #include <cstdlib>
 #include <memory>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// Frees what a C library allocated with malloc and left to its caller.
 struct MallocDeleter {
@@ -18,4 +18,4 @@ struct MallocDeleter {
 template <typename T>
 using Malloced = std::unique_ptr<T, MallocDeleter>;
 
-} // namespace rntizen
+} // namespace rnwebos

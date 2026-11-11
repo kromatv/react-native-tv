@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 TEST_CASE("ErrorScreen shows a report whose text holds markup characters") {
   static const bool initialized = ecore_evas_init() > 0;
@@ -27,4 +27,4 @@ TEST_CASE("ErrorScreen shows a report whose text holds markup characters") {
   ecore_evas_free(canvas);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

@@ -1,4 +1,4 @@
-// What GCC 14's static libstdc++ and libgcc call and the glibc 2.30 of a Tizen
+// What GCC 14's static libstdc++ and libgcc call and the glibc 2.30 of a webOS
 // 6.0 to 9.0 TV does not export. Hidden, so a newer glibc's own definition never
 // competes.
 
@@ -11,16 +11,16 @@
 #include <sys/random.h>
 #include <sys/types.h>
 
-#define RN_TIZEN_HIDDEN __attribute__((visibility("hidden")))
+#define RN_WEBOS_HIDDEN __attribute__((visibility("hidden")))
 
 // Zero tells libstdc++ the process may have threads, so it never skips an atomic.
-RN_TIZEN_HIDDEN char __libc_single_threaded = 0;
+RN_WEBOS_HIDDEN char __libc_single_threaded = 0;
 
-RN_TIZEN_HIDDEN unsigned long __isoc23_strtoul(const char *text, char **end, int base) {
+RN_WEBOS_HIDDEN unsigned long __isoc23_strtoul(const char *text, char **end, int base) {
   return strtoul(text, end, base);
 }
 
-RN_TIZEN_HIDDEN uint32_t arc4random(void) {
+RN_WEBOS_HIDDEN uint32_t arc4random(void) {
   uint32_t value;
   for (;;) {
     ssize_t received = getrandom(&value, sizeof value, 0);
@@ -70,7 +70,7 @@ static int find_object(struct dl_phdr_info *info, size_t size, void *data) {
   return 1;
 }
 
-RN_TIZEN_HIDDEN int _dl_find_object(void *address, struct dl_find_object *result) {
+RN_WEBOS_HIDDEN int _dl_find_object(void *address, struct dl_find_object *result) {
   struct object_search search = {.address = (uintptr_t)address, .result = result};
   return dl_iterate_phdr(find_object, &search) != 0 ? 0 : -1;
 }

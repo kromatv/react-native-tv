@@ -4,7 +4,7 @@
 
 #include <doctest/doctest.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 using testing::settled;
 
@@ -41,4 +41,4 @@ TEST_CASE("rejectedPromiseWith rejects with the reason itself, not a new Error")
   CHECK(rt.global().getProperty(rt, "same").getBool());
 }
 
-} // namespace rntizen
+} // namespace rnwebos

@@ -10,7 +10,7 @@
 #include <string>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -153,4 +153,4 @@ TEST_CASE("RemoteInput on a canvas with no native window hears the keys of every
   evas_free(evas);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

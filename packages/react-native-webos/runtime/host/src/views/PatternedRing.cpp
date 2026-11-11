@@ -10,7 +10,7 @@
 #include <numbers>
 #include <optional>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -227,4 +227,4 @@ const NinePatch *patternedRingPatch(
   return patch.pixels.empty() ? nullptr : &patch;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

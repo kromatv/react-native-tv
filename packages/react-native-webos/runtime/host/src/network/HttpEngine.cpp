@@ -8,14 +8,14 @@
 
 #include <format>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
 constexpr int kPollTimeoutMs = 1000;
 // Android and iOS send a User-Agent on every request, and some APIs refuse one
 // without it. A User-Agent header from JavaScript still replaces this one.
-constexpr const char *kDefaultUserAgent = "react-native-tizen";
+constexpr const char *kDefaultUserAgent = "react-native-webos";
 
 std::string trimmed(std::string_view text) {
   const auto first = text.find_first_not_of(" \t\r\n");
@@ -211,4 +211,4 @@ void HttpEngine::run() {
   }
 }
 
-} // namespace rntizen
+} // namespace rnwebos

@@ -11,7 +11,7 @@
 #include <string>
 #include <utility>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -39,7 +39,7 @@ void startEcoreEvas() {
 TEST_CASE("fragmentFormat falls back to the system font at 14 points") {
   const auto run = fragmentFormat(TextAttributes{}, 2);
 
-  CHECK(run.format == "font=Tizen font_size=28 font_weight=normal color=#000000ff");
+  CHECK(run.format == "font=webOS font_size=28 font_weight=normal color=#000000ff");
   CHECK_FALSE(run.tightLineShift.has_value());
 }
 
@@ -219,7 +219,7 @@ TEST_CASE("fragmentFormat keeps the family when letter spacing names no app font
 
 TEST_CASE("fragmentFormat sets letter-spaced text in the app font tracked for that spacing") {
   namespace fs = std::filesystem;
-  const auto root = fs::temp_directory_path() / "rn-tizen-textblock-format-test";
+  const auto root = fs::temp_directory_path() / "rn-webos-textblock-format-test";
   fs::remove_all(root);
   fs::create_directories(root / "Spaced");
   registerAppFontFiles("Spaced", {testing::writeFile(root / "Spaced" / "Bold.ttf", testing::appFont(700, 1000))});
@@ -260,7 +260,7 @@ TEST_CASE("paragraphFormat wraps several lines and aligns the paragraph") {
   paragraph.maximumNumberOfLines = 3;
 
   CHECK(paragraphFormat(paragraph, TextAlignment::Right, 1) ==
-        "font=Tizen font_size=14 color=#000000ff wrap=mixed align=right");
+        "font=webOS font_size=14 color=#000000ff wrap=mixed align=right");
 }
 
-} // namespace rntizen
+} // namespace rnwebos

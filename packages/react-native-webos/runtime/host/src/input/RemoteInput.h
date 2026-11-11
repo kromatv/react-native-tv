@@ -6,7 +6,7 @@
 #include <Ecore_Input.h>
 #include <Evas.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// Listens to the remote on the app's window: it grabs the keys a TV gives an
 /// app only on request and hands the window's key downs and ups to
@@ -39,4 +39,4 @@ class RemoteInput final {
   Ecore_Event_Handler *keyUp_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

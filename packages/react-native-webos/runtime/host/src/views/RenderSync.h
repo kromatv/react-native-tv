@@ -2,7 +2,7 @@
 
 #include <Evas.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// Waits until the software engine's render thread has drawn its frame. Evas
 /// frees an object's offscreen surface (a map's, a snapshot's, a proxy's) as
@@ -14,4 +14,4 @@ inline void waitForRenderThread(Evas_Object *object) {
   evas_sync(evas_object_evas_get(object));
 }
 
-} // namespace rntizen
+} // namespace rnwebos

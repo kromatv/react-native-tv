@@ -4,7 +4,7 @@
 #include <cstdlib>
 #include <utility>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -161,4 +161,4 @@ void AlertDialog::clear() {
   }
 }
 
-} // namespace rntizen
+} // namespace rnwebos

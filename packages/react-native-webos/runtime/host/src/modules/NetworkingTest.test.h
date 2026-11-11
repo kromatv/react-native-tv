@@ -13,7 +13,7 @@
 #include <future>
 #include <string>
 
-namespace rntizen::testing {
+namespace rnwebos::testing {
 
 using facebook::jsi::String;
 
@@ -101,7 +101,7 @@ struct Network {
 
 struct TemporaryFile {
   explicit TemporaryFile(const std::string &bytes)
-      : path(std::filesystem::temp_directory_path() / ("rn-tizen-upload-" + std::to_string(::getpid()) + ".bin")) {
+      : path(std::filesystem::temp_directory_path() / ("rn-webos-upload-" + std::to_string(::getpid()) + ".bin")) {
     std::ofstream(path, std::ios::binary) << bytes;
   }
   ~TemporaryFile() {
@@ -118,4 +118,4 @@ struct TemporaryFile {
   std::filesystem::path path;
 };
 
-} // namespace rntizen::testing
+} // namespace rnwebos::testing

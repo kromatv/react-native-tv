@@ -5,7 +5,7 @@
 #include "BlobReference.h"
 #include "BlobStore.h"
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -98,6 +98,6 @@ void BlobModule::installJSIBindingsWithRuntime(Runtime &runtime) {
           }));
 }
 
-RN_TIZEN_PLATFORM_MODULE("BlobModule", BlobModule);
+RN_WEBOS_PLATFORM_MODULE("BlobModule", BlobModule);
 
-} // namespace rntizen
+} // namespace rnwebos

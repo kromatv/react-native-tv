@@ -7,7 +7,7 @@
 
 #include <Ecore_Evas.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -54,7 +54,7 @@ TEST_CASE("createComponentView builds a registered component with its factory, a
   CHECK(second->tag() == 8);
 }
 
-TEST_CASE("a view registered from its own file with RN_TIZEN_COMPONENT_VIEW is what its component mounts as") {
+TEST_CASE("a view registered from its own file with RN_WEBOS_COMPONENT_VIEW is what its component mounts as") {
   const Canvas canvas;
 
   const auto view = createComponentView(canvas.evas(), shadowView("ModalHostView", 9));
@@ -63,4 +63,4 @@ TEST_CASE("a view registered from its own file with RN_TIZEN_COMPONENT_VIEW is w
   CHECK(view->tag() == 9);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

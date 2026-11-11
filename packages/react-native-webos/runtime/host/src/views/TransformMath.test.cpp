@@ -2,7 +2,7 @@
 
 #include <doctest/doctest.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -53,4 +53,4 @@ TEST_CASE("transformedPoint divides by the projected w") {
   CHECK(transformedPoint(matrix, {.x = 140, .y = 80}, kBox, 1) == PixelPoint{.x = 120, .y = 65});
 }
 
-} // namespace rntizen
+} // namespace rnwebos

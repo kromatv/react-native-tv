@@ -7,7 +7,7 @@
 #include <string>
 #include <string_view>
 
-namespace rntizen::svg {
+namespace rnwebos::svg {
 
 /// `<LinearGradient>` or `<RadialGradient>`: draws nothing in place, and is
 /// found by its `id` when a shape paints with `url(#id)`. A change to it paints
@@ -32,4 +32,4 @@ class SvgGradientView : public SvgNodeView {
 /// one with an `id` wins, as `getElementById` picks.
 void collectGradients(std::span<ComponentView *const> views, GradientDefinitions &gradients);
 
-} // namespace rntizen::svg
+} // namespace rnwebos::svg

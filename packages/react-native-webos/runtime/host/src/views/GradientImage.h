@@ -4,7 +4,7 @@
 
 #include <react/renderer/graphics/BackgroundImage.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// The box a gradient layer paints, in pixels, with the corners it is cut to.
 struct GradientBox {
@@ -24,4 +24,4 @@ struct GradientBox {
 /// next call. Main thread only.
 const NinePatch &gradientPatch(const facebook::react::BackgroundImage &image, const GradientBox &box);
 
-} // namespace rntizen
+} // namespace rnwebos

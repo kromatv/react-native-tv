@@ -3,7 +3,7 @@ import { FocusRow } from './focus-row.tsx';
 import { ShapeSamples } from './shape-samples.tsx';
 import { TablerGrid } from './tabler-grid.tsx';
 
-/** react-native-svg on Tizen: Tabler's icons, each element on its own, then live updates. */
+/** react-native-svg on webOS: Tabler's icons, each element on its own, then live updates. */
 export function SvgScreen() {
   return (
     <View style={styles.screen}>

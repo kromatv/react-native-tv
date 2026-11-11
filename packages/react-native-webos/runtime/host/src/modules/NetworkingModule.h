@@ -5,7 +5,7 @@
 
 #include <FBReactNativeSpec/FBReactNativeSpecJSI.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// `Networking`, under React Native's XMLHttpRequest and therefore `fetch`.
 /// Requests run on the HttpEngine and answer with the device events
@@ -38,4 +38,4 @@ class NetworkingModule final : public facebook::react::NativeNetworkingAndroidCx
   HttpEngine engine_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

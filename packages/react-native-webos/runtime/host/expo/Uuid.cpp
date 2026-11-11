@@ -11,7 +11,7 @@
 #include <random>
 #include <span>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -90,4 +90,4 @@ std::optional<std::string> uuidV5(std::string_view name, std::string_view namesp
   return uuidText(bytes);
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

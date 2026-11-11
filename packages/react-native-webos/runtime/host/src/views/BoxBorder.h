@@ -8,7 +8,7 @@
 #include <array>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// A view's border and outline, drawn above its children. One color: a tinted
 /// ring nine-patch, which follows rounded corners; dashed or dotted, a ring
@@ -44,4 +44,4 @@ class BoxBorder final {
   BoxStyle style_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

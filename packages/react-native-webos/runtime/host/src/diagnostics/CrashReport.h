@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <string_view>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// A native crash report, built as a signal handler must build it, without
 /// allocating or locking: one log stream JSON line,
@@ -34,4 +34,4 @@ class CrashReport final {
   std::size_t size_{0};
 };
 
-} // namespace rntizen
+} // namespace rnwebos

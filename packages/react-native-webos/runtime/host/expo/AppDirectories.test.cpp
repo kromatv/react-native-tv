@@ -10,7 +10,7 @@
 #include <optional>
 #include <string>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -62,9 +62,9 @@ TEST_CASE("appDirectories answers the app's data, cache and resource directories
 TEST_CASE("readAppDirectories falls back to a private directory of its own when app_common has no path") {
   const auto blocker = testing::testAppRoot() / "not-a-directory";
   std::ofstream(blocker).close();
-  const ScopedVariable dataVariable("RN_TIZEN_SIMULATOR_DATA_DIR", (blocker / "data").string());
-  const ScopedVariable cacheVariable("RN_TIZEN_SIMULATOR_CACHE_DIR", (blocker / "cache").string());
-  const ScopedVariable resourceVariable("RN_TIZEN_SIMULATOR_RESOURCE_DIR", std::nullopt);
+  const ScopedVariable dataVariable("RN_WEBOS_SIMULATOR_DATA_DIR", (blocker / "data").string());
+  const ScopedVariable cacheVariable("RN_WEBOS_SIMULATOR_CACHE_DIR", (blocker / "cache").string());
+  const ScopedVariable resourceVariable("RN_WEBOS_SIMULATOR_RESOURCE_DIR", std::nullopt);
 
   const auto directories = readAppDirectories();
   const fs::path data(directories.data);
@@ -73,7 +73,7 @@ TEST_CASE("readAppDirectories falls back to a private directory of its own when 
   CHECK(data.parent_path().filename() == "data");
   CHECK(directories.cache == withSlash(privateRoot / "cache"));
   CHECK(fs::equivalent(privateRoot.parent_path(), fs::temp_directory_path()));
-  CHECK(privateRoot.filename().string().starts_with("rn-tizen-"));
+  CHECK(privateRoot.filename().string().starts_with("rn-webos-"));
   CHECK((fs::status(privateRoot).permissions() & fs::perms::all) == fs::perms::owner_all);
   CHECK(fs::is_directory(directories.data));
   CHECK(fs::is_directory(directories.cache));
@@ -86,4 +86,4 @@ TEST_CASE("fileUri prefixes a path with the file scheme") {
   CHECK(fileUri("/opt/usr/data/") == "file:///opt/usr/data/");
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

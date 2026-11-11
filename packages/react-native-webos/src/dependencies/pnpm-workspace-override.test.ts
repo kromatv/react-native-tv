@@ -11,7 +11,7 @@ afterEach(() => {
 });
 
 function workspace(text?: string): string {
-  const dir = mkdtempSync(join(tmpdir(), 'rn-tizen-pnpm-'));
+  const dir = mkdtempSync(join(tmpdir(), 'rn-webos-pnpm-'));
   dirs.push(dir);
   if (text !== undefined) writeFileSync(join(dir, 'pnpm-workspace.yaml'), text);
   return dir;

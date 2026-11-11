@@ -6,7 +6,7 @@ import { appDir } from '../app/app-dir.fixtures.ts';
 import { fakeApp } from '../app/app.fixtures.ts';
 import * as appProject from '../app/app-project.ts';
 import { openBuild } from '../commands/build-options.ts';
-import { EXPO_TIZEN_DEPRECATION } from '../config/tizen-settings.ts';
+import { EXPO_WEBOS_DEPRECATION } from '../config/webos-settings.ts';
 import { appFloor, checkApp } from './app-check.ts';
 
 const dirs: string[] = [];
@@ -21,18 +21,18 @@ function legacyApp(): string {
   const dir = appDir({
     name: 'Legacy',
     version: '1.2.0',
-    tizen: { package: 'org.example.legacy' },
+    webos: { package: 'org.example.legacy' },
   });
   dirs.push(dir);
   return dir;
 }
 
-describe('an app configured under expo.tizen', () => {
+describe('an app configured under expo.webos', () => {
   it('warns in the doctor', async () => {
     expect(await checkApp(legacyApp())).toMatchObject({
       status: 'warn',
       detail: 'org.example.legacy 1.2.0',
-      fix: EXPO_TIZEN_DEPRECATION,
+      fix: EXPO_WEBOS_DEPRECATION,
     });
   });
 
@@ -44,16 +44,16 @@ describe('an app configured under expo.tizen', () => {
     });
 
     const dir = legacyApp();
-    vi.stubEnv('TIZEN_SDK_DIR', dir);
+    vi.stubEnv('WEBOS_SDK_DIR', dir);
 
-    expect(() => openBuild({}, { cwd: dir })).toThrow('Tizen Studio not found');
-    expect(printed).toContain(EXPO_TIZEN_DEPRECATION);
+    expect(() => openBuild({}, { cwd: dir })).toThrow('webOS Studio not found');
+    expect(printed).toContain(EXPO_WEBOS_DEPRECATION);
   });
 });
 
 describe('checkApp', () => {
   it('skips a directory with no Expo config', async () => {
-    const dir = mkdtempSync(join(tmpdir(), 'rn-tizen-no-app-'));
+    const dir = mkdtempSync(join(tmpdir(), 'rn-webos-no-app-'));
     dirs.push(dir);
 
     expect(await checkApp(dir)).toMatchObject({
@@ -80,7 +80,7 @@ describe('checkApp', () => {
 
 describe('an app that loads two react-natives', () => {
   it('fails the doctor with the copies and the fix', async () => {
-    const dir = mkdtempSync(join(tmpdir(), 'rn-tizen-two-copies-'));
+    const dir = mkdtempSync(join(tmpdir(), 'rn-webos-two-copies-'));
     dirs.push(dir);
     const install = (path: string, manifest: Record<string, unknown>) => {
       mkdirSync(join(dir, path), { recursive: true });
@@ -99,7 +99,7 @@ describe('an app that loads two react-natives', () => {
     expect(await checkApp(dir)).toMatchObject({
       status: 'fail',
       detail: expect.stringContaining('The app loads 2 copies of react-native'),
-      fix: expect.stringContaining('rn-tizen init'),
+      fix: expect.stringContaining('rn-webos init'),
     });
   });
 });
@@ -108,10 +108,10 @@ describe('appFloor', () => {
   it('reads the floor an app sets, and none for a directory that is not an app or does not load', () => {
     const floor = appDir({
       name: 'Floor',
-      tizen: { package: 'org.example.floor', platform: '8.0' },
+      webos: { package: 'org.example.floor', platform: '8.0' },
     });
-    const plain = appDir({ name: 'Plain', tizen: { package: 'org.example.plain' } });
-    const empty = mkdtempSync(join(tmpdir(), 'rn-tizen-no-app-'));
+    const plain = appDir({ name: 'Plain', webos: { package: 'org.example.plain' } });
+    const empty = mkdtempSync(join(tmpdir(), 'rn-webos-no-app-'));
     dirs.push(floor, plain, empty);
     vi.spyOn(appProject, 'loadAppProject').mockImplementationOnce(() => {
       throw new Error('broken config');

@@ -116,13 +116,13 @@ export function duplicateReactNativeError(
   );
 }
 
-/** Why the app cannot run on Tizen as installed, when it loads more than one `react-native`. */
+/** Why the app cannot run on webOS as installed, when it loads more than one `react-native`. */
 export function singleReactNativeIssue(appRoot: string): FixableError | null {
   const copies = reactNativeCopies(appRoot);
   if (copies.length < 2) return null;
   return duplicateReactNativeError(
     appRoot,
     copies,
-    `Run ${packageRunner(appRoot)} rn-tizen init: it points every package at the app's react-native and reinstalls.`,
+    `Run ${packageRunner(appRoot)} rn-webos init: it points every package at the app's react-native and reinstalls.`,
   );
 }

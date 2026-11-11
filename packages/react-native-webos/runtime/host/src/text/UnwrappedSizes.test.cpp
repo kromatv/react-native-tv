@@ -4,7 +4,7 @@
 
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -54,4 +54,4 @@ TEST_CASE("UnwrappedSizes takes the latest size for a paragraph") {
   CHECK(sizes.find(keyFor("Dune"), 100) == facebook::react::Size{.width = 50, .height = 60});
 }
 
-} // namespace rntizen
+} // namespace rnwebos

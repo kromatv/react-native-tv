@@ -4,7 +4,7 @@
 
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 TEST_CASE("isHeaderName accepts tokens and nothing else") {
   CHECK(isHeaderName("Content-Type"));
@@ -35,4 +35,4 @@ TEST_CASE("invalidHeader names the first header that cannot be sent") {
   CHECK(invalidHeader({{"Bad Name", "x"}}) == "Bad Name");
 }
 
-} // namespace rntizen
+} // namespace rnwebos

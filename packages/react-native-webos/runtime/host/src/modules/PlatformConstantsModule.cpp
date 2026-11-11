@@ -1,12 +1,12 @@
 #include "PlatformConstantsModule.h"
 
 #include "PlatformModuleRegistry.h"
-#include "TizenVersion.h"
+#include "WebOSVersion.h"
 
 #include <cxxreact/ReactNativeVersion.h>
 #include <jsi/JSIDynamic.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 PlatformConstantsModule::PlatformConstantsModule(
     std::shared_ptr<facebook::react::CallInvoker> jsInvoker,
@@ -31,6 +31,6 @@ facebook::jsi::String PlatformConstantsModule::getAndroidID(facebook::jsi::Runti
   return facebook::jsi::String::createFromAscii(runtime, "");
 }
 
-RN_TIZEN_PLATFORM_MODULE("PlatformConstants", PlatformConstantsModule);
+RN_WEBOS_PLATFORM_MODULE("PlatformConstants", PlatformConstantsModule);
 
-} // namespace rntizen
+} // namespace rnwebos

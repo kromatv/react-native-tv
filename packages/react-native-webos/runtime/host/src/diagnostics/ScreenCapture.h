@@ -5,7 +5,7 @@
 #include <optional>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// The window as Evas drew it: premultiplied BGRA bytes, top row first, rows `stride` bytes apart.
 struct ScreenCapture {
@@ -23,4 +23,4 @@ using CaptureDone = std::function<void(std::optional<ScreenCapture>)>;
 /// video plane and the system's own UI are never part of it. Main thread only.
 void captureHostWindow(CaptureDone done);
 
-} // namespace rntizen
+} // namespace rnwebos

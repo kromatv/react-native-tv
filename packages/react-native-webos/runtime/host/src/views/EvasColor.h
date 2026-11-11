@@ -4,7 +4,7 @@
 
 #include <Evas.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// Sets `object`'s color from a React Native color, multiplied by `opacity` and
 /// premultiplied as Evas expects. A null color is transparent.
@@ -13,4 +13,4 @@ void setColor(Evas_Object *object, const facebook::react::SharedColor &color, fl
 /// Whether `color` paints anything.
 bool isVisible(const facebook::react::SharedColor &color);
 
-} // namespace rntizen
+} // namespace rnwebos

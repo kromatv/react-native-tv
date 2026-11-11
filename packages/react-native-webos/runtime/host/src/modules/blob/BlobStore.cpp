@@ -4,7 +4,7 @@
 #include <format>
 #include <random>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -85,4 +85,4 @@ void BlobStore::remove(const std::string &blobId) {
   }
 }
 
-} // namespace rntizen
+} // namespace rnwebos

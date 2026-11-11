@@ -1,6 +1,6 @@
 #include "ScrollAnimation.h"
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -44,4 +44,4 @@ Eina_Bool ScrollAnimation::onFrame(void *data, double position) {
   return finished ? ECORE_CALLBACK_CANCEL : ECORE_CALLBACK_RENEW;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

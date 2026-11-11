@@ -8,7 +8,7 @@
 #include <cstdlib>
 #include <format>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -22,7 +22,7 @@ using facebook::react::TextDecorationLineType;
 using facebook::react::TextDecorationStyle;
 
 constexpr Float kDefaultFontSize = 14;
-constexpr const char *kDefaultFontFamily = "Tizen";
+constexpr const char *kDefaultFontFamily = "webOS";
 
 std::string hexColor(const facebook::react::SharedColor &color, Float opacity, const char *fallback) {
   if (!color) return fallback;
@@ -203,4 +203,4 @@ std::string paragraphFormat(
   return format;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

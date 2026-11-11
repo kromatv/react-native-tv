@@ -6,7 +6,7 @@
 #include <atomic>
 #include <utility>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -47,12 +47,12 @@ VideoPlayer::~VideoPlayer() {
 
 void VideoPlayer::open(const folly::dynamic &source) {
   auto self = std::static_pointer_cast<VideoPlayer>(shared_from_this());
-  player_ = std::make_shared<TizenPlayer>(std::weak_ptr<PlayerObserver>(self), number_);
+  player_ = std::make_shared<WebOSPlayer>(std::weak_ptr<PlayerObserver>(self), number_);
   addMediaSession(self);
   openOnPlayer(source, false);
   if (auto context = context_.lock()) {
     context->runOnJs([weak = std::weak_ptr<VideoPlayer>(self)](facebook::jsi::Runtime &) {
-      if (auto player = weak.lock()) player->command([](TizenPlayer &tizen) { tizen.prepare(); });
+      if (auto player = weak.lock()) player->command([](WebOSPlayer &webos) { webos.prepare(); });
     });
   }
 }
@@ -68,9 +68,9 @@ void VideoPlayer::openOnPlayer(const folly::dynamic &source, bool prepareNow) {
     snapshot_.buffered = -1;
     snapshot_.media = {};
   }
-  command([uri, headers = headersOf(source), prepareNow](TizenPlayer &tizen) {
-    tizen.open(uri, headers);
-    if (prepareNow) tizen.prepare();
+  command([uri, headers = headersOf(source), prepareNow](WebOSPlayer &webos) {
+    webos.open(uri, headers);
+    if (prepareNow) webos.prepare();
   });
 }
 
@@ -85,11 +85,11 @@ void VideoPlayer::replace(const folly::dynamic &source) {
 }
 
 void VideoPlayer::play() {
-  command([](TizenPlayer &tizen) { tizen.play(); });
+  command([](WebOSPlayer &webos) { webos.play(); });
 }
 
 void VideoPlayer::pause() {
-  command([](TizenPlayer &tizen) { tizen.pause(); });
+  command([](WebOSPlayer &webos) { webos.pause(); });
 }
 
 void VideoPlayer::seekBy(double seconds) {
@@ -133,8 +133,8 @@ void VideoPlayer::setCurrentTime(double seconds) {
     snapshot_.positionAt = std::chrono::steady_clock::now();
     generation = ++snapshot_.seekGeneration;
   }
-  command([seconds, generation, accurate = accurateSeeks()](TizenPlayer &tizen) {
-    tizen.seekTo(seconds, accurate, generation);
+  command([seconds, generation, accurate = accurateSeeks()](WebOSPlayer &webos) {
+    webos.seekTo(seconds, accurate, generation);
   });
 }
 
@@ -159,7 +159,7 @@ void VideoPlayer::setMuted(bool muted) {
     std::lock_guard lock(mutex_);
     old = std::exchange(snapshot_.muted, muted);
   }
-  command([muted](TizenPlayer &tizen) { tizen.setMuted(muted); });
+  command([muted](WebOSPlayer &webos) { webos.setMuted(muted); });
   if (old != muted) emit("mutedChange", folly::dynamic::object("muted", muted)("oldMuted", old));
 }
 
@@ -175,7 +175,7 @@ void VideoPlayer::setVolume(double volume) {
     std::lock_guard lock(mutex_);
     old = std::exchange(snapshot_.volume, volume);
   }
-  command([volume](TizenPlayer &tizen) { tizen.setVolume(volume); });
+  command([volume](WebOSPlayer &webos) { webos.setVolume(volume); });
   if (old != volume) emit("volumeChange", folly::dynamic::object("volume", volume)("oldVolume", old));
 }
 
@@ -189,7 +189,7 @@ void VideoPlayer::setLoop(bool loop) {
     std::lock_guard lock(mutex_);
     snapshot_.loop = loop;
   }
-  command([loop](TizenPlayer &tizen) { tizen.setLooping(loop); });
+  command([loop](WebOSPlayer &webos) { webos.setLooping(loop); });
 }
 
 double VideoPlayer::playbackRate() const {
@@ -205,7 +205,7 @@ void VideoPlayer::setPlaybackRate(double rate) {
     snapshot_.positionAt = std::chrono::steady_clock::now();
     old = std::exchange(snapshot_.rate, rate);
   }
-  command([rate](TizenPlayer &tizen) { tizen.setPlaybackRate(rate); });
+  command([rate](WebOSPlayer &webos) { webos.setPlaybackRate(rate); });
   if (old != rate) emit("playbackRateChange", folly::dynamic::object("playbackRate", rate)("oldPlaybackRate", old));
 }
 
@@ -219,7 +219,7 @@ void VideoPlayer::setTimeUpdateEventInterval(double seconds) {
     std::lock_guard lock(mutex_);
     snapshot_.interval = std::max(0.0, seconds);
   }
-  command([seconds](TizenPlayer &tizen) { tizen.setProgressInterval(seconds); });
+  command([seconds](WebOSPlayer &webos) { webos.setProgressInterval(seconds); });
 }
 
 folly::dynamic VideoPlayer::bufferOptions() const {
@@ -233,7 +233,7 @@ void VideoPlayer::setBufferOptions(const folly::dynamic &options) {
     snapshot_.bufferOptions = options.isObject() ? options : folly::dynamic::object();
   }
   const auto seconds = numberField(options, "minBufferForPlayback", 0);
-  command([seconds](TizenPlayer &tizen) { tizen.setPrebuffer(seconds); });
+  command([seconds](WebOSPlayer &webos) { webos.setPrebuffer(seconds); });
 }
 
 folly::dynamic VideoPlayer::seekTolerance() const {
@@ -264,7 +264,7 @@ void VideoPlayer::setMaxResolution(const folly::dynamic &size) {
   }
   const auto width = static_cast<int>(numberField(size, "width", -1));
   const auto height = static_cast<int>(numberField(size, "height", -1));
-  command([width, height](TizenPlayer &tizen) { tizen.setMaxResolution(width, height); });
+  command([width, height](WebOSPlayer &webos) { webos.setMaxResolution(width, height); });
 }
 
 folly::dynamic VideoPlayer::stored(const std::string &name, const folly::dynamic &fallback) const {
@@ -278,7 +278,7 @@ void VideoPlayer::store(const std::string &name, const folly::dynamic &value) {
   snapshot_.stored[name] = value;
 }
 
-const std::shared_ptr<TizenPlayer> &VideoPlayer::tizenPlayer() const {
+const std::shared_ptr<WebOSPlayer> &VideoPlayer::webosPlayer() const {
   return player_;
 }
 
@@ -287,12 +287,12 @@ int VideoPlayer::number() const {
 }
 
 void VideoPlayer::sharedObjectDidRelease() {
-  command([](TizenPlayer &tizen) { tizen.release(); });
+  command([](WebOSPlayer &webos) { webos.release(); });
 }
 
-void VideoPlayer::command(std::function<void(TizenPlayer &)> body) {
+void VideoPlayer::command(std::function<void(WebOSPlayer &)> body) {
   if (!player_) return;
   runOnMainThread([player = player_, body = std::move(body)] { player->perform(body); });
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

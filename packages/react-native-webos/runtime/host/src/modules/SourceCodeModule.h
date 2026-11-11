@@ -4,7 +4,7 @@
 
 #include <FBReactNativeSpec/FBReactNativeSpecJSI.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// `SourceCode`: the URL the bundle was loaded from, which resolves asset URLs
 /// against the dev server during development.
@@ -18,4 +18,4 @@ class SourceCodeModule final : public facebook::react::NativeSourceCodeCxxSpec<S
   std::string scriptURL_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

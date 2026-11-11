@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { appDir } from '../app/app-dir.fixtures.ts';
 import { FixableError } from '../errors.ts';
-import { metroPlatforms, tizenMetroIssue } from './metro-platforms.ts';
+import { metroPlatforms, webosMetroIssue } from './metro-platforms.ts';
 
 const dirs: string[] = [];
 
@@ -20,18 +20,18 @@ function app(metroConfig: string | null): string {
 
 describe('metroPlatforms', () => {
   it("loads an ES module Metro config as expo start does, with Expo's own platforms", () => {
-    const dir = app("export default { resolver: { platforms: ['ios', 'android', 'tizen'] } };\n");
+    const dir = app("export default { resolver: { platforms: ['ios', 'android', 'webos'] } };\n");
 
-    expect(metroPlatforms(dir)).toEqual(expect.arrayContaining(['ios', 'android', 'tizen']));
-    expect(tizenMetroIssue(dir)).toBeNull();
+    expect(metroPlatforms(dir)).toEqual(expect.arrayContaining(['ios', 'android', 'webos']));
+    expect(webosMetroIssue(dir)).toBeNull();
   });
 
-  it('names rn-tizen init when the config does not know tizen, or there is none', () => {
-    const issue = tizenMetroIssue(app(null));
+  it('names rn-webos init when the config does not know webos, or there is none', () => {
+    const issue = webosMetroIssue(app(null));
 
     expect(issue).toBeInstanceOf(FixableError);
-    expect(issue?.message).toContain('does not know the tizen platform');
-    expect(issue?.hint).toContain('npx rn-tizen init');
+    expect(issue?.message).toContain('does not know the webos platform');
+    expect(issue?.hint).toContain('npx rn-webos init');
   });
 
   it('says why when Expo cannot load the config', () => {

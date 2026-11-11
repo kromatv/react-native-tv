@@ -1,6 +1,6 @@
 #include "UnwrappedSizes.h"
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -21,4 +21,4 @@ void UnwrappedSizes::remember(const Key &key, int widthPixels, facebook::react::
   entries_.insert_or_assign(key, Entry{.widthPixels = widthPixels, .size = size});
 }
 
-} // namespace rntizen
+} // namespace rnwebos

@@ -8,7 +8,7 @@
 
 #include <Evas.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// A view's `transform` around its `transformOrigin` (the center by default,
 /// as on iOS and Android). A plain translation moves the view; anything else
@@ -36,4 +36,4 @@ class ViewTransform final {
   bool isTranslation_{true};
 };
 
-} // namespace rntizen
+} // namespace rnwebos

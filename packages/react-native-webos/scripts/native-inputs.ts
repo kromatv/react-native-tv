@@ -11,7 +11,7 @@ const NATIVE_ROOTS = [
   'example/package.json',
   'example/app.json',
   'example/app.config.',
-  'example/tizen/',
+  'example/webos/',
   'package.json',
   'bun.lock',
   '.bun-version',

@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// One corner's radii in pixels; unequal radii make an elliptical corner.
 struct CornerRadius {
@@ -74,4 +74,4 @@ NinePatch makeShadowPatch(const Corners &corners, int blur);
 
 int shadowPadding(int blur);
 
-} // namespace rntizen
+} // namespace rnwebos

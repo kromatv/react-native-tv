@@ -6,7 +6,7 @@
 
 #include <optional>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// `StatusBarManager`, which `StatusBar` (and expo-status-bar) require at
 /// import. A TV has no status bar: its height is 0 and every setter does nothing.
@@ -20,4 +20,4 @@ class StatusBarManagerModule final
   void setHidden(facebook::jsi::Runtime &runtime, bool hidden);
 };
 
-} // namespace rntizen
+} // namespace rnwebos

@@ -1,6 +1,6 @@
 #include "SmartMembers.h"
 
-namespace rntizen {
+namespace rnwebos {
 
 Evas_Object *addRectangleMember(Evas *evas, Evas_Object *smart) {
   auto *rectangle = evas_object_rectangle_add(evas);
@@ -37,4 +37,4 @@ void setNinePatch(Evas_Object *image, const NinePatch &patch) {
   evas_object_image_border_center_fill_set(image, patch.hollow ? EVAS_BORDER_FILL_NONE : EVAS_BORDER_FILL_DEFAULT);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

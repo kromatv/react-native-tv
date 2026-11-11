@@ -1,17 +1,17 @@
 import { existsSync, readFileSync, realpathSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
-import { expoModuleTargetName, localExpoModules, tizenExpoModuleCMake } from './expo-modules.ts';
+import { expoModuleTargetName, localExpoModules, webosExpoModuleCMake } from './expo-modules.ts';
 import {
   type CodegenConfig,
   codegenConfigSchema,
   type LibraryPackage,
   libraryPackageSchema,
-  tizenDeclarationSchema,
+  webosDeclarationSchema,
 } from './library-package.ts';
 
 /**
  * A package of the app that ships React Native codegen specs, or an Expo
- * module, a dependency or one of the app's own, that declares a Tizen
+ * module, a dependency or one of the app's own, that declares a webOS
  * implementation.
  */
 export interface NativeLibrary {
@@ -22,7 +22,7 @@ export interface NativeLibrary {
   readonly targetName: string;
   /** Null for an Expo module, which has no specs. */
   readonly codegen: CodegenConfig | null;
-  readonly declaredTizenCMake: string | null;
+  readonly declaredWebOSCMake: string | null;
 }
 
 /** What {@link findNativeLibraries} found, and what it had to skip. */
@@ -83,7 +83,7 @@ function describeExpoModule(
   version: string,
   warnings: string[],
 ): NativeLibrary | null {
-  const cmake = tizenExpoModuleCMake(dir, name, warnings);
+  const cmake = webosExpoModuleCMake(dir, name, warnings);
   if (cmake === null) return null;
   return {
     name,
@@ -91,7 +91,7 @@ function describeExpoModule(
     dir,
     targetName: expoModuleTargetName(name),
     codegen: null,
-    declaredTizenCMake: cmake,
+    declaredWebOSCMake: cmake,
   };
 }
 
@@ -101,10 +101,10 @@ function declaredCMake(
   name: string,
   warnings: string[],
 ): string | null {
-  if (manifest.tizen === undefined) return tizenExpoModuleCMake(visit.dir, name, warnings);
-  const declaration = tizenDeclarationSchema.safeParse(manifest.tizen);
+  if (manifest.webos === undefined) return webosExpoModuleCMake(visit.dir, name, warnings);
+  const declaration = webosDeclarationSchema.safeParse(manifest.webos);
   if (declaration.success) return join(visit.dir, declaration.data.cmake);
-  warnings.push(`${name}: its "tizen" field needs a "cmake" path; ignored`);
+  warnings.push(`${name}: its "webos" field needs a "cmake" path; ignored`);
   return null;
 }
 
@@ -129,7 +129,7 @@ function describeLibrary(
     dir: visit.dir,
     targetName: codegen.data.name,
     codegen: codegen.data,
-    declaredTizenCMake: declaredCMake(visit, manifest, name, warnings),
+    declaredWebOSCMake: declaredCMake(visit, manifest, name, warnings),
   };
 }
 
@@ -161,9 +161,9 @@ function dependenciesToVisit(
 /**
  * Walks the app's dependency tree the way Expo's autolinking does (dependencies
  * and non-optional peer dependencies at every depth, devDependencies of the app
- * only) and returns every package with a `codegenConfig` or a Tizen Expo
+ * only) and returns every package with a `codegenConfig` or a webOS Expo
  * module, the app included, except the packages at `excludedDirs` (the app's
- * react-native), then the app's local Expo modules that support Tizen. When two
+ * react-native), then the app's local Expo modules that support webOS. When two
  * share a target name, the one found first, nearest the app, wins.
  */
 export function findNativeLibraries(appRoot: string, excludedDirs: readonly string[]): LibraryScan {

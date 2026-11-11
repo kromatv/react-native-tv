@@ -7,7 +7,7 @@
 #include <optional>
 #include <vector>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 /// expo-video's `AudioTrack` or `SubtitleTrack` for `track`; its id is `<kind>-<index>`.
 folly::dynamic trackPayload(TrackKind kind, const MediaTrack &track, int current);
@@ -23,4 +23,4 @@ folly::dynamic videoTrackPayload(const VideoStream &video);
 /// The index of the track JavaScript passed, by id, then by language; nullopt for null or no match.
 std::optional<int> trackIndexOf(TrackKind kind, const folly::dynamic &track, const std::vector<MediaTrack> &tracks);
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

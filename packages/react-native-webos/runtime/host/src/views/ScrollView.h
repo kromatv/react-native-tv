@@ -7,7 +7,7 @@
 
 #include <memory>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// A `<ScrollView>`, vertical or horizontal: clips its content and shifts it
 /// by the content offset. The offset moves with `scrollTo` and `scrollToEnd`
@@ -44,4 +44,4 @@ class ScrollView final : public ComponentView {
   double lastScrollEvent_{0};
 };
 
-} // namespace rntizen
+} // namespace rnwebos

@@ -1,6 +1,6 @@
 #include "NativeResponse.h"
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 NativeResponse::NativeResponse(std::shared_ptr<Context> context) : context_(std::move(context)) {}
 
@@ -168,4 +168,4 @@ ClassDefinition<NativeResponse> nativeResponseClass(std::shared_ptr<Context> con
       .asyncFunction("text", [](Response &response, const Promise &promise) { response.readBody(promise, true); });
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

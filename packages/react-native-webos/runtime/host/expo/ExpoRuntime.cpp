@@ -20,7 +20,7 @@
 #include <format>
 #include <span>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -92,7 +92,7 @@ void installHelpers(Runtime &runtime, Object &expo) {
       runtime, "reloadAppAsync", hostFunction(runtime, "reloadAppAsync", 1, [](Runtime &rt, const Value &, const Value *, size_t) {
         auto &state = RuntimeState::get(rt);
         auto created = state.createPromise(rt);
-        state.settle(rt, created.id, {.value = nullptr, .error = "reloadAppAsync is not supported on Tizen: the host cannot reload yet", .code = "ERR_UNAVAILABLE"});
+        state.settle(rt, created.id, {.value = nullptr, .error = "reloadAppAsync is not supported on webOS: the host cannot reload yet", .code = "ERR_UNAVAILABLE"});
         return std::move(created.promise);
       }));
 }
@@ -129,4 +129,4 @@ void installExpoRuntime(Runtime &runtime) {
   coreModule.getPropertyAsFunction(runtime, "installModules").callWithThis(runtime, coreModule);
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

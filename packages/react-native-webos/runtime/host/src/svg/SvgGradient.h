@@ -9,7 +9,7 @@
 #include <variant>
 #include <vector>
 
-namespace rntizen::svg {
+namespace rnwebos::svg {
 
 /// One `<Stop>`: its offset from 0 to 1 and its color, `stopOpacity` included.
 struct GradientStop {
@@ -72,4 +72,4 @@ ResolvedPaint resolveGradient(
     double viewportHeight,
     double opacity);
 
-} // namespace rntizen::svg
+} // namespace rnwebos::svg

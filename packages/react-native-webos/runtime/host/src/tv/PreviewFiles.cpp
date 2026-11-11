@@ -9,7 +9,7 @@
 #include <fstream>
 #include <optional>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -50,4 +50,4 @@ void writePreviewSource(const std::optional<std::string> &sourceJson) {
   std::filesystem::remove(*directory / "preview-fetched-at", ignored);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

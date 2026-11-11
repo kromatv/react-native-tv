@@ -22,7 +22,7 @@ export interface LibrarySpecs {
 function descriptorRegistrations(libraryName: string, components: readonly string[]): string {
   const lines = components.map(
     (component) =>
-      `RN_TIZEN_COMPONENT_DESCRIPTOR(facebook::react::${component}ComponentDescriptor);`,
+      `RN_WEBOS_COMPONENT_DESCRIPTOR(facebook::react::${component}ComponentDescriptor);`,
   );
   return [
     '#include <fabric/ComponentDescriptorRegistry.h>',

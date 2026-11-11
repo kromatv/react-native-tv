@@ -8,7 +8,7 @@
 #include <fstream>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -114,7 +114,7 @@ struct Workspace {
   Workspace(const Workspace &) = delete;
   Workspace &operator=(const Workspace &) = delete;
 
-  const fs::path root{fs::temp_directory_path() / "rn-tizen-font-instances-test"};
+  const fs::path root{fs::temp_directory_path() / "rn-webos-font-instances-test"};
   const fs::path font{root / "Brand.ttf"};
   const fs::path directory{root / "instances"};
 };
@@ -153,11 +153,11 @@ TEST_CASE_FIXTURE(Workspace, "writeWeightInstances writes nothing without a weig
 }
 
 TEST_CASE("writeWeightInstances with the system's HarfBuzz writes nothing for a font it cannot instance") {
-  const auto directory = fs::temp_directory_path() / "rn-tizen-font-instances-system";
+  const auto directory = fs::temp_directory_path() / "rn-webos-font-instances-system";
   const fs::path staticFont = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf";
 
   CHECK(writeWeightInstances("/nonexistent/Font.ttf", directory).empty());
   if (fs::exists(staticFont)) CHECK(writeWeightInstances(staticFont, directory).empty());
 }
 
-} // namespace rntizen
+} // namespace rnwebos

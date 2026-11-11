@@ -2,7 +2,7 @@
 
 #include "NinePatch.h"
 
-namespace rntizen {
+namespace rnwebos {
 
 /// How a border is stroked: CSS `border-style` as React Native has it.
 enum class StrokePattern { Solid, Dashed, Dotted };
@@ -21,4 +21,4 @@ const NinePatch *patternedRingPatch(
     int height,
     StrokePattern pattern);
 
-} // namespace rntizen
+} // namespace rnwebos

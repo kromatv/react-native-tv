@@ -1,6 +1,6 @@
 #include "TvState.h"
 
-namespace rntizen {
+namespace rnwebos {
 
 TvState::TvState(bool voiceConfigured, std::optional<std::string> searchUrl)
     : voiceConfigured_(voiceConfigured), searchUrl_(std::move(searchUrl)) {}
@@ -57,4 +57,4 @@ void TvState::setPreviewPublisher(PreviewPublisher publisher) {
   previewPublisher_ = std::move(publisher);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

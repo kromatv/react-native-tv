@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <cmath>
 
-namespace rntizen::svg {
+namespace rnwebos::svg {
 
 namespace {
 
@@ -172,4 +172,4 @@ Evas_Vg_Shape *SvgCanvas::shapeAt(std::size_t index) {
   return shapes_[index];
 }
 
-} // namespace rntizen::svg
+} // namespace rnwebos::svg

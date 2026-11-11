@@ -12,7 +12,7 @@
 #include <utility>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -193,4 +193,4 @@ TEST_CASE("VoiceController leaves a search to the TV with no listener and no sea
   CHECK(voice.openedUrls.empty());
 }
 
-} // namespace rntizen
+} // namespace rnwebos

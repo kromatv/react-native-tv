@@ -10,7 +10,7 @@
 #include <memory>
 #include <string>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 /// The native side of an Expo view: a ComponentView that receives the props
 /// its ExpoViewType declares, one setter call per changed prop, and sends
@@ -39,4 +39,4 @@ class ExpoView : public ComponentView {
   std::map<std::string, folly::dynamic, std::less<>> applied_;
 };
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

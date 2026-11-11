@@ -69,7 +69,7 @@ jobs:
           node-version: '22.13'
           package-manager-cache: false
       - run: bun install --frozen-lockfile
-      - name: npm pack, install into a fresh Expo app, rn-tizen bundle under Node
+      - name: npm pack, install into a fresh Expo app, rn-webos bundle under Node
         run: bun run check:packed
 
   changes:
@@ -130,8 +130,8 @@ jobs:
         with:
           path: |
             ~/.cache/ccache
-            ~/.cache/react-native-tizen/downloads
-            ~/rn-tizen-simulator/build/hermes-host
+            ~/.cache/react-native-webos/downloads
+            ~/rn-webos-simulator/build/hermes-host
           key: native-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('runtime/dependencies.json', 'bun.lock') }}-${{ github.sha }}
           restore-keys: |
             native-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('runtime/dependencies.json', 'bun.lock') }}-
@@ -153,8 +153,8 @@ jobs:
         with:
           path: |
             ~/.cache/ccache
-            ~/.cache/react-native-tizen/downloads
-            ~/rn-tizen-simulator/build/hermes-host
+            ~/.cache/react-native-webos/downloads
+            ~/rn-webos-simulator/build/hermes-host
           key: ${{ steps.native-cache.outputs.cache-primary-key }}
 
   sonar:

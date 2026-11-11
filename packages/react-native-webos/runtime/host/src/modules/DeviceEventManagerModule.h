@@ -4,7 +4,7 @@
 
 #include <FBReactNativeSpec/FBReactNativeSpecJSI.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// `DeviceEventManager`: when no `BackHandler` listener consumes the remote's
 /// Back key, React Native asks for the default, which on a TV leaves the app.
@@ -19,4 +19,4 @@ class DeviceEventManagerModule final
   std::function<void()> exitApp_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

@@ -2,7 +2,7 @@
 
 #include "SmartMembers.h"
 
-namespace rntizen {
+namespace rnwebos {
 
 BoxShape::BoxShape(Evas *evas, Evas_Object *smart) : evas_(evas), smart_(smart) {}
 
@@ -33,4 +33,4 @@ Evas_Object *BoxShape::object() const {
   return object_;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

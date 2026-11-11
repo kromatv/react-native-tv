@@ -7,7 +7,7 @@
 #include <utility>
 #include <vector>
 
-namespace rntizen::testing {
+namespace rnwebos::testing {
 
 inline void putU16(std::string &bytes, std::size_t at, std::uint32_t value) {
   bytes[at] = static_cast<char>((value >> 8) & 0xff);
@@ -48,4 +48,4 @@ inline std::filesystem::path writeFile(const std::filesystem::path &file, const 
   return file;
 }
 
-} // namespace rntizen::testing
+} // namespace rnwebos::testing

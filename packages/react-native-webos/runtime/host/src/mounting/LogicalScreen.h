@@ -2,7 +2,7 @@
 
 #include <react/renderer/graphics/Size.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// The screen every app lays out for, in points, whatever window the TV gives
 /// it (docs/decisions.md, "One logical 1920x1080 screen").
@@ -12,4 +12,4 @@ inline constexpr facebook::react::Size kLogicalScreenSize{.width = 1920, .height
 /// scale at which the logical screen fits, 2/3 in a 1280x720 window.
 facebook::react::Float pointScaleFactor(facebook::react::Size windowSize);
 
-} // namespace rntizen
+} // namespace rnwebos

@@ -20,7 +20,7 @@
 #include <optional>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// What a development runtime adds to an app whose bundle comes from a dev
 /// server, as Android's DevSupportManager does: the packager socket, the HMR
@@ -83,4 +83,4 @@ class DevSupport final {
   DevSettingsState settings_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

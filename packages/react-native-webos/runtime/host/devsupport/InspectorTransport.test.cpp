@@ -23,7 +23,7 @@
 #include <thread>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -208,4 +208,4 @@ TEST_CASE("A scheduled callback runs on the main loop after its delay") {
   CHECK(std::chrono::steady_clock::now() - scheduled >= 50ms);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

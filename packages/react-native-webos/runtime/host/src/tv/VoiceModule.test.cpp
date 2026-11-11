@@ -10,7 +10,7 @@
 #include <string>
 #include <utility>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -39,7 +39,7 @@ std::shared_ptr<VoiceModule> voiceModule(std::shared_ptr<TvState> tv, std::strin
 
 } // namespace
 
-TEST_CASE("RNTizenVoice reports availability, the screen and the listeners of each event") {
+TEST_CASE("RNWebOSVoice reports availability, the screen and the listeners of each event") {
   auto runtime = facebook::hermes::makeHermesRuntime();
   auto &rt = *runtime;
   const auto tv = std::make_shared<TvState>(true, std::nullopt);
@@ -57,7 +57,7 @@ TEST_CASE("RNTizenVoice reports availability, the screen and the listeners of ea
   CHECK_FALSE(tv->screen().has_value());
 }
 
-TEST_CASE("RNTizenVoice without the TV's state is unavailable and ignores the rest") {
+TEST_CASE("RNWebOSVoice without the TV's state is unavailable and ignores the rest") {
   auto runtime = facebook::hermes::makeHermesRuntime();
   auto &rt = *runtime;
   const auto voice = voiceModule(nullptr);
@@ -68,7 +68,7 @@ TEST_CASE("RNTizenVoice without the TV's state is unavailable and ignores the re
   CHECK(call(rt, *voice, "addListener", String::createFromAscii(rt, "search")).isUndefined());
 }
 
-TEST_CASE("RNTizenVoice names the Tizen voice needs on an older TV") {
+TEST_CASE("RNWebOSVoice names the webOS voice needs on an older TV") {
   auto runtime = facebook::hermes::makeHermesRuntime();
   auto &rt = *runtime;
   const auto tv = std::make_shared<TvState>(true, std::nullopt);
@@ -76,11 +76,11 @@ TEST_CASE("RNTizenVoice names the Tizen voice needs on an older TV") {
   const auto voice = voiceModule(tv, "5.5");
 
   CHECK_FALSE(call(rt, *voice, "isAvailable").getBool());
-  CHECK(call(rt, *voice, "unavailableReason").getString(rt).utf8(rt) == "Voice control needs Tizen 6.0, and this TV runs 5.5");
+  CHECK(call(rt, *voice, "unavailableReason").getString(rt).utf8(rt) == "Voice control needs webOS 6.0, and this TV runs 5.5");
   CHECK_FALSE(call(rt, *voice, "canSelectTitles").getBool());
 }
 
-TEST_CASE("RNTizenVoice selects titles from Tizen 6.5") {
+TEST_CASE("RNWebOSVoice selects titles from webOS 6.5") {
   auto runtime = facebook::hermes::makeHermesRuntime();
   auto &rt = *runtime;
   const auto tv = std::make_shared<TvState>(true, std::nullopt);
@@ -92,4 +92,4 @@ TEST_CASE("RNTizenVoice selects titles from Tizen 6.5") {
   CHECK(call(rt, *voiceModule(tv, "6.5"), "canSelectTitles").getBool());
 }
 
-} // namespace rntizen
+} // namespace rnwebos

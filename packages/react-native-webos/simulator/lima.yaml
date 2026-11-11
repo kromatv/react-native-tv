@@ -1,4 +1,4 @@
-# The Tizen TV simulator's virtual machine: aarch64 Ubuntu LTS under Apple's
+# The webOS TV simulator's virtual machine: aarch64 Ubuntu LTS under Apple's
 # Virtualization framework. `bun simulator/main.ts setup` creates it with the
 # two params set, then installs its packages with guest/provision.sh.
 

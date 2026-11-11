@@ -7,7 +7,7 @@
 #include <regex>
 #include <string>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -73,4 +73,4 @@ TEST_CASE("ExponentConstants ignores an app.config that is not a JSON object") {
   }
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

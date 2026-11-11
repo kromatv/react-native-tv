@@ -13,7 +13,7 @@
 #include <variant>
 #include <vector>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -197,4 +197,4 @@ TEST_CASE("Convert refuses a released object, an object of another class and a p
   }
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

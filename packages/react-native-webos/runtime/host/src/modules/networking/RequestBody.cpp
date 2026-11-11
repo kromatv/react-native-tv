@@ -12,7 +12,7 @@
 #include <format>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -100,4 +100,4 @@ RequestBody readRequestBody(Runtime &runtime, const Object &data, std::string_vi
   return {.bytes = std::nullopt, .contentType = std::nullopt};
 }
 
-} // namespace rntizen
+} // namespace rnwebos

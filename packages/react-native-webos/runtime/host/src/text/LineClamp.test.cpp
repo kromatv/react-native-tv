@@ -6,7 +6,7 @@
 
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -85,4 +85,4 @@ TEST_CASE("clampLines leaves only the ellipsis when the one line it keeps is bla
   CHECK(paragraph.markup() == "&hellip;");
 }
 
-} // namespace rntizen
+} // namespace rnwebos

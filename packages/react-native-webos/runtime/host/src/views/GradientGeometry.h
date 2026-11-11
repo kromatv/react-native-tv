@@ -2,7 +2,7 @@
 
 #include <react/renderer/graphics/BackgroundImage.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// Where a CSS gradient puts each point of its box on its gradient line, as
 /// CSS Images 3 lays out `linear-gradient` and `radial-gradient`, in pixels.
@@ -42,4 +42,4 @@ class GradientGeometry {
   float radiusY_{1};
 };
 
-} // namespace rntizen
+} // namespace rnwebos

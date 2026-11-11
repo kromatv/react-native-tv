@@ -15,9 +15,9 @@ import type { Task } from '../src/task.ts';
 import { pathInside } from './path-inside.ts';
 import { lcovToSonar } from './sonar-coverage.ts';
 
-const TESTS = 'rn-tizen-host-tests';
-const RUNTIME_LIBRARY = 'react-native-tizen';
-const RUNTIME_LIBRARY_FILE = 'libreact-native-tizen.so';
+const TESTS = 'rn-webos-host-tests';
+const RUNTIME_LIBRARY = 'react-native-webos';
+const RUNTIME_LIBRARY_FILE = 'libreact-native-webos.so';
 
 type Runner = (
   task: Task,
@@ -42,17 +42,17 @@ const runGuest: Runner = process.platform === 'linux' ? runHere : guestRun;
 
 function definitions(build: TestBuild): string[] {
   return [
-    '-DRN_TIZEN_SIMULATOR=ON',
-    '-DRN_TIZEN_TESTS=ON',
-    `-DRN_TIZEN_COVERAGE=${build.coverage ? 'ON' : 'OFF'}`,
+    '-DRN_WEBOS_SIMULATOR=ON',
+    '-DRN_WEBOS_TESTS=ON',
+    `-DRN_WEBOS_COVERAGE=${build.coverage ? 'ON' : 'OFF'}`,
     '-DCMAKE_BUILD_TYPE=RelWithDebInfo',
     '-DCMAKE_C_COMPILER=clang',
     '-DCMAKE_CXX_COMPILER=clang++',
     '-DCMAKE_LINKER_TYPE=LLD',
-    `-DRN_TIZEN_CACHE_DIR=${cacheDir()}`,
+    `-DRN_WEBOS_CACHE_DIR=${cacheDir()}`,
     `-DREACT_NATIVE_DIR=${build.reactNativeDir}`,
-    `-DRN_TIZEN_CODEGEN_DIR=${build.codegen}`,
-    `-DRN_TIZEN_HERMES_HOST_COMPILERS=${build.hermesCompilers}`,
+    `-DRN_WEBOS_CODEGEN_DIR=${build.codegen}`,
+    `-DRN_WEBOS_HERMES_HOST_COMPILERS=${build.hermesCompilers}`,
     `-DEXPO_MODULES_CORE_DIR=${build.expoModulesCoreDir}`,
     `-DEXPO_MODULES_JSI_DIR=${build.expoModulesJsiDir}`,
   ];
@@ -64,7 +64,7 @@ async function requireHermesCompilers(task: Task, build: TestBuild): Promise<voi
   if (present.trim() === 'yes') return;
   throw new FixableError(
     'Hermes has no compiler for the simulator yet',
-    'rn-tizen simulator build',
+    'rn-webos simulator build',
   );
 }
 

@@ -5,7 +5,7 @@
 
 #include <react/renderer/components/rnsvg/Props.h>
 
-namespace rntizen::svg {
+namespace rnwebos::svg {
 
 namespace {
 
@@ -73,6 +73,6 @@ void drawChildren(std::span<ComponentView *const> children, Drawing &drawing, co
   }
 }
 
-RN_TIZEN_COMPONENT_VIEW("RNSVGGroup", SvgGroupView);
+RN_WEBOS_COMPONENT_VIEW("RNSVGGroup", SvgGroupView);
 
-} // namespace rntizen::svg
+} // namespace rnwebos::svg

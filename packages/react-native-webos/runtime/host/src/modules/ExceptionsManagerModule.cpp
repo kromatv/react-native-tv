@@ -7,7 +7,7 @@
 
 #include <jsi/JSIDynamic.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -108,6 +108,6 @@ void ExceptionsManagerModule::reportException(facebook::jsi::Runtime &runtime, f
 
 void ExceptionsManagerModule::dismissRedbox(facebook::jsi::Runtime &) {}
 
-RN_TIZEN_PLATFORM_MODULE("ExceptionsManager", ExceptionsManagerModule);
+RN_WEBOS_PLATFORM_MODULE("ExceptionsManager", ExceptionsManagerModule);
 
-} // namespace rntizen
+} // namespace rnwebos

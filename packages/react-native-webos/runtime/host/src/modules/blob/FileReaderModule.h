@@ -6,7 +6,7 @@
 
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// `FileReaderModule`, under React Native's `FileReader` and therefore
 /// whatwg-fetch's `text()` and `json()`: reads a blob from the BlobStore as a
@@ -22,4 +22,4 @@ class FileReaderModule final : public facebook::react::NativeFileReaderModuleCxx
       const std::string &encoding);
 };
 
-} // namespace rntizen
+} // namespace rnwebos

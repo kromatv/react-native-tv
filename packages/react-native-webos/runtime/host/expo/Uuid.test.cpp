@@ -5,7 +5,7 @@
 #include <regex>
 #include <set>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 TEST_CASE("uuidV4 is a random RFC 4122 version 4 UUID in lowercase") {
   const std::regex layout("[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}");
@@ -34,4 +34,4 @@ TEST_CASE("uuidV5 refuses a namespace that is not a UUID") {
   CHECK_FALSE(uuidV5("hello", "6ba7b810-9dad-11d1-80b4-00c04fd430c8-").has_value());
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

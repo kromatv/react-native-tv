@@ -7,7 +7,7 @@
 #include <string>
 #include <string_view>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// What the shell reports and JavaScript asks about the TV's own services:
 /// Samsung's voice service, the Smart Hub preview and how the app was
@@ -19,7 +19,7 @@ class TvState final {
   /// that took it, 0 for none. Runs on the main thread.
   using PreviewPublisher = std::function<int(const std::string &json)>;
 
-  /// The search URL template `expo.tizen.voice.searchUrl` set; nullopt without voice or a URL.
+  /// The search URL template `expo.webos.voice.searchUrl` set; nullopt without voice or a URL.
   explicit TvState(bool voiceConfigured, std::optional<std::string> searchUrl);
 
   bool voiceConfigured() const;
@@ -54,4 +54,4 @@ class TvState final {
   PreviewPublisher previewPublisher_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

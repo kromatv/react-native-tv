@@ -11,7 +11,7 @@
 #include <bit>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 TEST_CASE("CrashReport names the signal and the fault address, then a line per frame") {
   CrashReport report(SIGSEGV, 0xdead);
@@ -57,4 +57,4 @@ TEST_CASE("CrashReport writes the whole report to a descriptor") {
   CHECK(std::string(read.data(), static_cast<std::size_t>(length)) == std::string(report.text()));
 }
 
-} // namespace rntizen
+} // namespace rnwebos

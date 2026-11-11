@@ -41,7 +41,7 @@ async function ensureLibraryCodegen(
     await mkdir(outputDir, { recursive: true });
     return;
   }
-  const stamp = stampAt(join(outputDir, '.rn-tizen-codegen.json'));
+  const stamp = stampAt(join(outputDir, '.rn-webos-codegen.json'));
   const fingerprint = JSON.stringify({
     generator: GENERATOR_VERSION,
     reactNative: [reactNative.dir, reactNative.version],
@@ -55,8 +55,8 @@ async function ensureLibraryCodegen(
 
 /**
  * Finds the app's packages that ship codegen specs and its Expo modules that
- * support Tizen, runs codegen for each one with specs that changed into `dir`,
- * picks each one's Tizen implementation (its own, else one this package
+ * support webOS, runs codegen for each one with specs that changed into `dir`,
+ * picks each one's webOS implementation (its own, else one this package
  * bundles, else none) and writes `dir/libraries.json`, rewritten only when it
  * changes so CMake reconfigures only then.
  */
@@ -79,7 +79,7 @@ export async function prepareNativeLibraries(
         dir: library.dir,
         codegenName: library.targetName,
         codegenDir,
-        implementation: library.declaredTizenCMake ?? bundled.get(library.name) ?? null,
+        implementation: library.declaredWebOSCMake ?? bundled.get(library.name) ?? null,
       };
     }),
   );
@@ -89,7 +89,7 @@ export async function prepareNativeLibraries(
   return { file, libraries, warnings: scan.warnings };
 }
 
-/** One line naming each library and where its Tizen implementation comes from. */
+/** One line naming each library and where its webOS implementation comes from. */
 export function describeLibraries(libraries: readonly LinkedLibrary[]): string {
   if (libraries.length === 0) return 'none';
   return libraries

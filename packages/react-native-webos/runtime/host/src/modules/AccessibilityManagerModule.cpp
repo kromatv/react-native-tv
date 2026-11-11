@@ -2,7 +2,7 @@
 
 #include "PlatformModuleRegistry.h"
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -86,6 +86,6 @@ void AccessibilityManagerModule::announceForAccessibilityWithOptions(
     facebook::jsi::String,
     facebook::jsi::Object) {}
 
-RN_TIZEN_PLATFORM_MODULE("AccessibilityManager", AccessibilityManagerModule);
+RN_WEBOS_PLATFORM_MODULE("AccessibilityManager", AccessibilityManagerModule);
 
-} // namespace rntizen
+} // namespace rnwebos

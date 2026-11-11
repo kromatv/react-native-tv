@@ -14,7 +14,7 @@
 #include <utility>
 #include <vector>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -118,4 +118,4 @@ TEST_CASE("loadAsync refuses a font file that is not there") {
   CHECK(expo.json("L.getLoadedFonts()") == "[]");
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

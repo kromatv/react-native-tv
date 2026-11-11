@@ -10,12 +10,12 @@
 #include <chrono>
 #include <memory>
 
-namespace rntizen {
+namespace rnwebos {
 
 class ControlLink;
 class TaskQueueThread;
 
-/// What `rn-tizen perf` prints. While the listener on a development build's
+/// What `rn-webos perf` prints. While the listener on a development build's
 /// control link asks for it, logs one `perf {...}` line a second: the main
 /// loop's frames (Evas renders and their time, display ticks, dropped frames,
 /// busy time), the JavaScript thread's busy time, its wait on the main loop and
@@ -66,4 +66,4 @@ class PerfMonitor final {
   double cpuSecondsAt_{0};
 };
 
-} // namespace rntizen
+} // namespace rnwebos

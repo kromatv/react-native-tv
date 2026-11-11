@@ -6,7 +6,7 @@
 
 #include <jsi/JSIDynamic.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 using testing::call;
 
@@ -35,4 +35,4 @@ TEST_CASE("PlatformConstants describes the TV in Android's shape, with React Nat
   CHECK(call(rt, module, "getAndroidID").asString(rt).utf8(rt).empty());
 }
 
-} // namespace rntizen
+} // namespace rnwebos

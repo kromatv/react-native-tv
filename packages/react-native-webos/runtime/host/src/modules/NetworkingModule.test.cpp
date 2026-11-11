@@ -7,7 +7,7 @@
 #include <string>
 #include <thread>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -156,4 +156,4 @@ TEST_CASE_FIXTURE(Network, "clearCookies calls back on the JavaScript thread wit
   CHECK(testing::call(rt, *module, "removeListeners", 1).isUndefined());
 }
 
-} // namespace rntizen
+} // namespace rnwebos

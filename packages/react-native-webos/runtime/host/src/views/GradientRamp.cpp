@@ -5,7 +5,7 @@
 #include <limits>
 #include <optional>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -116,4 +116,4 @@ Premultiplied GradientRamp::between(const Stop &from, const Stop &to, float t) c
   return color;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

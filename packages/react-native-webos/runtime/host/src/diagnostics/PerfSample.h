@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// The Hermes heap as `getHeapInfo` last reported it.
 struct HeapReading {
@@ -30,8 +30,8 @@ struct PerfSample {
   double cpuPercent{0};
 };
 
-/// The log line `rn-tizen perf` reads: `perf ` and one JSON object, its field
+/// The log line `rn-webos perf` reads: `perf ` and one JSON object, its field
 /// names listed in `docs/cli.md`.
 std::string perfLine(const PerfSample &sample);
 
-} // namespace rntizen
+} // namespace rnwebos

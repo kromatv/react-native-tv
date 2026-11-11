@@ -17,7 +17,7 @@
 #include <mutex>
 #include <set>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -93,6 +93,6 @@ class ExpoFontLoaderModule final : public Module {
 
 } // namespace
 
-RN_TIZEN_EXPO_MODULE(ExpoFontLoader, ExpoFontLoaderModule);
+RN_WEBOS_EXPO_MODULE(ExpoFontLoader, ExpoFontLoaderModule);
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

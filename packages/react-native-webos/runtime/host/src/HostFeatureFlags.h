@@ -1,6 +1,6 @@
 #pragma once
 
-namespace rntizen {
+namespace rnwebos {
 
 /// Overrides React Native's feature flags once per process, before any is
 /// read: the OSS Stable set Android and iOS ship, plus
@@ -8,4 +8,4 @@ namespace rntizen {
 /// Native's C++ driver (`animated/NativeAnimatedModule.cpp`).
 void overrideFeatureFlagsOnce();
 
-} // namespace rntizen
+} // namespace rnwebos

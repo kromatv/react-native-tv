@@ -3,7 +3,7 @@
 #include <chrono>
 #include <functional>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// Runs `task` on the EFL main loop, the only thread allowed to touch Evas.
 /// From the main thread itself it queues an Ecore job, so a caller never
@@ -42,4 +42,4 @@ void setMainThreadWaitMeasured(bool measured);
 /// while measured, in total, the waits still going on so far included.
 std::chrono::nanoseconds mainThreadWaitTime();
 
-} // namespace rntizen
+} // namespace rnwebos

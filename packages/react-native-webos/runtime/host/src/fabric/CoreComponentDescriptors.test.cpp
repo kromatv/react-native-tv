@@ -9,7 +9,7 @@
 #include <utility>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -63,4 +63,4 @@ TEST_CASE("a masked view lays out as a plain view") {
   CHECK(size == kMask);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

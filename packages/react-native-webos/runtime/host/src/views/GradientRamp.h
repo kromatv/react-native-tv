@@ -6,7 +6,7 @@
 
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// The colors along a CSS gradient line: React Native's color stops fixed up as
 /// CSS Images 4 orders them, transition hints included, and interpolated in
@@ -36,4 +36,4 @@ class GradientRamp {
   std::vector<Stop> stops_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

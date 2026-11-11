@@ -5,7 +5,7 @@
 #include <functional>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// Connects to `host` (an IPv4 address) on `port`, giving up after `timeout`
 /// or once `cancelled` returns true, which it asks every 250 ms. Returns a
@@ -23,4 +23,4 @@ bool peerHasClosed(int socket);
 /// Writes all of `data`, retrying after a signal. False once the connection failed.
 bool sendAll(int socket, const void *data, std::size_t size);
 
-} // namespace rntizen
+} // namespace rnwebos

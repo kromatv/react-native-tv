@@ -7,9 +7,9 @@ import { readToken, saveToken, tokenPath } from './remote-token.ts';
 const dirs: string[] = [];
 
 function cacheEnv(): NodeJS.ProcessEnv {
-  const dir = mkdtempSync(join(tmpdir(), 'rn-tizen-token-'));
+  const dir = mkdtempSync(join(tmpdir(), 'rn-webos-token-'));
   dirs.push(dir);
-  return { RN_TIZEN_CACHE_DIR: join(dir, 'cache'), XDG_STATE_HOME: join(dir, 'state') };
+  return { RN_WEBOS_CACHE_DIR: join(dir, 'cache'), XDG_STATE_HOME: join(dir, 'state') };
 }
 
 afterEach(() => {
@@ -25,7 +25,7 @@ describe('remote tokens', () => {
     expect(readToken('192.168.1.50', env)).toBe('87654321');
     expect(statSync(tokenPath('192.168.1.50', env)).mode & 0o777).toBe(0o600);
     expect(
-      statSync(join(env.XDG_STATE_HOME ?? '', 'react-native-tizen', 'remote')).mode & 0o777,
+      statSync(join(env.XDG_STATE_HOME ?? '', 'react-native-webos', 'remote')).mode & 0o777,
     ).toBe(0o700);
   });
 
@@ -35,15 +35,15 @@ describe('remote tokens', () => {
     saveToken('192.168.1.50', '87654321', env);
 
     expect(tokenPath('192.168.1.50', env)).toBe(
-      join(env.XDG_STATE_HOME ?? '', 'react-native-tizen', 'remote', '192.168.1.50.token'),
+      join(env.XDG_STATE_HOME ?? '', 'react-native-webos', 'remote', '192.168.1.50.token'),
     );
-    expect(existsSync(join(env.RN_TIZEN_CACHE_DIR ?? '', 'remote'))).toBe(false);
+    expect(existsSync(join(env.RN_WEBOS_CACHE_DIR ?? '', 'remote'))).toBe(false);
   });
 
-  it('moves a token an older rn-tizen kept in the cache', () => {
+  it('moves a token an older rn-webos kept in the cache', () => {
     const env = cacheEnv();
-    const cached = join(env.RN_TIZEN_CACHE_DIR ?? '', 'remote', '192.168.1.50.token');
-    mkdirSync(join(env.RN_TIZEN_CACHE_DIR ?? '', 'remote'), { recursive: true });
+    const cached = join(env.RN_WEBOS_CACHE_DIR ?? '', 'remote', '192.168.1.50.token');
+    mkdirSync(join(env.RN_WEBOS_CACHE_DIR ?? '', 'remote'), { recursive: true });
     writeFileSync(cached, '87654321');
 
     const token = readToken('192.168.1.50', env);

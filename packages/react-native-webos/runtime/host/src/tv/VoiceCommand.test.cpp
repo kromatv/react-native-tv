@@ -2,7 +2,7 @@
 
 #include <doctest/doctest.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 TEST_CASE("parseVoiceCommand reads a transport command and its payload") {
   const auto command = parseVoiceCommand(R"({"type":"skip","seconds":-10})");
@@ -57,4 +57,4 @@ TEST_CASE("parseVoiceCommand drops what is not a command") {
   CHECK_FALSE(parseVoiceCommand(R"({"type":"subtitles","enabled":1})").has_value());
 }
 
-} // namespace rntizen
+} // namespace rnwebos

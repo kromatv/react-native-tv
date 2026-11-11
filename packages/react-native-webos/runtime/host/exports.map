@@ -1,6 +1,6 @@
 {
   global:
-    rn_tizen_*;
+    rn_webos_*;
   local:
     *;
 };

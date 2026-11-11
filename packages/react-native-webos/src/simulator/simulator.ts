@@ -119,7 +119,7 @@ export async function requireRunningVm(task: Task): Promise<void> {
   if (state === null) {
     throw new FixableError(
       'The simulator VM does not exist yet',
-      'Run `rn-tizen simulator run` in your app: it creates the VM.',
+      'Run `rn-webos simulator run` in your app: it creates the VM.',
     );
   }
   if (state.status !== 'Running') await startInstance(task);
@@ -141,7 +141,7 @@ export async function hostAddress(task: Task): Promise<string> {
   if (!address) {
     throw new FixableError(
       'The simulator VM cannot resolve host.lima.internal, the address of this Mac',
-      'Check the VM network: `limactl shell rn-tizen-sim getent ahostsv4 host.lima.internal` should print an address.',
+      'Check the VM network: `limactl shell rn-webos-sim getent ahostsv4 host.lima.internal` should print an address.',
     );
   }
   return address;

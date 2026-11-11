@@ -6,7 +6,7 @@ SIMULATOR_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PACKAGE_DIR="$(dirname "$SIMULATOR_DIR")"
 RUNTIME_DIR="$PACKAGE_DIR/runtime"
 
-WORK_DIR="${RN_TIZEN_SIMULATOR_HOME:-$HOME/rn-tizen-simulator}"
+WORK_DIR="${RN_WEBOS_SIMULATOR_HOME:-$HOME/rn-webos-simulator}"
 SOURCE_DIR="$WORK_DIR/src"
 BUILD_DIR="$WORK_DIR/build"
 HERMES_HOST_BUILD_DIR="$BUILD_DIR/hermes-host"
@@ -17,7 +17,7 @@ LEGACY_RUNTIME_DIR="$BUILD_DIR/runtime"
 LEGACY_BUILD_LOCK="$WORK_DIR/build.lock"
 RUNTIMES_DIR="$BUILD_DIR/runtimes"
 RUNTIME_KEY='^[0-9a-f]{12}$'
-RUNTIME_USED_FILE=".rn-tizen-used"
+RUNTIME_USED_FILE=".rn-webos-used"
 INSTANCES_DIR="$WORK_DIR/instances"
 INSTANCE_NAME='^[a-z0-9][a-z0-9_-]{0,31}$'
 
@@ -42,7 +42,7 @@ runtime_lock() {
 
 launcher_in() {
   local runtime="$1"
-  echo "$runtime/simulator/launcher/rn-tizen-simulator"
+  echo "$runtime/simulator/launcher/rn-webos-simulator"
 }
 
 instance_runtime_key() {

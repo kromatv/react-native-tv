@@ -5,13 +5,13 @@
 #include <iterator>
 #include <random>
 
-namespace rntizen {
+namespace rnwebos {
 
 std::string multipartBoundary() {
   std::random_device device;
   const std::uint64_t high = (std::uint64_t{device()} << 32) | device();
   const std::uint64_t low = (std::uint64_t{device()} << 32) | device();
-  return std::format("RNTizenFormBoundary{:016x}{:016x}", high, low);
+  return std::format("RNWebOSFormBoundary{:016x}{:016x}", high, low);
 }
 
 std::string encodeMultipart(const std::vector<MultipartPart> &parts, std::string_view boundary) {
@@ -26,4 +26,4 @@ std::string encodeMultipart(const std::vector<MultipartPart> &parts, std::string
   return body;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

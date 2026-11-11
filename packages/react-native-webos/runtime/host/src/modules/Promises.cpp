@@ -1,6 +1,6 @@
 #include "Promises.h"
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -28,4 +28,4 @@ facebook::jsi::Value rejectedPromiseWith(facebook::jsi::Runtime &runtime, const 
   return callOnPromise(runtime, "reject", reason);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

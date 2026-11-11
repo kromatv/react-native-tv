@@ -32,7 +32,7 @@ const REMOTE_KEYS: Readonly<Record<string, string>> = {
 
 const RAW_KEY = /^KEY_[A-Z0-9_]+$/;
 
-/** The key names `rn-tizen key` takes, as `--help` lists them. */
+/** The key names `rn-webos key` takes, as `--help` lists them. */
 export const REMOTE_KEY_NAMES = Object.keys(REMOTE_KEYS);
 
 /**

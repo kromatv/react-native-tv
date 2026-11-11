@@ -1,6 +1,6 @@
 #include "ImeSession.h"
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -61,4 +61,4 @@ ImeOptions imeOptionsFor(
   return options;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

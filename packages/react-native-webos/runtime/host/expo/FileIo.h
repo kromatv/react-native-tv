@@ -6,7 +6,7 @@
 #include <string>
 #include <string_view>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 /// The whole file at `path`, or nullopt when it cannot be read.
 std::optional<std::string> readFile(const std::filesystem::path &path);
@@ -26,4 +26,4 @@ void writeFileAtomically(const std::filesystem::path &path, std::string_view dat
 /// for any other scheme. A bare absolute path is returned as is.
 std::optional<std::string> localPathOf(const std::string &uri);
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

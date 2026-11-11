@@ -256,14 +256,14 @@ const ACTIONS: Readonly<Record<string, Action>> = {
     await reporter.step(
       'Delete VM',
       (task) => deleteInstance(task),
-      () => 'rn-tizen-sim, with every instance',
+      () => 'rn-webos-sim, with every instance',
     );
   },
 };
 
 function findAction(name: string | undefined): Action {
   if (name === undefined) {
-    throw new UsageError('simulator needs an action, e.g. `rn-tizen simulator run`', 'simulator');
+    throw new UsageError('simulator needs an action, e.g. `rn-webos simulator run`', 'simulator');
   }
   const action = ACTIONS[name];
   if (action !== undefined) return action;
@@ -272,32 +272,32 @@ function findAction(name: string | undefined): Action {
   throw new UsageError(`Unknown simulator action ${name}${hint}`, 'simulator');
 }
 
-/** `rn-tizen simulator`: runs and drives the app on a virtual TV in a local VM. */
+/** `rn-webos simulator`: runs and drives the app on a virtual TV in a local VM. */
 export const simulatorCommand: Command = {
   name: 'simulator',
   summary: 'Run the app on a virtual TV on this Mac, headless or with a live screen, and drive it',
   options: OPTIONS,
   examples: [
-    'rn-tizen simulator run                  build, bundle and start the app, then print its logs',
-    'rn-tizen simulator run --gui            the same, and open the live screen and remote',
-    'rn-tizen simulator run --dev-server http://localhost:8081  load the bundle from `expo start`, with Fast Refresh',
-    'rn-tizen simulator view                 open the live screen of the running app',
-    'rn-tizen simulator screenshot --out shot.png',
-    'rn-tizen simulator key Down Down Enter  Up Down Left Right Enter Back Exit Play Pause Stop ...',
-    'rn-tizen simulator pause                send the app to the background; resume brings it back',
-    'rn-tizen simulator open-url myapp://item/42',
-    'rn-tizen simulator tile myapp://item/42 open the app as a Smart Hub tile press does',
-    `rn-tizen simulator voice '{"type":"selectTitle","title":"Dune"}'  a voice command, as the TV shell sends it`,
-    'rn-tizen simulator restart              start the app again, without rebuilding',
-    'rn-tizen simulator build                rebuild the native runtime only',
-    'rn-tizen simulator clean                remove the runtime builds no instance runs',
-    'rn-tizen simulator logs -f',
-    'rn-tizen simulator crash                backtraces of every thread at the last native crash',
-    'rn-tizen simulator perf --duration 20   frame times, thread load and heap, every second',
-    'rn-tizen simulator status               the VM, the runtime and every instance',
-    'rn-tizen simulator stop                 stop the app and its screen; the VM keeps running',
-    'rn-tizen simulator delete               remove the VM, its builds and every instance',
-    'rn-tizen simulator run --instance ui-a  a second app on its own screen, beside the default one',
+    'rn-webos simulator run                  build, bundle and start the app, then print its logs',
+    'rn-webos simulator run --gui            the same, and open the live screen and remote',
+    'rn-webos simulator run --dev-server http://localhost:8081  load the bundle from `expo start`, with Fast Refresh',
+    'rn-webos simulator view                 open the live screen of the running app',
+    'rn-webos simulator screenshot --out shot.png',
+    'rn-webos simulator key Down Down Enter  Up Down Left Right Enter Back Exit Play Pause Stop ...',
+    'rn-webos simulator pause                send the app to the background; resume brings it back',
+    'rn-webos simulator open-url myapp://item/42',
+    'rn-webos simulator tile myapp://item/42 open the app as a Smart Hub tile press does',
+    `rn-webos simulator voice '{"type":"selectTitle","title":"Dune"}'  a voice command, as the TV shell sends it`,
+    'rn-webos simulator restart              start the app again, without rebuilding',
+    'rn-webos simulator build                rebuild the native runtime only',
+    'rn-webos simulator clean                remove the runtime builds no instance runs',
+    'rn-webos simulator logs -f',
+    'rn-webos simulator crash                backtraces of every thread at the last native crash',
+    'rn-webos simulator perf --duration 20   frame times, thread load and heap, every second',
+    'rn-webos simulator status               the VM, the runtime and every instance',
+    'rn-webos simulator stop                 stop the app and its screen; the VM keeps running',
+    'rn-webos simulator delete               remove the VM, its builds and every instance',
+    'rn-webos simulator run --instance ui-a  a second app on its own screen, beside the default one',
   ],
   async run(args, context) {
     const [name, ...rest] = args;

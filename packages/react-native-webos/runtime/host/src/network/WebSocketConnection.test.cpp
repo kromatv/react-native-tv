@@ -10,7 +10,7 @@
 #include <thread>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -207,4 +207,4 @@ TEST_CASE("a connection fails when the server resets it, whether it was reading 
   CHECK(sendingSeen[1].starts_with("failed "));
 }
 
-} // namespace rntizen
+} // namespace rnwebos

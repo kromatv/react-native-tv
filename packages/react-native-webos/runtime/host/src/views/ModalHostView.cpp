@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -61,6 +61,6 @@ void ModalHostView::leaveStack() {
   std::erase(modals, this);
 }
 
-RN_TIZEN_COMPONENT_VIEW("ModalHostView", ModalHostView);
+RN_WEBOS_COMPONENT_VIEW("ModalHostView", ModalHostView);
 
-} // namespace rntizen
+} // namespace rnwebos

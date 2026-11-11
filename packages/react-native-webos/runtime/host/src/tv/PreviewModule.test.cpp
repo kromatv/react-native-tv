@@ -14,7 +14,7 @@
 #include <utility>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -115,7 +115,7 @@ struct Preview {
 
 } // namespace
 
-TEST_CASE_FIXTURE(Preview, "RNTizenSmartHubPreview is available once the shell gives it a publisher") {
+TEST_CASE_FIXTURE(Preview, "RNWebOSSmartHubPreview is available once the shell gives it a publisher") {
   auto &rt = *runtime;
   CHECK_FALSE(call(rt, *module, "isAvailable").getBool());
   CHECK(call(rt, *module, "unavailableReason").getString(rt).utf8(rt).starts_with("no personal Smart Hub preview"));
@@ -129,16 +129,16 @@ TEST_CASE_FIXTURE(Preview, "RNTizenSmartHubPreview is available once the shell g
   CHECK(call(rt, *module, "launchedFromTile").getBool());
 }
 
-TEST_CASE_FIXTURE(Preview, "RNTizenSmartHubPreview names the Tizen the preview needs on an older TV") {
+TEST_CASE_FIXTURE(Preview, "RNWebOSSmartHubPreview names the webOS the preview needs on an older TV") {
   auto &rt = *runtime;
   tv->setPreviewPublisher([](const std::string &) { return 1; });
   module = makeModule(tv, "2.3");
 
   CHECK_FALSE(call(rt, *module, "isAvailable").getBool());
-  CHECK(call(rt, *module, "unavailableReason").getString(rt).utf8(rt) == "Smart Hub Preview needs Tizen 2.4, and this TV runs 2.3");
+  CHECK(call(rt, *module, "unavailableReason").getString(rt).utf8(rt) == "Smart Hub Preview needs webOS 2.4, and this TV runs 2.3");
 }
 
-TEST_CASE_FIXTURE(Preview, "RNTizenSmartHubPreview without the TV's state is unavailable and rejects a publish") {
+TEST_CASE_FIXTURE(Preview, "RNWebOSSmartHubPreview without the TV's state is unavailable and rejects a publish") {
   auto &rt = *runtime;
   module = makeModule(nullptr);
 
@@ -225,4 +225,4 @@ TEST_CASE_FIXTURE(Preview, "publish settles nothing once the module is gone befo
   CHECK(outcome == "pending");
 }
 
-} // namespace rntizen
+} // namespace rnwebos

@@ -6,7 +6,7 @@
 
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 TEST_CASE("readPackagerMessage takes the reload and devMenu broadcasts") {
   CHECK(readPackagerMessage(R"({"version":2,"method":"reload"})").command == PackagerCommand::Reload);
@@ -47,4 +47,4 @@ TEST_CASE("readPackagerMessage ignores another protocol version, text that is no
   CHECK_FALSE(readPackagerMessage(huge).command.has_value());
 }
 
-} // namespace rntizen
+} // namespace rnwebos

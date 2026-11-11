@@ -2,8 +2,8 @@ import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join, resolve } from 'node:path';
 import { z } from 'zod';
-import { resolveTizenConfig, type TizenAppConfig } from '../config/tizen-config.ts';
-import { isTizenPluginEntry } from '../config/plugin-entry.ts';
+import { resolveWebOSConfig, type WebOSAppConfig } from '../config/webos-config.ts';
+import { isWebOSPluginEntry } from '../config/plugin-entry.ts';
 import { FixableError } from '../errors.ts';
 import { resolveAppPackages, type AppPackages } from './app-packages.ts';
 import { readExpoConfig } from './expo-config.ts';
@@ -11,10 +11,10 @@ import { readExpoConfig } from './expo-config.ts';
 /** An Expo app, read once and shared by every step that builds it. */
 export interface AppProject {
   readonly root: string;
-  readonly config: TizenAppConfig;
+  readonly config: WebOSAppConfig;
   readonly entryFile: string;
   readonly packages: AppPackages;
-  readonly tizenDir: string;
+  readonly webosDir: string;
 }
 
 type ResolveEntryPoint = (root: string, options: { platform: string }) => unknown;
@@ -39,7 +39,7 @@ function resolveEntryFile(root: string, requireFromApp: NodeJS.Require): string 
   const entry = z
     .string()
     .nullable()
-    .parse(resolveEntryPoint(root, { platform: 'tizen' }));
+    .parse(resolveEntryPoint(root, { platform: 'webos' }));
   if (entry !== null) return entry;
   throw new FixableError('The app has no entry file', 'Set "main" in package.json.');
 }
@@ -61,19 +61,19 @@ export function loadAppProject(root: string, entry?: string): AppProject {
   if (!existsSync(join(projectRoot, 'package.json'))) {
     throw new FixableError(
       `${projectRoot} is not an app: it has no package.json`,
-      "Run rn-tizen in your app's directory, or pass --project <dir>.",
+      "Run rn-webos in your app's directory, or pass --project <dir>.",
     );
   }
   const packages = resolveAppPackages(projectRoot);
   const requireFromApp = createRequire(join(projectRoot, 'package.json'));
   return {
     root: projectRoot,
-    config: resolveTizenConfig(readAppConfig(projectRoot), (name) =>
-      isTizenPluginEntry(projectRoot, name),
+    config: resolveWebOSConfig(readAppConfig(projectRoot), (name) =>
+      isWebOSPluginEntry(projectRoot, name),
     ),
     entryFile:
       entry === undefined ? resolveEntryFile(projectRoot, requireFromApp) : checkEntryFile(entry),
     packages,
-    tizenDir: join(projectRoot, 'tizen'),
+    webosDir: join(projectRoot, 'webos'),
   };
 }

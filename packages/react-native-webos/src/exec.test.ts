@@ -38,10 +38,10 @@ describe('run', () => {
   });
 
   it('runs in cwd with env', async () => {
-    const output = await run([NODE, '-e', 'console.log(process.cwd(), process.env.RN_TIZEN_X)'], {
+    const output = await run([NODE, '-e', 'console.log(process.cwd(), process.env.RN_WEBOS_X)'], {
       quiet: true,
       cwd: '/',
-      env: { ...process.env, RN_TIZEN_X: 'set' },
+      env: { ...process.env, RN_WEBOS_X: 'set' },
     });
 
     expect(output.trim()).toBe('/ set');
@@ -55,8 +55,8 @@ describe('run', () => {
   });
 
   it('names the program that is not installed', async () => {
-    await expect(run(['rn-tizen-no-such-program'], { quiet: true })).rejects.toEqual(
-      new MissingProgramError('rn-tizen-no-such-program'),
+    await expect(run(['rn-webos-no-such-program'], { quiet: true })).rejects.toEqual(
+      new MissingProgramError('rn-webos-no-such-program'),
     );
   });
 
@@ -79,7 +79,7 @@ describe('runSync', () => {
   });
 
   it('names the program that is not installed', () => {
-    expect(() => runSync(['rn-tizen-no-such-program'])).toThrow(MissingProgramError);
+    expect(() => runSync(['rn-webos-no-such-program'])).toThrow(MissingProgramError);
   });
 
   it('fails when the command outlives its timeout', () => {

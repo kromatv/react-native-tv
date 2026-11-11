@@ -3,7 +3,7 @@
 #include <optional>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// The preview Samsung last took, kept in the package's data directory, which
 /// the preview service app reads too.
@@ -13,4 +13,4 @@ void writePreviewFile(const std::string &samsungJson);
 /// removes it.
 void writePreviewSource(const std::optional<std::string> &sourceJson);
 
-} // namespace rntizen
+} // namespace rnwebos

@@ -17,7 +17,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 /// Where an asynchronous function's body runs: a background thread by
 /// default, as for Expo's AsyncFunction, or the EFL main loop for code that
@@ -245,4 +245,4 @@ facebook::jsi::HostFunctionType asyncFunction(std::shared_ptr<Context> context, 
 
 } // namespace detail
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

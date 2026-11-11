@@ -17,7 +17,7 @@
 #include <string>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// The native side of one mounted React Native view: an Evas smart object
 /// holding its box (shadows, background, border, clip), what it draws and its
@@ -139,4 +139,4 @@ class ComponentView {
   bool alwaysClips_{false};
 };
 
-} // namespace rntizen
+} // namespace rnwebos

@@ -2,7 +2,7 @@
 
 #include <doctest/doctest.h>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -46,4 +46,4 @@ TEST_CASE("nothing is shown for a view off the window or too small to draw") {
   CHECK_FALSE(fitVideo({.x = 0, .y = 0, .width = 100, .height = 100}, kScreen, 1000, 1, ContentFit::Contain).has_value());
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

@@ -4,7 +4,7 @@
 #include <array>
 #include <cctype>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -31,4 +31,4 @@ CurlMethod curlMethodFor(const std::string &method, const std::optional<std::str
   return sent;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

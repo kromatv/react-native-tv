@@ -10,7 +10,7 @@
 
 #include <format>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -33,7 +33,7 @@ std::string hex(const std::array<std::uint8_t, 20> &digest) {
 // Stable across launches on one TV, as Android's hash of the package and the
 // device's ID is, so DevTools finds the app again after a reload.
 std::string logicalDeviceId(const std::string &app, const DeviceProfile &device) {
-  return hex(sha1(std::format("tizen-{}-{}-{}-fusebox", app, device.modelName, device.buildString)));
+  return hex(sha1(std::format("webos-{}-{}-{}-fusebox", app, device.modelName, device.buildString)));
 }
 
 std::string reactNativeVersion() {
@@ -90,8 +90,8 @@ HostTargetMetadata Inspector::getMetadata() {
       .appDisplayName = app_,
       .appIdentifier = app_,
       .deviceName = deviceName_,
-      .integrationName = "Tizen Bridgeless (ReactHost)",
-      .platform = "tizen",
+      .integrationName = "webOS Bridgeless (ReactHost)",
+      .platform = "webos",
       .reactNativeVersion = reactNativeVersion(),
   };
 }
@@ -104,4 +104,4 @@ void Inspector::onSetPausedInDebuggerMessage(const OverlaySetPausedInDebuggerMes
   host_.showPausedMessage(request.message);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

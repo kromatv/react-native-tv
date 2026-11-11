@@ -7,7 +7,7 @@
 
 #include <Evas.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -37,4 +37,4 @@ TextblockContent textblockContent(
   return content;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

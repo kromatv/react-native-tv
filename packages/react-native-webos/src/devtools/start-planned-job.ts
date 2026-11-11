@@ -1,15 +1,15 @@
 import { singleReactNativeIssue } from '../dependencies/react-native-copies.ts';
-import { tizenMetroIssue } from '../metro/metro-platforms.ts';
+import { webosMetroIssue } from '../metro/metro-platforms.ts';
 import type { JobPlan } from './devtools-commands.ts';
 import { listJobs, startJob, stopJob, type Job } from './jobs.ts';
 
 /**
  * Starts a planned job in the app at `root`, after checking that a job that
- * bundles has an app Metro can bundle for Tizen, and stopping the running job
+ * bundles has an app Metro can bundle for webOS, and stopping the running job
  * of an exclusive kind.
  */
 export async function startPlannedJob(dir: string, plan: JobPlan, root: string): Promise<Job> {
-  const setupIssue = plan.bundles ? (singleReactNativeIssue(root) ?? tizenMetroIssue(root)) : null;
+  const setupIssue = plan.bundles ? (singleReactNativeIssue(root) ?? webosMetroIssue(root)) : null;
   if (setupIssue !== null) throw setupIssue;
   if (plan.exclusive) {
     const running = (await listJobs(dir)).filter(

@@ -3,7 +3,7 @@
 #include "ExpoModuleRegistry.h"
 #include "RuntimeState.h"
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 facebook::jsi::Value ExpoModulesHostObject::get(facebook::jsi::Runtime &runtime, const facebook::jsi::PropNameID &name) {
   return RuntimeState::get(runtime).moduleValue(runtime, name.utf8(runtime));
@@ -24,4 +24,4 @@ std::vector<facebook::jsi::PropNameID> ExpoModulesHostObject::getPropertyNames(f
   return names;
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

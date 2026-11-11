@@ -1,6 +1,6 @@
 #pragma once
 
-namespace rntizen {
+namespace rnwebos {
 
 /// The developer settings an app in development keeps across reloads, and
 /// which of their changes the host must act on.
@@ -19,4 +19,4 @@ class DevSettingsState final {
   bool logBoxShown_{false};
 };
 
-} // namespace rntizen
+} // namespace rnwebos

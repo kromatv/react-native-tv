@@ -16,7 +16,7 @@ afterEach(() => {
 });
 
 function dir(withConfig: boolean): string {
-  const path = mkdtempSync(join(tmpdir(), 'rn-tizen-package-option-'));
+  const path = mkdtempSync(join(tmpdir(), 'rn-webos-package-option-'));
   dirs.push(path);
   if (withConfig) writeFileSync(join(path, 'app.json'), '{}');
   return path;
@@ -34,12 +34,12 @@ describe('targetPackage', () => {
 
   it('takes none from an app it cannot read, and refuses a bad --package', () => {
     vi.mocked(loadAppProject).mockImplementation(() => {
-      throw new Error('no Tizen settings');
+      throw new Error('no webOS settings');
     });
 
     expect(targetPackage(undefined, dir(true), 'perf')).toBeNull();
     expect(() => targetPackage('tv', dir(false), 'perf')).toThrow(
-      '--package is not a Tizen package id',
+      '--package is not a webOS package id',
     );
   });
 });

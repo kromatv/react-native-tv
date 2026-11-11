@@ -3,7 +3,7 @@
 #include <react/renderer/core/PropsParserContext.h>
 #include <react/renderer/core/RawProps.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 void applyAnimatedProps(
     MountingManager &mountingManager,
@@ -22,4 +22,4 @@ void applyAnimatedProps(
       descriptor->cloneProps(PropsParserContext{surfaceId, contextContainer}, view->props(), RawProps(props)));
 }
 
-} // namespace rntizen
+} // namespace rnwebos

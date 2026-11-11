@@ -14,8 +14,8 @@ import {
 } from '../runtime/build-runtime.ts';
 import { ensureHermesHostCompilers, hermesHostCompilers } from '../runtime/hermes-host.ts';
 import { setupTarget } from '../sysroot/setup-target.ts';
-import type { TizenSdk } from '../tizen/tizen-sdk.ts';
-import type { TizenTarget } from '../tizen/target.ts';
+import type { WebOSSdk } from '../webos/webos-sdk.ts';
+import type { WebOSTarget } from '../webos/target.ts';
 
 /**
  * Prepares the target, the Hermes host compilers, React Native's codegen and
@@ -25,9 +25,9 @@ import type { TizenTarget } from '../tizen/target.ts';
  */
 export async function runtimeSteps(
   reporter: Reporter,
-  sdk: TizenSdk,
+  sdk: WebOSSdk,
   app: AppProject,
-  target: TizenTarget,
+  target: WebOSTarget,
   flavour: RuntimeFlavour,
 ): Promise<string> {
   await reporter.step(

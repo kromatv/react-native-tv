@@ -17,7 +17,7 @@
 #include <string>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -115,4 +115,4 @@ TEST_CASE("the default back press handler leaves the app") {
   CHECK(exits == 1);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

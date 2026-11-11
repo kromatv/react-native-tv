@@ -8,7 +8,7 @@
 #include <fstream>
 #include <string>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -70,4 +70,4 @@ TEST_CASE("localPathOf takes a bare absolute path as it is and refuses other sch
   CHECK_FALSE(localPathOf("").has_value());
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

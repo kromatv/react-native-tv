@@ -13,7 +13,7 @@ namespace facebook::react {
 /// under `TextMeasurer::contextKey`; it may be called from any thread.
 class TextMeasurer {
  public:
-  static constexpr const char *contextKey = "rn-tizen.TextMeasurer";
+  static constexpr const char *contextKey = "rn-webos.TextMeasurer";
 
   virtual ~TextMeasurer() = default;
 

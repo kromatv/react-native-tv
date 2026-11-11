@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// Remembers the files an app registered for `family` (expo-font's name for
 /// it), each with the weight and slant fontconfig matches it on. Any thread.
@@ -21,4 +21,4 @@ void registerAppFontFiles(const std::string &family, const std::vector<std::file
 std::optional<std::filesystem::path> trackedAppFont(
     const std::string &family, int weight, bool italic, double em);
 
-} // namespace rntizen
+} // namespace rnwebos

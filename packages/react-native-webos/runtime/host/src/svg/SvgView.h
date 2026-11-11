@@ -9,7 +9,7 @@
 
 #include <memory>
 
-namespace rntizen::svg {
+namespace rnwebos::svg {
 
 /// `<Svg>`: one Evas VG object, clipped to the view, that its nodes paint into
 /// in canvas pixels. Any change in the subtree, and a new size or scale,
@@ -57,4 +57,4 @@ class SvgView : public ComponentView {
   std::shared_ptr<SvgView *const> handle_;
 };
 
-} // namespace rntizen::svg
+} // namespace rnwebos::svg

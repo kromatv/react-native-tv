@@ -15,7 +15,7 @@
 #include <cstdint>
 #include <mutex>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -118,4 +118,4 @@ void setCrashReportDescriptor(int descriptor) {
   handlerState().reportDescriptor.store(descriptor);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

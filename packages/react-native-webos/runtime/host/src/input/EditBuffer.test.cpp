@@ -4,7 +4,7 @@
 
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 TEST_CASE("setText puts the caret after the last code point") {
   EditBuffer buffer;
@@ -192,4 +192,4 @@ TEST_CASE("deleteForward at the end of the text deletes nothing") {
   CHECK(buffer.utf8() == "ab");
 }
 
-} // namespace rntizen
+} // namespace rnwebos

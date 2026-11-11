@@ -12,7 +12,7 @@ import { instanceEnv, type SimulatorInstance } from './instance.ts';
 import { guestSpawn } from './lima.ts';
 import { guestScript } from './simulator.ts';
 
-/** What the simulator runs: Hermes bytecode and, from `rn-tizen bundle`, its assets. */
+/** What the simulator runs: Hermes bytecode and, from `rn-webos bundle`, its assets. */
 export interface SimulatorBundle {
   readonly bytecode: string;
   readonly assetsDir?: string;
@@ -72,14 +72,14 @@ export async function stageApp(
   log: LogEndpoint | null,
   runtime: SimulatorRuntime,
 ): Promise<void> {
-  const dir = await mkdtemp(join(tmpdir(), 'rn-tizen-simulator-'));
+  const dir = await mkdtemp(join(tmpdir(), 'rn-webos-simulator-'));
   try {
     await writeResources(dir, app, bundle, log, runtime.icuData);
     const tar = archive(dir);
     await Promise.all([
       guestSpawn(['bash', guestScript('stage')], {
         stdin: tar.stream,
-        env: { ...instanceEnv(instance), RN_TIZEN_SIMULATOR_RUNTIME: runtime.key },
+        env: { ...instanceEnv(instance), RN_WEBOS_SIMULATOR_RUNTIME: runtime.key },
       }),
       tar.done,
     ]);

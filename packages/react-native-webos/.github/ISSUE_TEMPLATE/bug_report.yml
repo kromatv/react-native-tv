@@ -32,10 +32,10 @@ body:
       required: true
 
   - type: input
-    id: tizen
+    id: webos
     attributes:
-      label: Tizen version
-      description: "`rn-tizen devices` prints it for every connected TV."
+      label: webOS version
+      description: "`rn-webos devices` prints it for every connected TV."
       placeholder: "9.0"
     validations:
       required: true
@@ -45,7 +45,7 @@ body:
     attributes:
       label: Versions
       description: This package, react-native, expo, and your OS.
-      placeholder: "@kromatv/react-native-tizen 0.1.0, react-native-tvos 0.88.0-0, expo 58.0.16, macOS 26.1"
+      placeholder: "@kromatv/react-native-webos 0.1.0, react-native-tvos 0.88.0-0, expo 58.0.16, macOS 26.1"
     validations:
       required: true
 
@@ -55,7 +55,7 @@ body:
       label: Steps to reproduce
       description: From a fresh start. A small app or a change to `example/` that shows it is ideal.
       placeholder: |
-        1. rn-tizen run --device 192.168.1.50
+        1. rn-webos run --device 192.168.1.50
         2. Press Down twice, then Enter
     validations:
       required: true
@@ -73,7 +73,7 @@ body:
   - type: textarea
     id: doctor
     attributes:
-      label: "`rn-tizen doctor` output"
+      label: "`rn-webos doctor` output"
       description: Run it in the app's directory and paste everything it prints.
       render: shell
     validations:
@@ -84,7 +84,7 @@ body:
     attributes:
       label: Logs
       description: |
-        The app's logs from `rn-tizen run --level debug` or `rn-tizen logs --level debug`. For a build failure, the output of the failing command with `--verbose`. For a native crash, the backtrace (`rn-tizen simulator crash` in the simulator). Cut it to the part around the failure.
+        The app's logs from `rn-webos run --level debug` or `rn-webos logs --level debug`. For a build failure, the output of the failing command with `--verbose`. For a native crash, the backtrace (`rn-webos simulator crash` in the simulator). Cut it to the part around the failure.
       render: shell
 
   - type: checkboxes

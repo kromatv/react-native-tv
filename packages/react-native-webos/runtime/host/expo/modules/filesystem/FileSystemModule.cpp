@@ -12,7 +12,7 @@
 #include <format>
 #include <string_view>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -68,6 +68,6 @@ class FileSystemModule final : public Module {
 
 } // namespace
 
-RN_TIZEN_EXPO_MODULE(FileSystem, FileSystemModule);
+RN_WEBOS_EXPO_MODULE(FileSystem, FileSystemModule);
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

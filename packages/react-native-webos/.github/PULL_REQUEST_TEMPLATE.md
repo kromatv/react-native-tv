@@ -1,4 +1,4 @@
-<!-- The title becomes the squash commit and its CHANGELOG.md line: conventional form, such as fix(input): map the Back key on Tizen 8. CONTRIBUTING.md, Releases, lists the types. -->
+<!-- The title becomes the squash commit and its CHANGELOG.md line: conventional form, such as fix(input): map the Back key on webOS 8. CONTRIBUTING.md, Releases, lists the types. -->
 
 ## What
 
@@ -6,7 +6,7 @@
 
 ## How it was tested
 
-<!-- The simulator, a TV (model, year and Tizen version), or tests only. -->
+<!-- The simulator, a TV (model, year and webOS version), or tests only. -->
 
 ## Checks
 

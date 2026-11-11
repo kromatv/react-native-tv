@@ -88,25 +88,25 @@ describe('PerfListener.firstSample', () => {
 
     listener.onConnect('192.168.1.50', 'tv.kroma.app');
     const followed = printed();
-    listener.onConnect('192.168.1.50', 'org.rntizen.example');
+    listener.onConnect('192.168.1.50', 'org.rnwebos.example');
     const passedOver = printed();
-    listener.onConnect('192.168.1.50', 'org.rntizen.example');
+    listener.onConnect('192.168.1.50', 'org.rnwebos.example');
     const again = printed();
     listener.onEntry(perfEntry(30), '192.168.1.50', 'tv.kroma.app');
-    listener.onEntry(perfEntry(5), '192.168.1.50', 'org.rntizen.example');
+    listener.onEntry(perfEntry(5), '192.168.1.50', 'org.rnwebos.example');
 
     expect(listener.app).toBe('tv.kroma.app');
     expect(listener.samples.map((sample) => sample.frames)).toEqual([30]);
     expect(followed).toContain('tv.kroma.app connected from 192.168.1.50');
-    expect(passedOver).toContain('org.rntizen.example connected too, not read');
+    expect(passedOver).toContain('org.rnwebos.example connected too, not read');
     expect(again).toBe('');
   });
 
   it('reads only the app it was asked for', () => {
-    const { listener } = listenerFor(null, 'org.rntizen.example');
+    const { listener } = listenerFor(null, 'org.rnwebos.example');
 
     listener.onEntry(perfEntry(30), '192.168.1.50', 'tv.kroma.app');
-    listener.onEntry(perfEntry(5), '192.168.1.50', 'org.rntizen.example');
+    listener.onEntry(perfEntry(5), '192.168.1.50', 'org.rnwebos.example');
 
     expect(listener.samples.map((sample) => sample.frames)).toEqual([5]);
   });

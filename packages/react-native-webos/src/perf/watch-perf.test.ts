@@ -82,7 +82,7 @@ describe('watchPerf', () => {
   it('names the app it read in the summary and on every line of --out', async () => {
     vi.mocked(untilInterrupted).mockReturnValue(new Promise(() => undefined));
     const out = capturedOutput();
-    const dir = mkdtempSync(join(tmpdir(), 'rn-tizen-perf-out-'));
+    const dir = mkdtempSync(join(tmpdir(), 'rn-webos-perf-out-'));
     const file = join(dir, 'samples.jsonl');
 
     try {

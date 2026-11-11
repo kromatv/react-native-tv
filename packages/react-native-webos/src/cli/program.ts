@@ -101,7 +101,7 @@ function report(error: unknown, err: TextOutput): number {
   return described.exitCode;
 }
 
-/** Runs `rn-tizen` with `argv` and returns its exit code; a failure is printed to `err`. */
+/** Runs `rn-webos` with `argv` and returns its exit code; a failure is printed to `err`. */
 export async function runCli(argv: readonly string[], streams: CliStreams): Promise<number> {
   try {
     await dispatch(argv, streams.out);

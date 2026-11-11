@@ -6,7 +6,7 @@ import { FixableError } from '../errors.ts';
 import { CommandError } from '../exec.ts';
 import type { Task } from '../task.ts';
 
-export const LIMA_INSTANCE = 'rn-tizen-sim';
+export const LIMA_INSTANCE = 'rn-webos-sim';
 
 /** The directories the VM mounts, each at the same path as on the Mac. */
 export interface MountParams {
@@ -42,8 +42,8 @@ function limactl(): string {
 export function requireLima(): void {
   if (process.platform !== 'darwin' || process.arch !== 'arm64') {
     throw new FixableError(
-      'The Tizen simulator runs on Apple silicon Macs only',
-      'Use a Mac with an M-series chip, or a real TV (rn-tizen run).',
+      'The webOS simulator runs on Apple silicon Macs only',
+      'Use a Mac with an M-series chip, or a real TV (rn-webos run).',
     );
   }
   limactl();

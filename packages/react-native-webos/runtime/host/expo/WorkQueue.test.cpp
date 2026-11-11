@@ -10,7 +10,7 @@
 #include <stdexcept>
 #include <thread>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -62,4 +62,4 @@ TEST_CASE("runInBackground keeps running tasks after one throws") {
   CHECK(done.waitFor(6));
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

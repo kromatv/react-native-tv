@@ -6,7 +6,7 @@
 #include <string>
 #include <string_view>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// A frame's opcode, RFC 6455 section 5.2.
 enum class WebSocketOpcode : std::uint8_t {
@@ -43,4 +43,4 @@ std::string encodeWebSocketClose(int code, std::string_view reason);
 /// received", RFC 6455 section 7.1.5) when it is empty.
 std::pair<int, std::string> decodeWebSocketClose(std::string_view payload);
 
-} // namespace rntizen
+} // namespace rnwebos

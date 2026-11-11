@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { probeTv, type SdbState } from '../discovery/probe-tv.ts';
 import { scanForTvs, type FoundTv } from '../discovery/scan-tvs.ts';
-import { readKnownDevices, rememberDevices } from '../tizen/known-devices.ts';
+import { readKnownDevices, rememberDevices } from '../webos/known-devices.ts';
 import { devicesCommand } from './devices.ts';
 
 vi.mock('../discovery/scan-tvs.ts', () => ({ scanForTvs: vi.fn() }));
@@ -48,7 +48,7 @@ let state = '';
 let printed = '';
 
 beforeEach(() => {
-  state = mkdtempSync(join(tmpdir(), 'rn-tizen-devices-report-'));
+  state = mkdtempSync(join(tmpdir(), 'rn-webos-devices-report-'));
   vi.stubEnv('XDG_STATE_HOME', state);
   printed = '';
   vi.spyOn(process.stdout, 'write').mockImplementation((chunk) => {
@@ -71,7 +71,7 @@ afterEach(() => {
   rmSync(state, { recursive: true, force: true });
 });
 
-describe('rn-tizen devices report', () => {
+describe('rn-webos devices report', () => {
   it('says what each TV found on the network answers, and remembers the ready ones', async () => {
     await rememberDevices([
       { host: '10.0.0.1', port: 26101 },
@@ -87,7 +87,7 @@ describe('rn-tizen devices report', () => {
     for (const text of [
       '5 Samsung TVs',
       'on, host PC 10.0.0.9 (this computer)',
-      'ready: armv7, Tizen 9.0',
+      'ready: armv7, webOS 9.0',
       'DUID-ONE',
       'on, host PC 10.0.0.8 (not this computer)',
       'on, no host PC set',

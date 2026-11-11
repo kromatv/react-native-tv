@@ -8,7 +8,7 @@
 #include <memory>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// A view's drop shadows: one blurred nine-patch per shadow, under its
 /// background. A patch not made yet is made off the main loop; until it
@@ -39,4 +39,4 @@ class BoxShadows final {
   std::shared_ptr<BoxShadows *> alive_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

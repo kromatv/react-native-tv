@@ -4,7 +4,7 @@
 #include <memory>
 #include <string_view>
 
-namespace rntizen {
+namespace rnwebos {
 
 enum class LogLevel { Debug, Info, Warning, Error };
 
@@ -32,4 +32,4 @@ void setLogSink(std::shared_ptr<LogSink> sink);
 
 std::string_view logLevelName(LogLevel level);
 
-} // namespace rntizen
+} // namespace rnwebos

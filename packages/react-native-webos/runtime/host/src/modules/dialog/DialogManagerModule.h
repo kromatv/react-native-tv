@@ -8,7 +8,7 @@
 #include <optional>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// `DialogManagerAndroid`, behind `Alert.alert`: the title, the message and up
 /// to three buttons (neutral, negative, positive, left to right) in a native
@@ -28,4 +28,4 @@ class DialogManagerModule final : public facebook::react::NativeDialogManagerAnd
   std::function<void(AlertRequest request)> showAlert_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

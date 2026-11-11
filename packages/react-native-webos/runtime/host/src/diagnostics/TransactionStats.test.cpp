@@ -4,7 +4,7 @@
 
 #include <chrono>
 
-namespace rntizen {
+namespace rnwebos {
 
 TEST_CASE("recordTransaction adds up a window's transactions and their cost by component") {
   setTransactionStatsEnabled(true);
@@ -41,4 +41,4 @@ TEST_CASE("recordTransaction keeps nothing while disabled") {
   CHECK(takeTransactionStats().count == 0);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

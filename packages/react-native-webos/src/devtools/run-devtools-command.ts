@@ -27,7 +27,7 @@ export function describeFailure(error: unknown): string {
   if (error instanceof CommandInputError || error instanceof z.ZodError) return error.message;
   if (error instanceof FixableError) return `${error.message}. ${error.hint}`;
   const reason = error instanceof Error ? error.message : String(error);
-  return `rn-tizen could not start the command: ${reason}`;
+  return `rn-webos could not start the command: ${reason}`;
 }
 
 /**

@@ -4,7 +4,7 @@
 
 #include <react/renderer/components/rnsvg/Props.h>
 
-namespace rntizen::svg {
+namespace rnwebos::svg {
 
 namespace {
 
@@ -170,10 +170,10 @@ class SvgLineView final : public SvgShapeView {
 
 } // namespace
 
-RN_TIZEN_COMPONENT_VIEW("RNSVGPath", SvgPathView);
-RN_TIZEN_COMPONENT_VIEW("RNSVGCircle", SvgCircleView);
-RN_TIZEN_COMPONENT_VIEW("RNSVGEllipse", SvgEllipseView);
-RN_TIZEN_COMPONENT_VIEW("RNSVGRect", SvgRectView);
-RN_TIZEN_COMPONENT_VIEW("RNSVGLine", SvgLineView);
+RN_WEBOS_COMPONENT_VIEW("RNSVGPath", SvgPathView);
+RN_WEBOS_COMPONENT_VIEW("RNSVGCircle", SvgCircleView);
+RN_WEBOS_COMPONENT_VIEW("RNSVGEllipse", SvgEllipseView);
+RN_WEBOS_COMPONENT_VIEW("RNSVGRect", SvgRectView);
+RN_WEBOS_COMPONENT_VIEW("RNSVGLine", SvgLineView);
 
-} // namespace rntizen::svg
+} // namespace rnwebos::svg

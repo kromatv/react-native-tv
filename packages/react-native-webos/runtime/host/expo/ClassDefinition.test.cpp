@@ -11,7 +11,7 @@
 #include <memory>
 #include <string>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -164,4 +164,4 @@ TEST_CASE("A native event reaches the JavaScript instance paired with the object
   CHECK(expo.json("pings") == "[11]");
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

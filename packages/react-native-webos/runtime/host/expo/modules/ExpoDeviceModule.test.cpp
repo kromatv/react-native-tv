@@ -7,7 +7,7 @@
 #include <sys/utsname.h>
 #include <unistd.h>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -27,7 +27,7 @@ TEST_CASE("ExpoDevice describes a Samsung TV from the host's device profile") {
   testing::ExpoTestRuntime expo(hostWith("QE55Q80", "9.0", "T-PTMDEUC-1001.2"));
   expo.eval("globalThis.D = expo.modules.ExpoDevice");
   CHECK(expo.json("[D.isDevice, D.brand, D.manufacturer, D.deviceType, D.osName]") ==
-        R"([true,"Samsung","Samsung",4,"Tizen"])");
+        R"([true,"Samsung","Samsung",4,"webOS"])");
   CHECK(expo.json("[D.modelName, D.osVersion, D.osBuildId, D.osInternalBuildId, D.deviceName]") ==
         R"(["QE55Q80","9.0","T-PTMDEUC-1001.2","T-PTMDEUC-1001.2","QE55Q80"])");
   CHECK(expo.json("[D.modelId, D.designName, D.productName, D.deviceYearClass, D.osBuildFingerprint, D.platformApiLevel]") ==
@@ -53,9 +53,9 @@ TEST_CASE("ExpoDevice answers its asynchronous questions as a TV with no side lo
   CHECK(second >= first);
 }
 
-TEST_CASE("ExpoTizen hands JavaScript the model, the platform and the screen") {
+TEST_CASE("ExpoWebOS hands JavaScript the model, the platform and the screen") {
   testing::ExpoTestRuntime expo(hostWith("QE55Q80", "9.0", "T-PTMDEUC-1001.2"));
-  expo.eval("globalThis.T = expo.modules.ExpoTizen");
+  expo.eval("globalThis.T = expo.modules.ExpoWebOS");
   CHECK(expo.json("[T.modelName, T.platformVersion, T.buildString]") == R"(["QE55Q80","9.0","T-PTMDEUC-1001.2"])");
   CHECK(expo.json("[T.getScreenSize().width, T.getScreenSize().height]") == "[3840,2160]");
 }
@@ -65,4 +65,4 @@ TEST_CASE("tvDeviceName falls back to the model where the platform keeps no name
   CHECK(tvDeviceName("").empty());
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

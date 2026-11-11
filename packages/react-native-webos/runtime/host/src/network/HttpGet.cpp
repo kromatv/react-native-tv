@@ -7,7 +7,7 @@
 #include <format>
 #include <memory>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -40,4 +40,4 @@ std::string httpGet(const std::string &url) {
   return body;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

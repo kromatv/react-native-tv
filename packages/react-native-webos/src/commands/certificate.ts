@@ -17,21 +17,21 @@ import { createAuthorCertificate } from '../signing/author-certificate.ts';
 import { distributorDuids } from '../signing/distributor-duids.ts';
 import { splitActionArgs } from '../simulator/action-args.ts';
 import { stateDir } from '../state-dir.ts';
-import { storePassword } from '../tizen/password-store.ts';
-import { addProfile, setActiveProfile } from '../tizen/profiles-edit.ts';
-import { profilesPath, readProfiles } from '../tizen/profiles-file.ts';
-import { resolveSigning } from '../tizen/signing-identity.ts';
+import { storePassword } from '../webos/password-store.ts';
+import { addProfile, setActiveProfile } from '../webos/profiles-edit.ts';
+import { profilesPath, readProfiles } from '../webos/profiles-file.ts';
+import { resolveSigning } from '../webos/signing-identity.ts';
 
 const OPTIONS = {
   author: {
     type: 'string',
     placeholder: '<file.p12>',
-    description: 'import: the author certificate (password in RN_TIZEN_AUTHOR_PASSWORD)',
+    description: 'import: the author certificate (password in RN_WEBOS_AUTHOR_PASSWORD)',
   },
   distributor: {
     type: 'string',
     placeholder: '<file.p12>',
-    description: 'import: the distributor certificate (password in RN_TIZEN_DISTRIBUTOR_PASSWORD)',
+    description: 'import: the distributor certificate (password in RN_WEBOS_DISTRIBUTOR_PASSWORD)',
   },
   ...COMMON_OPTIONS,
 } as const;
@@ -56,7 +56,7 @@ function nameFrom(invocation: Invocation, action: string): string {
   return name;
 }
 
-/** Where Tizen Studio's Certificate Manager keeps Samsung's certificates, one directory per profile. */
+/** Where webOS Studio's Certificate Manager keeps Samsung's certificates, one directory per profile. */
 function samsungCertificatesDir(env: NodeJS.ProcessEnv = process.env): string {
   return join(env.HOME ?? homedir(), 'SamsungCertificate');
 }
@@ -89,7 +89,7 @@ async function list({ reporter }: Invocation): Promise<void> {
   if (file.profiles.length === 0) {
     reporter.line(`No signing profile in ${path}.`);
     reporter.note(
-      'Import Samsung certificates with: rn-tizen certificate import <name> --author <p12> --distributor <p12>',
+      'Import Samsung certificates with: rn-webos certificate import <name> --author <p12> --distributor <p12>',
     );
     return;
   }
@@ -151,7 +151,7 @@ async function importProfile(invocation: Invocation): Promise<void> {
         const path = join(directory, `${half}.p12`);
         const password = join(directory, `${half}.pwd`);
         await copyFile(given[half], path);
-        await storePassword(password, process.env[`RN_TIZEN_${half.toUpperCase()}_PASSWORD`] ?? '');
+        await storePassword(password, process.env[`RN_WEBOS_${half.toUpperCase()}_PASSWORD`] ?? '');
         return { path, password };
       };
       const [authorKey, distributorKey] = await Promise.all([
@@ -192,16 +192,16 @@ const ACTIONS: Readonly<Record<string, (invocation: Invocation) => Promise<void>
   'create-author': createAuthor,
 };
 
-/** `rn-tizen certificate`: lists, activates and imports signing profiles, and makes author certificates. */
+/** `rn-webos certificate`: lists, activates and imports signing profiles, and makes author certificates. */
 export const certificateCommand: Command = {
   name: 'certificate',
   summary: 'List, activate or import signing profiles, or make an author certificate',
   options: OPTIONS,
   examples: [
-    'rn-tizen certificate list',
-    'rn-tizen certificate use MyTV',
-    'rn-tizen certificate import MyTV --author author.p12 --distributor distributor.p12',
-    'rn-tizen certificate create-author ci',
+    'rn-webos certificate list',
+    'rn-webos certificate use MyTV',
+    'rn-webos certificate import MyTV --author author.p12 --distributor distributor.p12',
+    'rn-webos certificate create-author ci',
   ],
   async run(args, context) {
     const [first, ...rest] = args;

@@ -18,7 +18,7 @@ async function waitForForward(url: string): Promise<void> {
   }
   throw new FixableError(
     `The simulator's live screen did not come up at ${url}`,
-    'Check the instance with `rn-tizen simulator status`, then run `rn-tizen simulator view` again.',
+    'Check the instance with `rn-webos simulator status`, then run `rn-webos simulator view` again.',
   );
 }
 

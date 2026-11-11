@@ -1,6 +1,6 @@
 #include "InstanceGate.h"
 
-namespace rntizen {
+namespace rnwebos {
 
 InstanceGate::InstanceGate(facebook::react::ReactInstance &instance) : instance_(&instance) {}
 
@@ -14,4 +14,4 @@ void InstanceGate::close() {
   instance_ = nullptr;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

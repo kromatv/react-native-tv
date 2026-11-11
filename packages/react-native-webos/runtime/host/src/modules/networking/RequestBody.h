@@ -7,7 +7,7 @@
 #include <string>
 #include <string_view>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// What a request sends, read from the `data` object React Native's XMLHttpRequest hands to
 /// `sendRequest` (`Libraries/Network/convertRequestBody.js`).
@@ -29,4 +29,4 @@ RequestBody readRequestBody(
     const facebook::jsi::Object &data,
     std::string_view contentType);
 
-} // namespace rntizen
+} // namespace rnwebos

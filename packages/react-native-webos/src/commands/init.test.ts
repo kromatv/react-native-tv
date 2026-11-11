@@ -22,7 +22,7 @@ let dir = '';
 let output: ReturnType<typeof captureProcessOutput>;
 
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'rn-tizen-init-'));
+  dir = mkdtempSync(join(tmpdir(), 'rn-webos-init-'));
   writeFileSync(join(dir, 'package.json'), '{ "name": "tv-app" }');
   writeFileSync(join(dir, 'app.json'), '{ "expo": { "name": "TV", "slug": "tv-app" } }');
   output = captureProcessOutput();
@@ -54,7 +54,7 @@ function installTwoCopies(): void {
 }
 const run = (...args: string[]) => initCommand.run(args, { cwd: dir });
 
-describe('rn-tizen init', () => {
+describe('rn-webos init', () => {
   it('lists the plugin with the package id given and writes the Metro config, then changes nothing', async () => {
     await run('--package', 'com.example.tv');
     const files = [
@@ -64,18 +64,18 @@ describe('rn-tizen init', () => {
     await run();
 
     expect(appJson().expo.plugins).toEqual([
-      ['@kromatv/react-native-tizen', { package: 'com.example.tv' }],
+      ['@kromatv/react-native-webos', { package: 'com.example.tv' }],
     ]);
     expect([
       readFileSync(join(dir, 'app.json'), 'utf8'),
       readFileSync(join(dir, 'metro.config.mjs'), 'utf8'),
     ]).toEqual(files);
-    expect(output.stdout()).toContain('added the @kromatv/react-native-tizen config plugin');
+    expect(output.stdout()).toContain('added the @kromatv/react-native-webos config plugin');
     expect(output.stdout()).toContain('metro.config.mjs written');
     expect(output.stdout()).toContain(
-      'lists the @kromatv/react-native-tizen config plugin already',
+      'lists the @kromatv/react-native-webos config plugin already',
     );
-    expect(output.stdout()).toContain('metro.config.mjs uses withTizen already');
+    expect(output.stdout()).toContain('metro.config.mjs uses withWebOS already');
     expect(output.stdout()).toContain('then press t to open the app on the TV used last');
   });
 
@@ -92,7 +92,7 @@ describe('rn-tizen init', () => {
 
     await run();
 
-    expect(ask).toHaveBeenCalledWith('Tizen package id', 'com.anonymous.tvapp');
+    expect(ask).toHaveBeenCalledWith('webOS package id', 'com.anonymous.tvapp');
     expect(ask).toHaveBeenCalledTimes(2);
     expect(appJson().expo.plugins[0][1]).toEqual({ package: 'org.example.tv' });
     expect(output.stdout()).toContain('not valid: expected a reverse-DNS id');
@@ -107,7 +107,7 @@ describe('rn-tizen init', () => {
       'metro.config.js cannot be changed safely: add these two lines',
     );
     expect(output.stdout()).toContain(
-      "const { withTizen } = require('@kromatv/react-native-tizen/metro');",
+      "const { withWebOS } = require('@kromatv/react-native-webos/metro');",
     );
   });
 
@@ -117,21 +117,21 @@ describe('rn-tizen init', () => {
     await run('--package', 'com.example.tv');
 
     expect(output.stdout()).toContain('Next: bunx expo start');
-    expect(output.stdout()).toContain('bunx rn-tizen doctor checks it');
+    expect(output.stdout()).toContain('bunx rn-webos doctor checks it');
   });
 
   it("names the rootstrap package the app's floor needs", async () => {
     await run('--package', 'com.example.tv');
     vi.mocked(readExpoConfig).mockReturnValueOnce({
       name: 'TV',
-      plugins: [['@kromatv/react-native-tizen', { package: 'com.example.tv', platform: '8.0' }]],
+      plugins: [['@kromatv/react-native-webos', { package: 'com.example.tv', platform: '8.0' }]],
     });
     await run();
 
     expect(output.stdout()).toContain(
-      "Builds for Tizen 6.0, the app's floor, need IOT-Headed-6.0-NativeAppDevelopment-CLI",
+      "Builds for webOS 6.0, the app's floor, need IOT-Headed-6.0-NativeAppDevelopment-CLI",
     );
-    expect(output.stdout()).toContain('need TIZEN-8.0-NativeAppDevelopment-CLI');
+    expect(output.stdout()).toContain('need WEBOS-8.0-NativeAppDevelopment-CLI');
   });
 
   it('prints the plugin entry to add to an app.config file', async () => {
@@ -143,7 +143,7 @@ describe('rn-tizen init', () => {
       'app.config.js is evaluated by Expo: add this entry to its plugins',
     );
     expect(output.stdout()).toContain(
-      '["@kromatv/react-native-tizen",{"package":"com.anonymous.tvapp"}]',
+      '["@kromatv/react-native-webos",{"package":"com.anonymous.tvapp"}]',
     );
   });
 
@@ -217,7 +217,7 @@ describe('rn-tizen init', () => {
   });
 
   it('refuses a bad package id and a directory that is not an app', async () => {
-    await expect(run('--package', 'tv')).rejects.toThrow('tv is not a Tizen package id');
+    await expect(run('--package', 'tv')).rejects.toThrow('tv is not a webOS package id');
     rmSync(join(dir, 'package.json'));
     await expect(run('--package', 'com.example.tv')).rejects.toThrow('has no package.json');
   });

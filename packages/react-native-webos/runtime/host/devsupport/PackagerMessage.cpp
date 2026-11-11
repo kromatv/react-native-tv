@@ -4,7 +4,7 @@
 
 #include <folly/json.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -48,4 +48,4 @@ PackagerMessage readPackagerMessage(std::string_view text) {
   };
 }
 
-} // namespace rntizen
+} // namespace rnwebos

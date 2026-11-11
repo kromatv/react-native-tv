@@ -3,12 +3,12 @@ import { useEffect, useState } from 'react';
 import { BackHandler, Platform, StyleSheet, Text, View, useTVEventHandler } from 'react-native';
 import { RenderingScreen, useRenderingScreen } from './screens/rendering/rendering-screens.tsx';
 
-interface ExpoTizenModule {
+interface ExpoWebOSModule {
   readonly modelName: string;
   readonly platformVersion: string;
 }
 
-const expoTizen = requireOptionalNativeModule<ExpoTizenModule>('ExpoTizen');
+const expoWebOS = requireOptionalNativeModule<ExpoWebOSModule>('ExpoWebOS');
 
 const PILLARS = [
   { name: 'Hermes', detail: 'bytecode, no browser' },
@@ -71,9 +71,9 @@ export function App() {
   return (
     <View style={styles.screen}>
       <Text style={styles.eyebrow}>
-        {expoTizen
-          ? `${Platform.OS} · ${expoTizen.modelName} · Tizen ${expoTizen.platformVersion}`
-          : `${Platform.OS} · no ExpoTizen module`}
+        {expoWebOS
+          ? `${Platform.OS} · ${expoWebOS.modelName} · webOS ${expoWebOS.platformVersion}`
+          : `${Platform.OS} · no ExpoWebOS module`}
       </Text>
       <Text style={styles.title}>React Native, native on a Samsung TV</Text>
       <View style={styles.row}>

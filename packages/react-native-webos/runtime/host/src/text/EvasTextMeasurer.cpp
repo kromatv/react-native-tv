@@ -8,7 +8,7 @@
 #include <cmath>
 #include <optional>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -97,4 +97,4 @@ facebook::react::Size EvasTextMeasurer::measure(
   return measured.size;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

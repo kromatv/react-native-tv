@@ -15,7 +15,7 @@ import { listenForLogs, type LogServer } from '../logs/log-server.ts';
 import { packageSteps } from '../pipeline/package-steps.ts';
 import { RUNTIME_LIBRARY } from '../runtime/build-runtime.ts';
 import { distributorDuids } from '../signing/distributor-duids.ts';
-import { installOn, launchOn, onDevice } from '../tizen/install-app.ts';
+import { installOn, launchOn, onDevice } from '../webos/install-app.ts';
 import { BUILD_OPTIONS, findDevice, openBuild, settleBuild } from './build-options.ts';
 
 const OPTIONS = {
@@ -31,16 +31,16 @@ const OPTIONS = {
   ...COMMON_OPTIONS,
 } as const satisfies OptionSpecs;
 
-/** `rn-tizen run`: packages the app, installs it on a TV, launches it and prints its logs. */
+/** `rn-webos run`: packages the app, installs it on a TV, launches it and prints its logs. */
 export const runCommand: Command = {
   name: 'run',
   summary: 'Package the app, install it on a TV, launch it and print its logs',
   options: OPTIONS,
   examples: [
-    'rn-tizen run --device 192.168.1.50',
-    'rn-tizen run',
-    'rn-tizen run --level debug',
-    'rn-tizen run --no-logs',
+    'rn-webos run --device 192.168.1.50',
+    'rn-webos run',
+    'rn-webos run --level debug',
+    'rn-webos run --no-logs',
   ],
   async run(args, context) {
     const flags = parseCommandArgs('run', args, OPTIONS);
@@ -53,7 +53,7 @@ export const runCommand: Command = {
       paint: reporter.paint,
       minimum,
       held: true,
-      transform: crashSymbolizer(join(app.tizenDir, 'lib', RUNTIME_LIBRARY)),
+      transform: crashSymbolizer(join(app.webosDir, 'lib', RUNTIME_LIBRARY)),
     });
     const listening = log !== null && flags['no-logs'] !== true;
     const peer = device.address.host;

@@ -7,7 +7,7 @@
 
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// `BlobModule`, behind React Native's `Blob`, `URL.createObjectURL` and blob
 /// responses. The bytes live in the BlobStore; `Networking` answers blob
@@ -32,4 +32,4 @@ class BlobModule final : public facebook::react::NativeBlobModuleCxxSpec<BlobMod
   void installJSIBindingsWithRuntime(facebook::jsi::Runtime &runtime) override;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

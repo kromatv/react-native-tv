@@ -4,7 +4,7 @@
 
 #include <functional>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// The shadow patch for `corners` and `blur` (`makeShadowPatch`) when it has
 /// been made already, else null. Main thread only.
@@ -15,4 +15,4 @@ const NinePatch *cachedShadowPatch(const Corners &corners, int blur);
 /// already being made wait for the same one. Main thread only.
 void requestShadowPatch(const Corners &corners, int blur, std::function<void(const NinePatch &)> ready);
 
-} // namespace rntizen
+} // namespace rnwebos

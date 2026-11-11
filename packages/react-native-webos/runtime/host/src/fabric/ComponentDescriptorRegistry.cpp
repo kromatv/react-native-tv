@@ -8,7 +8,7 @@
 #include <set>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -61,4 +61,4 @@ facebook::react::ComponentRegistryFactory componentRegistryFactory() {
   };
 }
 
-} // namespace rntizen
+} // namespace rnwebos

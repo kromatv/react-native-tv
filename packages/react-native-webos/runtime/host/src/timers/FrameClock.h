@@ -6,7 +6,7 @@
 #include <memory>
 #include <mutex>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// Calls `onFrame` once per display frame, from an Ecore animator on the EFL
 /// main loop, from the frame after `request` until `onFrame` has had nothing
@@ -38,4 +38,4 @@ class FrameClock final : public std::enable_shared_from_this<FrameClock> {
   int idleFrames_{0};
 };
 
-} // namespace rntizen
+} // namespace rnwebos

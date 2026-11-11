@@ -9,7 +9,7 @@
 #include <memory>
 #include <string>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 /// The promise an asynchronous function settles itself, later and from any
 /// thread: Expo's `Promise` argument. An async function whose last parameter
@@ -44,4 +44,4 @@ class Promise {
   std::shared_ptr<std::atomic<bool>> settled_ = std::make_shared<std::atomic<bool>>(false);
 };
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

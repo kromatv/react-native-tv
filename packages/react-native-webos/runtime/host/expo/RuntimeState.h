@@ -13,7 +13,7 @@
 #include <typeindex>
 #include <unordered_map>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 class Context;
 
@@ -79,4 +79,4 @@ class RuntimeState final {
   std::uint64_t nextPromiseId_{1};
 };
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

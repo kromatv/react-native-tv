@@ -7,7 +7,7 @@
 
 #include <mutex>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -63,7 +63,7 @@ DevSupport::DevSupport(DevServer server, const DeviceProfile &device, Host host)
           .devMenu =
               [] {
                 log(LogLevel::Info,
-                    "Tizen has no developer menu yet: press r to reload and j to open the debugger in the dev "
+                    "webOS has no developer menu yet: press r to reload and j to open the debugger in the dev "
                     "server's terminal");
               },
       });
@@ -134,4 +134,4 @@ void DevSupport::emitDeviceEvent(const std::string &name, folly::dynamic payload
   gate_->callFunctionOnModule("RCTDeviceEventEmitter", "emit", folly::dynamic::array(name, std::move(payload)));
 }
 
-} // namespace rntizen
+} // namespace rnwebos

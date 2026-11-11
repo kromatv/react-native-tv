@@ -4,7 +4,7 @@ import { UsageError, type OptionSpecs } from '../cli/command.ts';
 import { parseLevel } from '../cli/log-level-option.ts';
 import type { LogLevel } from '../logs/log-line.ts';
 
-/** The options `rn-tizen perf` and `rn-tizen simulator perf` share. */
+/** The options `rn-webos perf` and `rn-webos simulator perf` share. */
 export const PERF_OPTIONS = {
   duration: {
     type: 'string',

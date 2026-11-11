@@ -6,7 +6,7 @@
 #include <string_view>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// One part of a `multipart/form-data` body: its headers, then its bytes.
 struct MultipartPart {
@@ -20,4 +20,4 @@ std::string multipartBoundary();
 /// The body RFC 7578 describes: each part after `--boundary`, then `--boundary--`.
 std::string encodeMultipart(const std::vector<MultipartPart> &parts, std::string_view boundary);
 
-} // namespace rntizen
+} // namespace rnwebos

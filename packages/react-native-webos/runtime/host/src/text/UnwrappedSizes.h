@@ -6,7 +6,7 @@
 #include <optional>
 #include <unordered_map>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// The sizes of paragraphs Evas laid out without wrapping a line or cutting one
 /// with an ellipsis, by content, paragraph attributes and point scale. Evas
@@ -34,4 +34,4 @@ class UnwrappedSizes final {
   mutable std::unordered_map<Key, Entry> entries_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

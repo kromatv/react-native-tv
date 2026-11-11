@@ -30,7 +30,7 @@ export function requireNarrowMount(root: string, home: string): void {
   if (!coversHome) return;
   throw new FixableError(
     `The simulator would mount ${root}, which holds ${home}`,
-    'Keep the app, its node_modules and react-native-tizen in one project directory inside your home directory.',
+    'Keep the app, its node_modules and react-native-webos in one project directory inside your home directory.',
   );
 }
 

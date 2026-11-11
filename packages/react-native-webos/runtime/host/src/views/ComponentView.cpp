@@ -8,7 +8,7 @@
 #include <algorithm>
 #include <cmath>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -280,4 +280,4 @@ void ComponentView::restack() {
   for (std::size_t i = 1; i < order.size(); ++i) evas_object_stack_above(order[i], order[i - 1]);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

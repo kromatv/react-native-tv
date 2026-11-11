@@ -36,16 +36,16 @@ const OPTIONS = {
 } as const;
 
 const IN_USE_HINT =
-  'rn-tizen perf listens on the log port itself: stop the `rn-tizen run` or `logs` holding it (run --no-logs launches without one).';
+  'rn-webos perf listens on the log port itself: stop the `rn-webos run` or `logs` holding it (run --no-logs launches without one).';
 
-/** `rn-tizen perf`: prints a development build's frame, thread and heap timings once a second. */
+/** `rn-webos perf`: prints a development build's frame, thread and heap timings once a second. */
 export const perfCommand: Command = {
   name: 'perf',
   summary: "Print a development build's frame times, thread load and heap every second",
   options: OPTIONS,
   examples: [
-    'rn-tizen perf --device 192.168.1.50',
-    'rn-tizen perf --port 8102 --duration 20 --out boot.jsonl',
+    'rn-webos perf --device 192.168.1.50',
+    'rn-webos perf --port 8102 --duration 20 --out boot.jsonl',
   ],
   async run(args, context) {
     const flags = parseCommandArgs('perf', args, OPTIONS);

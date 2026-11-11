@@ -7,7 +7,7 @@
 #include <mutex>
 #include <utility>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -75,4 +75,4 @@ TransactionStats takeTransactionStats() {
   return std::exchange(shared.stats, TransactionStats{});
 }
 
-} // namespace rntizen
+} // namespace rnwebos

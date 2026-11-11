@@ -64,7 +64,7 @@ describe('captureScreen', () => {
     expect(await capturing).toEqual(FRAME);
   });
 
-  it('asks the rn-tizen that holds the port, which asks the app', async () => {
+  it('asks the rn-webos that holds the port, which asks the app', async () => {
     const server = await listen();
     fakeApp(server.port);
 

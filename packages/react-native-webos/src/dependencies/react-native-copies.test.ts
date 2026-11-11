@@ -20,7 +20,7 @@ function write(dir: string, manifest: Record<string, unknown>): string {
 const TVOS = { name: 'react-native-tvos', version: '0.88.0-0' };
 
 function app(dependencies: Record<string, string>): string {
-  const dir = mkdtempSync(join(tmpdir(), 'rn-tizen-copies-'));
+  const dir = mkdtempSync(join(tmpdir(), 'rn-webos-copies-'));
   dirs.push(dir);
   return write(dir, { name: 'tv-app', dependencies });
 }
@@ -53,7 +53,7 @@ describe('reactNativeCopies', () => {
     expect(issue?.message).toBe(
       'The app loads 2 copies of react-native: react-native-tvos 0.88.0-0 at node_modules/react-native, for tv-app; react-native 0.88.0 at node_modules/react-native/node_modules/react-native, for @react-native-tvos/virtualized-lists',
     );
-    expect(issue?.hint).toContain('npx rn-tizen init');
+    expect(issue?.hint).toContain('npx rn-webos init');
   });
 
   it("counts a linked package once, by where it really is, as pnpm's store lays them out", () => {

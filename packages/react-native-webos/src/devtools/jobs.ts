@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 import { cacheDir } from '../cache-dir.ts';
 
-/** One `rn-tizen` command the dev tools started, and how it went. */
+/** One `rn-webos` command the dev tools started, and how it went. */
 export const jobSchema = z.object({
   id: z.string().regex(/^[a-z0-9-]{1,64}$/),
   kind: z.string().min(1).max(64),
@@ -88,7 +88,7 @@ export async function readLog(
   }
 }
 
-/** Starts `rn-tizen <args>` in `cwd`, detached, so it outlives the process that asked for it. */
+/** Starts `rn-webos <args>` in `cwd`, detached, so it outlives the process that asked for it. */
 export async function startJob(
   dir: string,
   request: Pick<Job, 'kind' | 'title' | 'args' | 'cwd'>,

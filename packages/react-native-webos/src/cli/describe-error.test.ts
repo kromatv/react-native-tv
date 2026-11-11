@@ -17,7 +17,7 @@ describe('describeError', () => {
   it('points a usage error at the command help and exits 2', () => {
     const report = describeError(new UsageError('Unknown option --arc', 'package'));
 
-    expect(report.hint).toBe('rn-tizen package --help lists what it takes.');
+    expect(report.hint).toBe('rn-webos package --help lists what it takes.');
     expect(report.exitCode).toBe(2);
   });
 

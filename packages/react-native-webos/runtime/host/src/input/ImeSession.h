@@ -7,7 +7,7 @@
 #include <string>
 #include <string_view>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// What an input method asks of the text field it types into. Offsets and
 /// lengths count characters (Unicode code points).
@@ -29,7 +29,7 @@ class ImeClient {
 };
 
 /// How the on-screen keyboard looks for one field (`ecore_imf_context_*`
-/// options, docs/reference/tizen-input.md, section 10).
+/// options, docs/reference/webos-input.md, section 10).
 struct ImeOptions {
   Ecore_IMF_Input_Panel_Layout layout{ECORE_IMF_INPUT_PANEL_LAYOUT_NORMAL};
   int layoutVariation{0};
@@ -53,9 +53,9 @@ ImeOptions imeOptionsFor(
     bool secure,
     bool multiline);
 
-/// The canvas's Ecore IMF context, the documented way a native Tizen app
+/// The canvas's Ecore IMF context, the documented way a native webOS app
 /// reaches the TV's on-screen keyboard: one per window, created on the first
-/// edit, as Elementary's own entry and flutter-tizen do. One field edits
+/// edit, as Elementary's own entry and flutter-webos do. One field edits
 /// through it at a time. Main thread only.
 class ImeSession final {
  public:
@@ -72,7 +72,7 @@ class ImeSession final {
   void begin(ImeClient &client, const ImeOptions &options);
   /// Ends the edit: drops the composition, unfocuses the context, hides the panel.
   void end();
-  /// Offers a key to the input method first, as flutter-tizen does: every key
+  /// Offers a key to the input method first, as flutter-webos does: every key
   /// while the panel shows, every key but navigation and remote keys while
   /// editing. True when the input method took it.
   bool filter(const Ecore_Event_Key &key, bool isDown);
@@ -97,4 +97,4 @@ class ImeSession final {
   Ecore_IMF_Input_Panel_State panelState_{ECORE_IMF_INPUT_PANEL_STATE_HIDE};
 };
 
-} // namespace rntizen
+} // namespace rnwebos

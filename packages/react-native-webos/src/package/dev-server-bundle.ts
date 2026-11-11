@@ -5,7 +5,7 @@ import type { AppProject } from '../app/app-project.ts';
 import { BYTECODE_FILE, type AppBundle } from '../bundle/bundle-app.ts';
 import type { Reporter } from '../cli/reporter.ts';
 import { FixableError } from '../errors.ts';
-import { TIZEN_PLATFORM } from '../metro/with-tizen.ts';
+import { WEBOS_PLATFORM } from '../metro/with-webos.ts';
 import type { Task } from '../task.ts';
 import type { LogEndpoint } from './runtime-config.ts';
 
@@ -17,7 +17,7 @@ const originSchema = z.url({ protocol: /^https?$/ });
 /**
  * The URL a development build loads its bundle from: Expo's virtual entry on
  * the dev server at `origin`, asked for as Android's DevServerHelper asks with
- * React Native DevTools on, for the `tizen` platform and Hermes. A loopback
+ * React Native DevTools on, for the `webos` platform and Hermes. A loopback
  * host, which the TV cannot reach, becomes `reachableHost`. The runtime finds
  * the packager socket, the HMR endpoint and the inspector proxy from this URL.
  */
@@ -33,7 +33,7 @@ export function devBundleUrl(origin: string, reachableHost: string, packageId: s
   if (LOOPBACK.has(url.hostname)) url.hostname = reachableHost;
   url.pathname = VIRTUAL_ENTRY;
   url.search = new URLSearchParams({
-    platform: TIZEN_PLATFORM,
+    platform: WEBOS_PLATFORM,
     dev: 'true',
     lazy: 'true',
     minify: 'false',
@@ -69,7 +69,7 @@ export function devBuildHost(log: LogEndpoint | null): string {
  */
 export async function devServerBundle(outDir: string, bundleUrl: string): Promise<DevServerBundle> {
   const bundle: DevServerBundle = {
-    javascript: join(outDir, 'index.tizen.js'),
+    javascript: join(outDir, 'index.webos.js'),
     bytecode: join(outDir, BYTECODE_FILE),
     assetsDir: join(outDir, 'assets'),
     bundleUrl,

@@ -3,7 +3,7 @@
 #include "../PlatformModuleRegistry.h"
 #include "AlertDialog.h"
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -45,7 +45,7 @@ void DialogManagerModule::showAlert(
     facebook::react::AsyncCallback<std::string> onError,
     facebook::react::AsyncCallback<std::string, std::optional<int>> onAction) {
   if (config.getProperty(runtime, "items").isObject()) {
-    onError("Alert items are not supported on Tizen");
+    onError("Alert items are not supported on webOS");
     return;
   }
   AlertRequest request{
@@ -71,6 +71,6 @@ void DialogManagerModule::showAlert(
   if (showAlert_) showAlert_(std::move(request));
 }
 
-RN_TIZEN_PLATFORM_MODULE("DialogManagerAndroid", DialogManagerModule);
+RN_WEBOS_PLATFORM_MODULE("DialogManagerAndroid", DialogManagerModule);
 
-} // namespace rntizen
+} // namespace rnwebos

@@ -2,7 +2,7 @@
 
 #include <doctest/doctest.h>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 using testing::awaitEvents;
 using testing::canonical;
@@ -159,7 +159,7 @@ TEST_CASE("the TV's media session drives the player and reads it back") {
 TEST_CASE("a player JavaScript does not hold, or whose app is gone, reports nothing") {
   ExpoTestRuntime expo;
   const auto unpaired = std::make_shared<VideoPlayer>(expo.context());
-  CHECK(unpaired->tizenPlayer() == nullptr);
+  CHECK(unpaired->webosPlayer() == nullptr);
   unpaired->setMuted(true);
   unpaired->playerEnded();
   unpaired->setSubtitleTrack(nullptr);
@@ -167,11 +167,11 @@ TEST_CASE("a player JavaScript does not hold, or whose app is gone, reports noth
 
   auto orphan = std::make_shared<VideoPlayer>(std::weak_ptr<Context>());
   orphan->open(folly::dynamic::object("uri", "https://example.com/a.mp4"));
-  CHECK(orphan->tizenPlayer() != nullptr);
+  CHECK(orphan->webosPlayer() != nullptr);
   orphan->setVolume(0.5);
   orphan->playerEnded();
   CHECK(expo.pumpUntil([&orphan] { return orphan->status() == PlayerStatus::Error; }));
   CHECK(orphan->volume() == 0.5);
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

@@ -18,7 +18,7 @@
 #include <utility>
 #include <vector>
 
-namespace rntizen::testing {
+namespace rnwebos::testing {
 
 inline constexpr std::size_t kLargeMessage = 8 * 1024 * 1024;
 
@@ -107,4 +107,4 @@ inline WebSocketRequest requestTo(const LoopbackServer &server) {
   return {.url = server.url("ws"), .protocols = {}, .headers = {}};
 }
 
-} // namespace rntizen::testing
+} // namespace rnwebos::testing

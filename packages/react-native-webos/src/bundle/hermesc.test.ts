@@ -34,7 +34,7 @@ function reactNativeWithCompiler(prebuilt: boolean) {
 }
 
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'rn-tizen-hermesc-'));
+  dir = mkdtempSync(join(tmpdir(), 'rn-webos-hermesc-'));
 });
 
 afterEach(() => {

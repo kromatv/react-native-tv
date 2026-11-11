@@ -1,6 +1,6 @@
 #include "ModuleDefinition.h"
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace detail {
 
@@ -54,4 +54,4 @@ void ModuleDefinition::install(
   for (const auto &member : members_) member(runtime, context, target);
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

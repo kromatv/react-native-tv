@@ -16,7 +16,7 @@
 #include <string>
 #include <thread>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -247,4 +247,4 @@ TEST_CASE_FIXTURE(Sockets, "the module forgets every socket when it goes away") 
   CHECK_FALSE(WebSocketSockets::shared().deliversBlobs(41));
 }
 
-} // namespace rntizen
+} // namespace rnwebos

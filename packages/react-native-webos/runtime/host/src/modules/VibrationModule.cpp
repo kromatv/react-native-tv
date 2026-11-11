@@ -2,7 +2,7 @@
 
 #include "PlatformModuleRegistry.h"
 
-namespace rntizen {
+namespace rnwebos {
 
 VibrationModule::VibrationModule(std::shared_ptr<facebook::react::CallInvoker> jsInvoker, const ModuleContext &)
     : NativeVibrationCxxSpec(std::move(jsInvoker)) {}
@@ -17,6 +17,6 @@ void VibrationModule::vibrateByPattern(facebook::jsi::Runtime &, facebook::jsi::
 
 void VibrationModule::cancel(facebook::jsi::Runtime &) {}
 
-RN_TIZEN_PLATFORM_MODULE("Vibration", VibrationModule);
+RN_WEBOS_PLATFORM_MODULE("Vibration", VibrationModule);
 
-} // namespace rntizen
+} // namespace rnwebos

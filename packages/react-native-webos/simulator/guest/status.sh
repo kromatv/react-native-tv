@@ -28,7 +28,7 @@ instance_json() {
     last_pid="$(cat "$dir/app.pid")"
     app_crashed "$dir" "$last_pid" && crashed=true
   fi
-  [[ -f "$dir/app/react-native-tizen.json" ]] && staged=true
+  [[ -f "$dir/app/react-native-webos.json" ]] && staged=true
   runtime="$(instance_runtime_dir "$dir")"
   printf '{"name":"%s","staged":%s,"app":%s,"lastApp":%s,"crashed":%s,"screen":%s,"viewer":%s,"runtime":"%s","runtimeBuilt":%s}' \
     "$(basename "$dir")" "$staged" "$(pid_or_null "$dir/app.pid")" "$last_pid" "$crashed" \

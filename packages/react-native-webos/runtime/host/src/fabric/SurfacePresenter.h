@@ -14,7 +14,7 @@
 #include <memory>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// Runs one React Native surface with Fabric and mounts it on an Evas canvas.
 /// Fabric commits on the JavaScript thread; each finished transaction is
@@ -92,4 +92,4 @@ class SurfacePresenter final : public facebook::react::SchedulerDelegate {
   std::shared_ptr<SurfacePresenter *> lifetime_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

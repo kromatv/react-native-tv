@@ -8,7 +8,7 @@
 #include <sstream>
 #include <thread>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 void playerLog(int number, const std::string &message, LogLevel level) {
   log(level, std::format("[video {}] {}", number, message));
@@ -113,4 +113,4 @@ ContentFit contentFitFrom(std::string_view name) {
   return Contain;
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

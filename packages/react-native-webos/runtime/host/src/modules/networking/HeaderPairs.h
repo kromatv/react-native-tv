@@ -7,7 +7,7 @@
 #include <utility>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// Headers as React Native's Android networking passes them: `[name, value]` pairs, in order.
 using HeaderPairs = std::vector<std::pair<std::string, std::string>>;
@@ -20,4 +20,4 @@ std::string_view headerValue(const HeaderPairs &headers, std::string_view name);
 /// Replaces every header named `name`, compared without case, with one `name: value`.
 void setHeader(HeaderPairs &headers, std::string_view name, std::string_view value);
 
-} // namespace rntizen
+} // namespace rnwebos

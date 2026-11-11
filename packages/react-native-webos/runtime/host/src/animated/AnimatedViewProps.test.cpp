@@ -5,7 +5,7 @@
 #include <doctest/doctest.h>
 #include <react/renderer/components/view/ViewProps.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -57,4 +57,4 @@ TEST_CASE("applyAnimatedProps skips a view that is not mounted and the surface's
   CHECK(viewProps(*mounting.findView(2)).opacity == 1);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

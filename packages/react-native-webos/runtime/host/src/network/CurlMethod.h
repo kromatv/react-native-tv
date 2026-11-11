@@ -4,7 +4,7 @@
 #include <string>
 #include <string_view>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// How libcurl sends a request's method and body. As Android's networking
 /// does, a GET or HEAD goes without the body JavaScript may have given, and a
@@ -21,4 +21,4 @@ struct CurlMethod {
 /// `body` must outlive the result, which points into it.
 CurlMethod curlMethodFor(const std::string &method, const std::optional<std::string> &body);
 
-} // namespace rntizen
+} // namespace rnwebos

@@ -1,6 +1,6 @@
 # Intl and ICU
 
-What Hermes, ICU, FormatJS and Tizen provide for `Intl`, locale-aware strings
+What Hermes, ICU, FormatJS and webOS provide for `Intl`, locale-aware strings
 and Unicode text, and what this package builds from them. Read it before
 touching `runtime/cmake/Icu.cmake`, `runtime/cmake/Hermes.cmake`,
 `runtime/host/src/intl/`, `src/runtime/icu-*.ts`, `src/metro/intl-locale-data.ts`
@@ -43,15 +43,15 @@ on a TV. Hermes is `hermes-v260318099.0.4`, ICU 78.3, FormatJS as pinned in
 | Each service's default locale is the first locale whose data loaded, kept in a static `__defaultLocale`. | S | `intl-pluralrules/polyfill-force.js:1292-1305`, `intl-numberformat/polyfill-force.js:3040-3054`, `intl-relativetimeformat/polyfill-force.js:668-681` |
 | FormatJS has no `Intl.Collator`. Its `DateTimeFormat` formats in UTC unless told a time zone, and needs FormatJS's own time zone data for any other (`add-golden-tz.js`, 803 KB). | S | `@formatjs/intl-datetimeformat@8.0.2/index.js:2528-2558` |
 
-## Tizen
+## webOS
 
 | Fact | Tag | Source |
 |---|---|---|
-| Tizen 9.0 ships `libicuuc.so.74`, Tizen 10.0 `libicuuc.so.76`. | O | rootstraps, `usr/lib/libicuuc.so.*` |
+| webOS 9.0 ships `libicuuc.so.74`, webOS 10.0 `libicuuc.so.76`. | O | rootstraps, `usr/lib/libicuuc.so.*` |
 | Samsung builds ICU without symbol renaming: `u_strToUpper` and `icu::TimeZone::createDefault()` carry no version, so the two releases differ by soname and ABI, not by symbol name. | O | `llvm-nm -D` on both rootstraps' `libicuuc.so` and `libicui18n.so`, 2026-11-03 |
 | Loading whichever `libicuuc.so.*` a TV has would serve a C caller across both years, but not Hermes, whose C++ calls ICU requires to be recompiled per release. | I | the two rows above and [icu-design] |
-| Which `LANG` and `TZ` a TV gives an app process, and whether `/etc/localtime` names the zone, is not documented. | I | not found in Samsung's or Tizen's docs, 2026-11-03 |
-| flutter-tizen ships ICU data in the package's `res/`. | D | [ft-package](https://github.com/flutter-tizen/flutter-tizen/blob/master/lib/build_targets/package.dart) |
+| Which `LANG` and `TZ` a TV gives an app process, and whether `/etc/localtime` names the zone, is not documented. | I | not found in Samsung's or webOS's docs, 2026-11-03 |
+| flutter-webos ships ICU data in the package's `res/`. | D | [ft-package](https://github.com/flutter-webos/flutter-webos/blob/master/lib/build_targets/package.dart) |
 
 ## What this means
 
@@ -59,7 +59,7 @@ on a TV. Hermes is `hermes-v260318099.0.4`, ICU 78.3, FormatJS as pinned in
   Intl on it (`docs/decisions.md`, "ICU inside the runtime"). The TV's ICU is not
   linked: a package built against one soname does not load on the other year.
 - Hermes' `NumberFormat` stub and missing services are replaced by FormatJS,
-  in every Tizen bundle, with the app's locales; the device's locale, as
+  in every webOS bundle, with the app's locales; the device's locale, as
   Hermes' ICU resolves it, becomes their default.
 - A trimmed data file must keep the `curr` tree with the main, `coll` and `zone`
   trees of each language, or Hermes crashes on the first date it formats.

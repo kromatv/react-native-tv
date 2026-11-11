@@ -22,7 +22,7 @@
 #include <unordered_map>
 #include <utility>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -199,4 +199,4 @@ void PerfMonitor::onRenderPost(void *data, Evas *, void *) {
   if (self.frames_) self.frames_->renderFinished(Clock::now());
 }
 
-} // namespace rntizen
+} // namespace rnwebos

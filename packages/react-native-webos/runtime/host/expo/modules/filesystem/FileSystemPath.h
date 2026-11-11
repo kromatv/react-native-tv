@@ -10,7 +10,7 @@
 #include <optional>
 #include <string>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 /// A location expo-file-system's File or Directory points to: a local path
 /// that `move` and `rename` update. Thread-safe.
@@ -54,4 +54,4 @@ class FileSystemDirectory;
 ClassDefinition<FileSystemFile> fileClass();
 ClassDefinition<FileSystemDirectory> directoryClass();
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

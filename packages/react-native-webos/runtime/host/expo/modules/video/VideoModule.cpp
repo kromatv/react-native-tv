@@ -3,7 +3,7 @@
 #include "../../ExpoModuleRegistry.h"
 #include "../../ModuleDefinition.h"
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -97,7 +97,7 @@ ClassDefinition<VideoPlayer> videoPlayerClass(const std::weak_ptr<Context> &cont
       .asyncFunction(
           "generateThumbnailsAsync",
           [](const VideoPlayer &, const folly::dynamic &, const folly::dynamic &) -> folly::dynamic {
-            throw CodedError("ERR_UNSUPPORTED", "generateThumbnailsAsync is not supported on Tizen");
+            throw CodedError("ERR_UNSUPPORTED", "generateThumbnailsAsync is not supported on webOS");
           });
 }
 
@@ -115,6 +115,6 @@ class ExpoVideoModule final : public Module {
 
 } // namespace
 
-RN_TIZEN_EXPO_MODULE(ExpoVideo, ExpoVideoModule);
+RN_WEBOS_EXPO_MODULE(ExpoVideo, ExpoVideoModule);
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

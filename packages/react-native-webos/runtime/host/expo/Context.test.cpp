@@ -9,7 +9,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -81,4 +81,4 @@ TEST_CASE("Context builds a module once and gives a second runtime's object the 
   CHECK(RuntimeState::get(runtime).context() == expo.context());
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

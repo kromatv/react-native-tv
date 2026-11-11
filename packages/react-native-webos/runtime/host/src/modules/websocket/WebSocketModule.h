@@ -7,7 +7,7 @@
 #include <optional>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// `WebSocketModule`, under React Native's `WebSocket`. Each socket is a
 /// WebSocketConnection on its own thread, reporting the device events
@@ -38,4 +38,4 @@ class WebSocketModule final : public facebook::react::NativeWebSocketModuleCxxSp
   std::function<void(const std::string &, folly::dynamic)> emitDeviceEvent_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

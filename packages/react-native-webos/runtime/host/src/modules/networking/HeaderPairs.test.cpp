@@ -7,7 +7,7 @@
 
 #include <regex>
 
-namespace rntizen {
+namespace rnwebos {
 
 TEST_CASE("header pairs come from JavaScript's [name, value] arrays, values turned into strings") {
   auto runtime = testing::makeRuntime();
@@ -27,7 +27,7 @@ TEST_CASE("headerValue finds the first header of a name in any case, and setHead
 }
 
 TEST_CASE("a multipart boundary is random hex after a fixed prefix") {
-  const std::regex layout("RNTizenFormBoundary[0-9a-f]{32}");
+  const std::regex layout("RNWebOSFormBoundary[0-9a-f]{32}");
   const auto first = multipartBoundary();
   CHECK(std::regex_match(first, layout));
   CHECK(first != multipartBoundary());
@@ -46,4 +46,4 @@ TEST_CASE("encodeMultipart lays out each part after its boundary line, then the 
   CHECK(encodeMultipart({}, "B") == "--B--\r\n");
 }
 
-} // namespace rntizen
+} // namespace rnwebos

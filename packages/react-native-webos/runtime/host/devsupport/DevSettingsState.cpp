@@ -2,7 +2,7 @@
 
 #include <utility>
 
-namespace rntizen {
+namespace rnwebos {
 
 bool DevSettingsState::hotLoadingEnabled() const {
   return hotLoadingEnabled_;
@@ -20,4 +20,4 @@ void DevSettingsState::instanceStarted() {
   logBoxShown_ = false;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

@@ -4,10 +4,10 @@
 
 #include <string_view>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// Whether this Evas runs filter programs. `efl_gfx_filter_program_set` and
-/// `efl_gfx_filter_data_set` live in libefl.so.1, which the Tizen rootstraps
+/// `efl_gfx_filter_data_set` live in libefl.so.1, which the webOS rootstraps
 /// neither ship nor declare outside the beta API, so they are resolved at run
 /// time, once (efl-rendering.md, "Backdrop blur").
 bool evasFiltersAvailable();
@@ -20,4 +20,4 @@ void setEvasFilterProgram(Evas_Object *object, const char *code);
 /// after the program itself.
 void setEvasFilterNumber(Evas_Object *object, std::string_view name, int value);
 
-} // namespace rntizen
+} // namespace rnwebos

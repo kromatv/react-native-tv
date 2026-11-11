@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <cstdlib>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -76,4 +76,4 @@ TEST_CASE("GradientTable is empty for a line that does not change") {
   CHECK(GradientTable(flat, ramp(0), 1, 1, 1, 1).empty());
 }
 
-} // namespace rntizen
+} // namespace rnwebos

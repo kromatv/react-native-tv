@@ -2,9 +2,9 @@ import { resolve } from 'node:path';
 import { COMMON_OPTIONS, parseCommandArgs, UsageError, type Command } from '../cli/command.ts';
 import { Reporter } from '../cli/reporter.ts';
 import { splitActionArgs } from '../simulator/action-args.ts';
-import { deployPackage, openPackage } from '../tizen/deploy-package.ts';
-import { resolveDevice } from '../tizen/devices.ts';
-import { resolveSigning } from '../tizen/signing-identity.ts';
+import { deployPackage, openPackage } from '../webos/deploy-package.ts';
+import { resolveDevice } from '../webos/devices.ts';
+import { resolveSigning } from '../webos/signing-identity.ts';
 
 const OPTIONS = {
   device: {
@@ -16,19 +16,19 @@ const OPTIONS = {
   profile: {
     type: 'string',
     placeholder: '<name>',
-    description: 'The Tizen Studio signing profile (default: the active one)',
+    description: 'The webOS Studio signing profile (default: the active one)',
   },
   author: {
     type: 'string',
     placeholder: '<file.p12>',
     description:
-      "The author certificate, instead of the profile's (password in RN_TIZEN_AUTHOR_PASSWORD)",
+      "The author certificate, instead of the profile's (password in RN_WEBOS_AUTHOR_PASSWORD)",
   },
   distributor: {
     type: 'string',
     placeholder: '<file.p12>',
     description:
-      "The distributor certificate, instead of the profile's (password in RN_TIZEN_DISTRIBUTOR_PASSWORD)",
+      "The distributor certificate, instead of the profile's (password in RN_WEBOS_DISTRIBUTOR_PASSWORD)",
   },
   'keep-signature': {
     type: 'boolean',
@@ -38,21 +38,21 @@ const OPTIONS = {
   ...COMMON_OPTIONS,
 } as const;
 
-/** `rn-tizen install <file>`: signs any `.tpk` or `.wgt` for a TV, installs it, and can launch it. */
+/** `rn-webos install <file>`: signs any `.tpk` or `.wgt` for a TV, installs it, and can launch it. */
 export const installCommand: Command = {
   name: 'install',
   summary: 'Sign a .tpk or .wgt for a TV, install it and optionally launch it',
   options: OPTIONS,
   examples: [
-    'rn-tizen install app.wgt --device 192.168.1.50 --launch',
-    'rn-tizen install build/app.tpk --profile Store',
+    'rn-webos install app.wgt --device 192.168.1.50 --launch',
+    'rn-webos install build/app.tpk --profile Store',
   ],
   async run(args, context) {
     const { positionals, options } = splitActionArgs(args);
     const flags = parseCommandArgs('install', options, OPTIONS);
     const [file, ...extra] = positionals;
     if (file === undefined || extra.length > 0) {
-      throw new UsageError('install needs one package, e.g. `rn-tizen install app.wgt`', 'install');
+      throw new UsageError('install needs one package, e.g. `rn-webos install app.wgt`', 'install');
     }
     const reporter = new Reporter({ verbose: flags.verbose ?? false });
     const opened = await reporter.step(

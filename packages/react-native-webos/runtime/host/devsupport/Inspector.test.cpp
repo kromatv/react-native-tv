@@ -10,7 +10,7 @@
 #include <string>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -81,8 +81,8 @@ TEST_CASE("The inspector names the app, the TV and the platform to DevTools") {
   CHECK(metadata.appIdentifier == "org.example.app");
   CHECK(metadata.appDisplayName == "org.example.app");
   CHECK(metadata.deviceName == "QE55Q80");
-  CHECK(metadata.platform == "tizen");
-  CHECK(metadata.integrationName == "Tizen Bridgeless (ReactHost)");
+  CHECK(metadata.platform == "webos");
+  CHECK(metadata.integrationName == "webOS Bridgeless (ReactHost)");
   REQUIRE(metadata.reactNativeVersion.has_value());
   CHECK(metadata.reactNativeVersion->starts_with("0."));
 }
@@ -123,4 +123,4 @@ TEST_CASE("DevTools' reload and paused message reach the host, and resuming need
   CHECK_FALSE(messages[1].has_value());
 }
 
-} // namespace rntizen
+} // namespace rnwebos

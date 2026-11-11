@@ -3,7 +3,7 @@
 #include <chrono>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// Adds up one window of the main loop's frames from the events EFL reports:
 /// animator ticks (the display's clock), canvas renders, and the loop waking
@@ -48,4 +48,4 @@ class FrameStats final {
   bool awake_{false};
 };
 
-} // namespace rntizen
+} // namespace rnwebos

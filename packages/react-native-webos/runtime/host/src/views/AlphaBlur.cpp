@@ -6,7 +6,7 @@
 #include <numbers>
 #include <utility>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -133,4 +133,4 @@ std::vector<float> blurredAlpha(std::vector<float> alpha, int width, int height,
   return gaussianBlurred(alpha, width, height, radius, sigma);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

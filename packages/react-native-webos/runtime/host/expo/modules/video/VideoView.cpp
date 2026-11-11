@@ -12,7 +12,7 @@
 #include <format>
 #include <stdexcept>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -82,7 +82,7 @@ void VideoView::exitFullscreen() {
 }
 
 void VideoView::startPictureInPicture() {
-  throw UnsupportedFeatureError("Picture in picture is not supported on Tizen");
+  throw UnsupportedFeatureError("Picture in picture is not supported on webOS");
 }
 
 void VideoView::stopPictureInPicture() {}
@@ -102,15 +102,15 @@ void VideoView::present() {
   const auto &box = canvasRect();
   setGeometry(hole_, box);
   subtitle_->place(fullscreen_ ? windowRect() : box, pointScale());
-  const std::shared_ptr<TizenPlayer> tizen = player_ ? player_->tizenPlayer() : nullptr;
-  const bool showing = tizen != nullptr && tizen->hasDisplay() && box.width > 0 && box.height > 0;
+  const std::shared_ptr<WebOSPlayer> webos = player_ ? player_->webosPlayer() : nullptr;
+  const bool showing = webos != nullptr && webos->hasDisplay() && box.width > 0 && box.height > 0;
   setShown(showing);
   screen_ = screenRect();
   showHoles(showing, screen_ != box);
-  if (!tizen) return;
+  if (!webos) return;
   const auto window = windowRect();
   const std::weak_ptr<VideoView *> alive = alive_;
-  tizen->present(
+  webos->present(
       this,
       Presentation{
           .view = fullscreen_ ? window : screen_,
@@ -151,7 +151,7 @@ void VideoView::showHoles(bool shown, bool mapped) {
 }
 
 void VideoView::detachPlayer() {
-  if (player_ && player_->tizenPlayer()) player_->tizenPlayer()->withdraw(this);
+  if (player_ && player_->webosPlayer()) player_->webosPlayer()->withdraw(this);
   if (subtitle_) subtitle_->clear();
   player_.reset();
   setShown(false);
@@ -180,7 +180,7 @@ void VideoView::followScreenRect(bool follow) {
       this);
 }
 
-RN_TIZEN_EXPO_VIEW(ViewDefinition<VideoView>("ExpoVideo", "VideoView")
+RN_WEBOS_EXPO_VIEW(ViewDefinition<VideoView>("ExpoVideo", "VideoView")
                        .prop("player", &VideoView::setPlayer)
                        .prop("contentFit", &VideoView::setContentFit)
                        .asyncFunction("enterFullscreen", &VideoView::enterFullscreen)
@@ -194,4 +194,4 @@ RN_TIZEN_EXPO_VIEW(ViewDefinition<VideoView>("ExpoVideo", "VideoView")
                             "onPictureInPictureStart",
                             "onPictureInPictureStop"}));
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

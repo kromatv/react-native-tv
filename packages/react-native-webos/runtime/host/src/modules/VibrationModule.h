@@ -4,7 +4,7 @@
 
 #include <FBReactNativeSpec/FBReactNativeSpecJSI.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// `Vibration`, which `Vibration` requires at import. A TV cannot vibrate, so
 /// every call does nothing, as on Android TV.
@@ -18,4 +18,4 @@ class VibrationModule final : public facebook::react::NativeVibrationCxxSpec<Vib
   void cancel(facebook::jsi::Runtime &runtime);
 };
 
-} // namespace rntizen
+} // namespace rnwebos

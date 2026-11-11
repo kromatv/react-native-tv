@@ -7,7 +7,7 @@
 
 #include <limits>
 
-namespace rntizen {
+namespace rnwebos {
 
 using namespace facebook::react;
 
@@ -117,4 +117,4 @@ AttributedString TextInputShadowNode::placeholderAttributedString(const LayoutCo
   return attributedString;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

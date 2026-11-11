@@ -21,7 +21,7 @@
 #include <utility>
 #include <vector>
 
-namespace rntizen::testing {
+namespace rnwebos::testing {
 
 /// A CallInvoker whose tasks wait for the test thread, as the JavaScript thread runs them; any thread may queue.
 class QueuedInvoker final : public facebook::react::CallInvoker {
@@ -176,4 +176,4 @@ inline facebook::jsi::Function recorder(facebook::jsi::Runtime &runtime, std::sh
       });
 }
 
-} // namespace rntizen::testing
+} // namespace rnwebos::testing

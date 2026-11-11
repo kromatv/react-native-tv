@@ -8,7 +8,7 @@
 #include <optional>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// The bytes behind React Native's `Blob`s, by blob id: what `BlobModule`,
 /// `FileReaderModule`, `Networking`, `WebSocketModule` and Expo's fetch hand
@@ -37,4 +37,4 @@ class BlobStore final {
   std::map<std::string, std::shared_ptr<const std::string>, std::less<>> blobs_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

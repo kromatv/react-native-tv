@@ -3,7 +3,7 @@
 #include "../logging/Log.h"
 #include "../logging/NetworkLogSink.h"
 
-namespace rntizen {
+namespace rnwebos {
 
 std::unique_ptr<ControlLink> openDevelopmentLinks(const HostConfig &config) {
   if (!config.logEndpoint) return nullptr;
@@ -13,4 +13,4 @@ std::unique_ptr<ControlLink> openDevelopmentLinks(const HostConfig &config) {
   return std::make_unique<ControlLink>(host, port, config.packageId);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

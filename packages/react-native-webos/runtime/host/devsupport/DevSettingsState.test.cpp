@@ -2,7 +2,7 @@
 
 #include <doctest/doctest.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 TEST_CASE("Fast Refresh starts on, and only a change asks for a reload") {
   DevSettingsState state;
@@ -34,4 +34,4 @@ TEST_CASE("A new instance has no LogBox surface, and keeps Fast Refresh as it wa
   CHECK_FALSE(state.hotLoadingEnabled());
 }
 
-} // namespace rntizen
+} // namespace rnwebos

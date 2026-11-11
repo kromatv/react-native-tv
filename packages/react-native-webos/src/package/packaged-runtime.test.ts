@@ -15,17 +15,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeApp } from '../app/app.fixtures.ts';
 import { readZip } from '../signing/zip-read.ts';
 import { writeZip } from '../signing/zip-write.ts';
-import { platformProfile, SUPPORTED_PLATFORMS } from '../tizen/platform-profiles.ts';
+import { platformProfile, SUPPORTED_PLATFORMS } from '../webos/platform-profiles.ts';
 import { checkPackagedRuntime } from './packaged-runtime.ts';
-import { writeTizenProject } from './tizen-project.ts';
+import { writeWebOSProject } from './webos-project.ts';
 
 vi.mock('./app-config-file.ts', () => ({ writeAppConfig: vi.fn(async () => {}) }));
 
-const LIBRARY = join('lib', 'libreact-native-tizen.so');
+const LIBRARY = join('lib', 'libreact-native-webos.so');
 let root: string;
 
 beforeEach(() => {
-  root = mkdtempSync(join(tmpdir(), 'rn-tizen-variant-'));
+  root = mkdtempSync(join(tmpdir(), 'rn-webos-variant-'));
 });
 
 afterEach(() => {
@@ -57,7 +57,7 @@ function inputs(runtimeLibrary: string) {
 
 /**
  * The part of a .NET build that decides what the package carries, as
- * Tizen.NET.Sdk 1.2.1's `_TizenPrepareTpkPackage` does: a file is copied into
+ * webOS.NET.Sdk 1.2.1's `_WebOSPrepareTpkPackage` does: a file is copied into
  * `tpkroot` only when it is newer than the copy there, keeping its time.
  */
 function dotnetBuild(projectDir: string): string {
@@ -71,14 +71,14 @@ function dotnetBuild(projectDir: string): string {
   const tpk = join(projectDir, 'bin', 'app.tpk');
   writeFileSync(
     tpk,
-    writeZip([{ name: 'lib/libreact-native-tizen.so', directory: false, data: readFileSync(to) }]),
+    writeZip([{ name: 'lib/libreact-native-webos.so', directory: false, data: readFileSync(to) }]),
   );
   return tpk;
 }
 
 const packaged = (tpk: string) =>
   readZip(readFileSync(tpk))
-    .find((entry) => entry.name === 'lib/libreact-native-tizen.so')
+    .find((entry) => entry.name === 'lib/libreact-native-webos.so')
     ?.data.toString();
 
 describe('packaging dev, then release', () => {
@@ -87,10 +87,10 @@ describe('packaging dev, then release', () => {
     const release = file('release.so', 'release runtime', hourAgo);
     const development = file('development.so', 'development runtime');
 
-    const devTpk = dotnetBuild(await writeTizenProject(inputs(development)));
+    const devTpk = dotnetBuild(await writeWebOSProject(inputs(development)));
     const devPackaged = packaged(devTpk);
     await checkPackagedRuntime(devTpk, development, 'development');
-    const releaseTpk = dotnetBuild(await writeTizenProject(inputs(release)));
+    const releaseTpk = dotnetBuild(await writeWebOSProject(inputs(release)));
 
     expect(devPackaged).toBe('development runtime');
     expect(packaged(releaseTpk)).toBe('release runtime');
@@ -105,7 +105,7 @@ describe('checkPackagedRuntime', () => {
       tpk,
       writeZip([
         {
-          name: 'lib/libreact-native-tizen.so',
+          name: 'lib/libreact-native-webos.so',
           directory: false,
           data: Buffer.from('development'),
         },
@@ -116,9 +116,9 @@ describe('checkPackagedRuntime', () => {
 
     await expect(
       checkPackagedRuntime(tpk, file('release.so', 'release'), 'release'),
-    ).rejects.toThrow('carries another libreact-native-tizen.so than the release one built for it');
+    ).rejects.toThrow('carries another libreact-native-webos.so than the release one built for it');
     await expect(checkPackagedRuntime(empty, file('any.so', 'x'), 'release')).rejects.toThrow(
-      'holds no lib/libreact-native-tizen.so',
+      'holds no lib/libreact-native-webos.so',
     );
   });
 });

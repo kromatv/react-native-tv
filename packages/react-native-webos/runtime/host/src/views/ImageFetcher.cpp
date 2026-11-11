@@ -11,7 +11,7 @@
 #include <stdexcept>
 #include <unordered_map>
 
-namespace rntizen {
+namespace rnwebos {
 
 class ImageFetch {
  public:
@@ -158,4 +158,4 @@ std::shared_ptr<ImageFetch> fetchImage(const facebook::react::ImageSource &sourc
   return fetch;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

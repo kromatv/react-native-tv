@@ -6,7 +6,7 @@
 #include <utility>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// Whether `name` is a field name: one or more token characters (RFC 9110
 /// section 5.1), what Fetch calls a header name.
@@ -20,4 +20,4 @@ bool isHeaderValue(std::string_view value);
 /// value, or nullopt when every one is.
 std::optional<std::string> invalidHeader(const std::vector<std::pair<std::string, std::string>> &headers);
 
-} // namespace rntizen
+} // namespace rnwebos

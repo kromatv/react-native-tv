@@ -4,7 +4,7 @@ import { attempt, check, CheckList, useChecks, type Check } from './check-list.t
 const SESSION = JSON.stringify({ token: 'abc', profile: 'living room' });
 
 function sessionFile(): File {
-  const directory = new Directory(Paths.document, 'rn-tizen');
+  const directory = new Directory(Paths.document, 'rn-webos');
   if (!directory.exists) directory.create({ intermediates: true });
   return new File(directory, 'session.json');
 }

@@ -6,7 +6,7 @@
 #include <string>
 #include <string_view>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// A TCP or TLS connection libcurl opened and handed over
 /// (`CURLOPT_CONNECT_ONLY`), read and written without blocking. One thread
@@ -40,4 +40,4 @@ class WebSocketTransport final {
   int socket_{-1};
 };
 
-} // namespace rntizen
+} // namespace rnwebos

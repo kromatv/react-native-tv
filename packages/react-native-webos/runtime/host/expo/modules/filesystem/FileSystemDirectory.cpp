@@ -2,7 +2,7 @@
 
 #include <filesystem>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace fs = std::filesystem;
 
@@ -116,4 +116,4 @@ ClassDefinition<FileSystemDirectory> directoryClass() {
       .property("size", [](const Directory &directory) { return directory.size(); });
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

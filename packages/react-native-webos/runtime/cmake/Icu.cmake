@@ -15,20 +15,20 @@ set(_icu_include "${CMAKE_BINARY_DIR}/icu/include")
 file(GLOB _icu_public_headers "${_icu_source}/common/unicode/*.h" "${_icu_source}/i18n/unicode/*.h")
 file(COPY ${_icu_public_headers} DESTINATION "${_icu_include}/unicode")
 
-add_library(rn_tizen_icuuc STATIC ${_icu_common_sources} ${_icu_stubdata_sources})
-target_include_directories(rn_tizen_icuuc
+add_library(rn_webos_icuuc STATIC ${_icu_common_sources} ${_icu_stubdata_sources})
+target_include_directories(rn_webos_icuuc
   PUBLIC "${_icu_include}"
   PRIVATE "${_icu_source}/common")
-target_compile_definitions(rn_tizen_icuuc
+target_compile_definitions(rn_webos_icuuc
   PRIVATE U_COMMON_IMPLEMENTATION
   PUBLIC U_STATIC_IMPLEMENTATION U_CHARSET_IS_UTF8=1 U_HIDE_OBSOLETE_UTF_OLD_H=1)
 
-add_library(rn_tizen_icui18n STATIC ${_icu_i18n_sources})
-target_include_directories(rn_tizen_icui18n PRIVATE "${_icu_source}/common" "${_icu_source}/i18n")
-target_compile_definitions(rn_tizen_icui18n PRIVATE U_I18N_IMPLEMENTATION)
-target_link_libraries(rn_tizen_icui18n PUBLIC rn_tizen_icuuc)
+add_library(rn_webos_icui18n STATIC ${_icu_i18n_sources})
+target_include_directories(rn_webos_icui18n PRIVATE "${_icu_source}/common" "${_icu_source}/i18n")
+target_compile_definitions(rn_webos_icui18n PRIVATE U_I18N_IMPLEMENTATION)
+target_link_libraries(rn_webos_icui18n PUBLIC rn_webos_icuuc)
 
-foreach(_target rn_tizen_icuuc rn_tizen_icui18n)
+foreach(_target rn_webos_icuuc rn_webos_icui18n)
   target_compile_options(${_target} PRIVATE -ffunction-sections -fdata-sections -w)
   set_target_properties(${_target} PROPERTIES
     CXX_VISIBILITY_PRESET hidden

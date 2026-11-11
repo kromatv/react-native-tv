@@ -4,10 +4,10 @@
 
 #include <FBReactNativeSpec/FBReactNativeSpecJSI.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// `AccessibilityManager`, the module `AccessibilityInfo` asks for on every
-/// platform but Android. Tizen exposes no accessibility settings to a native
+/// platform but Android. webOS exposes no accessibility settings to a native
 /// app, so every setting reads as off and announcements are dropped.
 class AccessibilityManagerModule final
     : public facebook::react::NativeAccessibilityManagerCxxSpec<AccessibilityManagerModule> {
@@ -36,4 +36,4 @@ class AccessibilityManagerModule final
       facebook::jsi::Object options);
 };
 
-} // namespace rntizen
+} // namespace rnwebos

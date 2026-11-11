@@ -9,7 +9,7 @@
 #include <optional>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// `DevLoadingView`: the "Refreshing..." banner Fast Refresh shows while it
 /// applies an edit. The banner has no dismiss button: a remote cannot press it.
@@ -29,4 +29,4 @@ class DevLoadingViewModule final : public facebook::react::NativeDevLoadingViewC
 /// A color `processColor` gave, signed on Android and unsigned elsewhere, as 0xAARRGGBB.
 std::optional<std::uint32_t> argbColor(std::optional<double> color);
 
-} // namespace rntizen
+} // namespace rnwebos

@@ -7,7 +7,7 @@
 #include <string>
 #include <string_view>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// A text input's value and selection, edited as an Android EditText edits its
 /// own. Positions count Unicode code points, the unit of an Evas textblock
@@ -82,4 +82,4 @@ class EditBuffer {
 
 std::size_t utf16Length(std::u32string_view text);
 
-} // namespace rntizen
+} // namespace rnwebos

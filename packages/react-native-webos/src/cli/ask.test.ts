@@ -18,13 +18,13 @@ describe('ask', () => {
     const given = answering('com.example.tv\n');
     const empty = answering('\n');
 
-    expect(await ask('Tizen package id', 'com.anonymous.app', given.input, given.output)).toBe(
+    expect(await ask('webOS package id', 'com.anonymous.app', given.input, given.output)).toBe(
       'com.example.tv',
     );
-    expect(await ask('Tizen package id', 'com.anonymous.app', empty.input, empty.output)).toBe(
+    expect(await ask('webOS package id', 'com.anonymous.app', empty.input, empty.output)).toBe(
       'com.anonymous.app',
     );
-    expect(given.shown()).toContain('Tizen package id (com.anonymous.app)');
+    expect(given.shown()).toContain('webOS package id (com.anonymous.app)');
   });
 });
 

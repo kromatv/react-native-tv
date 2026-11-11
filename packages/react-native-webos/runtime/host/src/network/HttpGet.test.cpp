@@ -8,7 +8,7 @@
 #include <string>
 #include <thread>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -51,4 +51,4 @@ TEST_CASE("httpGet names a server it cannot reach") {
   CHECK_THROWS_WITH_AS(httpGet(url), doctest::Contains(("Cannot reach " + url).c_str()), NetworkError);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

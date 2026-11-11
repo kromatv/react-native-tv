@@ -4,11 +4,11 @@
 
 #include "Promises.h"
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
-constexpr const char *kGetSizeUnsupported = "Image.getSize is not supported on Tizen yet";
+constexpr const char *kGetSizeUnsupported = "Image.getSize is not supported on webOS yet";
 
 } // namespace
 
@@ -40,6 +40,6 @@ facebook::jsi::Value ImageLoaderModule::queryCache(facebook::jsi::Runtime &runti
   return resolvedPromise(runtime, facebook::jsi::Value(runtime, facebook::jsi::Object(runtime)));
 }
 
-RN_TIZEN_PLATFORM_MODULE("ImageLoader", ImageLoaderModule);
+RN_WEBOS_PLATFORM_MODULE("ImageLoader", ImageLoaderModule);
 
-} // namespace rntizen
+} // namespace rnwebos

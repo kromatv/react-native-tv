@@ -12,7 +12,7 @@
 #include <string>
 #include <string_view>
 
-namespace rntizen::testing {
+namespace rnwebos::testing {
 
 class LoopbackServer final {
  public:
@@ -80,4 +80,4 @@ inline void writeAll(int socket, std::string_view bytes) {
   }
 }
 
-} // namespace rntizen::testing
+} // namespace rnwebos::testing

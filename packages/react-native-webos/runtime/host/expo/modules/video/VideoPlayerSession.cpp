@@ -1,6 +1,6 @@
 #include "VideoPlayer.h"
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 bool VideoPlayer::isPlaying() const {
   return playing();
@@ -27,8 +27,8 @@ bool VideoPlayer::setSubtitlesEnabled(bool enabled) {
     if (tracks.empty()) return false;
     if (enabled) index = tracks.front().index;
   }
-  command([index](TizenPlayer &tizen) { tizen.selectTrack(TrackKind::Text, index); });
+  command([index](WebOSPlayer &webos) { webos.selectTrack(TrackKind::Text, index); });
   return true;
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

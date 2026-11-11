@@ -5,7 +5,7 @@
 set(REACT_COMMON_DIR "${REACT_NATIVE_DIR}/ReactCommon")
 set(REACT_ANDROID_DIR "${REACT_NATIVE_DIR}/ReactAndroid")
 
-set(RN_TIZEN_REACT_COMMON_DIRS
+set(RN_WEBOS_REACT_COMMON_DIRS
   yoga runtimeexecutor reactperflogger logger jsiexecutor jsitooling cxxreact callinvoker oscompat
   jsinspector-modern jsinspector-modern/cdp jsinspector-modern/network jsinspector-modern/tracing
   hermes/executor hermes/inspector-modern
@@ -33,13 +33,13 @@ set(RN_TIZEN_REACT_COMMON_DIRS
 
 # React Native's switch for a debuggable optimized build, as Android's
 # debugOptimized variant sets it: jsinspector-modern and Hermes' CDP agent.
-set(REACT_NATIVE_DEBUG_OPTIMIZED ${RN_TIZEN_DEVELOPMENT})
+set(REACT_NATIVE_DEBUG_OPTIMIZED ${RN_WEBOS_DEVELOPMENT})
 
 # React Native's sources lean on libc++ including <cstdint> transitively, which
 # libstdc++ does not.
 set(_saved_cxx_flags "${CMAKE_CXX_FLAGS}")
 string(APPEND CMAKE_CXX_FLAGS " -include cstdint")
-foreach(_dir IN LISTS RN_TIZEN_REACT_COMMON_DIRS)
+foreach(_dir IN LISTS RN_WEBOS_REACT_COMMON_DIRS)
   add_subdirectory("${REACT_COMMON_DIR}/${_dir}" "ReactCommon/${_dir}" EXCLUDE_FROM_ALL)
 endforeach()
 set(CMAKE_CXX_FLAGS "${_saved_cxx_flags}")
@@ -50,7 +50,7 @@ target_link_libraries(yoga INTERFACE yogacore)
 
 # React Native builds with -Werror against the NDK's clang. A newer clang warns
 # about code React Native has not seen warnings for yet, which must not stop a build.
-function(rn_tizen_relax_warnings directory)
+function(rn_webos_relax_warnings directory)
   get_property(_targets DIRECTORY "${directory}" PROPERTY BUILDSYSTEM_TARGETS)
   foreach(_target IN LISTS _targets)
     get_target_property(_type ${_target} TYPE)
@@ -68,17 +68,17 @@ function(rn_tizen_relax_warnings directory)
   endforeach()
   get_property(_children DIRECTORY "${directory}" PROPERTY SUBDIRECTORIES)
   foreach(_child IN LISTS _children)
-    rn_tizen_relax_warnings("${_child}")
+    rn_webos_relax_warnings("${_child}")
   endforeach()
 endfunction()
 
-foreach(_dir IN LISTS RN_TIZEN_REACT_COMMON_DIRS)
-  rn_tizen_relax_warnings("${REACT_COMMON_DIR}/${_dir}")
+foreach(_dir IN LISTS RN_WEBOS_REACT_COMMON_DIRS)
+  rn_webos_relax_warnings("${REACT_COMMON_DIR}/${_dir}")
 endforeach()
 
 # Android defines these for its merged library in a debuggable build; the
 # default TurboModules then serve React DevTools' runtime settings module.
-if(RN_TIZEN_DEVELOPMENT)
+if(RN_WEBOS_DEVELOPMENT)
   target_compile_definitions(react_nativemodule_defaults PRIVATE
     REACT_NATIVE_DEBUGGER_ENABLED=1 REACT_NATIVE_DEBUGGER_ENABLED_DEVONLY=1)
 endif()

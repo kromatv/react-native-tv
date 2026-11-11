@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -89,4 +89,4 @@ TEST_CASE("an erased or cleared timer never expires") {
   CHECK(timers.nextDeadline() == TimerQueue::Clock::time_point::max());
 }
 
-} // namespace rntizen
+} // namespace rnwebos

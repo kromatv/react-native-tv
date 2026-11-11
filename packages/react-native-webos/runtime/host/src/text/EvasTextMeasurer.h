@@ -6,7 +6,7 @@
 
 #include <Ecore_Evas.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// Measures paragraphs with an Evas textblock on an offscreen canvas, the same
 /// engine ParagraphView draws with. Evas is single-threaded and its font caches
@@ -36,4 +36,4 @@ class EvasTextMeasurer final : public facebook::react::TextMeasurer {
   UnwrappedSizes unwrapped_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

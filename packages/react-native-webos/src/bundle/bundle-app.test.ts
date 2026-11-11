@@ -11,12 +11,12 @@ vi.mock('./hermesc.ts', () => ({ locateHermesc: vi.fn(async () => '/opt/hermesc'
 
 let root: string;
 
-function app(tizen: Record<string, unknown> = {}) {
+function app(webos: Record<string, unknown> = {}) {
   const expo = join(root, 'expo');
   mkdirSync(join(expo, 'bin'), { recursive: true });
   writeFileSync(join(expo, 'package.json'), '{"name":"expo","version":"58.0.0"}');
   writeFileSync(join(expo, 'bin', 'cli'), '');
-  const project = fakeApp(root, tizen);
+  const project = fakeApp(root, webos);
   return {
     ...project,
     packages: { ...project.packages, expo: { ...project.packages.expo, dir: expo } },
@@ -24,7 +24,7 @@ function app(tizen: Record<string, unknown> = {}) {
 }
 
 beforeEach(() => {
-  root = mkdtempSync(join(tmpdir(), 'rn-tizen-bundle-'));
+  root = mkdtempSync(join(tmpdir(), 'rn-webos-bundle-'));
 });
 
 afterEach(() => {
@@ -32,21 +32,21 @@ afterEach(() => {
 });
 
 describe('bundleApp', () => {
-  it("bundles with Expo's export:embed for tizen, then compiles the bundle with hermesc", async () => {
+  it("bundles with Expo's export:embed for webos, then compiles the bundle with hermesc", async () => {
     const task = recordingTask();
     const out = join(root, 'out');
 
     const bundle = await bundleApp(task, app({ locales: ['fr'] }), out);
 
     expect(bundle).toEqual({
-      javascript: join(out, 'index.tizen.js'),
-      bytecode: join(out, 'index.tizen.hbc'),
+      javascript: join(out, 'index.webos.js'),
+      bytecode: join(out, 'index.webos.hbc'),
       assetsDir: join(out, 'assets'),
     });
     expect(task.commands[0]).toEqual(
-      expect.arrayContaining(['export:embed', '--platform', 'tizen', '--assets-dest', out]),
+      expect.arrayContaining(['export:embed', '--platform', 'webos', '--assets-dest', out]),
     );
-    expect(task.options[0]?.env?.RN_TIZEN_INTL_LOCALES).toBe('fr');
+    expect(task.options[0]?.env?.RN_WEBOS_INTL_LOCALES).toBe('fr');
     expect(task.commands[1]?.[0]).toBe('/opt/hermesc');
     expect(task.progressed).toEqual(['Metro', 'Hermes']);
   });
@@ -54,7 +54,7 @@ describe('bundleApp', () => {
   it('bundles again into a directory it bundled into before', async () => {
     const out = join(root, 'out');
     await bundleApp(recordingTask(), app(), out);
-    writeFileSync(join(out, 'index.tizen.js'), '');
+    writeFileSync(join(out, 'index.webos.js'), '');
 
     await expect(bundleApp(recordingTask(), app(), out)).resolves.toBeDefined();
   });
@@ -66,7 +66,7 @@ describe('bundleApp', () => {
     const bundling = bundleApp(recordingTask(), app(), root);
 
     await expect(bundling).rejects.toBeInstanceOf(FixableError);
-    await expect(bundling).rejects.toThrow('holds files rn-tizen did not write');
+    await expect(bundling).rejects.toThrow('holds files rn-webos did not write');
     expect(readdirSync(join(root, 'assets'))).toEqual(['icon.png']);
   });
 

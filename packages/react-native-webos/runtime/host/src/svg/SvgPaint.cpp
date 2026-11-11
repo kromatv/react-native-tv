@@ -6,7 +6,7 @@
 #include <string_view>
 #include <utility>
 
-namespace rntizen::svg {
+namespace rnwebos::svg {
 
 namespace {
 
@@ -164,4 +164,4 @@ std::optional<Rgba> rgbaFromColor(const facebook::react::SharedColor &color) {
   return Rgba{.red = components.red, .green = components.green, .blue = components.blue, .alpha = components.alpha};
 }
 
-} // namespace rntizen::svg
+} // namespace rnwebos::svg

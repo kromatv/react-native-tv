@@ -1,6 +1,6 @@
 #pragma once
 
-#include "TizenPlayer.h"
+#include "WebOSPlayer.h"
 
 #include "../../Context.h"
 #include "../../SharedObject.h"
@@ -14,11 +14,11 @@
 #include <memory>
 #include <mutex>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 /// expo-video's `VideoPlayer`: the JavaScript object's native half. Getters
 /// read a snapshot the main loop keeps current, setters update it and queue
-/// the call for the TizenPlayer, so JavaScript never waits for the player. It
+/// the call for the WebOSPlayer, so JavaScript never waits for the player. It
 /// is also the TV's media session, which voice commands and the app going to
 /// the background drive.
 class VideoPlayer final : public SharedObject, public PlayerObserver, public MediaSession {
@@ -26,7 +26,7 @@ class VideoPlayer final : public SharedObject, public PlayerObserver, public Med
   explicit VideoPlayer(std::weak_ptr<Context> context);
   ~VideoPlayer() override;
 
-  /// Creates the TizenPlayer and opens `source`. Call once, on the JavaScript
+  /// Creates the WebOSPlayer and opens `source`. Call once, on the JavaScript
   /// thread, before JavaScript holds the object.
   void open(const folly::dynamic &source);
 
@@ -78,7 +78,7 @@ class VideoPlayer final : public SharedObject, public PlayerObserver, public Med
   void store(const std::string &name, const folly::dynamic &value);
 
   /// The player a view shows; main thread only.
-  const std::shared_ptr<TizenPlayer> &tizenPlayer() const;
+  const std::shared_ptr<WebOSPlayer> &webosPlayer() const;
   int number() const;
 
   void sharedObjectDidRelease() override;
@@ -114,7 +114,7 @@ class VideoPlayer final : public SharedObject, public PlayerObserver, public Med
     folly::dynamic stored{folly::dynamic::object()};
   };
 
-  void command(std::function<void(TizenPlayer &)> body);
+  void command(std::function<void(WebOSPlayer &)> body);
   void emit(const std::string &event, folly::dynamic payload) const;
   void openOnPlayer(const folly::dynamic &source, bool prepareNow);
   double positionLocked() const;
@@ -122,9 +122,9 @@ class VideoPlayer final : public SharedObject, public PlayerObserver, public Med
 
   const std::weak_ptr<Context> context_;
   const int number_;
-  std::shared_ptr<TizenPlayer> player_;
+  std::shared_ptr<WebOSPlayer> player_;
   mutable std::mutex mutex_;
   Snapshot snapshot_;
 };
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

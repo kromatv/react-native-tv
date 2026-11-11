@@ -43,7 +43,7 @@ export function readExpoConfig(
   options: ReadExpoConfigOptions = {},
 ): Record<string, unknown> {
   const visibility = options.isPublicConfig === true ? 'public' : 'all';
-  const dir = mkdtempSync(join(tmpdir(), 'rn-tizen-config-'));
+  const dir = mkdtempSync(join(tmpdir(), 'rn-webos-config-'));
   const out = join(dir, 'config.json');
   try {
     runSync(['node', '-e', READ_CONFIG, root, visibility, out], {

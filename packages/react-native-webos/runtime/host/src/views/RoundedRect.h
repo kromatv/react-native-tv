@@ -2,7 +2,7 @@
 
 #include "NinePatch.h"
 
-namespace rntizen {
+namespace rnwebos {
 
 /// A `width` x `height` rectangle at (`x`, `y`) with rounded `corners`, in
 /// pixels.
@@ -26,4 +26,4 @@ struct RoundedRect {
 /// `corners` at the origin, 1 without sampling away from the corners.
 float roundedCoverage(const Corners &corners, int width, int height, int x, int y);
 
-} // namespace rntizen
+} // namespace rnwebos

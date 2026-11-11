@@ -9,7 +9,7 @@
 #include <cctype>
 #include <chrono>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -121,4 +121,4 @@ bool tapView(const LabelledView &item) {
   return true;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

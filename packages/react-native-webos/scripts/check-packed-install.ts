@@ -13,10 +13,10 @@ import { z } from 'zod';
 import { Reporter } from '../src/cli/reporter.ts';
 
 const REPO = resolve(import.meta.dirname, '..');
-const BYTECODE = join('tizen', 'build', 'bundle', 'index.tizen.hbc');
+const BYTECODE = join('webos', 'build', 'bundle', 'index.webos.hbc');
 const METRO = 'metro.config.mjs';
 const LOAD_PLUGIN = `
-import plugin from '@kromatv/react-native-tizen/app.plugin.js';
+import plugin from '@kromatv/react-native-webos/app.plugin.js';
 if (typeof plugin !== 'function') throw new Error('app.plugin.js exports no function');
 const config = { name: 'Packed' };
 if (plugin(config, { package: 'org.example.packed' }) !== config) throw new Error('the plugin changed the config');
@@ -54,7 +54,7 @@ function writeApp(app: string, tarball: string): void {
     main: 'index.js',
     dependencies: {
       ...example.dependencies,
-      '@kromatv/react-native-tizen': `file:${tarball}`,
+      '@kromatv/react-native-webos': `file:${tarball}`,
     },
   });
   writeJson(join(app, 'app.json'), { expo: { name: 'Packed', slug: 'packed' } });
@@ -71,7 +71,7 @@ function writeApp(app: string, tarball: string): void {
   );
 }
 
-const work = mkdtempSync(join(tmpdir(), 'rn-tizen-packed-'));
+const work = mkdtempSync(join(tmpdir(), 'rn-webos-packed-'));
 try {
   const packs = join(work, 'pack');
   mkdirSync(packs);
@@ -82,25 +82,25 @@ try {
   mkdirSync(app);
   writeApp(app, join(packs, tarball));
   await sh(['npm', 'install', '--no-audit', '--no-fund', '--loglevel=error'], app);
-  await sh(['npx', 'rn-tizen', '--version'], app);
-  await sh(['npx', 'rn-tizen', 'init', '--package', 'org.example.packed'], app);
+  await sh(['npx', 'rn-webos', '--version'], app);
+  await sh(['npx', 'rn-webos', 'init', '--package', 'org.example.packed'], app);
   const firstInit = [
     readFileSync(join(app, 'app.json'), 'utf8'),
     readFileSync(join(app, METRO), 'utf8'),
   ];
-  await sh(['npx', 'rn-tizen', 'init'], app);
+  await sh(['npx', 'rn-webos', 'init'], app);
   const secondInit = [
     readFileSync(join(app, 'app.json'), 'utf8'),
     readFileSync(join(app, METRO), 'utf8'),
   ];
   if (secondInit.join() !== firstInit.join())
-    throw new Error('rn-tizen init changed what it wrote before');
+    throw new Error('rn-webos init changed what it wrote before');
   await sh(['node', '--input-type=module', '--eval', LOAD_PLUGIN], app);
   await sh(['npx', 'expo', 'config', '--json'], app);
-  await sh(['npx', 'rn-tizen', 'bundle'], app);
-  if (!existsSync(join(app, BYTECODE))) throw new Error(`rn-tizen bundle wrote no ${BYTECODE}`);
+  await sh(['npx', 'rn-webos', 'bundle'], app);
+  if (!existsSync(join(app, BYTECODE))) throw new Error(`rn-webos bundle wrote no ${BYTECODE}`);
   reporter.line(
-    'rn-tizen init sets a fresh Expo app up, plain Node and Expo load the packed config plugin, and the package bundles the app.',
+    'rn-webos init sets a fresh Expo app up, plain Node and Expo load the packed config plugin, and the package bundles the app.',
   );
 } finally {
   rmSync(work, { recursive: true, force: true });

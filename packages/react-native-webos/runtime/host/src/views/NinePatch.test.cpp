@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <cstdint>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -131,4 +131,4 @@ TEST_CASE("pixelOf packs premultiplied channels as ARGB and alphaPixel as white"
   CHECK(alphaPixel(0) == 0u);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

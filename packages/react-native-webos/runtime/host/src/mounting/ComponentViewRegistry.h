@@ -9,7 +9,7 @@
 #include <memory>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// Creates the native view of one Fabric component.
 using ComponentViewFactory = std::function<std::unique_ptr<ComponentView>(Evas *evas, facebook::react::Tag tag)>;
@@ -27,8 +27,8 @@ bool registerComponentViewType(const char *componentName) {
   return true;
 }
 
-} // namespace rntizen
+} // namespace rnwebos
 
 /// Mounts the Fabric component `componentName` (such as "Paragraph") as `Type`.
-#define RN_TIZEN_COMPONENT_VIEW(componentName, Type) \
-  RN_TIZEN_REGISTRATION(::rntizen::registerComponentViewType<Type>(componentName))
+#define RN_WEBOS_COMPONENT_VIEW(componentName, Type) \
+  RN_WEBOS_REGISTRATION(::rnwebos::registerComponentViewType<Type>(componentName))

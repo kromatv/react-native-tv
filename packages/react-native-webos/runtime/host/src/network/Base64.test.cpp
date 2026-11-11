@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 TEST_CASE("encodeBase64 pads the RFC 4648 test vectors") {
   CHECK(encodeBase64("") == "");
@@ -41,4 +41,4 @@ TEST_CASE("decodeBase64 rejects a character outside the alphabet") {
   CHECK_THROWS_AS(decodeBase64("Zm\x80v"), std::invalid_argument);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

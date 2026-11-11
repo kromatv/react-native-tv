@@ -21,7 +21,7 @@ const tvs: FakeTv[] = [];
 
 const TV_API = {
   device: {
-    OS: 'Tizen',
+    OS: 'webOS',
     name: 'Living room',
     modelName: 'QE55Q80',
     developerMode: '1',
@@ -102,7 +102,7 @@ describe('the TV answers', () => {
   });
 
   it('collects no SSDP reply when nothing answers', async () => {
-    expect(await ssdpSearch(50, 'urn:rn-tizen-test:none')).toEqual([]);
+    expect(await ssdpSearch(50, 'urn:rn-webos-test:none')).toEqual([]);
   });
 });
 

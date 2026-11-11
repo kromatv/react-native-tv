@@ -12,7 +12,7 @@ const RELAY_SLACK_MS = 5_000;
 /**
  * Captures the screen of the development build `app` on `device` (the only
  * one connected for either when null) that streams its logs to `port`:
- * through the `rn-tizen run` or `logs` holding that port, else by listening on
+ * through the `rn-webos run` or `logs` holding that port, else by listening on
  * it until the app's control link connects. Log lines that arrive meanwhile
  * are dropped.
  */

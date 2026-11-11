@@ -4,7 +4,7 @@
 
 #include <cstdlib>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -31,12 +31,12 @@ int platformInt(const char *key, int fallback) {
 
 DeviceProfile readDeviceProfile() {
   return DeviceProfile{
-      .modelName = platformString("http://tizen.org/system/model_name", "Samsung TV"),
-      .platformVersion = platformString("http://tizen.org/feature/platform.version", "unknown"),
-      .buildString = platformString("http://tizen.org/system/build.string", "unknown"),
-      .screenWidth = platformInt("http://tizen.org/feature/screen.width", kDefaultScreenWidth),
-      .screenHeight = platformInt("http://tizen.org/feature/screen.height", kDefaultScreenHeight),
+      .modelName = platformString("http://webos.org/system/model_name", "Samsung TV"),
+      .platformVersion = platformString("http://webos.org/feature/platform.version", "unknown"),
+      .buildString = platformString("http://webos.org/system/build.string", "unknown"),
+      .screenWidth = platformInt("http://webos.org/feature/screen.width", kDefaultScreenWidth),
+      .screenHeight = platformInt("http://webos.org/feature/screen.height", kDefaultScreenHeight),
   };
 }
 
-} // namespace rntizen
+} // namespace rnwebos

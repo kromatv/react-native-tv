@@ -7,7 +7,7 @@
 #include <limits>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -71,4 +71,4 @@ TEST_CASE("EvasTextMeasurer measures a line height below the font's own") {
   CHECK(tight.height < natural.height);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

@@ -48,7 +48,7 @@ async function pollUntil(
 ): Promise<string> {
   if (poll.now() >= deadline) {
     throw new FixableError(
-      'The dev server did not answer, so the app was not opened on Tizen',
+      'The dev server did not answer, so the app was not opened on webOS',
       'Press t again once it runs.',
     );
   }

@@ -2,7 +2,7 @@
 
 #include <algorithm>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -109,4 +109,4 @@ float roundedCoverage(const Corners &corners, int width, int height, int x, int 
   return RoundedRect{.width = static_cast<float>(width), .height = static_cast<float>(height), .corners = corners}.coverage(x, y);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

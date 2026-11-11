@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <cmath>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -61,4 +61,4 @@ std::optional<PlaneGeometry> fitVideo(
   return PlaneGeometry{.roi = roi, .crop = crop};
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

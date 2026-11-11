@@ -13,7 +13,7 @@ namespace facebook::react {
 
 class TextMeasurer;
 
-/// Fabric's text layout entry point on Tizen: caches measurements and hands the
+/// Fabric's text layout entry point on webOS: caches measurements and hands the
 /// work to the host's TextMeasurer.
 class TextLayoutManager {
  public:

@@ -10,7 +10,7 @@
 #include <functional>
 #include <optional>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -59,4 +59,4 @@ const HarfBuzzSubset *harfBuzzSubset() {
   return resolved.has_value() ? &*resolved : nullptr;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

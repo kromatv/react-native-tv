@@ -4,7 +4,7 @@
 #include <cmath>
 #include <utility>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -74,4 +74,4 @@ FrameStats::Window FrameStats::take(Clock::time_point now) {
   return finished;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

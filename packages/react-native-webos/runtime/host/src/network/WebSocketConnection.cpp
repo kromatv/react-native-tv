@@ -15,7 +15,7 @@
 #include <cstdint>
 #include <random>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -285,4 +285,4 @@ void WebSocketConnection::onMessageFrame(Incoming &incoming, WebSocketFrame &fra
   reportMessage(std::exchange(incoming.fragments, {}), binary);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

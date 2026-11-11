@@ -11,7 +11,7 @@
 #include <set>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// Resolves a TurboModule by the name JavaScript asks for: this platform's own
 /// modules first, then React Native's C++ defaults, then any C++ module a
@@ -33,4 +33,4 @@ class TurboModuleProvider final {
   std::set<std::string, std::less<>> missing_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

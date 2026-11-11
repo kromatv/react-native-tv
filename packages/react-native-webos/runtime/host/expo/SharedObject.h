@@ -3,7 +3,7 @@
 #include <atomic>
 #include <memory>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 /// The id JavaScript sees on a shared object: 1 and up, 0 while it is not paired.
 using SharedObjectId = long;
@@ -34,4 +34,4 @@ class SharedObject : public std::enable_shared_from_this<SharedObject> {
   std::atomic<SharedObjectId> id_{0};
 };
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

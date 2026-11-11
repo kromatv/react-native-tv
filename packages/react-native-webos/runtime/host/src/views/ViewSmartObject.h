@@ -2,7 +2,7 @@
 
 #include <Evas.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// A clipped smart object whose color multiplies into its members', which is
 /// how a view's opacity reaches its subtree. Its internal clipper is
@@ -10,4 +10,4 @@ namespace rntizen {
 /// places its own objects and children in canvas pixels.
 Evas_Object *addViewSmartObject(Evas *evas);
 
-} // namespace rntizen
+} // namespace rnwebos

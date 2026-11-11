@@ -8,7 +8,7 @@
 #include <optional>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// The Metro or Expo dev server a bundle URL points at, and the URLs React
 /// Native's tooling reaches it on, as Android's DevServerHelper builds them
@@ -20,7 +20,7 @@ struct DevServer {
   std::uint16_t port;
   /// The bundle's path without its leading slash: HMRClient.setup's `bundleEntry`.
   std::string bundlePath;
-  /// The bundle URL's `app` parameter, the package id rn-tizen wrote there.
+  /// The bundle URL's `app` parameter, the package id rn-webos wrote there.
   std::string app;
 
   /// `host:port`.
@@ -37,7 +37,7 @@ struct DevServer {
   folly::dynamic hmrClientSetup(bool hotLoadingEnabled) const;
 };
 
-/// What the dev server lists the TV as: "<model> - Tizen <version>", as
+/// What the dev server lists the TV as: "<model> - webOS <version>", as
 /// Android's getFriendlyDeviceName gives "<model> - <release> - API <level>".
 std::string friendlyDeviceName(const DeviceProfile &device);
 
@@ -47,4 +47,4 @@ std::optional<DevServer> devServerOf(const std::string &bundleUrl);
 /// `value` percent-encoded for a URL's query.
 std::string encodeQueryValue(const std::string &value);
 
-} // namespace rntizen
+} // namespace rnwebos

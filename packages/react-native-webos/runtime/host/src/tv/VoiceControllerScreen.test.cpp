@@ -9,7 +9,7 @@
 
 #include <optional>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -93,4 +93,4 @@ TEST_CASE("VoiceController selects nothing on an empty screen or before the root
   CHECK_FALSE(beforeMount.handle(folly::dynamic::object("type", "selectTitle")("title", "Dune")));
 }
 
-} // namespace rntizen
+} // namespace rnwebos

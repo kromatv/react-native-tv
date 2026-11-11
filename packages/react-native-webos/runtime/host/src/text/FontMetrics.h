@@ -2,7 +2,7 @@
 
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// A font's ascent and descent in pixels: the two a textblock line is made of
 /// (efl-rendering.md, section 5).
@@ -16,4 +16,4 @@ struct FontMetrics {
 /// offscreen canvas. Main thread only.
 FontMetrics fontMetrics(const std::string &family, const std::string &weight, bool italic, int pixelSize);
 
-} // namespace rntizen
+} // namespace rnwebos

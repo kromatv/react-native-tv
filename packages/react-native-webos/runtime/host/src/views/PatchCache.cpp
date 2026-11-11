@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <utility>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -73,4 +73,4 @@ PatchCache &patchCache() {
   return shared;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

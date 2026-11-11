@@ -8,7 +8,7 @@ import { logPath, writeJob, type Job } from './jobs.ts';
 let dir = '';
 
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'rn-tizen-follow-'));
+  dir = mkdtempSync(join(tmpdir(), 'rn-webos-follow-'));
 });
 
 afterEach(() => {

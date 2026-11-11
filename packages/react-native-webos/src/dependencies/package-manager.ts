@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
-/** A package manager `rn-tizen` knows how to set an app up with. */
+/** A package manager `rn-webos` knows how to set an app up with. */
 export type PackageManagerName = 'bun' | 'pnpm' | 'yarn' | 'npm';
 
 /** The app's package manager and the root it installs from, where its lockfile is. */
@@ -44,7 +44,7 @@ const RUNNERS: Readonly<Record<PackageManagerName, string>> = {
 
 /**
  * How the app's package manager runs a package's command: `bunx`, `pnpm exec`,
- * `yarn`, else `npx`. In a Bun workspace `npx rn-tizen` asks the npm registry
+ * `yarn`, else `npx`. In a Bun workspace `npx rn-webos` asks the npm registry
  * for a package of that name.
  */
 export function packageRunner(dir: string): string {

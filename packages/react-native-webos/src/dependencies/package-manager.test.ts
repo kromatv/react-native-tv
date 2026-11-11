@@ -11,7 +11,7 @@ afterEach(() => {
 });
 
 function project(lockfile?: string): string {
-  const dir = mkdtempSync(join(tmpdir(), 'rn-tizen-runner-'));
+  const dir = mkdtempSync(join(tmpdir(), 'rn-webos-runner-'));
   dirs.push(dir);
   writeFileSync(join(dir, 'package.json'), '{}');
   if (lockfile !== undefined) writeFileSync(join(dir, lockfile), '');

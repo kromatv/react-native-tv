@@ -4,7 +4,7 @@
 
 #include <FBReactNativeSpec/FBReactNativeSpecJSI.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// `DeviceInfo`: what `Dimensions` and `useWindowDimensions` report. Every TV
 /// window is the logical 1920x1080 screen, at the scale that fits it.
@@ -18,4 +18,4 @@ class DeviceInfoModule final : public facebook::react::NativeDeviceInfoCxxSpec<D
   DeviceProfile device_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

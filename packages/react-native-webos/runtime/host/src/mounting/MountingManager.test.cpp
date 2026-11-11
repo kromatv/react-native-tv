@@ -5,7 +5,7 @@
 #include <bit>
 #include <cstdint>
 
-namespace rntizen {
+namespace rnwebos {
 
 TEST_CASE("MountingManager drops a command for a view it has not mounted") {
   MountingManager manager(std::bit_cast<Evas *>(std::uintptr_t{0x1000}));
@@ -14,4 +14,4 @@ TEST_CASE("MountingManager drops a command for a view it has not mounted") {
   CHECK(manager.findView(42) == nullptr);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

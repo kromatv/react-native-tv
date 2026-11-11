@@ -13,10 +13,10 @@ const app = { packageId: 'org.example.app', features };
 
 describe('runtimeConfig', () => {
   it('marks a development build and points it at the log listener', () => {
-    expect(runtimeConfig('index.tizen.hbc', { host: '192.168.1.20', port: 8099 }, app)).toEqual({
+    expect(runtimeConfig('index.webos.hbc', { host: '192.168.1.20', port: 8099 }, app)).toEqual({
       appKey: 'main',
       packageId: 'org.example.app',
-      bundleFile: 'index.tizen.hbc',
+      bundleFile: 'index.webos.hbc',
       development: true,
       log: { host: '192.168.1.20', port: 8099 },
       resolution: '1080p',
@@ -25,10 +25,10 @@ describe('runtimeConfig', () => {
   });
 
   it('marks a release build, which streams no logs', () => {
-    expect(runtimeConfig('index.tizen.hbc', null, app)).toEqual({
+    expect(runtimeConfig('index.webos.hbc', null, app)).toEqual({
       appKey: 'main',
       packageId: 'org.example.app',
-      bundleFile: 'index.tizen.hbc',
+      bundleFile: 'index.webos.hbc',
       development: false,
       resolution: '1080p',
       backgroundMedia: false,
@@ -36,11 +36,11 @@ describe('runtimeConfig', () => {
   });
 
   it('refuses a port the host would refuse', () => {
-    expect(() => runtimeConfig('index.tizen.hbc', { host: 'h', port: 70000 }, app)).toThrow();
+    expect(() => runtimeConfig('index.webos.hbc', { host: 'h', port: 70000 }, app)).toThrow();
   });
 
   it('tells the host and the shell which TV features to start', () => {
-    const config = runtimeConfig('index.tizen.hbc', null, {
+    const config = runtimeConfig('index.webos.hbc', null, {
       packageId: 'org.example.app',
       features: {
         ...features,
@@ -60,7 +60,7 @@ describe('runtimeConfig', () => {
   });
 
   it('turns voice on with no search URL', () => {
-    const config = runtimeConfig('index.tizen.hbc', null, {
+    const config = runtimeConfig('index.webos.hbc', null, {
       ...app,
       features: { ...features, voice: { searchUrl: null } },
     });

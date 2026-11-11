@@ -2,7 +2,7 @@
 
 #include <doctest/doctest.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 TEST_CASE("pointScaleFactor is the largest scale at which the logical screen fits the window") {
   CHECK(pointScaleFactor({.width = 1280, .height = 720}) == doctest::Approx(2.0 / 3.0));
@@ -18,4 +18,4 @@ TEST_CASE("pointScaleFactor is one pixel per point in a window with no area") {
   CHECK(pointScaleFactor({.width = -1, .height = 1080}) == 1);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

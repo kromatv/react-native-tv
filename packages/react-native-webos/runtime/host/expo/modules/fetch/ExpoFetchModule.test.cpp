@@ -9,7 +9,7 @@
 #include <mutex>
 #include <string>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -210,4 +210,4 @@ TEST_CASE("unstable_createBlobData stores the bytes in the host's BlobStore") {
   BlobStore::shared().remove(blobId);
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

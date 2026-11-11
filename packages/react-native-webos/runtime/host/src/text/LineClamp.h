@@ -2,7 +2,7 @@
 
 #include <Evas.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// Cuts a wrapping textblock's text after `lines` lines, and ends the last line
 /// with an ellipsis when `ellipsis` is set. Evas's own ellipsis can cut a
@@ -11,4 +11,4 @@ namespace rntizen {
 /// Main thread only.
 void clampLines(Evas_Object *textblock, int lines, bool ellipsis);
 
-} // namespace rntizen
+} // namespace rnwebos

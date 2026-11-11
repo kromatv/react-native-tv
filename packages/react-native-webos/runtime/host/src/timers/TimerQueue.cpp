@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <utility>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -56,4 +56,4 @@ std::vector<std::uint32_t> TimerQueue::expire(Clock::time_point now) {
   return timerIDs;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

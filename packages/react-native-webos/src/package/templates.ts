@@ -1,5 +1,5 @@
-import type { TizenAppConfig } from '../config/tizen-config.ts';
-import type { PlatformProfile } from '../tizen/platform-profiles.ts';
+import type { WebOSAppConfig } from '../config/webos-config.ts';
+import type { PlatformProfile } from '../webos/platform-profiles.ts';
 import { applicationExtras, previewServiceAppId, projectReferences } from './feature-manifest.ts';
 import { escapeXml } from './xml.ts';
 
@@ -17,9 +17,9 @@ export function renderTemplate(template: string, values: Readonly<Record<string,
   });
 }
 
-/** The values `shell/tizen-manifest.xml` is filled with, escaped for XML. */
+/** The values `shell/webos-manifest.xml` is filled with, escaped for XML. */
 export function manifestValues(
-  config: TizenAppConfig,
+  config: WebOSAppConfig,
   profile: PlatformProfile,
 ): Record<string, string> {
   return {
@@ -34,9 +34,9 @@ export function manifestValues(
   };
 }
 
-/** The values `shell/preview-service/tizen-manifest.xml` is filled with. */
+/** The values `shell/preview-service/webos-manifest.xml` is filled with. */
 export function serviceManifestValues(
-  config: TizenAppConfig,
+  config: WebOSAppConfig,
   profile: PlatformProfile,
 ): Record<string, string> {
   return {
@@ -48,14 +48,14 @@ export function serviceManifestValues(
   };
 }
 
-/** The values `shell/ReactNativeTizen.csproj` and the preview service's project are filled with. */
+/** The values `shell/ReactNativeWebOS.csproj` and the preview service's project are filled with. */
 export function projectValues(
   profile: PlatformProfile,
-  config: Pick<TizenAppConfig, 'features'>,
+  config: Pick<WebOSAppConfig, 'features'>,
 ): Record<string, string> {
   return {
     targetFramework: profile.targetFramework,
-    tizenNetVersion: profile.tizenNetVersion,
+    webosNetVersion: profile.webosNetVersion,
     projectReferences: projectReferences(config.features),
   };
 }

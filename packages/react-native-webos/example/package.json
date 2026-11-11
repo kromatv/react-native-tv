@@ -1,13 +1,13 @@
 {
-  "name": "@kromatv/react-native-tizen-example",
+  "name": "@kromatv/react-native-webos-example",
   "version": "1.0.0",
   "private": true,
-  "description": "An Expo app that runs natively on a Samsung TV through @kromatv/react-native-tizen.",
+  "description": "An Expo app that runs natively on a Samsung TV through @kromatv/react-native-webos.",
   "license": "MIT",
   "main": "main.ts",
   "scripts": {
     "start": "expo start",
-    "tizen": "bun ../src/cli/main.ts run",
+    "webos": "bun ../src/cli/main.ts run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

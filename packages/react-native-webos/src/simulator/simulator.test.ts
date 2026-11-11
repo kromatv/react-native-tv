@@ -45,8 +45,8 @@ function projectApp() {
 }
 
 beforeEach(() => {
-  dir = realpathSync(mkdtempSync(join(PACKAGE_ROOT, 'node_modules', '.rn-tizen-simulator-test-')));
-  vi.stubEnv('RN_TIZEN_CACHE_DIR', join(dir, 'cache'));
+  dir = realpathSync(mkdtempSync(join(PACKAGE_ROOT, 'node_modules', '.rn-webos-simulator-test-')));
+  vi.stubEnv('RN_WEBOS_CACHE_DIR', join(dir, 'cache'));
 });
 
 afterEach(() => {
@@ -159,7 +159,7 @@ describe('the guest scripts of an instance', () => {
     expect(lima.guestRun).toHaveBeenCalledWith(
       expect.anything(),
       ['bash', expect.stringMatching(/guest\/run\.sh$/)],
-      expect.objectContaining({ RN_TIZEN_SIMULATOR_INSTANCE: 'ts' }),
+      expect.objectContaining({ RN_WEBOS_SIMULATOR_INSTANCE: 'ts' }),
     );
   });
 

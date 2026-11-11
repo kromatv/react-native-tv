@@ -5,7 +5,7 @@
 #include "logging/Log.h"
 #include "threading/MainThread.h"
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -80,4 +80,4 @@ void PackagerConnection::receive(std::string_view text) {
   if (message.reply.has_value() && socket_ != nullptr) socket_->send(WebSocketOpcode::Text, *message.reply);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

@@ -9,7 +9,7 @@
 #include <mutex>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -144,4 +144,4 @@ void ThreadTimerRegistry::run() {
   }
 }
 
-} // namespace rntizen
+} // namespace rnwebos

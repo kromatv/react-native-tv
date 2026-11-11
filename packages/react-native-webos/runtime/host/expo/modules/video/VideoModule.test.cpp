@@ -2,7 +2,7 @@
 
 #include <doctest/doctest.h>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 using testing::awaitEvents;
 using testing::canonical;
@@ -12,7 +12,7 @@ using testing::ExpoTestRuntime;
 using testing::kNoPlayer;
 using testing::lastEvent;
 
-TEST_CASE("ExpoVideo answers that Tizen has no picture in picture and no video cache") {
+TEST_CASE("ExpoVideo answers that webOS has no picture in picture and no video cache") {
   ExpoTestRuntime expo;
   CHECK(expo.json("expo.modules.ExpoVideo.isPictureInPictureSupported()") == "false");
   CHECK(expo.json("expo.modules.ExpoVideo.getCurrentVideoCacheSize()") == "0");
@@ -24,7 +24,7 @@ TEST_CASE("a VideoPlayer opening a source loads, then reports the error a TV wit
   ExpoTestRuntime expo;
   const auto native = createVideoPlayer(expo, "{ uri: 'https://example.com/a.mp4', headers: { 'User-Agent': 'TV', X: 5 } }");
   REQUIRE(native != nullptr);
-  CHECK(native->tizenPlayer() != nullptr);
+  CHECK(native->webosPlayer() != nullptr);
   CHECK(expo.json("player.status") == "\"loading\"");
   REQUIRE(awaitEvents(expo, "statusChange"));
   CHECK(lastEvent(expo, "statusChange") ==
@@ -89,7 +89,7 @@ TEST_CASE("VideoPlayer moves its position with currentTime, seekBy and replay") 
   CHECK(expo.json("player.currentTime") == "0");
 }
 
-TEST_CASE("VideoPlayer answers what Tizen does not play, and keeps the options it has no player feature for") {
+TEST_CASE("VideoPlayer answers what webOS does not play, and keeps the options it has no player feature for") {
   ExpoTestRuntime expo;
   createVideoPlayer(expo, "null");
   CHECK(expo.json(
@@ -134,11 +134,11 @@ TEST_CASE("generateThumbnailsAsync rejects as unsupported, and a released player
   createVideoPlayer(expo, "null");
   CHECK_THROWS_WITH(
       expo.settle("player.generateThumbnailsAsync([1], {})"),
-      "ERR_UNSUPPORTED: generateThumbnailsAsync is not supported on Tizen");
+      "ERR_UNSUPPORTED: generateThumbnailsAsync is not supported on webOS");
   expo.eval("player.release();");
   CHECK(expo.json("player.__expo_shared_object_id__") == "0");
   CHECK(expo.json("(() => { try { return player.volume; } catch (error) { return error.message; } })()") ==
         R"("The native object was released or is of another class")");
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

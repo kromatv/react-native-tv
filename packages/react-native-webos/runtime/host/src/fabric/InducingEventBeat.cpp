@@ -1,10 +1,10 @@
 #include "InducingEventBeat.h"
 
-namespace rntizen {
+namespace rnwebos {
 
 void InducingEventBeat::request() const {
   EventBeat::request();
   induce();
 }
 
-} // namespace rntizen
+} // namespace rnwebos

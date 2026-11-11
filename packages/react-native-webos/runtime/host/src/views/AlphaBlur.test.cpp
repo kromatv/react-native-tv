@@ -7,7 +7,7 @@
 #include <numbers>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -100,4 +100,4 @@ TEST_CASE("Blurring is symmetric about the shape's center") {
   }
 }
 
-} // namespace rntizen
+} // namespace rnwebos

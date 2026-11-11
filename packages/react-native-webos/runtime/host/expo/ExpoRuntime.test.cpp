@@ -11,7 +11,7 @@
 #include <memory>
 #include <string>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -62,22 +62,22 @@ TEST_CASE("globalThis.expo rejects reloadAppAsync, as the host cannot reload") {
   ExpoTestRuntime expo;
   CHECK_THROWS_WITH(
       expo.settle("expo.reloadAppAsync('test')"),
-      "ERR_UNAVAILABLE: reloadAppAsync is not supported on Tizen: the host cannot reload yet");
+      "ERR_UNAVAILABLE: reloadAppAsync is not supported on webOS: the host cannot reload yet");
 }
 
 TEST_CASE("expo.modules creates a registered module from the host's device profile, once") {
   ModuleContext host;
   host.device.modelName = "Test TV";
   ExpoTestRuntime expo(std::move(host));
-  CHECK(expo.json("expo.modules.ExpoTizen.modelName") == "\"Test TV\"");
+  CHECK(expo.json("expo.modules.ExpoWebOS.modelName") == "\"Test TV\"");
   CHECK(expo.settle("expo.modules.ExpoDevice.getDeviceTypeAsync()") == "4");
-  CHECK(expo.eval("expo.modules.ExpoTizen === expo.modules.ExpoTizen").getBool());
+  CHECK(expo.eval("expo.modules.ExpoWebOS === expo.modules.ExpoWebOS").getBool());
 }
 
 TEST_CASE("expo.modules lists the registered modules and refuses to be overwritten") {
   ExpoTestRuntime expo;
-  CHECK(expo.eval("Object.keys(expo.modules).includes('ExpoTizen')").getBool());
-  CHECK(thrown(expo, "expo.modules.ExpoTizen = {}") == "Cannot override the Expo module 'ExpoTizen'");
+  CHECK(expo.eval("Object.keys(expo.modules).includes('ExpoWebOS')").getBool());
+  CHECK(thrown(expo, "expo.modules.ExpoWebOS = {}") == "Cannot override the Expo module 'ExpoWebOS'");
 }
 
 TEST_CASE("installExpoGlobals keeps the globalThis.expo already installed") {
@@ -101,7 +101,7 @@ TEST_CASE("installExpoRuntime installs globalThis.expo through the ExpoModulesCo
 
   installExpoRuntime(rt);
   CHECK(rt.global().hasProperty(rt, "expo"));
-  auto model = rt.evaluateJavaScript(std::make_shared<facebook::jsi::StringBuffer>("expo.modules.ExpoTizen.modelName"), "test.js");
+  auto model = rt.evaluateJavaScript(std::make_shared<facebook::jsi::StringBuffer>("expo.modules.ExpoWebOS.modelName"), "test.js");
   CHECK(model.asString(rt).utf8(rt) == "Core TV");
 }
 
@@ -116,4 +116,4 @@ TEST_CASE("installExpoRuntime leaves the runtime without Expo when there is no E
   CHECK_FALSE(withoutCore->global().hasProperty(*withoutCore, "expo"));
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

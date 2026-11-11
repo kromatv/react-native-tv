@@ -10,7 +10,7 @@
 #include <iterator>
 #include <string>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -90,4 +90,4 @@ TEST_CASE("downloadAsync rejects what the server will not give") {
   CHECK_FALSE(fs::exists(assetPath(md5Hex(url), "png")));
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

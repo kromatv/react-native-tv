@@ -2,7 +2,7 @@
 
 #include <doctest/doctest.h>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -73,4 +73,4 @@ TEST_CASE("trackIndexOf finds a track by id first, then by language, never acros
   CHECK_FALSE(trackIndexOf(TrackKind::Audio, "audio-0", kTracks).has_value());
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

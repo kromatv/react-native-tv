@@ -6,11 +6,11 @@
 #include <memory>
 #include <mutex>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
-class TizenFeatureFlags final : public facebook::react::ReactNativeFeatureFlagsOverridesOSSStable {
+class WebOSFeatureFlags final : public facebook::react::ReactNativeFeatureFlagsOverridesOSSStable {
  public:
   bool cxxNativeAnimatedEnabled() override {
     return true;
@@ -22,7 +22,7 @@ class TizenFeatureFlags final : public facebook::react::ReactNativeFeatureFlagsO
 void overrideFeatureFlagsOnce() {
   static std::once_flag once;
   std::call_once(
-      once, [] { facebook::react::ReactNativeFeatureFlags::override(std::make_unique<TizenFeatureFlags>()); });
+      once, [] { facebook::react::ReactNativeFeatureFlags::override(std::make_unique<WebOSFeatureFlags>()); });
 }
 
-} // namespace rntizen
+} // namespace rnwebos

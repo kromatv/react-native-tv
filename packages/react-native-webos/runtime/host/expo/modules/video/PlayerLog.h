@@ -7,7 +7,7 @@
 #include <chrono>
 #include <string>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 /// Logs `message` for the player numbered `number`, as `[video 2] message`.
 void playerLog(int number, const std::string &message, LogLevel level = LogLevel::Info);
@@ -26,4 +26,4 @@ std::string millisSince(std::chrono::steady_clock::time_point start);
 /// "on the main loop" or "off the main loop", with the calling thread's id.
 std::string threadDescription();
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

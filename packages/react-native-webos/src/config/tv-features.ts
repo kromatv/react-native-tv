@@ -8,8 +8,8 @@ export const VOICE_PRIVILEGES = [
 
 /** What a personal Smart Hub preview needs: the service's fetch, and starting it. */
 export const PERSONAL_PREVIEW_PRIVILEGES = [
-  'http://tizen.org/privilege/internet',
-  'http://tizen.org/privilege/appmanager.launch',
+  'http://webos.org/privilege/internet',
+  'http://webos.org/privilege/appmanager.launch',
 ] as const;
 
 /** Samsung takes one personal preview update per 10 minutes. */
@@ -86,7 +86,7 @@ export interface TvFeatures {
   readonly resolution: Resolution;
   /** expo-video's config plugin asked for `supportsBackgroundPlayback`. */
   readonly backgroundMedia: boolean;
-  /** expo-video's config plugin asked for `supportsPictureInPicture`, which Tizen cannot do. */
+  /** expo-video's config plugin asked for `supportsPictureInPicture`, which webOS cannot do. */
   readonly pictureInPicture: boolean;
 }
 
@@ -125,9 +125,9 @@ function previewConfig(
   return { kind: 'personal', refreshMinutes: preview.refreshMinutes };
 }
 
-/** The TV features the Tizen settings and expo-video's config plugin options turn on. */
+/** The TV features the webOS settings and expo-video's config plugin options turn on. */
 export function resolveTvFeatures(
-  tizen: {
+  webos: {
     readonly voice?: z.infer<typeof voiceConfigSchema>;
     readonly preview?: z.infer<typeof previewConfigSchema>;
     readonly resolution?: Resolution;
@@ -136,9 +136,9 @@ export function resolveTvFeatures(
 ): TvFeatures {
   const video = expoVideoOptions(plugins);
   return {
-    voice: voiceConfig(tizen.voice),
-    preview: previewConfig(tizen.preview),
-    resolution: tizen.resolution ?? '1080p',
+    voice: voiceConfig(webos.voice),
+    preview: previewConfig(webos.preview),
+    resolution: webos.resolution ?? '1080p',
     backgroundMedia: video.supportsBackgroundPlayback === true,
     pictureInPicture: video.supportsPictureInPicture === true,
   };

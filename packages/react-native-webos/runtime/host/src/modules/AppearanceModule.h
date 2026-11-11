@@ -4,7 +4,7 @@
 
 #include <FBReactNativeSpec/FBReactNativeSpecJSI.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// `Appearance`: a TV has no system light mode, so the color scheme is `dark`
 /// until the app picks one with `Appearance.setColorScheme`.
@@ -21,4 +21,4 @@ class AppearanceModule final : public facebook::react::NativeAppearanceCxxSpec<A
   std::string colorScheme_{"dark"};
 };
 
-} // namespace rntizen
+} // namespace rnwebos

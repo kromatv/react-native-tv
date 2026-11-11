@@ -13,7 +13,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -105,4 +105,4 @@ TEST_CASE("ExpoImage finds a cached image by its key and clears the disk cache")
   CHECK(expo.settle("I.clearDiskCache()") == "false");
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

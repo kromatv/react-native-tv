@@ -5,7 +5,7 @@
 #include <filesystem>
 #include <string>
 
-namespace rntizen::expo::testing {
+namespace rnwebos::expo::testing {
 
 /// A fresh directory of its own under the app's data directory, with
 /// `globalThis.FS` (the FileSystem module), `globalThis.root` (the directory's
@@ -42,4 +42,4 @@ class FileSystemScope final {
   std::filesystem::path directory_;
 };
 
-} // namespace rntizen::expo::testing
+} // namespace rnwebos::expo::testing

@@ -4,7 +4,7 @@
 
 #include <memory>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -89,4 +89,4 @@ TEST_CASE("pauseMediaSessionsForBackground pauses the only player when it may no
   CHECK_FALSE(player->isPlaying());
 }
 
-} // namespace rntizen
+} // namespace rnwebos

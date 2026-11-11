@@ -6,7 +6,7 @@
 
 #include <memory>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// `LogBox`: JavaScript asks for its inspector to be shown or hidden, and the
 /// host runs or stops the `LogBox` surface over the app's, as Android's
@@ -19,4 +19,4 @@ class LogBoxModule final : public facebook::react::NativeLogBoxCxxSpec<LogBoxMod
   void hide(facebook::jsi::Runtime &runtime);
 };
 
-} // namespace rntizen
+} // namespace rnwebos

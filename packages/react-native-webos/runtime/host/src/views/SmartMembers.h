@@ -7,7 +7,7 @@
 #include <cstddef>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// A shown rectangle member of `smart`, transparent to input.
 Evas_Object *addRectangleMember(Evas *evas, Evas_Object *smart);
@@ -22,4 +22,4 @@ bool resizePatchImages(std::vector<Evas_Object *> &images, std::size_t count, Ev
 /// Uploads `patch` into `image` and sets its border.
 void setNinePatch(Evas_Object *image, const NinePatch &patch);
 
-} // namespace rntizen
+} // namespace rnwebos

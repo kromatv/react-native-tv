@@ -3,7 +3,7 @@
 #include <array>
 #include <utility>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -84,4 +84,4 @@ std::span<const std::string_view> grabbedKeyNames() {
   return kGrabbed;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

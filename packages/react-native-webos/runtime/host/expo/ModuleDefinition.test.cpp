@@ -16,7 +16,7 @@
 #include <thread>
 #include <vector>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -216,4 +216,4 @@ TEST_CASE("A module that defines itself under another name still answers as the 
   CHECK(expo.eval("expo.modules.MisnamedTestModule.ready").getBool());
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

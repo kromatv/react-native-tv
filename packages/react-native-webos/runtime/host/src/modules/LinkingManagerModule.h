@@ -5,7 +5,7 @@
 
 #include <FBReactNativeSpec/FBReactNativeSpecJSI.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// `LinkingManager`, which `Linking` asks for on every platform but Android.
 /// `getInitialURL` answers the URI of the launching app control, and a later
@@ -26,4 +26,4 @@ class LinkingManagerModule final : public facebook::react::NativeLinkingManagerC
   std::shared_ptr<const LaunchUrl> launchUrl_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

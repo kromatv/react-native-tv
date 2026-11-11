@@ -11,7 +11,7 @@
 #include <stdexcept>
 #include <string_view>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -64,4 +64,4 @@ bool clearImageDiskCache() {
   return fs::remove_all(cacheDirectory(), error) > 0;
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

@@ -10,7 +10,7 @@
 #include <memory>
 #include <thread>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// Backs `setTimeout`, `setInterval` and `requestAnimationFrame`, which React
 /// Native's TimerManager makes a 0 ms timer. One thread waits for deadlines; a
@@ -45,4 +45,4 @@ class ThreadTimerRegistry final : public facebook::react::PlatformTimerRegistry 
   std::jthread thread_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

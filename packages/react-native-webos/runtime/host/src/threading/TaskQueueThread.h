@@ -13,7 +13,7 @@
 #include <string>
 #include <thread>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// A thread that runs tasks in submission order: the JavaScript thread React
 /// Native's runtime executes on. A task that throws is logged and does not stop
@@ -64,4 +64,4 @@ class TaskQueueThread final : public facebook::react::MessageQueueThread {
   std::jthread thread_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

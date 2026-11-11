@@ -6,7 +6,7 @@
 #include <iterator>
 #include <system_error>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -81,4 +81,4 @@ std::optional<std::string> localPathOf(const std::string &uri) {
   return std::nullopt;
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

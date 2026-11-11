@@ -4,7 +4,7 @@
 #include <array>
 #include <cmath>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -90,4 +90,4 @@ void ComponentView::placeChildren() {
   for (auto *child : children_) child->place();
 }
 
-} // namespace rntizen
+} // namespace rnwebos

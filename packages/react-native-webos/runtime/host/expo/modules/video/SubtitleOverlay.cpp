@@ -5,7 +5,7 @@
 #include <cstdlib>
 #include <format>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -90,4 +90,4 @@ Eina_Bool SubtitleOverlay::expire(void *data) {
   return ECORE_CALLBACK_CANCEL;
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

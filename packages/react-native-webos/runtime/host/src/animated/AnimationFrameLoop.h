@@ -6,7 +6,7 @@
 #include <functional>
 #include <memory>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// The frame clock React Native's C++ animated driver asks its platform for
 /// (`NativeAnimatedNodesManager`'s start and stop callbacks): runs a callback
@@ -43,4 +43,4 @@ class AnimationFrameLoop final : public std::enable_shared_from_this<AnimationFr
   std::chrono::steady_clock::time_point startedAt_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

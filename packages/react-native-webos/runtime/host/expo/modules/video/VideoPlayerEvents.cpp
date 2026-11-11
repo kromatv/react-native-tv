@@ -7,7 +7,7 @@
 #include <EventEmitter.h>
 #include <jsi/JSIDynamic.h>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 void VideoPlayer::emit(const std::string &event, folly::dynamic payload) const {
   auto context = context_.lock();
@@ -127,7 +127,7 @@ void VideoPlayer::setAudioTrack(const folly::dynamic &track) {
     std::lock_guard lock(mutex_);
     index = trackIndexOf(TrackKind::Audio, track, snapshot_.media.audioTracks);
   }
-  if (index.has_value()) command([index = *index](TizenPlayer &tizen) { tizen.selectTrack(TrackKind::Audio, index); });
+  if (index.has_value()) command([index = *index](WebOSPlayer &webos) { webos.selectTrack(TrackKind::Audio, index); });
 }
 
 folly::dynamic VideoPlayer::subtitleTrack() const {
@@ -142,7 +142,7 @@ void VideoPlayer::setSubtitleTrack(const folly::dynamic &track) {
     std::lock_guard lock(mutex_);
     index = trackIndexOf(TrackKind::Text, track, snapshot_.media.textTracks);
   }
-  if (index.has_value()) command([index = *index](TizenPlayer &tizen) { tizen.selectTrack(TrackKind::Text, index); });
+  if (index.has_value()) command([index = *index](WebOSPlayer &webos) { webos.selectTrack(TrackKind::Text, index); });
 }
 
 folly::dynamic VideoPlayer::availableAudioTracks() const {
@@ -167,4 +167,4 @@ folly::dynamic VideoPlayer::availableVideoTracks() const {
   return list;
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

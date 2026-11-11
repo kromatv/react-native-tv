@@ -8,7 +8,7 @@
 
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// One drop shadow, in pixels: a CSS `boxShadow` entry, or the iOS
 /// `shadowColor`/`shadowOffset`/`shadowOpacity`/`shadowRadius` props as one.
@@ -55,4 +55,4 @@ BoxStyle resolveBoxStyle(
     const facebook::react::LayoutMetrics &metrics,
     bool forceClip);
 
-} // namespace rntizen
+} // namespace rnwebos

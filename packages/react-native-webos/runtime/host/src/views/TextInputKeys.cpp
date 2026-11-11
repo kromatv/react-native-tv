@@ -4,7 +4,7 @@
 #include <initializer_list>
 #include <string_view>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -199,4 +199,4 @@ void TextInputView::imePanelHidden() {
   panelClosed_ = true;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

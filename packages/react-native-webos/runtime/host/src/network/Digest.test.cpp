@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -54,4 +54,4 @@ TEST_CASE("sha1 of a million a's matches FIPS 180") {
   CHECK(hex(sha1(million)) == "34aa973cd4c4daa4f61eeb2bdbad27316534016f");
 }
 
-} // namespace rntizen
+} // namespace rnwebos

@@ -23,7 +23,7 @@
 #include <thread>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -195,4 +195,4 @@ TEST_CASE("With no dev server yet, the socket tries again until one answers") {
   CHECK(runLoopUntil([&] { return reloads == 1; }, 10s));
 }
 
-} // namespace rntizen
+} // namespace rnwebos

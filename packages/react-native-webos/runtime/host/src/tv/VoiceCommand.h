@@ -7,7 +7,7 @@
 #include <optional>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// One utterance the shell received from Samsung's voice service, as the JSON
 /// `{"type": ...}` it sends: a transport command, a search or a selection.
@@ -29,4 +29,4 @@ struct VoiceCommand {
 /// Parses and checks the shell's JSON; nullopt, after logging why, when it is not a command.
 std::optional<VoiceCommand> parseVoiceCommand(const std::string &json);
 
-} // namespace rntizen
+} // namespace rnwebos

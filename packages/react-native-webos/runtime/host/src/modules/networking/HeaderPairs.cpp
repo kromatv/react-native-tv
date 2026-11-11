@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <cctype>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -36,4 +36,4 @@ void setHeader(HeaderPairs &headers, std::string_view name, std::string_view val
   headers.emplace_back(name, value);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

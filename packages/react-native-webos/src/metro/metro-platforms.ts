@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { packageRunner } from '../dependencies/package-manager.ts';
 import { FixableError } from '../errors.ts';
 import { CommandError, lastLines, runSync } from '../exec.ts';
-import { TIZEN_PLATFORM } from './with-tizen.ts';
+import { WEBOS_PLATFORM } from './with-webos.ts';
 
 const READ_PLATFORMS = `
 const { writeFileSync } = require('node:fs');
@@ -41,7 +41,7 @@ const ERROR_LINES = 12;
  * reason Expo gave when the config does not load.
  */
 export function metroPlatforms(root: string): string[] {
-  const dir = mkdtempSync(join(tmpdir(), 'rn-tizen-metro-'));
+  const dir = mkdtempSync(join(tmpdir(), 'rn-webos-metro-'));
   const out = join(dir, 'platforms.json');
   try {
     runSync(['node', '-e', READ_PLATFORMS, root, out], { cwd: root, maxBytes: MAX_OUTPUT_BYTES });
@@ -58,11 +58,11 @@ export function metroPlatforms(root: string): string[] {
   }
 }
 
-/** The reason the app's Metro config cannot bundle for Tizen, or null when `withTizen` wraps it. */
-export function tizenMetroIssue(root: string): FixableError | null {
-  if (metroPlatforms(root).includes(TIZEN_PLATFORM)) return null;
+/** The reason the app's Metro config cannot bundle for webOS, or null when `withWebOS` wraps it. */
+export function webosMetroIssue(root: string): FixableError | null {
+  if (metroPlatforms(root).includes(WEBOS_PLATFORM)) return null;
   return new FixableError(
-    `The app's Metro config does not know the ${TIZEN_PLATFORM} platform`,
-    `Run ${packageRunner(root)} rn-tizen init: it wraps the Metro config with withTizen.`,
+    `The app's Metro config does not know the ${WEBOS_PLATFORM} platform`,
+    `Run ${packageRunner(root)} rn-webos init: it wraps the Metro config with withWebOS.`,
   );
 }

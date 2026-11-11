@@ -8,7 +8,7 @@
 #include <regex>
 #include <set>
 
-namespace rntizen {
+namespace rnwebos {
 
 TEST_CASE("the blob store keeps bytes under random version 4 ids") {
   auto &store = BlobStore::shared();
@@ -72,4 +72,4 @@ TEST_CASE("a BlobData from JavaScript names its blob, and a missing or negative 
   BlobStore::shared().remove(id);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

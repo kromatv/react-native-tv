@@ -12,7 +12,7 @@
 #include <cstring>
 #include <string_view>
 
-namespace rntizen {
+namespace rnwebos {
 namespace {
 
 std::string languageOf(const char *locale) {
@@ -49,4 +49,4 @@ void useIcuData(const std::string &resourceDir) {
   log(LogLevel::Info, "The app ships no ICU data for " + device + ": formatting in " + fallback);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

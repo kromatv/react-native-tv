@@ -1,7 +1,7 @@
 #pragma once
 
 #include "PlayerLog.h"
-#include "TizenPlayer.h"
+#include "WebOSPlayer.h"
 
 #include "threading/MainThread.h"
 
@@ -10,10 +10,10 @@
 #include <set>
 #include <string>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
-struct TizenPlayer::CallbackTarget {
-  CallbackTarget(std::weak_ptr<TizenPlayer> player, int number) : player(std::move(player)), number(number) {}
+struct WebOSPlayer::CallbackTarget {
+  CallbackTarget(std::weak_ptr<WebOSPlayer> player, int number) : player(std::move(player)), number(number) {}
 
   template <typename Effect>
   void post(const char *callback, Effect effect) {
@@ -26,10 +26,10 @@ struct TizenPlayer::CallbackTarget {
     });
   }
 
-  const std::weak_ptr<TizenPlayer> player;
+  const std::weak_ptr<WebOSPlayer> player;
   const int number;
   std::mutex mutex;
   std::set<std::string, std::less<>> seen;
 };
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

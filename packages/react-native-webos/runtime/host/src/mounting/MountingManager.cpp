@@ -10,7 +10,7 @@
 #include <map>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -140,4 +140,4 @@ void MountingManager::apply(const facebook::react::ShadowViewMutation &mutation)
   }
 }
 
-} // namespace rntizen
+} // namespace rnwebos

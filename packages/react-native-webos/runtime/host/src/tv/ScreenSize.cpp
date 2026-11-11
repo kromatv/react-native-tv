@@ -11,7 +11,7 @@
 #include <format>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -51,7 +51,7 @@ Eina_Bool logSettledSurface(void *) {
 }
 
 // Ecore_Wl2 is resolved at run time: the simulator draws through X11, and the
-// all-screens call is Tizen's own (docs/reference/tizen-tv-platform.md, section 7).
+// all-screens call is webOS's own (docs/reference/webos-tv-platform.md, section 7).
 std::string waylandScreens() {
   using ConnectedDisplay = void *(*)(const char *);
   using SizeGet = void (*)(void *, int *, int *);
@@ -89,4 +89,4 @@ PixelSize fitWindowToScreen(Evas_Object *window, bool uhd, PixelSize systemInfo)
   return size;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

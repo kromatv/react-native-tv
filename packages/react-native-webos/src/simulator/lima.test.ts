@@ -63,7 +63,7 @@ describe('requireLima', () => {
   it.runIf(process.platform !== 'darwin' || process.arch !== 'arm64')(
     'refuses a machine other than an Apple silicon Mac',
     () => {
-      expect(() => requireLima()).toThrow('The Tizen simulator runs on Apple silicon Macs only');
+      expect(() => requireLima()).toThrow('The webOS simulator runs on Apple silicon Macs only');
     },
   );
 });
@@ -79,7 +79,7 @@ describe('guestRun', () => {
       'shell',
       '--workdir',
       '/',
-      'rn-tizen-sim',
+      'rn-webos-sim',
       'env',
       'A=1',
       'bash',

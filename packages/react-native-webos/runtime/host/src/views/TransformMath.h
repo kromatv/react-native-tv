@@ -6,7 +6,7 @@
 #include <react/renderer/graphics/Size.h>
 #include <react/renderer/graphics/Transform.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// Whether `transform` moves points without turning, scaling or skewing them.
 bool isTranslationOnly(const facebook::react::Transform &transform);
@@ -23,4 +23,4 @@ PixelPoint transformedPoint(
     const PixelRect &box,
     facebook::react::Float scale);
 
-} // namespace rntizen
+} // namespace rnwebos

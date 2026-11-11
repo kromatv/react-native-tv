@@ -12,7 +12,7 @@ let empty: string;
 beforeEach(() => {
   out = capturedOutput();
   err = capturedOutput();
-  empty = mkdtempSync(join(tmpdir(), 'rn-tizen-cli-'));
+  empty = mkdtempSync(join(tmpdir(), 'rn-webos-cli-'));
 });
 
 afterEach(() => {
@@ -23,7 +23,7 @@ describe('runCli', () => {
   it('lists every command with no arguments', async () => {
     expect(await runCli([], { out, err })).toBe(0);
 
-    expect(out.text()).toContain('Usage: rn-tizen <command> [options]');
+    expect(out.text()).toContain('Usage: rn-webos <command> [options]');
     expect(out.text()).toContain('simulator');
   });
 
@@ -44,7 +44,7 @@ describe('runCli', () => {
     expect(await runCli(['bundel'], { out, err })).toBe(2);
 
     expect(err.text()).toContain('Unknown command bundel. Did you mean bundle?');
-    expect(err.text()).toContain('rn-tizen --help lists what it takes.');
+    expect(err.text()).toContain('rn-webos --help lists what it takes.');
   });
 
   it('prints what to do about a fixable failure', async () => {

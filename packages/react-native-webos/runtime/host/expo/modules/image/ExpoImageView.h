@@ -7,7 +7,7 @@
 #include <memory>
 #include <string>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 /// expo-image's `Image` view: the first source, downloaded through the disk
 /// cache off the main thread, decoded by Evas's preload thread while hidden
@@ -53,4 +53,4 @@ class ExpoImageView final : public ExpoView {
   std::shared_ptr<ExpoImageView *> alive_;
 };
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

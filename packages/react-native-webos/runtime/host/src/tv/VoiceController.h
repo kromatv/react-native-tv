@@ -10,7 +10,7 @@
 #include <memory>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// Answers Samsung's voice service for the running app: the app state and the
 /// titles on screen before each utterance, then the command itself. Transport
@@ -27,8 +27,8 @@ class VoiceController final {
   };
 
   /// The device events JavaScript's `Voice` listens to.
-  static constexpr const char *kSearchEvent = "rnTizenVoiceSearch";
-  static constexpr const char *kCommandEvent = "rnTizenVoiceCommand";
+  static constexpr const char *kSearchEvent = "rnWebOSVoiceSearch";
+  static constexpr const char *kCommandEvent = "rnWebOSVoiceCommand";
 
   explicit VoiceController(Dependencies dependencies);
 
@@ -49,4 +49,4 @@ class VoiceController final {
   Dependencies dependencies_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

@@ -2,7 +2,7 @@
 
 #include <doctest/doctest.h>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -38,4 +38,4 @@ TEST_CASE("blurRadiusPixels spans three of Android's sigmas for intensity over t
   CHECK(blurRadiusPixels(50, 0, 1) == 0);
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

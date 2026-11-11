@@ -4,7 +4,7 @@
 #include <optional>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// The URI of the app control that launched the app, what `Linking.getInitialURL`
 /// answers. The host sets it on the main thread; `LinkingManager` reads it on
@@ -26,4 +26,4 @@ class LaunchUrl final {
   std::optional<std::string> url_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

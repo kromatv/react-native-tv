@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -193,4 +193,4 @@ TEST_CASE("presses with no key filter report a key at its release, and nothing f
   CHECK(events == std::vector<std::string>{"play/1"});
 }
 
-} // namespace rntizen
+} // namespace rnwebos

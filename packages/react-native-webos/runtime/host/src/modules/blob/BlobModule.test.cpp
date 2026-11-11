@@ -9,7 +9,7 @@
 
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -85,4 +85,4 @@ TEST_CASE_FIXTURE(Blobs, "the blob collector JavaScript holds frees the blob's b
   CHECK_FALSE(BlobStore::shared().resolve(id, 0, std::nullopt).has_value());
 }
 
-} // namespace rntizen
+} // namespace rnwebos

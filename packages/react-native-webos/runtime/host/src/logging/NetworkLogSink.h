@@ -10,10 +10,10 @@
 #include <string>
 #include <thread>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// Streams log lines over TCP to the machine that launched the app, one JSON
-/// object per line (`{"level":"info","message":"..."}`), which `rn-tizen logs`
+/// object per line (`{"level":"info","message":"..."}`), which `rn-webos logs`
 /// prints. Each connection opens with `{"type":"log","version":1,"app":<id>}`,
 /// naming the package the lines come from. Writing never blocks: lines queue for a background thread. While
 /// nothing listens, the sink retries every 500 ms and keeps the last 200 lines
@@ -53,4 +53,4 @@ class NetworkLogSink final : public LogSink {
   std::jthread thread_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

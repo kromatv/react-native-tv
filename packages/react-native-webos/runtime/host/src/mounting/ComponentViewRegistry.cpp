@@ -3,7 +3,7 @@
 #include <mutex>
 #include <unordered_map>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -37,4 +37,4 @@ std::unique_ptr<ComponentView> createComponentView(Evas *evas, const facebook::r
   return std::make_unique<ComponentView>(evas, shadowView.tag);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

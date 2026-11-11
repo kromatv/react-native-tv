@@ -16,22 +16,22 @@ const OPTIONS = {
   out: {
     type: 'string',
     placeholder: '<dir>',
-    description: 'Where to write the bundle (default: tizen/build/bundle in the app)',
+    description: 'Where to write the bundle (default: webos/build/bundle in the app)',
   },
   ...PROJECT_OPTIONS,
   ...ENTRY_OPTIONS,
   ...COMMON_OPTIONS,
 } as const;
 
-/** `rn-tizen bundle`: bundles the app's JavaScript and compiles it to Hermes bytecode. */
+/** `rn-webos bundle`: bundles the app's JavaScript and compiles it to Hermes bytecode. */
 export const bundleCommand: Command = {
   name: 'bundle',
   summary: "Bundle the app's JavaScript with Metro and compile it to Hermes bytecode",
   options: OPTIONS,
   examples: [
-    'rn-tizen bundle',
-    'rn-tizen bundle --out dist/tizen',
-    'rn-tizen bundle --entry src/screens/svg/main.ts',
+    'rn-webos bundle',
+    'rn-webos bundle --out dist/webos',
+    'rn-webos bundle --entry src/screens/svg/main.ts',
   ],
   async run(args, context) {
     const values = parseCommandArgs('bundle', args, OPTIONS);

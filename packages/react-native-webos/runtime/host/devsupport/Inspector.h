@@ -12,7 +12,7 @@
 #include <optional>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// React Native DevTools' way into the app, as Android's ReactHostInspectorTarget
 /// and DevServerHelper.openInspectorConnection give it: a HostTarget the
@@ -52,4 +52,4 @@ class Inspector final : public facebook::react::jsinspector_modern::HostTargetDe
   std::unique_ptr<facebook::react::jsinspector_modern::InspectorPackagerConnection> connection_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

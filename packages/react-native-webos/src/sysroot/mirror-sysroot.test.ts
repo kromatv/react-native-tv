@@ -33,9 +33,9 @@ function mirror() {
 }
 
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'rn-tizen-sysroot-'));
+  dir = mkdtempSync(join(tmpdir(), 'rn-webos-sysroot-'));
   rootstrap = join(dir, 'rootstrap');
-  destination = join(dir, 'sysroots', 'tizen-9.0-device.core');
+  destination = join(dir, 'sysroots', 'webos-9.0-device.core');
   compatArchive = join(dir, 'compat.a');
   writeFileSync(compatArchive, '!<arch>\n');
   file('usr/include/stdio.h', '');
@@ -70,9 +70,9 @@ describe('mirrorSysroot', () => {
     await mirror();
 
     expect(readFileSync(join(destination, 'usr/lib/libc.so'), 'utf8')).toBe(
-      'GROUP ( /usr/lib/libc.so.6 /usr/lib/libc_nonshared.a /usr/lib/librn-tizen-glibc-compat.a )\n',
+      'GROUP ( /usr/lib/libc.so.6 /usr/lib/libc_nonshared.a /usr/lib/librn-webos-glibc-compat.a )\n',
     );
-    expect(readFileSync(join(destination, 'usr/lib/librn-tizen-glibc-compat.a'), 'utf8')).toBe(
+    expect(readFileSync(join(destination, 'usr/lib/librn-webos-glibc-compat.a'), 'utf8')).toBe(
       '!<arch>\n',
     );
   });

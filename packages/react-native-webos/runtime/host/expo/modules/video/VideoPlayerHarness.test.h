@@ -8,7 +8,7 @@
 #include <memory>
 #include <string>
 
-namespace rntizen::expo::testing {
+namespace rnwebos::expo::testing {
 
 /// Creates `globalThis.player` with `new VideoPlayer(<source>)`, records every
 /// event it emits in `globalThis.events` as `[name, payload]`, and returns its
@@ -56,4 +56,4 @@ inline std::string lastEvent(ExpoTestRuntime &expo, const std::string &name) {
 inline constexpr const char *kNoPlayer =
     "This device has no media player: player_create returned PLAYER_ERROR_FEATURE_NOT_SUPPORTED_ON_DEVICE";
 
-} // namespace rntizen::expo::testing
+} // namespace rnwebos::expo::testing

@@ -3,7 +3,7 @@
 #include <string_view>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -136,4 +136,4 @@ std::array<std::uint8_t, 20> sha1(std::string_view data) {
   return digest;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

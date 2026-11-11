@@ -7,7 +7,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -15,7 +15,7 @@ namespace fs = std::filesystem;
 
 struct TemporaryDirectory {
   TemporaryDirectory() {
-    auto pattern = (fs::temp_directory_path() / "rn-tizen-uri-XXXXXX").string();
+    auto pattern = (fs::temp_directory_path() / "rn-webos-uri-XXXXXX").string();
     if (mkdtemp(pattern.data()) == nullptr) throw std::runtime_error("cannot create a temporary directory");
     path = pattern;
   }
@@ -65,4 +65,4 @@ TEST_CASE("any other URI has no bytes here") {
   CHECK_FALSE(uriBytes("/plain/path").has_value());
 }
 
-} // namespace rntizen
+} // namespace rnwebos

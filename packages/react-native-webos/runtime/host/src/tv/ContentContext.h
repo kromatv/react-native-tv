@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// A view on screen that voice can name: its `accessibilityLabel` and where it
 /// is, in points of the logical screen.
@@ -36,4 +36,4 @@ const LabelledView *findByTitle(const std::vector<LabelledView> &views, const st
 /// no touch events to send.
 bool tapView(const LabelledView &view);
 
-} // namespace rntizen
+} // namespace rnwebos

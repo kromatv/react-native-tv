@@ -9,7 +9,7 @@
 #include <thread>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -116,4 +116,4 @@ TEST_CASE("peerHasClosed tells a peer that wrote from one that reset the connect
   CHECK_FALSE(sent);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

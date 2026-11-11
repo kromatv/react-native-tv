@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 using facebook::jsi::String;
 using testing::call;
@@ -43,4 +43,4 @@ TEST_CASE("every accessibility state answers off through its success callback, a
             .isUndefined());
 }
 
-} // namespace rntizen
+} // namespace rnwebos

@@ -10,7 +10,7 @@
 #include <optional>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// A `<TextInput>`, mounted as React Native's `AndroidTextInput`: its value,
 /// or its placeholder, drawn like a `<Text>`, with a caret and a selection,
@@ -82,4 +82,4 @@ class TextInputView final : public ComponentView, public KeyboardClient {
   bool autoFocused_{false};
 };
 
-} // namespace rntizen
+} // namespace rnwebos

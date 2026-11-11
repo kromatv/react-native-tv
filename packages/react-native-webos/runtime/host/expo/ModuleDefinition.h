@@ -12,13 +12,13 @@
 #include <typeindex>
 #include <vector>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 class ModuleDefinition;
 
 /// One Expo module implemented in C++. Subclasses describe themselves in
 /// `definition()` the way Expo's Swift and Kotlin modules do, and register
-/// with RN_TIZEN_EXPO_MODULE. One instance lives as long as the app.
+/// with RN_WEBOS_EXPO_MODULE. One instance lives as long as the app.
 class Module {
  public:
   virtual ~Module() = default;
@@ -222,4 +222,4 @@ class ModuleDefinition {
   std::vector<MemberInstaller> members_;
 };
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

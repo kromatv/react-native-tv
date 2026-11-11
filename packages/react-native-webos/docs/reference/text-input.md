@@ -1,12 +1,12 @@
 # TextInput
 
 What React Native's `<TextInput>` needs from a host that runs Android's
-JavaScript, and how react-native-tizen gives it: a field drawn with Evas, keys
+JavaScript, and how react-native-webos gives it: a field drawn with Evas, keys
 from the remote or a keyboard, and the TV's on-screen keyboard through Ecore
-IMF. The keyboard and IMF facts are in [tizen-input.md](tizen-input.md),
+IMF. The keyboard and IMF facts are in [webos-input.md](webos-input.md),
 sections 3 and 10.
 
-Tags as in [tizen-input.md](tizen-input.md): **D** documented by the source,
+Tags as in [webos-input.md](webos-input.md): **D** documented by the source,
 **I** inferred, **S** verified in the simulator, **H** verified on hardware.
 Paths: `RN/` is react-native-tvos 0.88.0-0 in `node_modules`, `RA/` its
 `ReactAndroid/src/main/java/com/facebook/react/`, `RC/` its
@@ -16,7 +16,7 @@ Paths: `RN/` is react-native-tvos 0.88.0-0 in `node_modules`, `RA/` its
 
 | Fact | Tag | Source |
 |------|-----|--------|
-| `TextInput.js` loads `AndroidTextInput` and renders it only when `Platform.OS === 'android'`; on `tizen` it renders nothing | D | `RN/Libraries/Components/TextInput/TextInput.js:75`, `625` |
+| `TextInput.js` loads `AndroidTextInput` and renders it only when `Platform.OS === 'android'`; on `webos` it renders nothing | D | `RN/Libraries/Components/TextInput/TextInput.js:75`, `625` |
 | `TextInputState.js` sends the `focus` and `blur` commands only on `ios` and `android` | D | `RN/Libraries/Components/TextInput/TextInputState.js:98` to `110`, `129` to `141` |
 | Commands: `focus`, `blur`, `setTextAndSelection(mostRecentEventCount, text, start, end)`; `-1` is unset, an unset `end` is `start`, a `null` text leaves the text | D | `RN/Libraries/Components/TextInput/AndroidTextInputNativeComponent.js:644` to `646`; `RA/views/textinput/ReactTextInputManager.kt:163` to `190` |
 | JS text or selection applies only when its event count is at least the native one (`canUpdateWithEventCount`); a JS text update sends no `onChange` | D | `RA/views/textinput/ReactEditText.kt:759` to `821` |
@@ -41,7 +41,7 @@ Paths: `RN/` is react-native-tvos 0.88.0-0 in `node_modules`, `RA/` its
 
 | Piece | How | Where |
 |-------|-----|-------|
-| JavaScript | A Babel plugin reads `Platform.OS` as `'android'` in `TextInput.js` and `TextInputState.js` only, so both take Android's path; it runs before Expo inlines `Platform.OS` | `src/metro/tizen-android-branch.ts` |
+| JavaScript | A Babel plugin reads `Platform.OS` as `'android'` in `TextInput.js` and `TextInputState.js` only, so both take Android's path; it runs before Expo inlines `Platform.OS` | `src/metro/webos-android-branch.ts` |
 | Props | React Native's `BaseTextInputProps`, plus the keyboard props Android parses (`secureTextEntry`, `keyboardType`, `returnKeyType`, `autoCorrect`, `selectTextOnFocus`, `caretHidden`, and `showSoftInputOnFocus`, unset unless given). `AndroidTextInputProps.h` cannot build without `RN_SERIALIZABLE_STATE`, and defining it for a few files would change `Props`' layout under the rest of React Native | `host/fabric/TextInputProps.*` |
 | Layout and state | `AndroidTextInputShadowNode`'s rules: a single line measures at infinite width, the placeholder when empty, the state's text while the tree's has not changed, an older event count never overwrites. Measured by the host's text measurer. No theme padding | `host/fabric/TextInputShadowNode.*`, `TextInputComponentDescriptor.cpp` |
 | Drawing | One textblock built like a `<Text>`'s (`textblockContent`), the selection as its `backing`, the composition underlined, a password as U+2022, the placeholder in `placeholderTextColor` or the text color at half opacity, centered vertically unless `textAlignVertical` says otherwise, clipped to the content box, scrolled to keep the caret in it. A 2-point caret blinks at 500 ms and hides while text is selected | `host/views/TextInputLayer.*` |
@@ -69,7 +69,7 @@ Keys while a field has the keyboard:
 ## 3. Verified in the simulator
 
 `example/src/screens/text-input` (`--entry src/screens/text-input/main.ts`),
-keys from `rn-tizen simulator key`, Ubuntu's EFL 1.28.1 and the `xim` context.
+keys from `rn-webos simulator key`, Ubuntu's EFL 1.28.1 and the `xim` context.
 
 | Fact | Tag |
 |------|-----|
@@ -95,12 +95,12 @@ keys from `rn-tizen simulator key`, Ubuntu's EFL 1.28.1 and the `xim` context.
 | `TextInputView` | No `onScroll`, no `selection` handles, no clipboard, no `contextMenuHidden` | D |
 | `TextInputKeys` | Hardware keys send `onKeyPress` as the soft keyboard does; Android sends none for them | D |
 | `TextInputShadowNode` | No baseline: `alignItems: 'baseline'` ignores the field (Android's uses `measureLines`) | D |
-| `ImeSession` | A key's device name cannot be read (tizen-input.md, section 3): any `Select` key acts as the IME's Done | I |
+| `ImeSession` | A key's device name cannot be read (webos-input.md, section 3): any `Select` key acts as the IME's Done | I |
 | Simulator | `xim` has no input method server, so the IMF callbacks (commit, preedit) never run there | S |
 
 ## 5. Checks for a TV
 
-On the TV, from `example/`: `rn-tizen run --entry src/screens/text-input/main.ts`.
+On the TV, from `example/`: `rn-webos run --entry src/screens/text-input/main.ts`.
 
 1. The search field has the keyboard at start: the Samsung keyboard appears,
    with Search as its action key.

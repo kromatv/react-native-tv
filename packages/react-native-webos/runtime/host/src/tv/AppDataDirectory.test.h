@@ -9,7 +9,7 @@
 #include <sstream>
 #include <string>
 
-namespace rntizen::testing {
+namespace rnwebos::testing {
 
 /// A fresh directory the simulator's app_common shim answers as the app's data
 /// directory until the scope ends, then removed. `path()` is where the data
@@ -53,10 +53,10 @@ class AppDataDirectory final {
   }
 
  private:
-  static constexpr const char *kVariable = "RN_TIZEN_SIMULATOR_DATA_DIR";
+  static constexpr const char *kVariable = "RN_WEBOS_SIMULATOR_DATA_DIR";
 
   static std::filesystem::path makeRoot() {
-    auto pattern = (std::filesystem::temp_directory_path() / "rn-tizen-tv-tests-XXXXXX").string();
+    auto pattern = (std::filesystem::temp_directory_path() / "rn-webos-tv-tests-XXXXXX").string();
     REQUIRE(mkdtemp(pattern.data()) != nullptr);
     return pattern;
   }
@@ -70,4 +70,4 @@ class AppDataDirectory final {
   std::optional<std::string> previous_;
 };
 
-} // namespace rntizen::testing
+} // namespace rnwebos::testing

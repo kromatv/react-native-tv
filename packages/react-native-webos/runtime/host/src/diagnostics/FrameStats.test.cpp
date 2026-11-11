@@ -4,7 +4,7 @@
 
 #include <chrono>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -110,4 +110,4 @@ TEST_CASE("FrameStats adds up the time the main loop is awake, splitting a wake 
   CHECK(second.mainBusyMs == doctest::Approx(2));
 }
 
-} // namespace rntizen
+} // namespace rnwebos

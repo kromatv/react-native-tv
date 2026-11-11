@@ -5,8 +5,8 @@ import { join } from 'node:path';
 import { TOOLCHAIN_FILE } from '../package-paths.ts';
 import { stampAt } from '../stamp.ts';
 import type { Task } from '../task.ts';
-import type { TizenSdk } from '../tizen/tizen-sdk.ts';
-import { rootstrapFor, type TizenTarget } from '../tizen/target.ts';
+import type { WebOSSdk } from '../webos/webos-sdk.ts';
+import { rootstrapFor, type WebOSTarget } from '../webos/target.ts';
 import { ninjaProgress } from './ninja-progress.ts';
 
 interface CMakeProject {
@@ -27,22 +27,22 @@ export function sourcesKey(...paths: readonly string[]): string {
     .slice(0, 12);
 }
 
-/** The definitions that cross-compile a project for one Tizen target. */
-export function tizenDefinitions(sdk: TizenSdk, target: TizenTarget): Record<string, string> {
+/** The definitions that cross-compile a project for one webOS target. */
+export function webosDefinitions(sdk: WebOSSdk, target: WebOSTarget): Record<string, string> {
   const rootstrap = rootstrapFor(target);
   return {
     CMAKE_TOOLCHAIN_FILE: TOOLCHAIN_FILE,
     CMAKE_BUILD_TYPE: 'Release',
-    TIZEN_ARCH: target.arch,
-    TIZEN_PLATFORM_VERSION: target.platformVersion,
-    TIZEN_ROOTSTRAP_VERSION: rootstrap.platformVersion,
-    TIZEN_ROOTSTRAP_PROFILE: rootstrap.profile,
-    TIZEN_SDK_DIR: sdk.root,
+    WEBOS_ARCH: target.arch,
+    WEBOS_PLATFORM_VERSION: target.platformVersion,
+    WEBOS_ROOTSTRAP_VERSION: rootstrap.platformVersion,
+    WEBOS_ROOTSTRAP_PROFILE: rootstrap.profile,
+    WEBOS_SDK_DIR: sdk.root,
   };
 }
 
 async function configure(task: Task, project: CMakeProject, flags: readonly string[]) {
-  const stamp = stampAt(join(project.build, '.rn-tizen-configure.json'));
+  const stamp = stampAt(join(project.build, '.rn-webos-configure.json'));
   const fingerprint = JSON.stringify({ source: project.source, flags });
   const generated = existsSync(join(project.build, 'build.ninja'));
   if (generated && (await stamp.matches(fingerprint))) return;

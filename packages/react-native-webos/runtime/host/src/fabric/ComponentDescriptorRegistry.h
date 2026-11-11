@@ -7,7 +7,7 @@
 
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 void registerComponentDescriptor(facebook::react::ComponentDescriptorProvider provider);
 
@@ -26,7 +26,7 @@ bool registerComponentDescriptorType() {
   return true;
 }
 
-} // namespace rntizen
+} // namespace rnwebos
 
 /// Lets Fabric create and lay out the component `Type` describes.
-#define RN_TIZEN_COMPONENT_DESCRIPTOR(Type) RN_TIZEN_REGISTRATION(::rntizen::registerComponentDescriptorType<Type>())
+#define RN_WEBOS_COMPONENT_DESCRIPTOR(Type) RN_WEBOS_REGISTRATION(::rnwebos::registerComponentDescriptorType<Type>())

@@ -5,7 +5,7 @@ import { isRemoteToken } from './remote-token.ts';
 import { openTvConnection, type OpenTvConnection, type TvConnection } from './tv-socket.ts';
 
 const REMOTE_PORT = 8002;
-const CLIENT_NAME = 'rn-tizen';
+const CLIENT_NAME = 'rn-webos';
 const DRAIN_POLL_MS = 20;
 const DRAIN_LIMIT_MS = 2_000;
 const SETTLE_MS = 200;
@@ -67,8 +67,8 @@ function issuedToken(data: unknown): string | null {
 
 function refused(host: string): FixableError {
   return new FixableError(
-    `The TV at ${host} refused rn-tizen`,
-    `On the TV, open ${DEVICE_LIST_PATH}: allow rn-tizen, or delete it to be asked again.`,
+    `The TV at ${host} refused rn-webos`,
+    `On the TV, open ${DEVICE_LIST_PATH}: allow rn-webos, or delete it to be asked again.`,
   );
 }
 
@@ -104,8 +104,8 @@ function noAnswer(host: string, pairing: boolean, timeoutMs: number): FixableErr
     return new FixableError(`The TV at ${host} did not answer within ${seconds} s`, 'Is it on?');
   }
   return new FixableError(
-    `Nobody allowed rn-tizen on the TV within ${seconds} s`,
-    'Choose Allow when the TV asks about rn-tizen, then run the command again.',
+    `Nobody allowed rn-webos on the TV within ${seconds} s`,
+    'Choose Allow when the TV asks about rn-webos, then run the command again.',
   );
 }
 
@@ -143,7 +143,7 @@ function session(
 
 /**
  * Connects to the TV's remote API. Without a token the TV asks its viewer to
- * allow rn-tizen, and the session carries the token it then issues. Rejects
+ * allow rn-webos, and the session carries the token it then issues. Rejects
  * when the TV refuses, or answers nothing within `timeoutMs`.
  */
 export function openRemote(options: OpenRemoteOptions): Promise<RemoteSession> {

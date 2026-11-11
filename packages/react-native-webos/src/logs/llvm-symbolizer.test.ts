@@ -12,7 +12,7 @@ vi.mock('../exec.ts', async (importOriginal) => ({
   runSync: vi.fn(),
 }));
 
-const CRASH = 'Native crash: SIGSEGV\n#0 libreact-native-tizen.so+0x10\n#1 libc.so.6+0x20';
+const CRASH = 'Native crash: SIGSEGV\n#0 libreact-native-webos.so+0x10\n#1 libc.so.6+0x20';
 
 let dir: string;
 let library: string;
@@ -30,8 +30,8 @@ function tools(symbolizer: string | null) {
 }
 
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'rn-tizen-symbolizer-'));
-  library = join(dir, 'libreact-native-tizen.so');
+  dir = mkdtempSync(join(tmpdir(), 'rn-webos-symbolizer-'));
+  library = join(dir, 'libreact-native-webos.so');
   writeFileSync(library, '');
   tools('/llvm/bin/llvm-symbolizer');
 });
@@ -43,16 +43,16 @@ afterEach(() => {
 
 describe('llvmFrameResolver', () => {
   it('names the frames in the library and leaves the others unnamed', () => {
-    vi.mocked(runSync).mockReturnValue('rntizen::boom()\n/src/Boom.cpp:3:0:0\n\n');
+    vi.mocked(runSync).mockReturnValue('rnwebos::boom()\n/src/Boom.cpp:3:0:0\n\n');
 
     const resolve = llvmFrameResolver(library);
 
     expect(
       resolve?.([
-        { library: 'libreact-native-tizen.so', offset: '10' },
+        { library: 'libreact-native-webos.so', offset: '10' },
         { library: 'libc.so.6', offset: '20' },
       ]),
-    ).toEqual(['rntizen::boom() at /src/Boom.cpp:3', null]);
+    ).toEqual(['rnwebos::boom() at /src/Boom.cpp:3', null]);
     expect(runSync).toHaveBeenCalledWith(
       expect.arrayContaining(['/llvm/bin/llvm-symbolizer', '--obj', library, '0x10']),
       { timeoutMs: 10_000 },
@@ -63,7 +63,7 @@ describe('llvmFrameResolver', () => {
     vi.mocked(runSync).mockReturnValue('??\n??:0:0\n');
 
     expect(
-      llvmFrameResolver(library)?.([{ library: 'libreact-native-tizen.so', offset: '1' }]),
+      llvmFrameResolver(library)?.([{ library: 'libreact-native-webos.so', offset: '1' }]),
     ).toEqual([null]);
   });
 
@@ -73,7 +73,7 @@ describe('llvmFrameResolver', () => {
     });
 
     expect(
-      llvmFrameResolver(library)?.([{ library: 'libreact-native-tizen.so', offset: '1' }]),
+      llvmFrameResolver(library)?.([{ library: 'libreact-native-webos.so', offset: '1' }]),
     ).toEqual([null]);
   });
 
@@ -91,11 +91,11 @@ describe('llvmFrameResolver', () => {
 
 describe('crashSymbolizer', () => {
   it('rewrites native crash reports only', () => {
-    vi.mocked(runSync).mockReturnValue('rntizen::boom()\nBoom.cpp:3:0\n');
+    vi.mocked(runSync).mockReturnValue('rnwebos::boom()\nBoom.cpp:3:0\n');
     const transform = crashSymbolizer(library);
 
     expect(transform({ level: 'info', message: 'hello' }).message).toBe('hello');
-    expect(transform({ level: 'error', message: CRASH }).message).toContain('rntizen::boom()');
+    expect(transform({ level: 'error', message: CRASH }).message).toContain('rnwebos::boom()');
   });
 
   it('leaves a report as it came when nothing can symbolize it', () => {

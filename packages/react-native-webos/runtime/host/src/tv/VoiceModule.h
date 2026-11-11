@@ -8,9 +8,9 @@
 #include <optional>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
-/// `RNTizenVoice`: whether Samsung's voice service took the app and why not, the
+/// `RNWebOSVoice`: whether Samsung's voice service took the app and why not, the
 /// screen JavaScript says it shows, and how many listeners each voice event has.
 class VoiceModule final : public facebook::react::TurboModule {
  public:
@@ -37,4 +37,4 @@ class VoiceModule final : public facebook::react::TurboModule {
   const std::string platformVersion_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

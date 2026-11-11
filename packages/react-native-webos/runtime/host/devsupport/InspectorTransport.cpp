@@ -7,7 +7,7 @@
 
 #include <optional>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -68,4 +68,4 @@ void InspectorTransport::scheduleCallback(std::function<void()> callback, std::c
   });
 }
 
-} // namespace rntizen
+} // namespace rnwebos

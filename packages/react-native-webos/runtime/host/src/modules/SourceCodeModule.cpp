@@ -2,7 +2,7 @@
 
 #include "PlatformModuleRegistry.h"
 
-namespace rntizen {
+namespace rnwebos {
 
 SourceCodeModule::SourceCodeModule(
     std::shared_ptr<facebook::react::CallInvoker> jsInvoker,
@@ -15,6 +15,6 @@ facebook::jsi::Object SourceCodeModule::getConstants(facebook::jsi::Runtime &run
   return constants;
 }
 
-RN_TIZEN_PLATFORM_MODULE("SourceCode", SourceCodeModule);
+RN_WEBOS_PLATFORM_MODULE("SourceCode", SourceCodeModule);
 
-} // namespace rntizen
+} // namespace rnwebos

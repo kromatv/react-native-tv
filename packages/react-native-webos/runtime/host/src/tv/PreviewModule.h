@@ -10,9 +10,9 @@
 #include <string>
 #include <unordered_map>
 
-namespace rntizen {
+namespace rnwebos {
 
-/// `RNTizenSmartHubPreview`: publishes Samsung's Smart Hub preview through the
+/// `RNWebOSSmartHubPreview`: publishes Samsung's Smart Hub preview through the
 /// shell, keeps the preview and its source in the data directory, and says
 /// whether the app was launched from a preview tile, and why it cannot publish. `publish` settles its
 /// promise once the main loop has handed the preview to the shell.
@@ -46,4 +46,4 @@ class PreviewModule final : public facebook::react::TurboModule, public std::ena
   std::unordered_map<std::uint64_t, Pending> pending_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

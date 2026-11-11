@@ -2,9 +2,9 @@
 
 #include <Evas.h>
 
-// Tizen 6.0's libevas exports the legacy VG path API but its headers comment it
+// webOS 6.0's libevas exports the legacy VG path API but its headers comment it
 // out; 6.5 publishes the same prototypes (efl-rendering.md, section 8).
-#if RN_TIZEN_DECLARE_EVAS_VG
+#if RN_WEBOS_DECLARE_EVAS_VG
 extern "C" {
 EAPI void evas_object_vg_root_node_set(Evas_Object *obj, Evas_Vg_Node *root);
 EAPI Evas_Vg_Gradient_Linear *evas_vg_gradient_linear_add(Evas_Vg_Container *parent);

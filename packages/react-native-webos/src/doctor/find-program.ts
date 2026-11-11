@@ -31,9 +31,9 @@ export function findProgram(
   return null;
 }
 
-/** The LLVM tools the Tizen toolchain file looks for, searched the way it searches. */
+/** The LLVM tools the webOS toolchain file looks for, searched the way it searches. */
 export function findLlvmTools(env: NodeJS.ProcessEnv = process.env) {
-  const own = env.TIZEN_LLVM_DIR === undefined ? [] : [env.TIZEN_LLVM_DIR];
+  const own = env.WEBOS_LLVM_DIR === undefined ? [] : [env.WEBOS_LLVM_DIR];
   const llvm = [...own, ...LLVM_HINTS];
   return {
     clang: findProgram('clang', llvm, env),

@@ -18,7 +18,7 @@ import { writeZip } from '../signing/zip-write.ts';
 import { installCommand } from './install.ts';
 import { uninstallCommand } from './uninstall.ts';
 
-const VARIABLES = ['TIZEN_SDK_DATA_DIR', 'XDG_STATE_HOME'];
+const VARIABLES = ['WEBOS_SDK_DATA_DIR', 'XDG_STATE_HOME'];
 let dir = '';
 let saved: Record<string, string | undefined> = {};
 const tvs: FakeTv[] = [];
@@ -31,9 +31,9 @@ function answer(text: string): ServiceHandler {
 }
 
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'rn-tizen-install-'));
+  dir = mkdtempSync(join(tmpdir(), 'rn-webos-install-'));
   saved = Object.fromEntries(VARIABLES.map((name) => [name, process.env[name]]));
-  process.env.TIZEN_SDK_DATA_DIR = join(dir, 'data');
+  process.env.WEBOS_SDK_DATA_DIR = join(dir, 'data');
   process.env.XDG_STATE_HOME = join(dir, 'state');
   vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
   const author = testSigner('Author');
@@ -48,7 +48,7 @@ beforeEach(() => {
 <profileitem ca="" distributor="1" key="${join(dir, 'd.p12')}" password="pw" rootca=""/>
 </profile></profiles>`,
   );
-  const config = '<widget><tizen:application id="AbCdE12345.App" package="AbCdE12345"/></widget>';
+  const config = '<widget><webos:application id="AbCdE12345.App" package="AbCdE12345"/></widget>';
   writeFileSync(
     join(dir, 'app.wgt'),
     writeZip([{ name: 'config.xml', directory: false, data: Buffer.from(config) }]),
@@ -87,7 +87,7 @@ async function tv(requests: SyncRequest[]): Promise<{ tv: FakeTv; pushed: () => 
   return { tv: started, pushed };
 }
 
-describe('rn-tizen install', () => {
+describe('rn-webos install', () => {
   it('signs a widget with the active profile, installs it under its app id and launches it', async () => {
     const requests: SyncRequest[] = [];
     const { tv: started, pushed } = await tv(requests);
@@ -122,7 +122,7 @@ describe('rn-tizen install', () => {
   });
 });
 
-describe('rn-tizen uninstall', () => {
+describe('rn-webos uninstall', () => {
   it('uninstalls a package by its id, and needs exactly one', async () => {
     const { tv: started } = await tv([]);
 

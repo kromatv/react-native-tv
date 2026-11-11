@@ -3,7 +3,7 @@
 # it does nothing until this file changes.
 set -euo pipefail
 
-stamp=/var/lib/rn-tizen-simulator/provisioned
+stamp=/var/lib/rn-webos-simulator/provisioned
 fingerprint="$(sha256sum "${BASH_SOURCE[0]}" | cut -d ' ' -f 1)"
 if [[ -f "$stamp" && "$(cat "$stamp")" == "$fingerprint" ]]; then exit 0; fi
 

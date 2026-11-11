@@ -1,4 +1,4 @@
-import { parseDeviceAddress } from '../tizen/device-address.ts';
+import { parseDeviceAddress } from '../webos/device-address.ts';
 import { UsageError } from './command.ts';
 
 /** The TV's IP address in what `--device` holds: an address, or one with its sdb port such as `192.168.1.50:26101`. */

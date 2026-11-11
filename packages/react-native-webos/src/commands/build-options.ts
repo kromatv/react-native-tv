@@ -5,10 +5,10 @@ import { chooseLogEndpoint, LOG_OPTIONS } from '../cli/log-options.ts';
 import { Reporter } from '../cli/reporter.ts';
 import { chooseTarget, TARGET_OPTIONS } from '../cli/target-options.ts';
 import type { LogEndpoint } from '../package/runtime-config.ts';
-import { platformProfile, type PlatformProfile } from '../tizen/platform-profiles.ts';
-import { resolveDevice, type Device } from '../tizen/devices.ts';
-import { locateTizenSdk, type TizenSdk } from '../tizen/tizen-sdk.ts';
-import type { TizenTarget } from '../tizen/target.ts';
+import { platformProfile, type PlatformProfile } from '../webos/platform-profiles.ts';
+import { resolveDevice, type Device } from '../webos/devices.ts';
+import { locateWebOSSdk, type WebOSSdk } from '../webos/webos-sdk.ts';
+import type { WebOSTarget } from '../webos/target.ts';
 
 /** The options of every command that builds a package. */
 export const BUILD_OPTIONS = {
@@ -16,26 +16,26 @@ export const BUILD_OPTIONS = {
     type: 'string',
     short: 'd',
     placeholder: '<ip>',
-    description: 'The TV to build for, whose CPU and Tizen version become the defaults',
+    description: 'The TV to build for, whose CPU and webOS version become the defaults',
   },
   ...TARGET_OPTIONS,
   profile: {
     type: 'string',
     placeholder: '<name>',
     description:
-      'The Tizen Studio signing profile (default: expo.tizen.profile, else the active one)',
+      'The webOS Studio signing profile (default: expo.webos.profile, else the active one)',
   },
   author: {
     type: 'string',
     placeholder: '<file.p12>',
     description:
-      "The author certificate, instead of the profile's (password in RN_TIZEN_AUTHOR_PASSWORD)",
+      "The author certificate, instead of the profile's (password in RN_WEBOS_AUTHOR_PASSWORD)",
   },
   distributor: {
     type: 'string',
     placeholder: '<file.p12>',
     description:
-      "The distributor certificate, instead of the profile's (password in RN_TIZEN_DISTRIBUTOR_PASSWORD)",
+      "The distributor certificate, instead of the profile's (password in RN_WEBOS_DISTRIBUTOR_PASSWORD)",
   },
   ...LOG_OPTIONS,
   'dev-server': {
@@ -65,28 +65,28 @@ interface BuildFlags {
 
 interface BuildBase {
   readonly reporter: Reporter;
-  readonly sdk: TizenSdk;
+  readonly sdk: WebOSSdk;
   readonly app: AppProject;
 }
 
 interface PreparedBuild extends BuildBase {
-  readonly target: TizenTarget;
+  readonly target: WebOSTarget;
   readonly shell: PlatformProfile;
   readonly log: LogEndpoint | null;
 }
 
 function describeDevice(device: Device): string {
   const { cpuArch, platformVersion } = device.capabilities;
-  return `${device.name || device.serial}, ${cpuArch}, Tizen ${platformVersion}`;
+  return `${device.name || device.serial}, ${cpuArch}, webOS ${platformVersion}`;
 }
 
-/** Reads the app and finds Tizen Studio, warning about settings written the deprecated way. */
+/** Reads the app and finds webOS Studio, warning about settings written the deprecated way. */
 export function openBuild(flags: BuildFlags, context: CommandContext): BuildBase {
   const reporter = new Reporter({ verbose: flags.verbose ?? false });
   const app = loadAppProject(resolve(context.cwd, flags.project ?? '.'), entryPath(flags, context));
   if (app.config.deprecation !== null)
     reporter.line(reporter.paint('yellow', app.config.deprecation));
-  return { reporter, app, sdk: locateTizenSdk() };
+  return { reporter, app, sdk: locateWebOSSdk() };
 }
 
 /** Finds the TV at `address`, or the only one connected, as a step. */
@@ -121,7 +121,7 @@ export function settleBuild(
   const where = relative(cwd, app.root);
   const location = where === '' ? '' : `  ${reporter.paint('gray', where)}`;
   reporter.field('App', `${app.config.packageId} ${app.config.version}${location}`);
-  reporter.field('Target', `${target.arch}, Tizen ${target.platformVersion}`);
+  reporter.field('Target', `${target.arch}, webOS ${target.platformVersion}`);
   reporter.field(
     'Build',
     log === null ? 'release' : `development, logs to ${log.host}:${log.port}`,

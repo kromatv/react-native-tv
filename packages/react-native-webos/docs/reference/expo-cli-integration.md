@@ -1,7 +1,7 @@
 # Expo CLI: config plugins and dev tools plugins
 
 What `npx expo install` and `npx expo start` do with a package that ships a
-config plugin and a dev tools plugin, as `@kromatv/react-native-tizen` does, and
+config plugin and a dev tools plugin, as `@kromatv/react-native-webos` does, and
 how they load the app's Metro config. Checked on 2026-11-03 and 2026-11-04.
 
 | Tag | Meaning |
@@ -22,17 +22,17 @@ how they load the app's Metro config. Checked on 2026-11-03 and 2026-11-04.
 | Expo takes the module's `default` export when it has one, then requires a function. | S | `build/utils/plugin-resolver.js:204-208` |
 | A plugin listed by a path (starting with `.`, `/` or `~/`) resolves from the project root with the same extensions. | S | `build/utils/plugin-resolver.js:88-97, 137-142` |
 | For a TypeScript plugin file, Expo transpiles or strips the types of that file only; the `.ts` files it imports are loaded by Node. On Node 22.13.1 the example's plugin listed as `../src/config/config-plugin.ts` failed with `SyntaxError: Unexpected identifier 'PluginMatcher'`, a type in an imported file; on Node 26.5 it loaded. | S, O | `@expo/require-utils` `build/load.js:333-360` |
-| Running Expo's `applyPluginsAsync` on the installed package printed `› Added config plugin: @kromatv/react-native-tizen` and wrote `"plugins": ["@kromatv/react-native-tizen"]` to `app.json`. | O | |
+| Running Expo's `applyPluginsAsync` on the installed package printed `› Added config plugin: @kromatv/react-native-webos` and wrote `"plugins": ["@kromatv/react-native-webos"]` to `app.json`. | O | |
 | `npx expo install <path to a .tgz>` installed the tarball under the key `"undefined"` in `package.json`, and added no plugin. | O | |
-| In a Bun workspace, `npx rn-tizen` answered 404 from the npm registry while `bunx rn-tizen` ran the package's command (KROMA's acceptance test, Bun 1.4.2, 2026-11-04). | O | |
-| A plugin that throws stops `npx expo config` with its message: a bad prop printed `Invalid @kromatv/react-native-tizen props:` and the field. | O | |
+| In a Bun workspace, `npx rn-webos` answered 404 from the npm registry while `bunx rn-webos` ran the package's command (KROMA's acceptance test, Bun 1.4.2, 2026-11-04). | O | |
+| A plugin that throws stops `npx expo config` with its message: a bad prop printed `Invalid @kromatv/react-native-webos props:` and the field. | O | |
 
 ## 2. Dev tools plugins
 
 | Fact | Tag | Source |
 |---|---|---|
 | Autolinking finds a dev tools plugin in a dependency whose `expo-module.config.json` lists `devtools` among its `platforms`, and reads `devtools.webpageRoot`, `bannerTitle`, `serverEntryPoint` and `cliExtensions`, each kept only when it is inside the package. | S | autolinking `build/ExpoModuleConfig.js:103-118`, `build/platforms/devtools.js:43-75`; `@expo/cli` `src/start/server/devtools/DevToolsPluginManager.js:63-68` |
-| Autolinking walks the app's `dependencies`, `devDependencies` and required `peerDependencies`, not every folder in `node_modules`. This repository's example names no dependency on the package, so shift+m lists no Tizen entry there until the package is named in its `package.json` and linked into its `node_modules`. | S, O | autolinking `build/dependencies/resolution.js:51-66`; example, 2026-11-03 |
+| Autolinking walks the app's `dependencies`, `devDependencies` and required `peerDependencies`, not every folder in `node_modules`. This repository's example names no dependency on the package, so shift+m lists no webOS entry there until the package is named in its `package.json` and linked into its `node_modules`. | S, O | autolinking `build/dependencies/resolution.js:51-66`; example, 2026-11-03 |
 | `cliExtensions` needs `description`, `commands` (at least one) and `entryPoint`; a command needs `name`, `title` and `environments` (`cli`, `mcp`), and may take `parameters` of type `text`, `number` or `confirm`. | S | `src/start/server/devtools/DevToolsPlugin.schema.js:23-98` |
 | shift+m opens "Dev tools (native only)"; a plugin with a page and commands is one entry, which lists `Open <package>` and every command whose `environments` include `cli`. | S, O | `src/start/interface/startInterface.js:161`, `createDevToolsMenuItems.js:68-145` |
 | Each parameter is asked with a prompt of its type, then "Execute command ..." is confirmed. An empty `text` answer is passed on as `""`. | S | `src/start/interface/cliExtensionMenuItemHandler.js:68-104` |
@@ -43,23 +43,23 @@ how they load the app's Metro config. Checked on 2026-11-03 and 2026-11-04.
 | A plugin's page and server live under `/_expo/plugins/<package>/`. The `serverEntryPoint` default-exports `handler(request)`, a Fetch API handler that sees the path without that prefix; returning nothing falls through to the files of `webpageRoot`. | S | `DevToolsPluginManager.js:36`, `middleware/DevToolsPluginMiddleware.js:65-123`, `DevToolsPluginServerHelpers.js:56-63` |
 | The server's `webSocketHandlers`, if any, are mounted when Metro starts, at `/_expo/plugins/<package><route>`. | S | `src/start/server/metro/instantiateMetro.js:396-399`, `DevToolsPluginServerHelpers.js:64-83` |
 
-## 3. Bundles for Tizen under `expo start`
+## 3. Bundles for webOS under `expo start`
 
 | Fact | Tag | Source |
 |---|---|---|
-| `GET /.expo/.virtual-metro-entry.bundle?platform=tizen&dev=true&minify=false` on `expo start` returned a 4.7 MB development bundle for the example, through `withTizen`'s resolver. `/main.bundle` failed with `UnableToResolveError`, the server root being the workspace root, so the virtual entry, which Expo resolves to the app's `main`, is the URL to use. | O | |
+| `GET /.expo/.virtual-metro-entry.bundle?platform=webos&dev=true&minify=false` on `expo start` returned a 4.7 MB development bundle for the example, through `withWebOS`'s resolver. `/main.bundle` failed with `UnableToResolveError`, the server root being the workspace root, so the virtual entry, which Expo resolves to the app's `main`, is the URL to use. | O | |
 | The simulator's runtime fetched that bundle from the Mac's dev server (`http://192.168.5.2:<port>`, Lima's `host.lima.internal`), then stopped at `TurboModuleRegistry.getEnforcing(...): 'DevSettings' could not be found`: a development bundle needs React Native's dev support modules, which the runtime did not serve then. | O | simulator, 2026-11-03 |
-| From a fresh app's `expo start`, shift+m, Run on TV built, signed and installed the development build on GQ75LS03DAUXZG (Tizen 9.0), whose runtime fetched the bundle from `http://192.168.1.124:8095` over the LAN and stopped at the same `DevSettings`. | O | TV, 2026-11-03 |
+| From a fresh app's `expo start`, shift+m, Run on TV built, signed and installed the development build on GQ75LS03DAUXZG (webOS 9.0), whose runtime fetched the bundle from `http://192.168.1.124:8095` over the LAN and stopped at the same `DevSettings`. | O | TV, 2026-11-03 |
 | With the development runtime serving them ([react-native-dev-tooling.md](react-native-dev-tooling.md)), shift+m, Run in simulator in the example's `expo start` loaded the bundle from `http://192.168.1.124:8090`, joined `/message`, printed the app's `console.log` in Expo's terminal, and an edit reached the screen through Fast Refresh with focus and state kept. | O | simulator, 2026-11-03 |
-| `rn-tizen run --dev-server http://localhost:8090` on GQ75LS03DAUXZG (The Frame, 2024, Tizen 9.0) wrote `http://192.168.1.124:8090/...` into `bundleUrl`; the app joined `/message`, and an edit re-ran its effects without running `main` again. | O | TV, 2026-11-03 |
+| `rn-webos run --dev-server http://localhost:8090` on GQ75LS03DAUXZG (The Frame, 2024, webOS 9.0) wrote `http://192.168.1.124:8090/...` into `bundleUrl`; the app joined `/message`, and an edit re-ran its effects without running `main` again. | O | TV, 2026-11-03 |
 
-## 4. What Expo does not do for Tizen
+## 4. What Expo does not do for webOS
 
 | Fact | Tag | Source |
 |---|---|---|
 | `expo run:` exists for `ios` and `android` only. | S | `src/index.js:51-52` |
 | `expo prebuild` generates `android` and `ios`; `all` means those two. | S | `src/prebuild/resolveOptions.js:201-219` |
-| `expo export` accepts only the platforms Expo bundles with Metro and throws `Unsupported platform` for any other. `expo export:embed` takes a platform as given, which is why `rn-tizen bundle` uses it. | S | `src/export/resolveOptions.js:39-60`; `src/index.js:58` |
+| `expo export` accepts only the platforms Expo bundles with Metro and throws `Unsupported platform` for any other. `expo export:embed` takes a platform as given, which is why `rn-webos bundle` uses it. | S | `src/export/resolveOptions.js:39-60`; `src/index.js:58` |
 | The keys under `expo start` are Expo's own; a plugin adds commands only to the shift+m menu. | S | `src/start/interface/startInterface.js:150-175` |
 
 ## 5. The Metro config
@@ -70,9 +70,9 @@ how they load the app's Metro config. Checked on 2026-11-03 and 2026-11-04.
 | `loadUserConfig` looks for `metro.config`, then `.config/metro`, with `.js .cjs .mjs .json .ts .cts .mts`, from the project root up to the Metro server root, then for a `metro` key in the project's `package.json`. It loads the file with `loadModuleSync` and takes `default` when the module sets `__esModule`. | S | `@expo/metro-config` `build/config/resolveMetroUserConfig.js:48-56, 83-91, 100-124` |
 | `loadModuleSync` compiles a `.mjs` file as an ES module itself (`Module._compile` with the `module` format), so `import.meta.dirname` and named imports work in it. | S | `@expo/require-utils` `build/load.js:135-157, 205-265, 406-431` |
 | Metro's own `loadConfig` searches the same names and falls back to `import()` when `require` fails. Expo 58 ships `metro-config` 0.87.1 through `@expo/metro` 58.0.0. | S | `metro-config` 0.87.1 `src/loadConfig.js:57-64, 303-323`; 0.87.2 `src/loadConfig.js:57-64, 328-348` |
-| `withMetroMultiPlatformAsync` sets `resolver.platforms` to the platforms of the Expo config plus those of the Metro config. No step lets a package add a platform, and config plugins change only the app config and the native projects, so `withTizen` must wrap the Metro config. | S | `src/start/server/metro/withMetroMultiPlatform.js:719-765` |
+| `withMetroMultiPlatformAsync` sets `resolver.platforms` to the platforms of the Expo config plus those of the Metro config. No step lets a package add a platform, and config plugins change only the app config and the native projects, so `withWebOS` must wrap the Metro config. | S | `src/start/server/metro/withMetroMultiPlatform.js:719-765` |
 | `expo/metro-config` is `module.exports = require('@expo/metro-config')`, and `import { getDefaultConfig } from 'expo/metro-config'` gives the function on Node 22.13.1 and 26.5. | S, O | `expo` 58.0.22 `metro-config.js:1` |
-| `loadUserConfig({ projectRoot, serverRoot: getMetroServerRoot(projectRoot) })`, from `expo/metro-config` and `@expo/config/paths`, returned the example's config in 0.6 s, its `resolver.platforms` `ios android tvos macos tizen`. | S, O | `@expo/config` 58.0.10 `build/paths/paths.js:31-32` |
+| `loadUserConfig({ projectRoot, serverRoot: getMetroServerRoot(projectRoot) })`, from `expo/metro-config` and `@expo/config/paths`, returned the example's config in 0.6 s, its `resolver.platforms` `ios android tvos macos webos`. | S, O | `@expo/config` 58.0.10 `build/paths/paths.js:31-32` |
 | `expo prebuild` suggests an Android package from the iOS bundle id when it is valid, else `com.<owner>.<slug>` with `anonymous` for an owner it does not know. It sanitizes it: characters other than letters, digits, `_` and `.` dropped, empty segments removed, `com.` added until there are two segments, and `x` before a segment that does not start with a letter. | S | `src/utils/getOrPromptApplicationId.js:93, 192-210`; `src/utils/validateApplicationId.js:108-130` |
 
 ## 6. react-native-tvos and the package managers
@@ -106,25 +106,25 @@ how they load the app's Metro config. Checked on 2026-11-03 and 2026-11-04.
 | A key with no case in `onPressAsync` does nothing: `t` and `T` reach no Expo action. `?` prints the full list synchronously, inside the handler. | S | `src/start/interface/startInterface.js:106-153, 158-268` |
 | A usage line is `› Press <key bold> <│ dim> <text>`, and `› shift+a │ ...` for a shifted key; the full list adds `shift+a` (select an Android device or emulator) and `shift+i`. `shift+a` and `shift+i` ask for a device first. | S | `src/start/interface/commandsTable.js:100-116, 145-190, 255-270`; `src/start/interface/startInterface.js:170-205` |
 | Right after Metro starts, Expo sets `EXPO_DEV_SERVER_ORIGIN` to `http://localhost:<port>` (`https` with `--https`) in its own process. expo-modules-core declares it in its published `ExpoProcessEnv` type ("Used in `@expo/metro-runtime`"). Expo also sets `RCT_METRO_PORT` to the port it picked. | S | `src/start/server/metro/MetroBundlerDevServer.js:977-978`; `expo-modules-core` `build/ts-declarations/global.d.ts:13-14`; `src/utils/port.js:224-226` |
-| In a standalone npm app (`/tmp`, packed tarball): `npx expo start` printed `› Press t │ open on Tizen TV` after `› Press ? │ show all commands`; `?` printed both lines after Expo's list; `t` and `T` typed into the open shift+m menu opened nothing; shift+t listed the TV used last, named from the scan, and the simulator; `2` opened the app in the simulator from the dev server, with Expo bundling `index.js` for `tizen` in its own terminal; an edit of a component module kept the app's state, an edit of the entry file reloaded it; `r` reloaded it; the plugin's page and `/api/jobs` still answered. | O | simulator, 2026-11-04 |
-| In the same app, `t` opened the app on GQ75LS03DAUXZG (The Frame, 2024, Tizen 9.0), the TV used last: Expo's terminal showed the build, install and launch, then the TV's `console.log`; an edit that renamed a log line went from `tick 20` to `tock 25`, the new code with the state kept; `r` restarted the count at 0. | O | TV, 2026-11-04 |
+| In a standalone npm app (`/tmp`, packed tarball): `npx expo start` printed `› Press t │ open on webOS TV` after `› Press ? │ show all commands`; `?` printed both lines after Expo's list; `t` and `T` typed into the open shift+m menu opened nothing; shift+t listed the TV used last, named from the scan, and the simulator; `2` opened the app in the simulator from the dev server, with Expo bundling `index.js` for `webos` in its own terminal; an edit of a component module kept the app's state, an edit of the entry file reloaded it; `r` reloaded it; the plugin's page and `/api/jobs` still answered. | O | simulator, 2026-11-04 |
+| In the same app, `t` opened the app on GQ75LS03DAUXZG (The Frame, 2024, webOS 9.0), the TV used last: Expo's terminal showed the build, install and launch, then the TV's `console.log`; an edit that renamed a log line went from `tick 20` to `tock 25`, the new code with the state kept; `r` restarted the count at 0. | O | TV, 2026-11-04 |
 | In a standalone Bun app (Bun 1.4.2, no config file), `bunx expo start` printed the same line; `t` and `T` typed into the shift+m menu opened nothing; shift+t, then `2`, opened the app in the simulator; an edit kept its state and `r` reloaded it. | O | simulator, 2026-11-04 |
-| `simulator run --dev-server` wrote `tizen/build/bundle` without claiming `tizen/`, so the next TV build refused it as the app's own. It claims the directory first now. | O | simulator, 2026-11-04 |
+| `simulator run --dev-server` wrote `webos/build/bundle` without claiming `webos/`, so the next TV build refused it as the app's own. It claims the directory first now. | O | simulator, 2026-11-04 |
 
 ## What this means for this package
 
 - `app.plugin.js` re-exports the compiled config plugin as an ES module, plain
   JavaScript that Node loads under `node_modules`, where it refuses to strip
-  types. Its props are the Tizen settings, validated with zod. The example in
+  types. Its props are the webOS settings, validated with zod. The example in
   this repository lists `../app.plugin.js`: listing the TypeScript source fails
   on Node 22.13 (section 1), and `bun install` builds `dist/` through the
   `prepare` script.
-- `rn-tizen init` writes `metro.config.mjs` or wraps an existing config, and
+- `rn-webos init` writes `metro.config.mjs` or wraps an existing config, and
   suggests the app's `android.package`, else `com.anonymous.<slug>` sanitized
   as `expo prebuild` does, for the package id. Builds load the Metro config
-  with `loadUserConfig` before anything else, and stop with `npx rn-tizen init`
-  as the fix when its platforms lack `tizen`.
-- `rn-tizen init` points `react-native` at `npm:react-native-tvos@0.88.0-0`,
+  with `loadUserConfig` before anything else, and stop with `npx rn-webos init`
+  as the fix when its platforms lack `webos`.
+- `rn-webos init` points `react-native` at `npm:react-native-tvos@0.88.0-0`,
   the release this repository builds against, unless the app names a
   react-native-tvos already. An exact version, because Bun refuses the
   `-stable` tag and a range can pick a release candidate; Expo accepts it, as

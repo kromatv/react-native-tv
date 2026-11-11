@@ -1,4 +1,4 @@
-import { SmartHubPreview } from '@kromatv/react-native-tizen/preview';
+import { SmartHubPreview } from '@kromatv/react-native-webos/preview';
 import { useEffect, useState } from 'react';
 import { Alert, BackHandler, StyleSheet, Text, View, useTVEventHandler } from 'react-native';
 import { BackgroundScreen } from './background-screen.tsx';

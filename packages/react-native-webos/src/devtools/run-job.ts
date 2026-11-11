@@ -31,7 +31,7 @@ async function runJob(dir: string, id: string, cli: string): Promise<void> {
   });
 }
 
-/** `node job-runner <dir> <id>`: runs `rn-tizen` with the job's arguments, its output in the job's log. */
+/** `node job-runner <dir> <id>`: runs `rn-webos` with the job's arguments, its output in the job's log. */
 export async function runJobFromArgv(argv: readonly string[], cli = CLI): Promise<void> {
   const [dir, id] = argv;
   if (dir !== undefined && id !== undefined) await runJob(dir, id, cli);

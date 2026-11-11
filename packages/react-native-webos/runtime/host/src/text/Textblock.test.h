@@ -5,7 +5,7 @@
 
 #include <string>
 
-namespace rntizen::testing {
+namespace rnwebos::testing {
 
 class Textblock final {
  public:
@@ -54,4 +54,4 @@ class Textblock final {
   Evas_Textblock_Style *style_;
 };
 
-} // namespace rntizen::testing
+} // namespace rnwebos::testing

@@ -5,7 +5,7 @@ import { UsageError } from '../cli/command.ts';
 export const DEFAULT_INSTANCE = 'default';
 
 /** The environment variable that names the instance, so an agent sets it once. */
-export const INSTANCE_ENV = 'RN_TIZEN_SIMULATOR_INSTANCE';
+export const INSTANCE_ENV = 'RN_WEBOS_SIMULATOR_INSTANCE';
 
 /** What a name may hold: it becomes a directory in the VM. */
 export const INSTANCE_NAME = /^[a-z0-9][a-z0-9_-]{0,31}$/;
@@ -77,18 +77,18 @@ export function chooseInstance(
   return simulatorInstance(name);
 }
 
-/** `rn-tizen simulator <action>` as the user types it for `instance`. */
+/** `rn-webos simulator <action>` as the user types it for `instance`. */
 export function simulatorCommandLine(action: string, instance: string): string {
   const flag = instance === DEFAULT_INSTANCE ? '' : ` --instance ${instance}`;
-  return `rn-tizen simulator ${action}${flag}`;
+  return `rn-webos simulator ${action}${flag}`;
 }
 
 /** What the guest scripts read to act on `instance`. */
 export function instanceEnv(instance: SimulatorInstance): Readonly<Record<string, string>> {
   return {
     [INSTANCE_ENV]: instance.name,
-    RN_TIZEN_SIMULATOR_DISPLAY: String(instance.display),
-    RN_TIZEN_SIMULATOR_VIEWER_PORT: String(instance.viewerPort),
-    RN_TIZEN_SIMULATOR_VNC_PORT: String(instance.vncPort),
+    RN_WEBOS_SIMULATOR_DISPLAY: String(instance.display),
+    RN_WEBOS_SIMULATOR_VIEWER_PORT: String(instance.viewerPort),
+    RN_WEBOS_SIMULATOR_VNC_PORT: String(instance.vncPort),
   };
 }

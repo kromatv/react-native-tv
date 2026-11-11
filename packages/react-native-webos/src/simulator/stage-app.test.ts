@@ -36,7 +36,7 @@ function file(name: string): string {
 }
 
 beforeEach(() => {
-  root = mkdtempSync(join(tmpdir(), 'rn-tizen-stage-'));
+  root = mkdtempSync(join(tmpdir(), 'rn-webos-stage-'));
   archived.length = 0;
   tarExit = 0;
 });
@@ -63,7 +63,7 @@ describe('stageApp', () => {
     expect(guestSpawn).toHaveBeenCalledWith(
       ['bash', expect.stringMatching(/guest\/stage\.sh$/)],
       expect.objectContaining({
-        env: expect.objectContaining({ RN_TIZEN_SIMULATOR_RUNTIME: '0123456789ab' }),
+        env: expect.objectContaining({ RN_WEBOS_SIMULATOR_RUNTIME: '0123456789ab' }),
       }),
     );
   });

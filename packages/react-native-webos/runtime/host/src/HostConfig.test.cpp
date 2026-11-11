@@ -6,7 +6,7 @@
 #include <fstream>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -24,11 +24,11 @@ struct ResourceDirectory {
   ResourceDirectory &operator=(const ResourceDirectory &) = delete;
 
   HostConfig load(const std::string &json) const {
-    std::ofstream(path / "react-native-tizen.json") << json;
+    std::ofstream(path / "react-native-webos.json") << json;
     return loadHostConfig(path.string());
   }
 
-  const fs::path path{fs::temp_directory_path() / "rn-tizen-host-config-test"};
+  const fs::path path{fs::temp_directory_path() / "rn-webos-host-config-test"};
 };
 
 } // namespace
@@ -91,4 +91,4 @@ TEST_CASE_FIXTURE(ResourceDirectory, "loadHostConfig names what is wrong") {
   CHECK_THROWS_AS(load("{" + required + R"(, "padding": ")" + std::string(70 * 1024, 'x') + "\"}"), HostConfigError);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

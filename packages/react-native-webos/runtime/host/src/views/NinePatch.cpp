@@ -9,7 +9,7 @@
 #include <cmath>
 #include <utility>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -135,4 +135,4 @@ NinePatch makeShadowPatch(const Corners &corners, int blur) {
   return patch;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

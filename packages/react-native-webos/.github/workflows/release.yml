@@ -136,7 +136,7 @@ jobs:
     timeout-minutes: 10
     environment:
       name: npm
-      url: https://www.npmjs.com/package/@kromatv/react-native-tizen/v/${{ needs.release-please.outputs.version }}
+      url: https://www.npmjs.com/package/@kromatv/react-native-webos/v/${{ needs.release-please.outputs.version }}
     permissions:
       contents: write
       id-token: write
@@ -164,7 +164,7 @@ jobs:
           DIST_TAG: ${{ needs.pack.outputs.dist-tag }}
           VERSION: ${{ needs.release-please.outputs.version }}
         run: |
-          if npm view "@kromatv/react-native-tizen@$VERSION" version >/dev/null 2>&1; then
+          if npm view "@kromatv/react-native-webos@$VERSION" version >/dev/null 2>&1; then
             echo "$VERSION is on npm already: a re-run, so only the GitHub release is left."
           else
             npm publish "$RUNNER_TEMP"/package/*.tgz --provenance --access public --tag "$DIST_TAG"

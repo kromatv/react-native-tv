@@ -9,7 +9,7 @@
 #include <chrono>
 #include <limits>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -158,6 +158,6 @@ facebook::react::ScrollEvent ScrollView::scrollEvent() const {
   return event;
 }
 
-RN_TIZEN_COMPONENT_VIEW("ScrollView", ScrollView);
+RN_WEBOS_COMPONENT_VIEW("ScrollView", ScrollView);
 
-} // namespace rntizen
+} // namespace rnwebos

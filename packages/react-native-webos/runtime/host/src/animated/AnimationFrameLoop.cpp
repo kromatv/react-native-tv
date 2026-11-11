@@ -7,7 +7,7 @@
 #include <memory>
 #include <utility>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -87,4 +87,4 @@ Eina_Bool AnimationFrameLoop::tick(void *data) {
   return ECORE_CALLBACK_RENEW;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

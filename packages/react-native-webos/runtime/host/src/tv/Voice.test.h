@@ -14,7 +14,7 @@
 #include <utility>
 #include <vector>
 
-namespace rntizen::testing {
+namespace rnwebos::testing {
 
 /// A device event the controller emitted.
 struct Event {
@@ -50,4 +50,4 @@ struct Voice {
   VoiceController controller;
 };
 
-} // namespace rntizen::testing
+} // namespace rnwebos::testing

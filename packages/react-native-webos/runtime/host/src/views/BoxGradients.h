@@ -7,7 +7,7 @@
 
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// A view's `backgroundImage`: one image per gradient layer over the padding
 /// box, cut to its inner corners, above the background color and below the
@@ -38,4 +38,4 @@ class BoxGradients final {
   bool stale_{true};
 };
 
-} // namespace rntizen
+} // namespace rnwebos

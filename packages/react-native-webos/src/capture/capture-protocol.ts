@@ -68,7 +68,7 @@ const failureSchema = z.object({
 /** The header a frame's pixels follow. */
 export type FrameHeader = z.infer<typeof frameHeaderSchema>;
 
-/** What an app, or a relaying `rn-tizen`, answers a screenshot request with. */
+/** What an app, or a relaying `rn-webos`, answers a screenshot request with. */
 export type CaptureReply =
   | { readonly kind: 'frame'; readonly header: FrameHeader }
   | {
@@ -139,7 +139,7 @@ export function perfRequest(on: boolean): string {
   return `${JSON.stringify({ type: 'perf', on })}\n`;
 }
 
-/** The line that asks a running `rn-tizen run` or `logs` to capture for this process. */
+/** The line that asks a running `rn-webos run` or `logs` to capture for this process. */
 export function relayRequest(device: string | null, app: string | null): string {
   return `${JSON.stringify({ type: 'screenshot-request', device, app })}\n`;
 }

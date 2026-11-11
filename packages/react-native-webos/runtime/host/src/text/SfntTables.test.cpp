@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -148,4 +148,4 @@ TEST_CASE("trackSfntAdvances refuses a font whose metrics do not fit its hmtx") 
   CHECK_FALSE(trackSfntAdvances(missing, 10));
 }
 
-} // namespace rntizen
+} // namespace rnwebos

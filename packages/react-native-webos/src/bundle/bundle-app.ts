@@ -5,16 +5,16 @@ import { join } from 'node:path';
 import type { AppProject } from '../app/app-project.ts';
 import { FixableError } from '../errors.ts';
 import { localesWithoutIntlData } from '../metro/intl-locale-data.ts';
-import { INTL_LOCALES_ENV } from '../metro/tizen-babel-transformer-env.ts';
-import { TIZEN_PLATFORM } from '../metro/with-tizen.ts';
+import { INTL_LOCALES_ENV } from '../metro/webos-babel-transformer-env.ts';
+import { WEBOS_PLATFORM } from '../metro/with-webos.ts';
 import type { Task } from '../task.ts';
 import { locateHermesc } from './hermesc.ts';
 
 /** The file the native host loads, inside a package's `res` directory. */
-export const BYTECODE_FILE = 'index.tizen.hbc';
+export const BYTECODE_FILE = 'index.webos.hbc';
 
-const JAVASCRIPT_FILE = 'index.tizen.js';
-const BUNDLE_MARKER = '.rn-tizen-bundle';
+const JAVASCRIPT_FILE = 'index.webos.js';
+const BUNDLE_MARKER = '.rn-webos-bundle';
 
 /** What {@link bundleApp} wrote. */
 export interface AppBundle {
@@ -29,7 +29,7 @@ function requireIntlData(locales: readonly string[]): void {
   const missing = localesWithoutIntlData(locales);
   if (missing.length === 0) return;
   throw new FixableError(
-    `expo.tizen.locales: no Intl data for ${missing.join(', ')}`,
+    `expo.webos.locales: no Intl data for ${missing.join(', ')}`,
     'Name locales FormatJS has data for, such as fr or pt-PT.',
   );
 }
@@ -41,7 +41,7 @@ function bundledBefore(outDir: string): boolean {
 async function claimBundleDir(outDir: string): Promise<void> {
   if (existsSync(outDir) && readdirSync(outDir).length > 0 && !bundledBefore(outDir)) {
     throw new FixableError(
-      `${outDir} holds files rn-tizen did not write`,
+      `${outDir} holds files rn-webos did not write`,
       'Bundle into a new or empty directory: every bundle replaces the assets/ folder of the one it writes to.',
     );
   }
@@ -50,7 +50,7 @@ async function claimBundleDir(outDir: string): Promise<void> {
 }
 
 /**
- * Bundles the app for Tizen with Expo's own `export:embed`, through the app's
+ * Bundles the app for webOS with Expo's own `export:embed`, through the app's
  * Metro config, with Intl data for the app's locales, then compiles the bundle
  * to Hermes bytecode. Refuses an `outDir` that holds files of another origin.
  */
@@ -72,7 +72,7 @@ export async function bundleApp(task: Task, app: AppProject, outDir: string): Pr
       expoCli,
       'export:embed',
       '--platform',
-      TIZEN_PLATFORM,
+      WEBOS_PLATFORM,
       '--dev',
       'false',
       '--entry-file',

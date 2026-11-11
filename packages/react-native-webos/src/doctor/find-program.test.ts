@@ -15,7 +15,7 @@ function program(subdir: string, name: string, mode = 0o755): string {
 }
 
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'rn-tizen-programs-'));
+  dir = mkdtempSync(join(tmpdir(), 'rn-webos-programs-'));
 });
 
 afterEach(() => {
@@ -39,13 +39,13 @@ describe('findProgram', () => {
   });
 
   it('is null for a program nowhere to be found, or with no PATH at all', () => {
-    expect(findProgram('rn-tizen-nothing', [], { PATH: join(dir, 'empty') })).toBeNull();
-    expect(findProgram('rn-tizen-nothing', [], {})).toBeNull();
+    expect(findProgram('rn-webos-nothing', [], { PATH: join(dir, 'empty') })).toBeNull();
+    expect(findProgram('rn-webos-nothing', [], {})).toBeNull();
   });
 });
 
 describe('findLlvmTools', () => {
-  it('takes every tool from TIZEN_LLVM_DIR first', () => {
+  it('takes every tool from WEBOS_LLVM_DIR first', () => {
     const tools = [
       'clang',
       'clang++',
@@ -57,7 +57,7 @@ describe('findLlvmTools', () => {
     ];
     for (const tool of tools) program('llvm', tool);
 
-    const found = findLlvmTools({ TIZEN_LLVM_DIR: join(dir, 'llvm'), PATH: '' });
+    const found = findLlvmTools({ WEBOS_LLVM_DIR: join(dir, 'llvm'), PATH: '' });
 
     expect(Object.values(found)).toEqual(tools.map((tool) => join(dir, 'llvm', tool)));
   });

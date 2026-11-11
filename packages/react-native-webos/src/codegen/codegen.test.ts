@@ -25,7 +25,7 @@ function reactNativeDir(): string {
 }
 
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'rn-tizen-codegen-'));
+  dir = mkdtempSync(join(tmpdir(), 'rn-webos-codegen-'));
 });
 
 afterEach(() => {

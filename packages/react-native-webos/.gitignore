@@ -6,7 +6,7 @@ build/
 *.tgz
 *.log
 
-/example/tizen/
+/example/webos/
 .expo/
 .cache/
 compile_commands.json

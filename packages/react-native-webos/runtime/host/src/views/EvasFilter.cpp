@@ -7,7 +7,7 @@
 #include <format>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -59,4 +59,4 @@ void setEvasFilterNumber(Evas_Object *object, std::string_view name, int value) 
   api().dataSet(object, key.c_str(), expression.c_str(), EINA_TRUE);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

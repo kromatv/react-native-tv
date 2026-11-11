@@ -2,7 +2,7 @@
 
 #include "PlatformModuleRegistry.h"
 
-namespace rntizen {
+namespace rnwebos {
 
 DeviceEventManagerModule::DeviceEventManagerModule(
     std::shared_ptr<facebook::react::CallInvoker> jsInvoker,
@@ -13,6 +13,6 @@ void DeviceEventManagerModule::invokeDefaultBackPressHandler(facebook::jsi::Runt
   exitApp_();
 }
 
-RN_TIZEN_PLATFORM_MODULE("DeviceEventManager", DeviceEventManagerModule);
+RN_WEBOS_PLATFORM_MODULE("DeviceEventManager", DeviceEventManagerModule);
 
-} // namespace rntizen
+} // namespace rnwebos

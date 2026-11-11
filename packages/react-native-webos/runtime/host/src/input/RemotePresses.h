@@ -9,7 +9,7 @@
 #include <string_view>
 #include <unordered_map>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// One thing the remote did, as react-native-tvos reports it on tvOS: a press
 /// is `eventType` with `keyAction` 1, at its release; a hold is `long<Type>`
@@ -21,7 +21,7 @@ struct RemoteEvent {
 };
 
 /// Turns key downs and ups into RemoteEvents, and tracks the keys held down
-/// (docs/reference/tizen-input.md, section 12). It never reports the TV's
+/// (docs/reference/webos-input.md, section 12). It never reports the TV's
 /// repeats of a held key. Every key goes to the key filter first, when there
 /// is one: a key the filter uses, down or up, is never a RemoteEvent, and a
 /// release it uses ends the press it would have finished. Main thread only: a
@@ -66,4 +66,4 @@ class RemotePresses final {
   std::unordered_map<unsigned int, Press> presses_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

@@ -14,8 +14,8 @@ vi.mock('./cmake.ts', () => ({ buildCMakeProject: vi.fn() }));
 let cache: string;
 
 beforeEach(() => {
-  cache = mkdtempSync(join(tmpdir(), 'rn-tizen-hermes-'));
-  vi.stubEnv('RN_TIZEN_CACHE_DIR', cache);
+  cache = mkdtempSync(join(tmpdir(), 'rn-webos-hermes-'));
+  vi.stubEnv('RN_WEBOS_CACHE_DIR', cache);
 });
 
 afterEach(() => {

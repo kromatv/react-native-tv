@@ -6,7 +6,7 @@
 #include <filesystem>
 #include <system_error>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -26,7 +26,7 @@ std::string privateTemporaryDirectory() {
   std::error_code error;
   const auto temporary = std::filesystem::temp_directory_path(error);
   if (error) return {};
-  auto pattern = (temporary / "rn-tizen-XXXXXX").string();
+  auto pattern = (temporary / "rn-webos-XXXXXX").string();
   if (mkdtemp(pattern.data()) == nullptr) return {};
   return withTrailingSlash(std::move(pattern));
 }
@@ -64,4 +64,4 @@ std::string fileUri(const std::string &path) {
   return "file://" + path;
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

@@ -3,13 +3,13 @@ import { join } from 'node:path';
 import { z } from 'zod';
 import { RUNTIME_DIR } from '../package-paths.ts';
 
-/** Where the runtime keeps the Tizen implementations it ships for other packages. */
+/** Where the runtime keeps the webOS implementations it ships for other packages. */
 export const BUNDLED_IMPLEMENTATIONS_DIR = join(RUNTIME_DIR, 'host', 'src');
 
 const manifestSchema = z.object({ package: z.string().min(1) });
 
 /**
- * The Tizen implementations this package ships for packages that have none of
+ * The webOS implementations this package ships for packages that have none of
  * their own, by npm name: every directory of `runtime/host/src` holding a
  * `library.json` that names the package, beside the CMakeLists.txt that builds
  * it. Returns each CMakeLists.txt.

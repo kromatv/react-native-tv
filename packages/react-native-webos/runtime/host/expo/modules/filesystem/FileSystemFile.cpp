@@ -9,7 +9,7 @@
 #include <fstream>
 #include <map>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace fs = std::filesystem;
 
@@ -157,4 +157,4 @@ ClassDefinition<FileSystemFile> fileClass() {
       .property("uri", [](const File &file) { return file.uri(); });
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

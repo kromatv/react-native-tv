@@ -4,7 +4,7 @@
 
 #include <FBReactNativeSpec/FBReactNativeSpecJSI.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// `AppState`: `active` in the foreground, `background` once the TV pauses the
 /// app. The host emits `appStateDidChange` when that flips.
@@ -26,4 +26,4 @@ class AppStateModule final : public facebook::react::NativeAppStateCxxSpec<AppSt
   std::shared_ptr<std::atomic<bool>> isActive_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

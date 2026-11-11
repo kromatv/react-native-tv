@@ -5,7 +5,7 @@
 
 #include <ReactCommon/TurboModule.h>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -31,6 +31,6 @@ class ExpoModulesCoreModule final : public facebook::react::TurboModule {
 
 } // namespace
 
-RN_TIZEN_PLATFORM_MODULE("ExpoModulesCore", ExpoModulesCoreModule);
+RN_WEBOS_PLATFORM_MODULE("ExpoModulesCore", ExpoModulesCoreModule);
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

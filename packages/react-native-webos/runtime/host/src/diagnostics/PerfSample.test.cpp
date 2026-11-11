@@ -5,7 +5,7 @@
 
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 TEST_CASE("perfLine lists the components that cost the most mount time first") {
   PerfSample sample;
@@ -38,4 +38,4 @@ TEST_CASE("perfLine carries the process's memory when it was read, and leaves it
   CHECK(unread.count("pssMb") == 0);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

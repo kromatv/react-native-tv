@@ -7,7 +7,7 @@
 #include <mutex>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -89,4 +89,4 @@ void pauseMediaSessionsForBackground(bool mediaCategoryDeclared) {
           kept));
 }
 
-} // namespace rntizen
+} // namespace rnwebos

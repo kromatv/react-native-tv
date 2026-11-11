@@ -5,7 +5,7 @@
 #include <utility>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// Where a `ws://` or `wss://` URL points: the `http(s)://host:port/` libcurl
 /// connects to, the `host[:port]` of the `Host` header (the port only when the
@@ -46,4 +46,4 @@ std::string checkWebSocketHandshake(
     std::string_view key,
     const std::vector<std::string> &protocols);
 
-} // namespace rntizen
+} // namespace rnwebos

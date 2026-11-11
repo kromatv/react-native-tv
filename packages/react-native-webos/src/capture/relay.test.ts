@@ -23,7 +23,7 @@ afterEach(async () => {
 });
 
 describe('captureThroughRelay', () => {
-  it('returns the frame the rn-tizen holding the port relays', async () => {
+  it('returns the frame the rn-webos holding the port relays', async () => {
     const pixels = Buffer.alloc(8, 7);
     const port = await relay((socket) =>
       socket.end(encodeFrame(0, { width: 1, height: 2, stride: 4, pixels })),

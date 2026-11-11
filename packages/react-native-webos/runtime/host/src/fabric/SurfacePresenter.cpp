@@ -8,7 +8,7 @@
 
 #include <react/renderer/scheduler/SchedulerToolbox.h>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -183,4 +183,4 @@ void SurfacePresenter::schedulerDidSetViewSnapshot(facebook::react::Tag, faceboo
 
 void SurfacePresenter::schedulerDidClearPendingSnapshots() {}
 
-} // namespace rntizen
+} // namespace rnwebos

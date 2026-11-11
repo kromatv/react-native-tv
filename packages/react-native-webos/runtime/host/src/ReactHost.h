@@ -26,7 +26,7 @@
 #include <memory>
 #include <string>
 
-namespace rntizen {
+namespace rnwebos {
 
 class DevSupport;
 
@@ -122,4 +122,4 @@ class ReactHost final {
   std::shared_ptr<DevSupport> devSupport_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

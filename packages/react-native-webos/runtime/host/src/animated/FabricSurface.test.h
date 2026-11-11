@@ -20,7 +20,7 @@
 #include <memory>
 #include <string>
 
-namespace rntizen::testing {
+namespace rnwebos::testing {
 
 /// Fabric on a Hermes runtime with one empty surface, mounted by a
 /// MountingManager on a buffer canvas as soon as JavaScript commits through
@@ -158,4 +158,4 @@ class FabricSurface final : public facebook::react::SchedulerDelegate {
   facebook::react::SurfaceHandler surface_;
 };
 
-} // namespace rntizen::testing
+} // namespace rnwebos::testing

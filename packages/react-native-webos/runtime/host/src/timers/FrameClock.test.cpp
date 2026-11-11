@@ -7,7 +7,7 @@
 #include <memory>
 #include <stdexcept>
 
-namespace rntizen {
+namespace rnwebos {
 
 TEST_CASE("a frame that throws is logged and the clock keeps ticking") {
   std::atomic<int> frames{0};
@@ -42,4 +42,4 @@ TEST_CASE("a closed clock never calls its frame again") {
   CHECK(frames == 0);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

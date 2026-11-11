@@ -14,7 +14,7 @@ interface GeneratedSpecs {
  * the TurboModule bases (`FBReactNativeSpec/FBReactNativeSpecJSI.h`) and the core
  * components' props, events, states, shadow nodes and descriptors, at the include
  * paths ReactCommon expects. The schema is Android's, because the JavaScript a
- * Tizen bundle runs falls back to the Android sources.
+ * webOS bundle runs falls back to the Android sources.
  */
 export async function generateReactNativeSpecs(
   reactNativeDir: string,

@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <stdexcept>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -71,4 +71,4 @@ std::string decodeBase64(std::string_view text) {
   return decoded;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

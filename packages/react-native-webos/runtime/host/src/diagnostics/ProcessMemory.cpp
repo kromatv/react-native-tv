@@ -4,7 +4,7 @@
 #include <fstream>
 #include <sstream>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -58,4 +58,4 @@ ProcessMemory readProcessMemory(const std::string &procSelf) {
   return {};
 }
 
-} // namespace rntizen
+} // namespace rnwebos

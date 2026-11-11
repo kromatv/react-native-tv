@@ -27,7 +27,7 @@ const fakeCodegen: Codegen = {
 };
 
 beforeEach(() => {
-  output = mkdtempSync(join(tmpdir(), 'rn-tizen-specs-'));
+  output = mkdtempSync(join(tmpdir(), 'rn-webos-specs-'));
   written.length = 0;
 });
 
@@ -62,7 +62,7 @@ describe('generateLibrarySpecs', () => {
         '#include <fabric/ComponentDescriptorRegistry.h>',
         '#include <react/renderer/components/rnsvg/ComponentDescriptors.h>',
         '',
-        'RN_TIZEN_COMPONENT_DESCRIPTOR(facebook::react::RNSVGSvgViewComponentDescriptor);',
+        'RN_WEBOS_COMPONENT_DESCRIPTOR(facebook::react::RNSVGSvgViewComponentDescriptor);',
         '',
       ].join('\n'),
     );

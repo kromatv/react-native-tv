@@ -8,7 +8,7 @@
 #include <memory>
 #include <unordered_map>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// A text field that can take the keyboard.
 class KeyboardClient : public ImeClient {
@@ -61,4 +61,4 @@ class KeyboardFocus final {
   std::unordered_map<unsigned int, Taker> takenKeys_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

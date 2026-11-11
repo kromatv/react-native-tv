@@ -4,7 +4,7 @@
 
 #include <vector>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 /// `globalThis.expo.modules`: each property is an Expo module from the
 /// ExpoModuleRegistry, built on first read and kept for the runtime's life.
@@ -18,4 +18,4 @@ class ExpoModulesHostObject final : public facebook::jsi::HostObject {
   std::vector<facebook::jsi::PropNameID> getPropertyNames(facebook::jsi::Runtime &runtime) override;
 };
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 using facebook::jsi::String;
 using testing::call;
@@ -35,4 +35,4 @@ TEST_CASE("AppState answers whether the app is in the foreground, at start and w
   CHECK(call(rt, module, "removeListeners", 1).isUndefined());
 }
 
-} // namespace rntizen
+} // namespace rnwebos

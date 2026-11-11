@@ -9,7 +9,7 @@
 #include <string>
 #include <thread>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -85,7 +85,7 @@ TEST_CASE("a GET reaches the server without the body JavaScript gave it") {
   CHECK(seen.find("Content-Length") == std::string::npos);
   CHECK(seen.find("ignored") == std::string::npos);
   CHECK(seen.find("X-Test: yes\r\n") != std::string::npos);
-  CHECK(seen.find("User-Agent: react-native-tizen\r\n") != std::string::npos);
+  CHECK(seen.find("User-Agent: react-native-webos\r\n") != std::string::npos);
   CHECK(outcome.status == 200);
   CHECK(outcome.body == "ok");
   CHECK(outcome.error.empty());
@@ -166,4 +166,4 @@ TEST_CASE("an engine destroyed with requests in flight stops without answering t
   CHECK_FALSE(answered);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

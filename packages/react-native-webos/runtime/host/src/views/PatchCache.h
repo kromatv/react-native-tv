@@ -7,7 +7,7 @@
 #include <map>
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// What a patch is painted from: its kind first, then every value its pixels
 /// depend on.
@@ -66,4 +66,4 @@ const NinePatch &cachedPatch(const PatchKey &key, Paint paint) {
   return cache.insert(key, paint());
 }
 
-} // namespace rntizen
+} // namespace rnwebos

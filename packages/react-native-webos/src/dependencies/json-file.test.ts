@@ -11,7 +11,7 @@ afterEach(() => {
 });
 
 function file(text: string): string {
-  const dir = mkdtempSync(join(tmpdir(), 'rn-tizen-json-'));
+  const dir = mkdtempSync(join(tmpdir(), 'rn-webos-json-'));
   dirs.push(dir);
   writeFileSync(join(dir, 'package.json'), text);
   return join(dir, 'package.json');

@@ -5,7 +5,7 @@
 
 #include <array>
 
-namespace rntizen {
+namespace rnwebos {
 
 using facebook::react::Float;
 using facebook::react::Transform;
@@ -60,4 +60,4 @@ PixelPoint ViewTransform::mapPoint(PixelPoint point, const PixelRect &box, Float
   return transformedPoint(matrix_, point, box, scale);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

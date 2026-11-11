@@ -4,7 +4,7 @@
 
 #include <format>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -71,4 +71,4 @@ void LoadingBanner::hide() {
   evas_object_hide(background_);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

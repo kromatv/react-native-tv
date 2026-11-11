@@ -12,14 +12,14 @@
 #include <react/runtime/JSRuntimeBindings.h>
 #include <react/runtime/hermes/HermesInstance.h>
 
-#if RN_TIZEN_EXPO
+#if RN_WEBOS_EXPO
 #include "../expo/ExpoRuntime.h"
 #endif
 
 #include <format>
 #include <sstream>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -132,7 +132,7 @@ void ReactHost::createInstance() {
       log(javaScriptLogLevel(level), message);
     });
     bindHasComponentProvider(runtime, [](const std::string &name) { return hasComponent(name); });
-#if RN_TIZEN_EXPO
+#if RN_WEBOS_EXPO
     expo::installExpoRuntime(runtime);
 #endif
   });
@@ -171,4 +171,4 @@ void ReactHost::showFatalError(const ErrorReport &report) {
   overlays_.errorScreen->show(report, device_.screenWidth, device_.screenHeight);
 }
 
-} // namespace rntizen
+} // namespace rnwebos

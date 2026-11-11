@@ -7,7 +7,7 @@
 #include <mutex>
 #include <set>
 
-namespace rntizen {
+namespace rnwebos {
 
 /// Every WebSocket the app has open, by the id JavaScript numbered it with.
 /// `WebSocketModule` opens and forgets them; `BlobModule` sends blobs on them
@@ -33,4 +33,4 @@ class WebSocketSockets final {
   std::set<int> blobSockets_;
 };
 
-} // namespace rntizen
+} // namespace rnwebos

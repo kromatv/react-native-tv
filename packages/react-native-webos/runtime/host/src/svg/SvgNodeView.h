@@ -6,7 +6,7 @@
 #include <memory>
 #include <span>
 
-namespace rntizen::svg {
+namespace rnwebos::svg {
 
 class SvgView;
 
@@ -48,4 +48,4 @@ class SvgNodeView : public ComponentView {
 /// a gradient, anything not drawn in place) is skipped with its subtree.
 void drawChildren(std::span<ComponentView *const> children, Drawing &drawing, const DrawContext &context);
 
-} // namespace rntizen::svg
+} // namespace rnwebos::svg

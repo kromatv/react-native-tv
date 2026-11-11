@@ -5,7 +5,7 @@
 #include <string>
 #include <utility>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -13,7 +13,7 @@ constexpr double kHoldDelaySeconds = 0.3;
 
 // A repeating remote re-sends a held key well within a second, so a key still
 // down after a second of silence lost its release: a Samsung long press can
-// turn into another key (docs/reference/tizen-input.md, section 7).
+// turn into another key (docs/reference/webos-input.md, section 7).
 constexpr unsigned int kLostReleaseMs = 1000;
 
 } // namespace
@@ -85,4 +85,4 @@ Eina_Bool RemotePresses::onHoldStarted(void *data) {
   return ECORE_CALLBACK_CANCEL;
 }
 
-} // namespace rntizen
+} // namespace rnwebos

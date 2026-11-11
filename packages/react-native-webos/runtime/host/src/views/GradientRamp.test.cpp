@@ -4,7 +4,7 @@
 
 #include <vector>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -93,4 +93,4 @@ TEST_CASE("GradientRamp without a color is empty") {
   CHECK_FALSE(GradientRamp({stop(kRed)}, 100, 1).empty());
 }
 
-} // namespace rntizen
+} // namespace rnwebos

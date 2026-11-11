@@ -9,7 +9,7 @@
 #include <string>
 #include <thread>
 
-namespace rntizen {
+namespace rnwebos {
 
 namespace {
 
@@ -101,4 +101,4 @@ TEST_CASE("a sink nothing hears keeps its last 200 lines and counts the rest") {
   CHECK(oldestKept.second == "line 100");
 }
 
-} // namespace rntizen
+} // namespace rnwebos

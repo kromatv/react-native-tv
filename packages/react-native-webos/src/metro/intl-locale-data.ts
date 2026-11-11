@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-/** The module the Tizen Babel transformer fills with a bundle's Intl polyfills and locale data. */
+/** The module the webOS Babel transformer fills with a bundle's Intl polyfills and locale data. */
 export const INTL_LOCALE_DATA_MODULE = 'react-native-overrides/intl/locale-data.ts';
 
 /** The services FormatJS adds on top of Hermes' own Intl, each after those it needs. */
@@ -14,7 +14,7 @@ export const INTL_POLYFILLS = [
 /** The default when an app names no locales. */
 export const DEFAULT_INTL_LOCALES = ['en'] as const;
 
-/** The locales `RN_TIZEN_INTL_LOCALES` names, comma separated. */
+/** The locales `RN_WEBOS_INTL_LOCALES` names, comma separated. */
 export function parseIntlLocales(value: string | undefined): string[] {
   return (value ?? '')
     .split(',')

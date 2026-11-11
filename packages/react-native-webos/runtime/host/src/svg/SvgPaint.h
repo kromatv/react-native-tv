@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-namespace rntizen::svg {
+namespace rnwebos::svg {
 
 /// A color with straight (not premultiplied) components from 0 to 1.
 struct Rgba {
@@ -83,4 +83,4 @@ std::optional<Rgba> rgbaFromColor(const facebook::react::SharedColor &color);
 /// A packed `0xAARRGGBB` color, as React Native processes one.
 Rgba rgbaFromArgb(std::uint32_t argb);
 
-} // namespace rntizen::svg
+} // namespace rnwebos::svg

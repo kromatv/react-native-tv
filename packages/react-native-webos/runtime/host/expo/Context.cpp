@@ -10,7 +10,7 @@
 #include <EventEmitter.h>
 #include <NativeModule.h>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -103,4 +103,4 @@ void Module::sendEvent(const std::shared_ptr<SharedObject> &object, const std::s
   context_->emit(object, event, dynamicPayload(std::move(payload)));
 }
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

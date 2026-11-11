@@ -27,12 +27,12 @@ describe('formatSize', () => {
 
 describe('formatPath', () => {
   it('prints a path inside the working directory relative to it', () => {
-    expect(formatPath('/app/tizen/build/app.tpk', '/app')).toBe('tizen/build/app.tpk');
+    expect(formatPath('/app/webos/build/app.tpk', '/app')).toBe('webos/build/app.tpk');
   });
 
   it('prints a path outside the working directory as it is', () => {
-    expect(formatPath('/tmp/bundle/index.tizen.hbc', '/app/example')).toBe(
-      '/tmp/bundle/index.tizen.hbc',
+    expect(formatPath('/tmp/bundle/index.webos.hbc', '/app/example')).toBe(
+      '/tmp/bundle/index.webos.hbc',
     );
   });
 });

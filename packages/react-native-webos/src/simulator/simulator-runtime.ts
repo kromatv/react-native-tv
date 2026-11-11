@@ -30,7 +30,7 @@ export function appRuntimeKey(app: AppProject): string {
     name: library.name,
     version: library.version,
     dir: realpathSync(library.dir),
-    implementation: library.declaredTizenCMake ?? bundled.get(library.name) ?? null,
+    implementation: library.declaredWebOSCMake ?? bundled.get(library.name) ?? null,
   }));
   const runtime = { name: 'runtime', version: '', dir: RUNTIME_DIR };
   const packages = [runtime, reactNative, expoModulesCore, expoModulesJsi].map((pkg) => ({
@@ -41,7 +41,7 @@ export function appRuntimeKey(app: AppProject): string {
 }
 
 /**
- * Builds `libreact-native-tizen.so` and the launcher for the simulator from
+ * Builds `libreact-native-webos.so` and the launcher for the simulator from
  * this package's runtime/, against the app's react-native and with its native
  * libraries, in the build those libraries key, and returns the key.
  * Incremental. Apps with the same libraries share the build, so this waits
@@ -68,13 +68,13 @@ export async function buildSimulatorRuntime(
   );
   task.progress('compiling');
   const env = {
-    RN_TIZEN_SIMULATOR_RUNTIME: key,
-    RN_TIZEN_CACHE_DIR: cacheDir(),
+    RN_WEBOS_SIMULATOR_RUNTIME: key,
+    RN_WEBOS_CACHE_DIR: cacheDir(),
     REACT_NATIVE_DIR: realpathSync(reactNative.dir),
-    RN_TIZEN_CODEGEN_DIR: codegen,
+    RN_WEBOS_CODEGEN_DIR: codegen,
     EXPO_MODULES_CORE_DIR: realpathSync(expoModulesCore.dir),
     EXPO_MODULES_JSI_DIR: realpathSync(expoModulesJsi.dir),
-    RN_TIZEN_LIBRARIES_FILE: nativeLibraries.file,
+    RN_WEBOS_LIBRARIES_FILE: nativeLibraries.file,
   };
   await runGuest(task, ['bash', guestScript('build')], env, (line) => {
     if (line === BUILD_WAIT_LINE) {

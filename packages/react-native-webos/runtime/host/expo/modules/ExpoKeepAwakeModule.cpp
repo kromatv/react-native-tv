@@ -8,7 +8,7 @@
 
 #include <set>
 
-namespace rntizen::expo {
+namespace rnwebos::expo {
 
 namespace {
 
@@ -59,6 +59,6 @@ class ExpoKeepAwakeModule final : public Module {
 
 } // namespace
 
-RN_TIZEN_EXPO_MODULE(ExpoKeepAwake, ExpoKeepAwakeModule);
+RN_WEBOS_EXPO_MODULE(ExpoKeepAwake, ExpoKeepAwakeModule);
 
-} // namespace rntizen::expo
+} // namespace rnwebos::expo

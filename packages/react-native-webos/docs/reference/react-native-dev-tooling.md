@@ -33,10 +33,10 @@ Line numbers are pinned to these builds, read on 2026-11-03:
 | Android asks for `<server>/<module>.bundle?platform=android&dev=true&lazy=true&minify=false&app=<package>&modulesOnly=false&runModule=true` | doc: `RA/devsupport/DevServerHelper.kt:265-298` |
 | Expo's Android host names the module `.expo/.virtual-metro-entry`; Expo's Metro rewrites that path to the app's entry for whatever `platform` the URL names, and adds `transform.engine=hermes` only for `android` and `ios` | doc: `EXPO/expo/android/src/main/java/expo/modules/ExpoReactHostFactory.kt:100`, `EXPO/@expo/metro-config/build/rewriteRequestUrl.js:126-185` |
 | JavaScript finds the dev server from `SourceCode.scriptURL`: the URL's origin is the server, the whole URL the bundle HMR registers | doc: `RN/Libraries/Core/Devtools/getDevServer.js:28-40` |
-| `npx expo start` serves a `platform=tizen` bundle through `withTizen` | sim, 2026-11-03: `tizen Bundled 1876ms example/main.ts (736 modules)` |
+| `npx expo start` serves a `platform=webos` bundle through `withWebOS` | sim, 2026-11-03: `webos Bundled 1876ms example/main.ts (736 modules)` |
 
-So a Tizen build needs one URL: rn-tizen writes
-`http://<host>:<port>/.expo/.virtual-metro-entry.bundle?platform=tizen&dev=true&lazy=true&minify=false&app=<package id>&modulesOnly=false&runModule=true&excludeSource=true&sourcePaths=url-server&transform.engine=hermes&unstable_transformProfile=hermes-stable` (the `excludeSource` pair for DevTools, section 9)
+So a webOS build needs one URL: rn-webos writes
+`http://<host>:<port>/.expo/.virtual-metro-entry.bundle?platform=webos&dev=true&lazy=true&minify=false&app=<package id>&modulesOnly=false&runModule=true&excludeSource=true&sourcePaths=url-server&transform.engine=hermes&unstable_transformProfile=hermes-stable` (the `excludeSource` pair for DevTools, section 9)
 into `bundleUrl` (`src/package/dev-server-bundle.ts`), `<host>:<port>` being the
 `--dev-server` origin with a loopback host replaced by one the TV reaches, and
 the host derives every other endpoint from it (`devsupport/DevServer.cpp`).
@@ -53,7 +53,7 @@ the host derives every other endpoint from it (`devsupport/DevServer.cpp`).
 
 Host: `devsupport/PackagerConnection.cpp`. sim, 2026-11-03: `r` printed
 "Reloading apps" and the app fetched the bundle again in the same process; the
-socket reconnected within 2 s of the server restarting. Tizen has no developer
+socket reconnected within 2 s of the server restarting. webOS has no developer
 menu yet: `devMenu` logs a line pointing at `r` and `j`.
 
 ## 3. HMR and Fast Refresh
@@ -84,7 +84,7 @@ values.
 So the host needs nothing beyond `bindNativeLogger` and the HMR setup. sim,
 2026-11-03: `console.log` and `console.warn` from the TV printed in `expo
 start`'s terminal as they do for an Android device. Native log lines and
-native crashes never reach Metro: they travel over rn-tizen's log stream only.
+native crashes never reach Metro: they travel over rn-webos's log stream only.
 
 ## 5. DevSettings
 
@@ -115,7 +115,7 @@ destroys the shadow tree, whose destructor revokes the mounting coordinator
 `RC/renderer/mounting/ShadowTree.cpp:263-265,622-635`,
 `RC/renderer/scheduler/Scheduler.cpp:291-313`). iOS mounts a commit made on
 the main thread inline (doc: `RN/React/Fabric/Mounting/RCTMountingManager.mm:187-202`);
-Tizen's `SurfacePresenter` queues every mount, so it mounts the stopping
+webOS's `SurfacePresenter` queues every mount, so it mounts the stopping
 overlay's last transaction inline or its views would outlive their root.
 
 Host: `devsupport/LogBoxModule.cpp`, `SurfacePresenter::startOverlaySurface`.
@@ -123,7 +123,7 @@ sim, 2026-11-03: a thrown render error showed the red inspector, symbolicated
 to `app.tsx:70:42`, and printed in `expo start`'s terminal; Back minimized it;
 fixing the code brought the app back. A `console.warn` showed the yellow box.
 
-Open: the inspector's buttons need focus, which Tizen does not move between
+Open: the inspector's buttons need focus, which webOS does not move between
 views yet, so Back is the only way to dismiss it; and a `Modal` open when an
 error arrives draws above the inspector, since modals sit on a higher Evas
 layer than any surface.
@@ -146,7 +146,7 @@ Host: `devsupport/LoadingBanner.cpp`, `devsupport/DevLoadingViewModule.cpp`.
 | Reload is a new instance: Android and iOS destroy the instance and start another on the same root view | doc: `RA/devsupport/DevSupportManagerBase.kt:979-985`, `RN/ReactCommon/react/runtime/platform/ios/ReactCommon/RCTInstance.mm:222-250` |
 | `TimerCallback` holds the timer's `jsi::Function`. iOS gives the `TimerManager` to the instance alone, whose members free it before the runtime | doc: `RC/runtime/TimerManager.h:27-40`, `RN/ReactCommon/react/runtime/platform/ios/ReactCommon/RCTInstance.mm:311-333`, `RC/runtime/ReactInstance.h:87-97` |
 
-The Tizen host kept its own reference to the `TimerManager`, so on reload the
+The webOS host kept its own reference to the `TimerManager`, so on reload the
 old one died after its runtime and freed functions of a dead heap (sim,
 2026-11-03: SIGSEGV in `~unordered_map<int, TimerCallback>` on the second
 reload). It now drops that reference on the JavaScript thread before the
@@ -166,7 +166,7 @@ instance.
 | Android's paused overlay resumes the runtime with `HostCommand::DebuggerResume`, a `Debugger.resume` sent over a private session | doc: `RA/runtime/ReactHostImpl.kt:420-435`, `RN/ReactCommon/jsinspector-modern/HostTarget.cpp:128-157,282-289` |
 | jsinspector-modern turns Fusebox on when compiled with `REACT_NATIVE_DEBUGGER_ENABLED`; React Native's CMake defines it, and `HERMES_ENABLE_DEBUGGER` for the Hermes glue, in a Debug build or with `REACT_NATIVE_DEBUG_OPTIMIZED`, which Android's `debugOptimized` variant passes | doc: `RN/ReactCommon/jsinspector-modern/InspectorFlags.cpp:68-73`, `RN/ReactCommon/jsinspector-modern/CMakeLists.txt`, `RN/ReactCommon/react/runtime/hermes/CMakeLists.txt`, `RN/ReactAndroid/build.gradle.kts:697-703` |
 | Android defines `REACT_NATIVE_DEBUGGER_ENABLED_DEVONLY` for its merged library too, which makes the default TurboModules serve `ReactDevToolsRuntimeSettingsModule` | doc: `RN/ReactAndroid/src/main/jni/CMakeLists.txt:377-381`, `RN/ReactCommon/react/nativemodule/defaults/DefaultTurboModules.cpp:21-23,87-91` |
-| Hermes compiles its CDP agent only with `HERMES_ENABLE_DEBUGGER`, which also turns on memory instrumentation and makes every call check for a pending debugger request | doc: `~/.cache/react-native-tizen/src/hermes-hermes-v260318099.0.4/CMakeLists.txt:233-237,714-716`, `.../API/hermes/CMakeLists.txt:8-50`, `.../lib/VM/Interpreter.cpp:1236-1244` |
+| Hermes compiles its CDP agent only with `HERMES_ENABLE_DEBUGGER`, which also turns on memory instrumentation and makes every call check for a pending debugger request | doc: `~/.cache/react-native-webos/src/hermes-hermes-v260318099.0.4/CMakeLists.txt:233-237,714-716`, `.../API/hermes/CMakeLists.txt:8-50`, `.../lib/VM/Interpreter.cpp:1236-1244` |
 | With DevTools on, Android asks Metro for `excludeSource=true&sourcePaths=url-server`: source maps that name files on the server instead of carrying their text | doc: `RA/devsupport/DevServerHelper.kt:298`, `METRO/lib/parseBundleOptionsFromBundleRequestUrl.js:131-143` |
 | The Components tab reaches React through `__FUSEBOX_REACT_DEVTOOLS_DISPATCHER__` and a runtime binding the frontend adds over CDP | doc: `RN/Libraries/Core/setUpReactDevTools.js:31-140` |
 
@@ -177,7 +177,7 @@ hashes the app, the TV's model and its firmware build (inf: two identical TVs
 on the same firmware running the same app replace each other in the proxy).
 
 Verified in the simulator and on a Samsung GQ75LS03DAUXZG (The Frame 2024,
-armv7, Tizen 9.0), 2026-11-03: the app is listed in `/json/list` with
+armv7, webOS 9.0), 2026-11-03: the app is listed in `/json/list` with
 `nativePageReloads`; `j` printed "Launching DevTools..." and opened React
 Native DevTools on it; a breakpoint in the example's uptime interval paused
 the runtime and DevTools put "Paused in debugger" on the TV; evaluation on the
