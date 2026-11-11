@@ -46,7 +46,8 @@ if(RN_WEBOS_SIMULATOR)
   target_compile_definitions(rn_webos_host PUBLIC RN_WEBOS_SIMULATOR=1)
 endif()
 target_link_libraries(rn_webos_host PUBLIC
-  ${_react_native_roots} rn_webos_skia SDL3::SDL3-static rn_webos_platform Threads::Threads ${CMAKE_DL_LIBS})
+  ${_react_native_roots} rn_webos_skia SDL3::SDL3-static CURL::libcurl rn_webos_platform Threads::Threads
+  ${CMAKE_DL_LIBS})
 
 add_executable(react-native-webos src/main.cpp)
 target_compile_reactnative_options(react-native-webos PRIVATE)
@@ -54,6 +55,9 @@ target_compile_options(react-native-webos PRIVATE -Wno-error)
 target_link_libraries(react-native-webos PRIVATE rn_webos_host)
 rn_webos_link_object_closure(react-native-webos ${_react_native_roots})
 target_link_options(react-native-webos PRIVATE "-Wl,--gc-sections")
+if(NOT RN_WEBOS_SIMULATOR)
+  rn_webos_check_tv_libraries(react-native-webos)
+endif()
 
 if(RN_WEBOS_TESTS)
   file(GLOB_RECURSE _host_test_sources CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.test.cpp")

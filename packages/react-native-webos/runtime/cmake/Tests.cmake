@@ -33,7 +33,7 @@ function(rn_webos_add_host_tests target)
   rn_webos_link_object_closure(${_react_native_archive} ${_tests_ROOTS})
 
   add_executable(${target} EXCLUDE_FROM_ALL ${_tests_SOURCES})
-  target_link_libraries(${target} PRIVATE ${_host_archive} ${_react_native_archive} doctest::doctest_with_main)
+  target_link_libraries(${target} PRIVATE ${_host_archive} ${_react_native_archive} doctest::doctest)
   target_compile_reactnative_options(${target} PRIVATE)
   target_compile_options(${target} PRIVATE -Wno-error)
   target_link_options(${target} PRIVATE "-Wl,--gc-sections")

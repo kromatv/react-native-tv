@@ -11,10 +11,11 @@ export DEBIAN_FRONTEND=noninteractive
 
 # Skia is built with GN (generate-ninja); SDL's X11 backend needs the X
 # headers, and Mesa's llvmpipe stands in for the TV's OpenGL ES driver. ICU is
-# for Hermes' compiler, which runs in the VM; the runtime compiles its own.
+# for Hermes' compiler, which runs in the VM; the runtime compiles its own, and
+# its own libcurl, which links zlib as it does the TV's.
 packages=(
   clang lld cmake ninja-build generate-ninja pkg-config ccache git python3 gdb curl unzip
-  libegl-dev libgles-dev libgl1-mesa-dri libcurl4-openssl-dev libicu-dev
+  libegl-dev libgles-dev libgl1-mesa-dri zlib1g-dev libicu-dev
   libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev libxfixes-dev libxss-dev
   libxtst-dev libxkbcommon-dev
   xvfb matchbox-window-manager xdotool x11-utils imagemagick

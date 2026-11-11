@@ -2,6 +2,7 @@
 
 #include "CurlMethod.h"
 #include "HeaderField.h"
+#include "PackagedRoots.h"
 
 #include <curl/curl.h>
 #include <pthread.h>
@@ -144,6 +145,7 @@ void HttpEngine::begin(HttpRequest request, HttpResponseHandler handler) {
   curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
   curl_easy_setopt(easy, CURLOPT_NOSIGNAL, 1L);
   curl_easy_setopt(easy, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2);
+  trustPackagedRoots(easy);
   curl_easy_setopt(easy, CURLOPT_TIMEOUT_MS, static_cast<long>(transfer->request.timeout.count()));
   curl_easy_setopt(easy, CURLOPT_WRITEFUNCTION, Transfer::appendBody);
   curl_easy_setopt(easy, CURLOPT_WRITEDATA, transfer.get());

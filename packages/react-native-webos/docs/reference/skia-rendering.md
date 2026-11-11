@@ -4,8 +4,9 @@ Whether Skia can replace Evas as the renderer of a React Native host on webOS,
 and how to build it. webOS has no EFL: the brief for this port gives a native app
 a Wayland surface with EGL and OpenGL ES 2 on armv7 SoCs (2016 to 2026 TVs).
 Neither is verified here; the webOS platform reference owns those facts. What the
-renderer must do is listed in [efl-rendering.md](efl-rendering.md). Nothing in
-this file was built or run: section 10 says what the first build has to confirm.
+renderer must do is listed in [efl-rendering.md](efl-rendering.md). The TV build
+of section 4 compiles; nothing in this file was run on a TV, and section 10 says
+what one has to confirm.
 
 | Mark | Meaning |
 | --- | --- |
@@ -80,7 +81,8 @@ What an ES 2.0 context without extensions loses in Ganesh
 | rust-skia's fork trims `DEPS` to brotli, d3d12allocator, expat, freetype, harfbuzz, icu, libjpeg-turbo, libpng, libwebp, vulkanmemoryallocator, spirv-cross, wuffs, zlib and buildtools, and builds GL, Vulkan, D3D, PDF, SVG and text from them | src | `https://github.com/rust-skia/skia/blob/m157.3/DEPS` |
 | For the configuration of section 3 the externals are freetype, harfbuzz, libpng, libjpeg-turbo, libwebp, zlib, wuffs, and expat for SVG. ICU's sources are not needed with `skia_use_system_icu`; `buildtools` is not referenced by Skia's own GN files; partition_alloc is not needed with `skia_use_partition_alloc=false` (no-op headers are in the tree) | inf | each `sk:third_party/<name>/BUILD.gn`; `sk:src/partition_alloc/BUILD.gn#L8-L27`; a search of `*.gn` and `*.gni` for `buildtools` |
 | `bin/fetch-gn` downloads `https://chrome-infra-packages.appspot.com/dl/gn/gn/<os>-<cpu>/+/git_revision:b2afae122eeb6ce09c52d63f67dc53fc517dbdc8`, with `<os>` in `mac`, `linux`, `windows` and `<cpu>` in `amd64`, `arm64`: a zip holding one `gn` binary | src | `sk:bin/fetch-gn#L22-L32` |
-| Those zips are byte-stable. SHA-256: `linux-arm64` `376e1358ded109d955b8eb55ba2a7dec0e95ab1f8dfe0e18011e06eed78a011f`, `mac-arm64` `cbb260f2cf999f7d74da96b3828a061299c6337354dd6db642e778828576025c`, `linux-amd64` `6a3bfc53d825bccac5e5b4b7bdcc10ce9396a04a689ac684ec3308ca5c7f3d9c` | obs | each downloaded, `linux-arm64` twice |
+| Those zips are byte-stable. SHA-256: `linux-arm64` `376e1358ded109d955b8eb55ba2a7dec0e95ab1f8dfe0e18011e06eed78a011f`, `mac-arm64` `cbb260f2cf999f7d74da96b3828a061299c6337354dd6db642e778828576025c`, `linux-amd64` `6a3bfc53d825bccac5e5b4b7bdcc10ce9396a04a689ac684ec3308ca5c7f3d9c`, `mac-amd64` `4bea817159f060980f1ca1d0400ef6cd2e0ab0ade66bb34e91aab9c2cffc9d83` | obs | each downloaded, `linux-arm64` and `mac-arm64` twice, `mac-amd64` once |
+| The `mac-arm64` build generates m157's Ninja files on macOS 27: "Made 111 targets from 57 files" for the arguments of "What this means" | obs | `runtime/cmake/Gn.cmake`, 2026-11-11 |
 | Ubuntu packages GN as `generate-ninja` (universe, arm64 included): 24.04 `0.0~git20240221`, 26.04 `0.0~git20250917`. Whether those parse m157's build files is not tested | doc + unk | `https://packages.ubuntu.com/search?keywords=generate-ninja` |
 
 Where each dependency can be fetched from, by the commit in `sk:DEPS`:
@@ -165,6 +167,10 @@ again by name (`sk:site/docs/user/build.md#L14-L36`). All rows are `src`.
 | `host_cc` and `host_cxx` default to `cc` and `cxx`, and `extra_*` flags do not reach the host toolchain. The configuration of section 3 compiles nothing for the host (no SkSL compiler, no libgrapheme generators) | src + inf | `sk:gn/toolchain/BUILD.gn#L5-L9`, `sk:gn/skia/BUILD.gn#L697-L706`, `sk:gn/skia.gni#L19`, `sk:third_party/libgrapheme/BUILD.gn#L21-L23` |
 | On aarch64 Linux a native build is `target_cpu="arm64"` with `cc="clang" cxx="clang++"`. skia-pack's arm64 Linux build adds only `skia_gl_standard="gles"` and `skia_use_egl=true` | src | `sp:script/build.py#L74-L81` |
 | The simulator VM is Ubuntu 26.04 aarch64 with clang, lld, ninja, python3 and ccache already installed | src | `simulator/lima.yaml:8-11`, `simulator/guest/provision.sh:12-18` |
+| Cross-compiled on macOS for a webOS TV, m157 builds whole: 1364 Ninja steps, no error, with Homebrew clang 23.1.4 against the webOS SDK's glibc 2.12.2 sysroot and GCC 16.2.0 C++ headers. The flags that reach both `extra_cflags` and `extra_asmflags`: `--target=arm-webos-linux-gnueabi`, `--sysroot=`, `--gcc-install-dir=` (where clang finds the C++ headers), `-mcpu=cortex-a9 -mfpu=neon-fp16 -mfloat-abi=softfp` and the instruction set. The 32-bit NEON sources of Skia, libpng, libjpeg-turbo, libwebp and zlib compile with them | obs | `runtime/cmake/toolchain/webos.cmake`, built 2026-11-11, six jobs, under ten minutes on a 12-core Apple silicon Mac |
+| The webOS SDK's `EGL/eglplatform.h` includes Xlib only when `USE_X11` is defined, and the sysroot has no X11 headers: no macro is needed to keep X11 out. `WL_EGL_PLATFORM` selects the Wayland types | src | the SDK's `usr/include/EGL/eglplatform.h` L79-L110 |
+| The zlib Skia bundles calls `getauxval`, glibc 2.16, to find the CPU's CRC32 instructions. The webOS SDK's glibc is 2.12.2, so the runtime supplies it (`runtime/compat/auxv.c`) | obs | link of the TV build; `third_party/externals/zlib/cpu_features.c#L110-L115` |
+| Each complete static library carries its own copy of the third-party objects it depends on: `libsvg.a` holds zlib, libpng and FreeType objects that `libskia.a` holds too. The linker takes each from the first archive on its line and the copies cost nothing in the executable | obs | linker map of the TV build |
 
 ## 5. SkUnicode and ICU
 
@@ -301,8 +307,8 @@ Rejected.
 
 ## 10. Open questions
 
-- Nothing here was compiled. The first build of each target confirms the
-  argument set of section 3 and gives the stripped size.
+- Nothing here was run on a TV. Both targets compile with the argument set of
+  section 3; the TV executable's size is in webos-native-toolchain.md, section 9.
 - The GN build is declared temporary (section 2). Each milestone bump has to
   check that GN still builds, or move to Bazel.
 - Which GL and EGL extensions the oldest target TV has: log `GL_VERSION`,
@@ -312,8 +318,6 @@ Rejected.
   `GL_OES_get_program_binary`, `GL_EXT_texture_format_BGRA8888`,
   `EGL_EXT_buffer_age`, `EGL_KHR_swap_buffers_with_damage`.
 - Whether every target SoC has NEON (`/proc/cpuinfo`), since the build assumes it.
-- The webOS toolchain's triple, float ABI and libstdc++ version (GCC 10 headers
-  at least), and which macro keeps its `eglplatform.h` from including X11.
 - Where webOS keeps its fonts, whether fontconfig is on the TV, and which
   families cover CJK, Arabic, Thai and emoji.
 - How much GPU memory an app may use, hence the resource cache limit.

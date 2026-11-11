@@ -10,13 +10,15 @@ Tags: **D** documented (a page, README or source file opened on 2026-11-11 and
 linked), **Xw** inspected (toolchain release webosbrew/native-toolchain
 `webos-d7ed7ee.6`, darwin-arm64 asset), **Xo** inspected (toolchain release
 openlgtv/buildroot-nc4 `2026.08-webos`, aarch64 asset), **I** inferred (from
-what the row says).
+what the row says), **B** built (the runtime's TV build of section 9: compiled
+and linked against Xo on macOS 27 arm64 with Homebrew clang and lld 23.1.4 on
+2026-11-11, then read with `scripts/check-tv-binary.ts` and `llvm-readelf`).
 
 "Inspected" means read with `llvm-readelf`, `llvm-nm` and `llvm-strings` from
 Homebrew LLVM 23.1.4, and, where a row says "link test", compiled and linked on
 macOS arm64 with Homebrew clang 23.1.4 and `ld.lld` 23.1.4. Nothing from either
-archive was executed and no produced binary was run. **Nothing in this file is
-verified on a TV.**
+archive was executed and no produced binary was run, the runtime of section 9
+included. **Nothing in this file is verified on a TV.**
 
 Rows citing [fw] come from webosbrew's firmware symbol data: 14 firmware
 images covering webOS 1.2.0 to 11.2.0, each from one SoC. They describe those
@@ -178,6 +180,10 @@ libstdc++ file versions map to GCC releases per [gcc-abi].
 | The jail maps `/bin`, `/lib` and `/usr/lib` "among them", read only. Whether it maps `/etc/ssl` is not documented. | D | [brew-vocab] |
 | `libmbedtls` is on the 11.2.0 image only. | D | [fw] |
 | curl publishes Mozilla's root certificates as one PEM file per extraction date, `https://curl.se/ca/cacert-<date>.pem`, with its digest at the same address plus `.sha256`. The file "is only a converted version of the original one and thus it is licensed under the same license as the Mozilla source file: MPL 2.0". `cacert-2026-11-05.pem` is 200,116 bytes, 118 certificates, sha256 `427c064216761a1e72a8b30f0d954d08cb6e4435a82091fb865afd20c8497285` (downloaded; equals the published digest). | D | [curl-ca] |
+| curl 8.23.0 (2026-10-14) builds with "mbedTLS 3.2.0 or greater"; Mbed TLS 3.6.7 (2026-07-07) is the newest release of its 3.6 long-time support branch. `curl-8.23.0.tar.xz` is sha256 `8dadd7d2536a314f982ad05a651b713f426bf7d02cc2c76cffb9796f2218e6c5` (the copy on curl.se hashes the same) and `mbedtls-3.6.7.tar.bz2` `a7e8bcbec0e6f761b4af24f25677626b35f762f68eef79c08677a363212d11f6` (equals the release's `sha256sum.txt`). | D | [curl] `CMakeLists.txt` L875-L879; [mbedtls] `BRANCHES.md`; the two projects' GitHub releases, downloaded 2026-11-11 |
+| "mbedTLS can be used safely in a multi-threaded environment provided that mbedTLS is compiled with MBEDTLS_THREADING_C enabled." Its default configuration leaves that off, and has the server side, DTLS and a key store in files on. | D | [curl] `docs/libcurl/libcurl-thread.md`; [mbedtls] `include/mbedtls/mbedtls_config.h` |
+| Mbed TLS takes entropy from the `getrandom` system call only when `SYS_getrandom` is defined, and reads `/dev/urandom` when it is not, or when the call answers `ENOSYS`. `MBEDTLS_ENTROPY_HARDWARE_ALT` adds a source the application defines, `mbedtls_hardware_poll`, and `MBEDTLS_NO_PLATFORM_ENTROPY` removes the built-in one. curl seeds its generator from that and turns prediction resistance on: "Entropy is gathered before each mbedtls_ctr_drbg_random() call". | D | [mbedtls] `library/entropy_poll.c` L81-L95, L150-L185, `include/mbedtls/mbedtls_config.h` L531-L543, L1201-L1223; [curl] `lib/vtls/mbedtls.c` L1594-L1625 |
+| curl's CMake looks for a CA bundle on the build machine unless it cross-compiles; `CURL_CA_BUNDLE=none` turns that off and a path becomes the compiled-in default. With Mbed TLS as the only backend, HTTP and HTTPS as the only protocols and zlib, it reports the features `AsynchDNS HTTPS-proxy IPv6 Largefile libz SSL threadsafe`. | D, B | [curl] `CMakeLists.txt` L1408-L1470; configure log |
 
 ## 8. Debugging and logs in Developer Mode
 
@@ -193,16 +199,88 @@ libstdc++ file versions map to GCC releases per [gcc-abi].
 | The Developer Mode app ships a `gdbserver` "old enough to be barely worth using". Xo ships `arm-webos-linux-gnueabi/debug-root/usr/bin/gdbserver` (GDB 16.3, needs `libatomic.so.1`, which the 1.x and 4.x images lack) and a Linux-host `bin/arm-webos-linux-gnueabi-gdb`; Xw ships neither. GDB's sysroot should be a copy of that TV's own `/lib` and `/usr/lib`. | D, Xo, Xw | [brew-gdb]; archives; [fw] |
 | The jail gives the app a private root, a non-root user, `/media/developer` writable as `HOME`; the app lives in `/media/developer/apps/usr/palm/applications/<appid>`. | D | [brew-vocab], [brew-fs] |
 
+## 9. The runtime, built for a TV
+
+The whole runtime (Hermes, folly, React Native 0.88, ICU 78.3, Skia m157 with
+the libraries it bundles, SDL 3.4.16-webos.5, curl 8.23.0, Mbed TLS 3.6.7 and
+the host) cross-compiled from macOS with the flags of "What this means".
+
+### What the sources ask beyond glibc 2.12.2
+
+| Fact | Tag | Source |
+|---|---|---|
+| Against the sysroot's headers the sources stop in two places. folly's `net/NetOps.cpp` asserts that `::sendmmsg` exists on every Linux (glibc 2.14; `bits/socket.h` declares `recvmmsg` only). Hermes' `lib/Support/OSCompatPosix.cpp` passes `MADV_HUGEPAGE` to `madvise`: glibc's `bits/mman.h` stops at `MADV_HWPOISON`, while the SDK's own kernel header `asm-generic/mman-common.h` has it as 14. | B, Xo | build log; `folly/net/NetOps.cpp` L38-L42, `OSCompatPosix.cpp` L258; `usr/include/bits/socket.h`, `bits/mman.h`, `asm-generic/mman-common.h` |
+| At link one libc symbol is missing: `getauxval` (glibc 2.16), which the zlib inside Skia calls with `AT_HWCAP` and `AT_HWCAP2` to find the CRC32 instructions. The sysroot has `sys/auxv.h`, which declares it, but `libc.so.6` does not export it. | B, Xo | link; Chromium zlib `cpu_features.c` L110-L115; `usr/include/sys/auxv.h` |
+| The SDK's polyfill for it asks the TV's own glibc first (`dlsym(RTLD_NEXT, "getauxval")`), then reads `/proc/self/auxv`, and aborts when neither works. | D | [polyfills] `src/2.16/getauxval.c` |
+| The kernel headers number system calls up to 379 (`finit_module`), so `SYS_getrandom` is not defined. On ARM `getrandom` is 384 and `memfd_create` 385; `sendmmsg`, 374, is in the headers. | Xo, D | `usr/include/asm/unistd.h`, `bits/syscall.h`; [linux-syscalls] |
+| `std::random_device` is constructed by Hermes for every runtime (`GCBase.cpp`, `Runtime.cpp`), by React Native (`react/utils/Uuid.cpp`) and by the host (WebSocket keys, multipart boundaries, blob ids). The one in the SDK's `libstdc++.a` is `random.o`: it defines `_M_init` (two overloads), `_M_fini`, `_M_getval` and `_M_getentropy`, and calls `open64`, `read` and `ioctl`. `cow-string-inst.o` of the same archive calls `_M_init(const char*, size_t)`: a replacement that leaves that overload out brings `random.o` back, and the link fails on duplicate symbols. | B, Xo | linker map; `llvm-nm` on `libstdc++.a`; `ld.lld --why-extract` |
+| So `runtime/compat` holds: `sendmmsg` (2.14), `getauxval` (2.16), `getrandom` and `getentropy` (2.25, for Mbed TLS's entropy source, section 7), the members of `std::random_device` over `getrandom`, and `MADV_HUGEPAGE`. Nothing else of section 2's list is called: the link, `--no-undefined` against glibc 2.12.2, passes. | B | `runtime/compat/` |
+
+### Linking
+
+| Fact | Tag | Source |
+|---|---|---|
+| The SDK's `libatomic.a` is not position independent. Linked into a position-independent executable, lld refuses it: `relocation R_ARM_ABS32 cannot be used against symbol 'libat_have_strexbhd'; recompile with -fPIC`, from `load_n.c`, `store_n.c`, `gstore.c` and `lock.c`. The link test of section 6 passed as a PIE because it used no atomic that needs the library. The runtime needs two functions of it, `__atomic_load` and `__atomic_store`, both for React Native's `ReactNativeFeatureFlagsAccessor.cpp`. | B | link; linker map |
+| The SDK's own executables are fixed-address ones (`ET_EXEC`): `usr/bin/curl`, `usr/bin/sqlite3`, `usr/bin/gst-inspect-1.0`. clang links a PIE by default; `-no-pie` gives what the SDK's GCC gives. | Xo, B | `llvm-readelf -h` |
+| clang warns `argument unused during compilation: '-static-libstdc++'` when it links a C program. CMake has one set of link flags for C and C++, so a configure check that links with `-Werror` fails: SDL's `HAVE_GCC_FVISIBILITY` did, and SDL was then compiled without `-fvisibility=hidden`. | B | `CMakeConfigureLog.yaml` |
+| lld writes only `DT_GNU_HASH` unless told `--hash-style=both`. | B | `llvm-readelf -d` |
+| The result: ELF32 ARM, `ET_EXEC`, `e_flags 0x5000200`, build attributes `7-A`, ARM v7 profile A, Thumb-2, VFPv3, NEONv1, half-precision, no `Tag_ABI_VFP_args`; interpreter `/lib/ld-linux.so.3`; needs `libm.so.6`, `librt.so.1`, `libz.so.1`, `libEGL.so.1`, `libGLESv2.so.2`, `libdl.so.2`, `libpthread.so.0`, `libc.so.6`, `ld-linux.so.3`. | B | `scripts/check-tv-binary.ts`, `llvm-readelf -h -l -d -A` |
+| Its symbol versions: `GLIBC_2.4` for all but five symbols; `GLIBC_2.7` for `eventfd` and `mkostemp64`, `GLIBC_2.9` for `pipe2`, `GLIBC_2.12` for `pthread_setname_np` and `pthread_getname_np`; `ZLIB_1.2.3.4` for `inflateReset2`. No libstdc++ symbol is imported. | B | `scripts/check-tv-binary.ts` |
+
+### SDL's webOS backend, cross-compiled
+
+| Fact | Tag | Source |
+|---|---|---|
+| SDL's Wayland backend needs `wayland-scanner` on the build machine and, through pkg-config, `wayland-client>=1.10`, `wayland-egl`, `wayland-cursor`, `egl` and `xkbcommon>=0.5.0`. The sysroot has them in two directories: `usr/lib/pkgconfig` (`wayland-client`, `wayland-cursor`, `xkbcommon`) and `usr/share/pkgconfig` (`egl`, `glesv2`, `wayland-egl`). | D, Xo | [sdl3] `cmake/sdlchecks.cmake` L643-L673 |
+| The sysroot's Wayland is 1.11.0. The scanner the SDK ships for its Linux host, `bin/wayland-scanner`, is 1.15.0. | Xo | `usr/include/wayland-version.h`, `usr/lib/pkgconfig/wayland-client.pc`; `llvm-strings` on the scanner, `lib/pkgconfig/wayland-scanner.pc` |
+| A scanner from Wayland 1.20 on writes calls to `wl_proxy_marshal_flags`; 1.15 and 1.19 do not. SDL loads that function only when it is compiled against Wayland 1.20 headers. So the scanner must be older than 1.20, whatever a Linux build machine has installed. | D | [wayland] `src/scanner.c` at 1.20.0 L1246, at 1.19.0 and 1.15.0; [sdl3] `src/video/wayland/SDL_waylandsym.h` L83-L90 |
+| Wayland 1.15.0's scanner is two C files, `src/scanner.c` and `src/wayland-util.c`, an empty `config.h`, and expat. It compiles and runs on macOS with the expat Skia pins. | B | `runtime/wayland-scanner/` |
+| On webOS the fork refuses to link Wayland directly: it opens `libwayland-client.so.0`, `libwayland-egl.so`, `libwayland-cursor.so.0` and `libxkbcommon.so.0` (the file names it finds in the sysroot) with `dlopen`, and `libhelpers.so.2` and `libpbnjson_c.so.2` too. None becomes a `DT_NEEDED`. | D, B | [sdl3] `CMakeLists.txt` L1439-L1443, L1893-L1903, `cmake/sdlchecks.cmake` L8-L43, L710-L719; configure log |
+| With `SDL_HIDAPI=OFF` the fork's `src/hidapi/SDL_hidapi.c` does not compile for webOS: `DeleteHIDDeviceWrapper` uses `SDL_HIDAPI_discovery` and `SDL_webOSGetDevicePresenceFlags`, which only exist with HIDAPI on. HIDAPI on needs libudev, whose SONAME changes at webOS 4. | B, D | build log; [sdl3] `src/hidapi/SDL_hidapi.c` L1153-L1158, `CMakeLists.txt` L2002-L2012; section 2 |
+
+### Size
+
+Stripped with `llvm-strip`, for the host as ported on 2026-11-11: images,
+scroll views, text input, SVG, video and the dev tooling are still left out, and
+nothing references Skia's image codecs yet.
+
+| Fact | Tag | Source |
+|---|---|---|
+| The executable is 10,986,096 bytes stripped, 17.4 MB with its symbols: `.text` 8.33 MiB, `.rodata` 1.59, the unwind tables (`.ARM.extab`, `.ARM.exidx`) 0.31, `.data.rel.ro` 0.18. | B | `llvm-size -A` |
+| Where it goes, by the linker's map: Hermes 1.93 MiB, Skia's core and Ganesh 1.43, React Native (ReactCommon, codegen, Expo's common code) 1.41, ICU 1.22, Skia's modules (SkParagraph, SkShaper, SkUnicode, SVG) 0.95, the host 0.65, HarfBuzz 0.55, libstdc++ and libgcc 0.50, SDL 0.41, FreeType 0.36, curl 0.20, Mbed TLS 0.20, folly, glog and fmt 0.09, the image codecs and zlib 0.06, and 0.50 of the linker's own making (merged strings, the unwind index, tables). | B | `ld.lld -Map` |
+| What each setting saved, in the order applied, from 12,590,616 bytes with `-O3`, Thumb-2 and `--gc-sections` on a build whose React Native, host, folly and SDL had no `-ffunction-sections`: `-ffunction-sections -fdata-sections` everywhere 365,332; `-Os` for ICU, curl, Mbed TLS and SDL 474,172; `--icf=safe` and the linker's `-O2` 436,872 (420,680 and 14,016 measured apart); SDL's dynamic API table off 328,144. Together 1,604,520 bytes, 12.7%. | B | one build for each step |
+| SDL calls its own API through a table (`SDL_DYNAMIC_API`) so that another SDL can replace it at run time. The table references every public function, so `--gc-sections` drops none. SDL turns it off for Android, iOS and Emscripten, and elsewhere reserves the switch to a hand edit of `SDL_dynapi.h`: a definition on the command line is an `#error`. | D | [sdl3] `src/dynapi/SDL_dynapi.h` L26-L74 |
+| Not applied. Objects compiled without `-fPIC` for the fixed-address link: 7,016 bytes. `--icf=all` over `--icf=safe`: 73,408 more, at the price of functions that no longer compare unequal. `-Os` for Hermes, React Native, folly and the host too: 1,143,880 more, 0.41 MiB of it Hermes, whose interpreter is the hot path; React Native's own Android release build does compile Hermes with `MinSizeRel`. | B, D | one build for each; `ReactAndroid/hermes-engine/build.gradle.kts` L391-L397 of react-native 0.88 |
+| ARM instructions instead of Thumb-2 (`-DWEBOS_ARM_MODE=ON`, Skia rebuilt with `-marm`): 15,595,920 bytes against 11,314,240 at the same settings, 37.8% more. | B | two builds |
+
+### Checked against the firmware data
+
+`bun scripts/check-tv-binary.ts <executable> --opens libwayland-client.so.0
+--opens libwayland-egl.so --opens libwayland-cursor.so.0 --opens
+libxkbcommon.so.0 --opens libhelpers.so.2 --opens libpbnjson_c.so.2` reads the
+executable and [fw] at commit `2d5a7b6`.
+
+| Fact | Tag | Source |
+|---|---|---|
+| Every needed library, every version node and every imported symbol exists on all 14 images, webOS 1.2.0 to 11.2.0. Only weak symbols are absent: `__gmon_start__` and the two `_ITM_` ones everywhere, `__cxa_thread_atexit_impl` on the 1.x images. | B, D | the script; [fw] |
+| The six libraries SDL and the host open are on all 14 images. | B, D | the script; [fw] |
+| Of the names SDL looks up in them, these are missing somewhere. Required by SDL (`SDL_WAYLAND_SYM`): `wl_proxy_get_class` on the 1.x images; `wl_display_prepare_read`, `wl_display_prepare_read_queue`, `wl_display_read_events`, `wl_display_cancel_read` and `wl_proxy_marshal_constructor` up to 2.2.3. Optional (`SDL_WAYLAND_SYM_OPT`, some with a stand-in): `wl_proxy_marshal_constructor_versioned`, `wl_proxy_get_version`, `wl_proxy_create_wrapper`, `wl_proxy_wrapper_destroy` and the `xkb_compose_` functions up to 3.9.2; `wl_proxy_set_tag`, `wl_proxy_get_tag` and `xkb_keymap_key_get_mods_for_level` up to 8.3.0; `HNDLSetLSHandle` of libhelpers up to 6.4.0; `jvalue_stringify` of pbnjson up to 2.2.3. | B, D | the script, which finds the names among the executable's strings; [sdl3] `src/video/wayland/SDL_waylandsym.h` L40-L170, `SDL_waylanddyn.c` L208-L219, `src/core/webos/SDL_webos_helpers_sym.h` L67, `SDL_webos_pbnjson_sym.h` L48 |
+| So what a file can show puts the floor at webOS 3.4.0 for this executable: the dynamic linker is satisfied from 1.2.0, and every name SDL requires of Wayland is there from 3.4.0. The claim of webOS 4 holds with one release to spare; what the jailer does before 4 (section 4) is not something a file shows. | I | the rows above |
+
 ## Open questions
 
-- Does a clang and lld build start on a TV at all? Nothing was run: relocation
-  handling, the `DT_GNU_HASH`-only table clang asks for, PIE in the jail and
-  static libgcc unwinding across the runtime's `.so` are untested on hardware.
-- Which glibc 2.12.2 gaps Hermes, folly, React Native, ICU, curl and mbedTLS
-  hit. Only a real build tells; the list in section 2 is where to look first.
-- Whether the jail exposes `/dev/urandom`, on which webOS versions, and which
-  kernel each release runs (`getrandom(2)` needs Linux 3.17). One project
-  reports it missing; `std::random_device` in the static libstdc++ depends on it.
+- Does the executable start on a TV at all? Nothing was run. It is linked at a
+  fixed address with both hash tables, as the SDK's GCC would link it, but by
+  lld, from clang's code, with exceptions unwound by a static libgcc: none of
+  that has met a TV's loader.
+- Whether the jail exposes `/dev/urandom`, and which kernel each release runs.
+  One project reports the file missing. The runtime asks `getrandom(2)` (Linux
+  3.17) first and reads the file only when the call does not exist, so only a
+  kernel older than 3.17 in a jail without the file leaves it without random
+  numbers, and Hermes then cannot start.
+- Whether `dlsym(RTLD_NEXT, "getauxval")` from the executable finds the TV's
+  glibc, as it does for the SDK's polyfill. If not, zlib sees no CRC32
+  instructions and runs its portable code.
 - Where the CA bundle is on a TV and whether the jail maps it.
 - Whether stdout and stderr of a launcher-started native app go anywhere, and
   whether `prisoner` can read crash reports.
@@ -213,7 +291,11 @@ libstdc++ file versions map to GCC releases per [gcc-abi].
   licence allows any use outside Flutter. Not unpacked.
 - How far [fw] generalises: one SoC per release. GLES 3 is missing on the
   4.4.2 image (W18R) and present on 4.10.0 (W19P).
-- Whether a `-mthumb` build runs and what it saves on the real runtime.
+- Whether Thumb-2 code runs on every TV. The CPU is not in doubt (the build
+  attributes of the SDK's own libraries permit Thumb-2), but the SDK compiles
+  ARM and its glibc recipe calls its own Thumb build broken. ARM costs 37.8%
+  more (section 9) and is one option away.
+- Whether `-Os` for Hermes costs frames on a TV. It would save 0.41 MiB.
 - `native-toolchain`'s `main` gained Linux x86_64 and GCC 14 host builds in
   2025-10 with no release since 2024-03; a newer macOS port may appear.
 
@@ -237,38 +319,77 @@ Verify the sha256, then extract only `arm-webos-linux-gnueabi/sysroot` (without
 `arm-webos-linux-gnueabi/include`, `arm-webos-linux-gnueabi/lib` and
 `lib/gcc/arm-webos-linux-gnueabi/16.2.0`. Do not run `relocate-sdk.sh`: clang
 takes every path as a flag, and `PKG_CONFIG_SYSROOT_DIR` with
-`PKG_CONFIG_LIBDIR` set as `tizen.cmake` does covers pkg-config. No ELF
-patching mirror is needed. LG's NDK cannot be mirrored under its licence.
+`PKG_CONFIG_LIBDIR` naming the sysroot's `usr/lib/pkgconfig` and
+`usr/share/pkgconfig` covers pkg-config. No ELF patching mirror is needed. LG's
+NDK cannot be mirrored under its licence.
 
-**Compile flags.**
+**Compile flags** (`runtime/cmake/toolchain/webos.cmake`).
 
 ```
 --target=arm-webos-linux-gnueabi --sysroot=<sdk>/arm-webos-linux-gnueabi/sysroot
 --gcc-install-dir=<sdk>/lib/gcc/arm-webos-linux-gnueabi/16.2.0
--mcpu=cortex-a9 -mfpu=neon-fp16 -mfloat-abi=softfp -marm -fPIC
+-mcpu=cortex-a9 -mfpu=neon-fp16 -mfloat-abi=softfp -mthumb -fPIC
+-isystem <package>/runtime/compat/include
 -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
 ```
+
+plus `-ffunction-sections -fdata-sections`. Thumb-2 is what Skia's GN build
+chooses for 32-bit ARM (skia-rendering.md, section 4) and makes the executable
+a quarter smaller than ARM instructions do; `-DWEBOS_ARM_MODE=ON` compiles
+everything, Skia included, as ARM.
 
 **Link flags.**
 
 ```
---ld-path=<ld.lld> -static-libstdc++ -static-libgcc -pthread -Wl,--no-undefined
+--ld-path=<ld.lld> -static-libstdc++ -static-libgcc -pthread -no-pie
+-Wl,--no-undefined -Wl,--hash-style=both -Wno-unused-command-line-argument
+-Wl,--gc-sections -Wl,--icf=safe -Wl,-O2
 -l:libatomic.a -Wl,--as-needed -lrt -Wl,--no-as-needed
 ```
 
-plus a compat archive of hidden definitions for what glibc 2.12.2 lacks, as
-`runtime/compat/glibc-compat.c` does for Tizen (or `-lglibc_polyfills` for
-`getauxval` and `aligned_alloc`). Linking against the 2.12.2 sysroot with
-`--no-undefined` is itself the glibc check: a libc symbol newer than 2.12
-fails the link.
+plus `runtime/compat`: hidden definitions of what the sources call beyond
+glibc 2.12.2, `std::random_device` over `getrandom`, and a header directory for
+what the sysroot's headers do not declare (section 9). Linking against the 2.12.2 sysroot with `--no-undefined`
+is itself the glibc check: a libc symbol newer than 2.12 fails the link. A
+library compiled into the runtime later may call another one: the link says
+which, and its definition goes into `runtime/compat`, never a newer sysroot.
+
+**Building by hand.** `rn-webos` drives this; the same by hand, from the
+package's root, with LLVM (clang, lld, llvm-ar, llvm-readelf), CMake 3.24 or
+later, Ninja, Python 3, git, pkg-config and a C compiler for the build machine:
+
+```sh
+# Hermes' bytecode compiler for the build machine, once per Hermes version.
+cmake -S <hermes source> -B <hermes host build> -G Ninja -DCMAKE_BUILD_TYPE=Release \
+  -DHERMES_ENABLE_TEST_SUITE=OFF -DHERMES_BUILD_APPLE_FRAMEWORK=OFF -DHERMES_ENABLE_DEBUGGER=OFF
+cmake --build <hermes host build> --target hermesc shermes
+
+cmake -S runtime -B <build> -G Ninja -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_TOOLCHAIN_FILE=runtime/cmake/toolchain/webos.cmake \
+  -DWEBOS_SDK_DIR=<the SDK as extracted above> \
+  -DWEBOS_LLVM_DIR=<the directory of clang and ld.lld> \
+  -DREACT_NATIVE_DIR=<the app's react-native package> \
+  -DRN_WEBOS_CODEGEN_DIR=<React Native's codegen output> \
+  -DRN_WEBOS_HERMES_HOST_COMPILERS=<hermes host build>/ImportHostCompilers.cmake \
+  -DEXPO_MODULES_CORE_DIR=<expo-modules-core> -DEXPO_MODULES_JSI_DIR=<expo-modules-jsi>
+cmake --build <build> --target react-native-webos
+```
+
+The executable is `<build>/host/react-native-webos`. Optional:
+`-DRN_WEBOS_LIBRARIES_FILE=` (the app's native libraries),
+`-DRN_WEBOS_DEVELOPMENT=ON` (the development runtime), `-DRN_WEBOS_CACHE_DIR=`
+(default `~/.cache/react-native-webos`: downloads, Skia's sources and builds,
+`gn`, `wayland-scanner`), `-DRN_WEBOS_UNPORTED=` while the port is brought up.
+The first configure downloads the pinned sources and builds `wayland-scanner`
+for the build machine; the first build compiles Skia, once per machine.
 
 **Link statically or compile in.** libstdc++, libgcc and libatomic (never
 bundle `libstdc++.so.6`; `libatomic.so.1` is missing on webOS 1 and 4). curl
-with mbedTLS (or a static OpenSSL) and a CA bundle file shipped in the ipk: the
-TV's libcurl changes SONAME at webOS 5, lacks the calls the runtime makes
-before webOS 7, has no TLS 1.3 before webOS 6 and trusts an old root list.
-ICU, as on Tizen. libjpeg-turbo, libwebp and harfbuzz if used: wrong SONAME,
-absent before 4.x, absent on 1.2.
+with Mbed TLS (`runtime/cmake/Curl.cmake`) and a CA bundle file shipped in the
+ipk: the TV's libcurl changes SONAME at webOS 5, lacks the calls the runtime
+makes before webOS 7, has no TLS 1.3 before webOS 6 and trusts an old root
+list. ICU, as on Tizen. libjpeg-turbo, libwebp, HarfBuzz, FreeType, libpng and
+zlib come inside Skia; the TV's `libz.so.1` serves curl alone.
 
 **Safe to link from the TV** (same SONAME on all 14 images): `libc.so.6`,
 `libm.so.6`, `libpthread.so.0`, `libdl.so.2`, `librt.so.1`, `libEGL.so.1`,
@@ -281,17 +402,29 @@ name the stub records), `libwayland-webos-client.so.1`, `libxkbcommon.so.0`,
 any TV, so every such call needs the check below. Treat GLES 2 as the baseline
 and probe GLES 3 at run time. Load `libNDL_directmedia.so.1` with `dlopen`: it
 is absent on the 3.4.0 image and older, and has two API generations.
+`runtime/cmake/WebOSPlatform.cmake` holds this list: naming a library outside it
+fails the configure, and an executable that needs one fails the build. Today
+the executable needs eight of them and the loader (section 9).
 
-**Floor.** webOS 4.x (2018) is the lowest release these facts support without
-extra work: Wayland code built from the sysroot's headers needs
-`wl_proxy_marshal_constructor_versioned`, which the 1.x to 3.x images lack, and
-the jailer and native services misbehave before 4. The build still targets
-glibc 2.12.2, because no other public sysroot exists. The floor is a decision
-for `docs/decisions.md`.
+**Floor.** webOS 4.x (2018), as `docs/decisions.md` records. The executable
+itself asks less: every image back to 1.2.0 has what it imports, and SDL, which
+stands in for the Wayland functions older releases lack, finds every one it
+requires from 3.4.0 on (section 9). What keeps the floor at 4 is the jailer and
+native services, which misbehave before it. The build still targets glibc
+2.12.2, because no other public sysroot exists.
 
-**Check every build** against [fw]: each `DT_NEEDED` SONAME and each undefined
-symbol, per firmware. The data is Apache-2.0 JSON, so `rn-webos` can read it
-with zod on macOS, where `webosbrew-ipk-verify` has no release.
+**Check every build** against [fw] with `scripts/check-tv-binary.ts`: the ABI,
+the interpreter, each `DT_NEEDED` SONAME, each version node and each imported
+symbol, per firmware image, and the libraries named with `--opens`, which the
+code loads with `dlopen`. It fails when the first release that passes is newer
+than webOS 4. The data is Apache-2.0 JSON, fetched into the cache at a pinned
+commit; `webosbrew-ipk-verify` has no macOS release. It reads the file and
+cannot see what a `dlsym` will ask for beyond the names it finds as strings.
+
+**Size.** 11.0 MB stripped today, for a host with images, scrolling, text
+input, SVG and video still to come (section 9). Cold libraries (ICU, curl, Mbed
+TLS, SDL) are compiled with `-Os`; Hermes, React Native, Skia and the host keep
+`-O3`.
 
 **One 32-bit build.** No release gives an app a 64-bit userland, and LG's own
 NDK for webOS 26 is 32-bit.
@@ -303,6 +436,11 @@ visible from a shell. For a shell run, set `APPID`. For GDB, push the SDK's
 with `ares-novacom --forward`.
 
 [nt]: https://github.com/webosbrew/native-toolchain/blob/730dbd680cc319935655b1b04c2d80fcb62fdb22/README.md
+[linux-syscalls]: https://github.com/torvalds/linux/blob/v6.12/arch/arm/tools/syscall.tbl
+[mbedtls]: https://github.com/Mbed-TLS/mbedtls/tree/mbedtls-3.6.7
+[curl]: https://github.com/curl/curl/tree/curl-8_23_0
+[wayland]: https://gitlab.freedesktop.org/wayland/wayland/-/blob/1.20.0/src/scanner.c
+[sdl3]: https://github.com/webosbrew/SDL-webOS/tree/release-3.4.16-webos.5
 [curl-ca]: https://curl.se/docs/caextract.html
 [nt-rel]: https://github.com/webosbrew/native-toolchain/releases
 [nt-cmake]: https://github.com/webosbrew/native-toolchain/blob/730dbd680cc319935655b1b04c2d80fcb62fdb22/CMakeLists.txt

@@ -1,6 +1,7 @@
 #include "HttpGet.h"
 
 #include "NetworkError.h"
+#include "PackagedRoots.h"
 
 #include <curl/curl.h>
 
@@ -31,6 +32,7 @@ std::string httpGet(const std::string &url) {
   curl_easy_setopt(curl.get(), CURLOPT_TIMEOUT, kTimeoutSeconds);
   curl_easy_setopt(curl.get(), CURLOPT_NOSIGNAL, 1L);
   curl_easy_setopt(curl.get(), CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2);
+  trustPackagedRoots(curl.get());
   if (const auto result = curl_easy_perform(curl.get()); result != CURLE_OK) {
     throw NetworkError(std::format("Cannot reach {}: {}", url, curl_easy_strerror(result)));
   }

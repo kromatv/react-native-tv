@@ -64,29 +64,46 @@ frames (`platform/MainLoop`). The main thread alone touches the window, the
 scene and the views. JavaScript runs on its own thread; Fabric lays out there
 and measures text there, under the text engine's lock.
 
-## Clang, lld and the openlgtv sysroot; one 32-bit build
+## LLVM, a static GCC runtime, one sysroot older than any TV
 
-Every webOS TV release runs apps as 32-bit ARM with the soft-float calling
-convention, even on a 64-bit kernel. The runtime is compiled with the
-machine's own clang and lld against the sysroot of the openlgtv toolchain
-(glibc 2.12), with libstdc++ and libgcc linked statically, so one build runs
-on every release above the floor
-([webos-native-toolchain.md](reference/webos-native-toolchain.md)). LG's own
-NDK cannot be redistributed and targets webOS 26 only.
+The runtime is compiled with clang and linked with lld against openlgtv's SDK:
+a glibc 2.12.2 sysroot, older than the oldest TV's 2.14.1, with GCC 16.2's
+libstdc++, libgcc and libatomic linked statically. One 32-bit armv7 executable
+(softfp, NEON, Thumb-2) then runs on every release; no webOS release gives an
+app a 64-bit userland. What the sources call beyond glibc 2.12.2 is defined,
+hidden, in `runtime/compat/`. From the TV the executable links only libraries
+every release has under the same name, and the build fails on any other
+(`runtime/cmake/WebOSPlatform.cmake`); everything else is compiled in or opened
+with `dlopen`. It is linked at a fixed address, as the SDK's own executables
+are: the SDK's `libatomic.a` is not position independent. The SDK is built for
+a Linux host and serves macOS too, since clang reads only its target files
+([webos-native-toolchain.md](reference/webos-native-toolchain.md)).
 
-Consequence: what the TV's libraries do not offer under one name on every
-release is compiled in: curl with mbedTLS and a CA bundle the package ships,
-ICU, and everything Skia needs. Only the libraries the reference lists as
-present on every release are linked from the TV. A build is checked against
-firmware symbol data before it is called a TV build.
+Consequence: no TV was at hand for the port, so `scripts/check-tv-binary.ts`
+checks every executable against webosbrew's firmware symbol data, 14 images
+from webOS 1.2 to 11.2, and that is the evidence until a TV runs one.
 
 ## webOS 4 is the floor
 
-The lowest release the facts support without extra work is webOS TV 4.x, the
-2018 models: below it the TV's Wayland library lacks a call the client code
-needs and the jail misbehaves. The floor is measured, not assumed: the build's
-checker reports the lowest release on which every library and symbol the
-executable needs exists.
+One executable runs on webOS TV 4.x (2018) and every later release. Every
+image back to 1.2 has what the executable imports, and SDL finds every Wayland
+function it requires from 3.4 on; 4 is the floor because the jailer mis-sets an
+app's directory permissions before it and native apps are only properly
+supported from it ([webos-native-toolchain.md](reference/webos-native-toolchain.md),
+sections 4 and 9). A feature that needs a newer webOS checks the TV's version
+at run time and says why it is off.
+
+## libcurl and Mbed TLS inside the runtime
+
+A TV's libcurl changes SONAME at webOS 5 and lacks calls the host makes before
+webOS 7; its OpenSSL has four SONAMEs, no TLS 1.3 before webOS 6 and a root
+list as old as the firmware. The runtime compiles libcurl with Mbed TLS in,
+HTTP and HTTPS only, and every package ships Mozilla's roots as
+`res/cacert.pem`, which the host names for every transfer. The simulator links
+the same two.
+
+Consequence: a TLS fix reaches users with a release of this package, not with
+the TV's firmware.
 
 ## ICU inside the runtime, FormatJS for the rest of `Intl`
 

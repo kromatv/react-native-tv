@@ -1,6 +1,7 @@
 #include "WebSocketTransport.h"
 
 #include "NetworkError.h"
+#include "PackagedRoots.h"
 
 #include <curl/curl.h>
 
@@ -31,6 +32,7 @@ WebSocketTransport::WebSocketTransport(const std::string &url, const std::atomic
   curl_easy_setopt(easy, CURLOPT_HTTPPROXYTUNNEL, 1L);
   curl_easy_setopt(easy, CURLOPT_NOSIGNAL, 1L);
   curl_easy_setopt(easy, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2);
+  trustPackagedRoots(easy);
   curl_easy_setopt(easy, CURLOPT_CONNECTTIMEOUT_MS, kConnectTimeoutMs);
   curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 0L);
   curl_easy_setopt(easy, CURLOPT_XFERINFOFUNCTION, abortWhenAsked);

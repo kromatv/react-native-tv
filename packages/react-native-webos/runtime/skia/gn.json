@@ -1,0 +1,10 @@
+{
+  "revision": "b2afae122eeb6ce09c52d63f67dc53fc517dbdc8",
+  "url": "https://chrome-infra-packages.appspot.com/dl/gn/gn/<platform>/+/git_revision:<revision>",
+  "sha256": {
+    "mac-arm64": "cbb260f2cf999f7d74da96b3828a061299c6337354dd6db642e778828576025c",
+    "mac-amd64": "4bea817159f060980f1ca1d0400ef6cd2e0ab0ade66bb34e91aab9c2cffc9d83",
+    "linux-arm64": "376e1358ded109d955b8eb55ba2a7dec0e95ab1f8dfe0e18011e06eed78a011f",
+    "linux-amd64": "6a3bfc53d825bccac5e5b4b7bdcc10ce9396a04a689ac684ec3308ca5c7f3d9c"
+  }
+}
