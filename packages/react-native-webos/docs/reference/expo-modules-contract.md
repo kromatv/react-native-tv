@@ -114,7 +114,7 @@ search of every installed package finds it nowhere else. **src**
 | 4 | `provider` calls `expo.getViewConfig(module, view)` and gives every attribute `process: processPropValue`. A null config logs a warning and returns `{ uiViewClassName }` | `NativeViewManagerAdapter.native.tsx:60-77,104-111` **src** |
 | 5 | `createViewConfig` merges the platform's base View attributes with the provided ones | `rn/Libraries/NativeComponent/ViewConfig.js:21-42` **src** |
 | 6 | With no config, every custom prop (`source`, `player`, `intensity`) is dropped before Fabric | **inf**: React Native's attribute diff only sends keys listed in `validAttributes` |
-| 7 | Fabric finds a ComponentDescriptor by that name. On webOS an unknown name gets `UnimplementedNativeViewComponentDescriptor` and draws empty | `runtime/host/src/fabric/CoreComponents.cpp:48-57`, `CoreComponents.h:9-11` **src** |
+| 7 | Fabric finds a ComponentDescriptor by that name. On webOS an unknown name gets `UnimplementedNativeViewComponentDescriptor` and draws empty | `runtime/host/src/fabric/ComponentDescriptorRegistry.cpp:52-62` **src** |
 | 8 | `ViewPrototypes['<module>_<view>']` on the module is copied onto the wrapper class; its functions find the view through `this.nativeTag` | `NativeViewManagerAdapter.native.tsx:222-261` **src** |
 
 `getViewConfig` returns `{ validAttributes: { <prop>: true }, directEventTypes:
@@ -253,15 +253,15 @@ its package fails and the app does not start. webOS registers every module below
 
 ### Native API and minimum viable subset
 
-| Module | Full native API (iOS definition) | Minimum for the TV app | webOS implementation (unverified on a TV) |
+| Module | Full native API (iOS definition) | Minimum for the TV app | webOS implementation (what ran on a TV: `hardware-verification.md`) |
 |--------|----------------------------------|------------------------|---------------------------------------------|
-| `ExpoFontLoader` | `getLoadedFonts(): string[]` (sync); `loadAsync(alias, localUri)`; `loadFontFamilyAsync(alias, [{localUri, weight?, style?}])` (`expo-font/ios/FontLoaderModule.swift:9-60`). JS downloads the file through expo-asset first (`src/FontLoader.ts:30-50`) | `getLoadedFonts`, `loadAsync`: `KIT_FONTS` is a name-to-file map ([`packages/ui/src/assets/fonts.ts:6-9`](https://github.com/kromatv/kroma/blob/1d270635adcc9f3a81283e04f06336845d8c5985/packages/ui/src/assets/fonts.ts#L6-L9)), which takes the `loadAsync` path | `modules/ExpoFontLoaderModule.cpp`: `getLoadedFonts`, `isLoaded`, `loadAsync`, `loadFontFamilyAsync`. Each font gets a directory of its own, keyed by alias and content, passed to `evas_font_path_global_append` (`Evas_Common.h:3374`) on the main thread; text then finds the font by its **family name** inside the file. A variable font with a `wght` axis goes in as static instances, one per hundred of its range, and the files are remembered per alias for letter spacing (`efl-rendering.md`, section 5 and Features). The work runs off the main loop. An alias that differs from the family name does not reach the text layer |
-| `FileSystem` | Constants `documentDirectory`, `cacheDirectory` (file URIs, `ios/FileSystemModule.swift:194-200`), `bundleDirectory`; properties `totalDiskSpace`, `availableDiskSpace`; `info`, `downloadFileAsync`, event `downloadProgress`; classes `FileSystemFile` (`validatePath`, `exists`, `uri`, `size`, `md5`, `type`, times, `text`/`textSync`, `base64`, `bytes`, `write`/`writeSync`, `create`, `delete`, `copy`, `move`, `rename`, `info`, `open`, `digest`), `FileSystemDirectory` (`validatePath`, `exists`, `uri`, `size`, `info`, `create`, `delete`, `copy`, `move`, `rename`, `listAsRecords`, `createFile`, `createDirectory`), `FileSystemFileHandle`, upload and download tasks, `FileSystemWatcher` (`:184-607`) | The constants; `FileSystemFile` and `FileSystemDirectory` with constructor(uri), `validatePath`, `uri`, `exists`, `create`, `delete`, `write`, `writeSync`, `text`. Needs SharedObject classes | `modules/filesystem/`: the constants, `info`, disk space, `downloadFileAsync` (no progress events), and both classes with every member in the minimum plus `copy`, `move`, `rename`, `bytes`, `base64`, `md5`, `listAsRecords`, `createFile`, `createDirectory`. Paths from `app_get_data_path`, `app_get_cache_path`, `app_get_resource_path` (`appfw/app_common.h:314,326,337`, Tizen 9.0 rootstrap); "files stored in the application's cache directory can be removed by setting application or platform while the application is running" (`:321-322`). No file handle, watcher, upload or download task |
-| `ExpoDevice` | Constants `isDevice`, `brand`, `manufacturer`, `modelId`, `modelName`, `deviceYearClass`, `totalMemory`, `osName`, `osVersion`, `osBuildId`, `osInternalBuildId`, `deviceName`, `deviceType`, `supportedCpuArchitectures` (`expo-device/ios/DeviceModule.swift:9-63`); Android adds `designName`, `productName`, `platformApiLevel`, `osBuildFingerprint`; async `getDeviceTypeAsync`, `getUptimeAsync`, `getMaxMemoryAsync`, `isRootedExperimentalAsync`, `isSideLoadingEnabledAsync`, `getPlatformFeaturesAsync`, `hasPlatformFeatureAsync` (`src/Device.ts:243-369`) | Every constant (null is allowed), `deviceType` 4 (`TV` in `src/Device.types.ts:8-24`) | `modules/ExpoDeviceModule.cpp`: every constant (`brand` and `manufacturer` "Samsung", `deviceType` 4, the rest from `DeviceProfile`, `sysconf` and `uname`) and the async functions. `deviceName` reads `SYSTEM_SETTINGS_KEY_DEVICE_NAME` (`system/system_settings.h:77,258`) through `dlopen`, so neither the link line nor the simulator changes; the model name when that fails |
-| `ExpoKeepAwake` | `activate(tag): bool`, `deactivate(tag): bool`, `isActivated()` (`ios/KeepAwakeModule.swift:9-27`); optional `isAvailableAsync`, `addListenerForTag` (`src/index.ts:12,35,114`) | `activate`, `deactivate` over a set of tags | `modules/ExpoKeepAwakeModule.cpp`: a tag set on the main thread; `elm_win_noblank_set(window, !tags.empty())`. See "Keep awake" below |
+| `ExpoFontLoader` | `getLoadedFonts(): string[]` (sync); `loadAsync(alias, localUri)`; `loadFontFamilyAsync(alias, [{localUri, weight?, style?}])` (`expo-font/ios/FontLoaderModule.swift:9-60`). JS downloads the file through expo-asset first (`src/FontLoader.ts:30-50`) | `getLoadedFonts`, `loadAsync`: `KIT_FONTS` is a name-to-file map ([`packages/ui/src/assets/fonts.ts:6-9`](https://github.com/kromatv/kroma/blob/1d270635adcc9f3a81283e04f06336845d8c5985/packages/ui/src/assets/fonts.ts#L6-L9)), which takes the `loadAsync` path | `modules/ExpoFontLoaderModule.cpp`: `getLoadedFonts`, `isLoaded`, `loadAsync`, `loadFontFamilyAsync`. Each file goes to `registerAppFont` (`runtime/host/src/text/TextEngine.cpp`): Skia reads it and the typeface is registered under the **alias** in the `TypefaceFontProvider` the text engine's font collection takes app fonts from (`skia-rendering.md`, section 6), so `fontFamily` finds the font by the name given to `loadAsync`. A variable font with a `wght` axis goes in as one instance per hundred of its range (`VariableFont.cpp`), since SkParagraph picks a typeface by the weight it reports. The work runs on the background pool, under the text engine's mutex. A missing file fails with `ERR_FONT_SOURCE`, one Skia cannot read with `ERR_FONT_FILE` |
+| `FileSystem` | Constants `documentDirectory`, `cacheDirectory` (file URIs, `ios/FileSystemModule.swift:194-200`), `bundleDirectory`; properties `totalDiskSpace`, `availableDiskSpace`; `info`, `downloadFileAsync`, event `downloadProgress`; classes `FileSystemFile` (`validatePath`, `exists`, `uri`, `size`, `md5`, `type`, times, `text`/`textSync`, `base64`, `bytes`, `write`/`writeSync`, `create`, `delete`, `copy`, `move`, `rename`, `info`, `open`, `digest`), `FileSystemDirectory` (`validatePath`, `exists`, `uri`, `size`, `info`, `create`, `delete`, `copy`, `move`, `rename`, `listAsRecords`, `createFile`, `createDirectory`), `FileSystemFileHandle`, upload and download tasks, `FileSystemWatcher` (`:184-607`) | The constants; `FileSystemFile` and `FileSystemDirectory` with constructor(uri), `validatePath`, `uri`, `exists`, `create`, `delete`, `write`, `writeSync`, `text`. Needs SharedObject classes | `modules/filesystem/`: the constants, `info`, disk space, `downloadFileAsync` (no progress events), and both classes with every member in the minimum plus `copy`, `move`, `rename`, `bytes`, `base64`, `md5`, `listAsRecords`, `createFile`, `createDirectory`. Paths from `appPaths()` (`runtime/host/src/platform/AppPaths.cpp`): `documentDirectory` and `cacheDirectory` are `appdata/data/` and `appdata/cache/` beside the executable, in the world-writable `appdata` the package ships, since the TV runs the app as a user that does not own its install directory (`webos-tv-platform.md`, section 3.1); `bundleDirectory` is `res/` beside it. When `appdata` cannot be written, both go under a private `mkdtemp` directory of the temporary one. No file handle, watcher, upload or download task |
+| `ExpoDevice` | Constants `isDevice`, `brand`, `manufacturer`, `modelId`, `modelName`, `deviceYearClass`, `totalMemory`, `osName`, `osVersion`, `osBuildId`, `osInternalBuildId`, `deviceName`, `deviceType`, `supportedCpuArchitectures` (`expo-device/ios/DeviceModule.swift:9-63`); Android adds `designName`, `productName`, `platformApiLevel`, `osBuildFingerprint`; async `getDeviceTypeAsync`, `getUptimeAsync`, `getMaxMemoryAsync`, `isRootedExperimentalAsync`, `isSideLoadingEnabledAsync`, `getPlatformFeaturesAsync`, `hasPlatformFeatureAsync` (`src/Device.ts:243-369`) | Every constant (null is allowed), `deviceType` 4 (`TV` in `src/Device.types.ts:8-24`) | `modules/ExpoDeviceModule.cpp`: every constant (`brand` "LG", `manufacturer` "LG Electronics", `osName` "webOS", `deviceType` 4, the model, version and firmware from `DeviceProfile`, which asks the TV's `getSystemInfo` at start, the rest from `sysconf` and `uname`) and the async functions but `getMaxMemoryAsync`. `deviceName` is the model name: LG documents no setting for the name the viewer gave the TV (`webos-tv-platform.md`, section 4.3) |
+| `ExpoKeepAwake` | `activate(tag): bool`, `deactivate(tag): bool`, `isActivated()` (`ios/KeepAwakeModule.swift:9-27`); optional `isAvailableAsync`, `addListenerForTag` (`src/index.ts:12,35,114`) | `activate`, `deactivate` over a set of tags | `modules/ExpoKeepAwakeModule.cpp`: a tag set on the main thread; `SDL_DisableScreenSaver()` while it holds a tag, `SDL_EnableScreenSaver()` once it is empty; `isActivated` and `isAvailableAsync` too. See "Keep awake" below |
 | `ExpoBlur` views | See section 2 | `ExpoBlurView` drawing a translucent tint and ignoring `blurTargetId`; `ExpoBlurTargetView` as a plain container | `modules/blur/ExpoBlurViews.cpp`: what the frame holds behind the view, blurred by Skia in a backdrop layer cut to the view and its corners, and Android's overlay color above it (`TintStyle.kt`), from `intensity`, `tint` and `blurReductionFactor`; `blurTargetId` and `blurMethod` are not needed, since the layer reads everything drawn before it (`skia-rendering.md`, section 11). An empty `ExpoBlur` module answers the adapter's lookup |
 | `ExpoImage` | `prefetch(urls, cachePolicy, headers)`, `clearMemoryCache`, `clearDiskCache`, `getCachePathAsync`, `configureCache`, `generateBlurhashAsync`, `generateThumbhashAsync`, `loadAsync`, `writeToCacheAsync`, `readFromCacheAsync`, class `Image`, event `imageLoaded`, and the view (`ios/ImageModule.swift:16-330`) | Module with `prefetch` and the two `clear` functions; view with `source`, `contentFit`, `transition`, `cachePolicy`, `recyclingKey`, `onLoad` (width, height), `onError` | `modules/image/`: `prefetch`, `clearMemoryCache` (forgets the decoded images kept in memory), `clearDiskCache`, `getCachePathAsync`; the view takes the first `source`, shows a decoded copy kept in memory at once (`cacheType` `memory`), and otherwise downloads it off the main thread into `<cache>/ExpoImage/<md5 of cacheKey or uri>` and decodes it on the host's image threads (at the drawn size when the image is twice it or more, `skia-rendering.md` section 11), fits it by `contentFit` (`cover`, `contain`, `fill`, `none`, `scale-down`, centered), fades in over `transition` ms once decoded and sends `onLoadStart`, `onLoad` (once decoded), `onError`, `onDisplay`. No placeholder, `contentPosition`, `tintColor`, headers or animated images |
-| `ExpoVideo` | `isPictureInPictureSupported`, cache functions; class `VideoPlayer(source, useSynchronousReplace, builderOptions)` with about 30 properties, `play`, `pause`, `replace`, `replaceAsync`, `seekBy`, `replay`, `generateThumbnailsAsync`; events `statusChange`, `playingChange`, `playbackRateChange`, `volumeChange`, `mutedChange`, `playToEnd`, `timeUpdate`, `sourceChange`, track changes, `sourceLoad` (`ios/VideoModule.swift:8-392`; `src/VideoPlayerEvents.types.ts:17-90`) | `isPictureInPictureSupported` (false); `VideoPlayer` with `play`, `pause`, `replace`, `replaceAsync`, `release`, `currentTime` (read and write), `duration`, `volume`, `muted`, `loop`, `playbackRate`, `playing`, `status`, `bufferedPosition`, `bufferOptions`, `timeUpdateEventInterval`, `audioTrack`, `availableAudioTracks`, `videoTrack`; events `statusChange` `{status, oldStatus?, error?}`, `playingChange` `{isPlaying}`, `timeUpdate` `{currentTime, currentLiveTimestamp, currentOffsetFromLive, bufferedPosition}`, `playToEnd`; the view with `player`, `contentFit` | `modules/video/`: every member in the minimum and the rest of the class, on capi-media-player, run on a Samsung TV; see `webos-media-playback.md` section 7 |
+| `ExpoVideo` | `isPictureInPictureSupported`, cache functions; class `VideoPlayer(source, useSynchronousReplace, builderOptions)` with about 30 properties, `play`, `pause`, `replace`, `replaceAsync`, `seekBy`, `replay`, `generateThumbnailsAsync`; events `statusChange`, `playingChange`, `playbackRateChange`, `volumeChange`, `mutedChange`, `playToEnd`, `timeUpdate`, `sourceChange`, track changes, `sourceLoad` (`ios/VideoModule.swift:8-392`; `src/VideoPlayerEvents.types.ts:17-90`) | `isPictureInPictureSupported` (false); `VideoPlayer` with `play`, `pause`, `replace`, `replaceAsync`, `release`, `currentTime` (read and write), `duration`, `volume`, `muted`, `loop`, `playbackRate`, `playing`, `status`, `bufferedPosition`, `bufferOptions`, `timeUpdateEventInterval`, `audioTrack`, `availableAudioTracks`, `videoTrack`; events `statusChange` `{status, oldStatus?, error?}`, `playingChange` `{isPlaying}`, `timeUpdate` `{currentTime, currentLiveTimestamp, currentOffsetFromLive, bufferedPosition}`, `playToEnd`; the view with `player`, `contentFit` | `modules/video/`: every member in the minimum and the rest of the class, on the TV's media pipeline, `com.webos.media` over the Luna bus (`LunaMediaPlayer`), or a simulated player where the bus does not answer; run on webOS 24 and 25 TVs (`hardware-verification.md`); see `webos-media-playback.md`, "What is built" |
 | `ExponentConstants` | Section 3 | `manifest`, `executionEnvironment: "bare"`, `deviceName`, `sessionId`, `systemFonts: []` | `modules/ExponentConstantsModule.cpp` reads `<res>/app.config`, written at package time by `src/package/app-config-file.ts` with expo-constants' own call, `getConfig(root, {isPublicConfig: true, skipSDKVersionRequirement: true})` (`expo-constants/scripts/getAppConfig.js`) |
 | `ExpoAsset` | `downloadAsync(url, md5Hash or null, type)`: a file URL resolves as is; a remote one is cached as `ExponentAsset-<md5>.<type>`, re-downloaded when the md5 does not match. "do NOT change the function signature" (`expo-asset/ios/AssetModule.swift:20-47`) | Provided | `modules/ExpoAssetModule.cpp`, off the JavaScript thread, keyed as on iOS |
 
@@ -276,17 +276,16 @@ a first launch until it calls `writeSync` or awaits.
 
 | Fact | Source | Tag |
 |------|--------|-----|
-| "The screensaver is used to prevent screen burn when the TV screen displays a still image or the user provides no input for some time"; "You must disable the screensaver during activities when the user is watching the TV without giving input, such as video playback or image slideshows"; "To be published on Samsung Apps TV, your application must enable and disable the screensaver appropriately" | [Setting Screensaver](https://developer.samsung.com/tv/develop/guides/fundamentals/setting-screensaver) | **doc** |
-| "If "Auto Protection Time" is switched off in the TV settings, enabling and disabling the screensaver using the AppCommon API has no effect" | same page | **doc** |
-| Samsung documents the switch for web apps only: `webapis.appcommon.setScreenSaver(SCREEN_SAVER_OFF = 0 or SCREEN_SAVER_ON = 1)`, since 2.3, no privilege listed; no WebOSFX or native C equivalent is listed in its API references | [AppCommon API](https://developer.samsung.com/smarttv/develop/api-references/samsung-product-api-references/appcommon-api.html) | **doc** |
-| EFL's window property for exactly this case: "a way to request the display on which the window is shown does not blank, go to screensaver or otherwise hide or obscure the window. It is intended for uses such as media playback on a television"; it "may have no effect if the window is iconified/minimized or hidden" | `elementary-1/elm_win_legacy.h:1943-1957` (`elm_win_noblank_set`, since 1.11), Tizen 9.0 rootstrap | **doc** |
-| `device_power_request_lock(POWER_LOCK_DISPLAY, 0)` keeps the display "ON(Normal)" until released and needs `http://webos.org/privilege/display` | `device/power.h:41-55,64,88` | **doc** |
-| Elementary stores a window's object on its Ecore_Evas under the data key `elm_win`; `ecore_evas_ecore_evas_list_get` and `ecore_evas_data_get` are public (`Ecore_Evas.h:3258,2237`) | the key is not documented; found in the simulator, where `elm_win_noblank_get` reads back true | **inf** |
+| LG documents no call that holds the screen saver off: it stays off during full screen video, and `screenSaverProperties` in `appinfo.json` stretches its timeout to 30 minutes on OLED TVs with webOS TV 5.0 or higher | `webos-tv-platform.md`, sections 2 and 4.3 | **doc** |
+| Before the saver starts, the TV asks each client subscribed to `luna://com.webos.service.tvpower/power/registerScreenSaverRequest` with `{"subscribe":true,"clientName":"<id>.wakelock"}`. The answer goes to `.../responseScreenSaverRequest` with the request's `timestamp`: `"ack":false` refuses the saver, `"ack":true` lets it start. An event without a `timestamp` is not a request. Homebrew apps and SDL's webOS port do this; it is not LG's word | `webos-tv-platform.md`, section 4.3 | **src** |
+| `SDL_DisableScreenSaver` and `SDL_EnableScreenSaver` flip a switch and, on webOS, nothing else: the TV's compositor lists no idle inhibit protocol. SDL answers the TV's requests from that switch only when it registers the app itself, and it disables the screen saver when video starts unless `SDL_VIDEO_ALLOW_SCREENSAVER` is set | `webos-window-input.md`, section 3 | **src** |
+| The host registers the app itself (`SDL_HINT_WEBOS_REGISTER_APP` off) and leaves the screen saver allowed at start (`SDL_HINT_VIDEO_ALLOW_SCREENSAVER`). It subscribes as `<APPID>.wakelock` and answers each request with `ack` set to `SDL_ScreenSaverEnabled()` | `runtime/host/src/main.cpp`, `runtime/host/src/platform/ScreenSaver.cpp`; `webos-window-input.md`, section 15, Lifecycle | **src** |
 
-`ExpoKeepAwake` uses `elm_win_noblank_set`: no privilege, already linked, and the
-EFL contract names the TV case. Whether a retail TV's screensaver or Auto
-Protection Time honours it is not known: record it on hardware. The power lock
-is the fallback if it does not.
+`ExpoKeepAwake` flips SDL's switch, and the host refuses the TV's screen saver
+requests while it is off. No ACG group is listed for the two `tvpower` calls
+(`webos-tv-platform.md`, section 4.3). Whether a TV sends the request to the
+host's own subscription, without SDL's registration, is not known
+(`webos-window-input.md`, section 13): record it on hardware.
 
 ## 5. Third-party modules with webOS support
 
@@ -312,14 +311,13 @@ and resolves the results itself, since `resolve` cannot.
   "webos": {
     "modules": ["ExpoKeepAwake"],
     "cmake": "webos/CMakeLists.txt",
-    "target": "expo_keep_awake_webos",
-    "privileges": ["http://webos.org/privilege/display"]
+    "target": "expo_keep_awake_webos"
   }
 }
 ```
 
-`rn-webos` would `add_subdirectory` each `cmake`, link each `target` into
-`libreact-native-webos.so`, and generate one C++ file that calls every package's
+`rn-webos` would `add_subdirectory` each `cmake`, link each `target` into the
+`react-native-webos` executable, and generate one C++ file that calls every package's
 registration function, the way Apple's generated `ExpoModulesProvider` lists
 every module. Generating it avoids static initializers, which a linker drops from
 a static library unless it is linked whole-archive. Implementations of Expo's own
@@ -336,13 +334,17 @@ packages (expo-video, expo-image) stay in this package, keyed by package name.
 | `withBaseMod`, `withMod`, `evalModsAsync` and `compileModsAsync` are exported (`build/index.d.ts:24,29`); `ModPlatform` is typed `android` or `ios` (`Plugin.types.d.ts:89,179`) | **src** |
 | `getConfig` applies plugins unless `skipPlugins` (`@expo/config/build/Config.js:221`); `rn-webos` does not skip them (`src/app/app-project.ts:27-29`) | **src** |
 
-Two roads (**inf**, from the rows above). Today a plugin can set
-`config.webos.privileges` and `rn-webos` reads it, with no mod. For generated
-files (`webos-manifest.xml`, the shell project), `rn-webos` can register base
-providers with `withBaseMod(config, { platform: "webos", mod: "manifest",
-isProvider: true, action })` and run `evalModsAsync(config, { projectRoot,
-platforms: ["webos"] })`, with a cast on the platform type. Neither is documented,
-so pin the `@expo/config-plugins` range they were tested on.
+Two roads (**inf**, from the rows above). With no mod, a plugin sets a field of
+the config that `rn-webos` reads. Today `rn-webos` reads its webOS settings,
+`permissions` (the ACG groups of `requiredACG` in `appinfo.json`) among them,
+only from the props of this package's own entry in `expo.plugins`
+(`src/config/webos-settings.ts`, `src/config/webos-config.ts`), not from a
+`webos` key another plugin could set. For generated files (`appinfo.json`),
+`rn-webos` can register base providers with `withBaseMod(config, { platform:
+"webos", mod: "appinfo", isProvider: true, action })` and run
+`evalModsAsync(config, { projectRoot, platforms: ["webos"] })`, with a cast on
+the platform type. Neither is documented, so pin the `@expo/config-plugins`
+range they were tested on.
 
 ## Implications for react-native-webos
 
@@ -350,7 +352,7 @@ so pin the `@expo/config-plugins` range they were tested on.
 
 | # | Gap | Why | Needs |
 |---|-----|-----|-------|
-| P2 | `app.config` in the simulator | `src/simulator/stage-app.ts` stages no `app.config`, so `Constants.expoConfig` is null there; a package has it | Call `writeAppConfig` when staging |
+| P2 | `app.config` in the simulator | Fixed: `src/simulator/stage-app.ts` calls `writeAppConfig`, so `Constants.expoConfig` is the app's config there as in a package | Done |
 | P3 | `reloadAppAsync` | Rejects with `ERR_UNAVAILABLE` | A host reload path |
 | P3 | Streaming fetch | `HttpEngine` hands over the body whole, so `expo/fetch` streams one chunk and `start()` settles at the end of the transfer | Incremental callbacks in the engine |
 | P4 | Linking third-party webOS modules | Section 5 | Autolinking search, CMake, generated provider |
@@ -365,7 +367,7 @@ so pin the `@expo/config-plugins` range they were tested on.
 | A no-op SharedObject releaser and no ids | `SharedObjectRegistry`: ids from 1 under a mutex, never reused; `release()` and the GC both delete; the releaser touches no runtime |
 | `getViewConfig` returned `undefined` | The view registry answers it (section 2) |
 | `asyncFunction` ran on the JavaScript thread | Bodies run on a background pool or the main loop and settle through the CallInvoker (`Invoke.h`) |
-| ExpoAsset wrote in place, unchecked; ignored `md5Hash` on a hit; keyed by `std::hash`; fell back to `/tmp` | Temporary file then rename, checked; re-downloads on an MD5 mismatch; MD5 of the URL as on iOS. When `app_get_data_path` or `app_get_cache_path` returns null, which webOS documents only for insufficient memory (`appfw/app_common.h:312,324`), the directory is one `mkdtemp` makes, private (0700) and unpredictable, under the temporary directory, instead of a fixed name there |
+| ExpoAsset wrote in place, unchecked; ignored `md5Hash` on a hit; keyed by `std::hash`; fell back to `/tmp` | Temporary file then rename, checked; re-downloads on an MD5 mismatch; MD5 of the URL as on iOS. When the package's `appdata` directory cannot be written (`runtime/host/src/platform/AppPaths.cpp`), the directory is one `mkdtemp` makes, private (0700) and unpredictable, under the temporary directory, instead of a fixed name there |
 | `reloadAppAsync` threw synchronously | Returns a rejected promise (P3 above) |
 | `expoModulesCoreVersion` was a string; no `uuidv5`, `cacheDir`, `documentsDir` | Installed as the contract types them |
 | `Expo.cmake` copied Apple's `NativeState.h` and left out `common/cpp/fabric` | Both fixed: `EventEmitter.h` takes the `jsi::NativeState` branch, as on Android |
@@ -386,7 +388,7 @@ every platform, and keeps `jsi` behind it (`ModuleDefinition.h`, `Invoke.h`,
 | `Name`, `Constant` | `ModuleDefinition("ExpoDevice").constant("deviceName", [] { return name; })` | once, when JavaScript first reads the module |
 | `Property` | `.property("totalDiskSpace", getter)` | JS thread, on every read |
 | `Function` | `.function("name", lambda)`; arguments and result convert from the lambda's own types | JS thread |
-| `AsyncFunction` | `.asyncFunction("name", lambda)`, or `(..., Queue::Main)` for Evas work; a last `Promise` parameter settles later, from any thread | a shared background pool, or the EFL main loop; settled through the CallInvoker |
+| `AsyncFunction` | `.asyncFunction("name", lambda)`, or `(..., Queue::Main)` for work on the window or the views; a last `Promise` parameter settles later, from any thread | a shared background pool, or the main loop; settled through the CallInvoker |
 | `OnStartObserving`, `OnStopObserving` | `.onStartObserving(f)`, `.onStopObserving(f)` | JS thread |
 | events | `sendEvent("name", payload)`, `sendEvent(object, "name", payload)`, `Context::emit` | any thread; delivered on the JS thread |
 | `Class`, `Constructor`, `Property`, `Function` | `.sharedClass(ClassDefinition<File>("FileSystemFile").constructor(f).property("exists", g).function("text", h))`; methods take `File &` first. `.property("muted", get, set)` adds a setter, `set(T &, value)` | as above |
@@ -450,17 +452,16 @@ their entry). The same screens passed on a webOS 25 TV on 2026-11-11
 | `ExpoFontLoader` with a variable font | Hanken Grotesk from a URL written as nine weights, each measured within 2.5 points of Chrome |
 | `FileSystem`, `ExponentConstants` paths | `Paths.document` and `Paths.cache` are the simulator's `app_get_data_path` and `app_get_cache_path` (the instance's `data/` and `cache/`), `app.config` is read from `app_get_resource_path` (the staged app) |
 
-Not verified: anything on a TV; a font or image bundled as an app asset (the
-screens use URLs); GC-driven release; `deviceName` from system settings, which the
-simulator does not have.
+Not verified: a font or image bundled as an app asset (the screens use URLs);
+GC-driven release; `ExpoKeepAwake` against a TV's screen saver.
 
 ### Open questions
 
 - Whether Metro's transform cache keys on `EXPO_PUBLIC_USE_RN_FETCH`. A bundle
   transformed once without it could keep `expo/fetch` as the global. Check with a
   cleared cache.
-- Whether a retail TV honours `elm_win_noblank_set` against its screensaver and
-  Auto Protection Time, and whether `SYSTEM_SETTINGS_KEY_DEVICE_NAME` answers on a
-  TV: record both on hardware.
+- Whether a TV sends its screen saver requests to the host's own subscription,
+  without SDL's registration (`webos-window-input.md`, section 13), so that
+  `ExpoKeepAwake` holds the saver off: record it on hardware.
 - Whether `app.config` should travel inside the bundle rather than beside it, so
   `rn-webos simulator run --bundle` and a package agree.

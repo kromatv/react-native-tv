@@ -10,10 +10,15 @@
 </p>
 
 <p align="center">
+  <a href="https://www.npmjs.com/package/@kromatv/react-native-webos"><img alt="npm" src="https://img.shields.io/npm/v/@kromatv/react-native-webos?label=npm"></a>
+  <a href="https://github.com/kromatv/react-native-webos/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/kromatv/react-native-webos/actions/workflows/ci.yml/badge.svg?branch=main"></a>
+  <a href="https://sonarcloud.io/summary/new_code?id=kromatv_react-native-webos"><img alt="Quality gate" src="https://sonarcloud.io/api/project_badges/measure?project=kromatv_react-native-webos&metric=alert_status"></a>
+  <a href="https://sonarcloud.io/component_measures?id=kromatv_react-native-webos&metric=coverage"><img alt="Coverage" src="https://sonarcloud.io/api/project_badges/measure?project=kromatv_react-native-webos&metric=coverage"></a>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue"></a>
+  <br>
   <img alt="React Native 0.88 (react-native-tvos)" src="https://img.shields.io/badge/React%20Native-0.88%20(react--native--tvos)-61dafb">
   <img alt="Expo SDK 58" src="https://img.shields.io/badge/Expo%20SDK-58-000020">
-  <img alt="webOS TV 4 and later, not yet run on a TV" src="https://img.shields.io/badge/webOS%20TV-4%20and%20later%2C%20not%20yet%20run%20on%20a%20TV-a50034">
+  <img alt="webOS TV 4 and later, run on webOS 24 and 25" src="https://img.shields.io/badge/webOS%20TV-4%20and%20later%2C%20run%20on%2024%20and%2025-a50034">
 </p>
 
 <p align="center">
@@ -22,10 +27,11 @@
   <sub>The example app in the simulator, captured with <code>rn-webos simulator screenshot</code>.</sub>
 </p>
 
-> **No LG TV has run this yet.** The port was made without one. Everything
-> below was built and checked in the [simulator](simulator/README.md), and the
-> TV build was checked against the firmware data of 14 webOS releases. What
-> only a TV can settle is listed under [Status](#status).
+> **An alpha, run on two LG TVs.** The example and one production app ran on
+> TVs of LG's Cloud Test Lab, webOS 24 and webOS 25
+> ([what ran](docs/reference/hardware-verification.md)). Everything else was
+> checked in the [simulator](simulator/README.md), and no TV in Developer Mode
+> has run it: see [Status](#status).
 
 ## Why
 

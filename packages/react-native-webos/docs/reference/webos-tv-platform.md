@@ -419,9 +419,10 @@ release), so they are D-3p for the image named in the last column.
    4.6 to 13) and cap glibc symbols: 2.28 reaches webOS 5 (2020), 2.24 webOS 4
    (2018), 2.19 webOS 2 (2015). LG's NDK targets webOS 26 and is only known to
    work there; the openlgtv toolchain (glibc 2.12.2) reaches every release.
-   Bundle curl, OpenSSL and ICU, whose names move, and mind `libwayland-egl`
-   below 4.10. Check each build against [wb-fwdata] the way
-   `tizen-tv-platform.md` 2.1 checks rootstraps.
+   Bundle curl, a TLS library and ICU, whose names move on a TV (the host
+   compiles in curl with Mbed TLS, and ICU), and mind `libwayland-egl` below
+   4.10. Check each build against [wb-fwdata], as `scripts/check-tv-binary.ts`
+   does.
 4. **Write `appinfo.json` from the Expo config** with `type: "native"`,
    `main`, `nativeLifeCycleInterfaceVersion: 2`, `handlesRelaunch: true`,
    80x80 and 130x130 icons, a 1920x1080 `splashBackground`, `iconColor`, and

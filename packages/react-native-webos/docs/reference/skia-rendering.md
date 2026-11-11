@@ -4,9 +4,11 @@ Whether Skia can replace Evas as the renderer of a React Native host on webOS,
 and how to build it. webOS has no EFL: the brief for this port gives a native app
 a Wayland surface with EGL and OpenGL ES 2 on armv7 SoCs (2016 to 2026 TVs).
 Neither is verified here; the webOS platform reference owns those facts. What the
-renderer must do is listed in [efl-rendering.md](efl-rendering.md). The TV build
-of section 4 compiles; nothing in this file was run on a TV, and section 10 says
-what one has to confirm.
+renderer must do was listed in react-native-tizen's `efl-rendering.md`, the
+renderer this one replaces. The TV build of section 4 compiles and has drawn the
+example's screens on a webOS 25 TV
+([hardware-verification.md](hardware-verification.md)); the rows of this file
+were not re-checked there, and section 10 says what a TV has to confirm.
 
 | Mark | Meaning |
 | --- | --- |
@@ -185,7 +187,7 @@ again by name (`sk:site/docs/user/build.md#L14-L36`). All rows are `src`.
 | Skia's bundled ICU is version 78 too, compiled with `U_DISABLE_RENAMING=1`, its whole data file linked in as assembly | src | `sk:third_party/icu/BUILD.gn#L16-L57`, `#L73-L82` |
 | With `skia_use_system_icu=true` the ICU backend is compiled without `U_DISABLE_RENAMING`, against whatever `<unicode/*.h>` is on the include path. rust-skia and vcpkg build this way | src | `sk:modules/skunicode/BUILD.gn#L70-L75`; `rs:.../config.rs#L191-L192`; `vcpkg:` (`skia_use_icu=true skia_use_system_icu=true`) |
 | The runtime's ICU 78.3 is static, hidden, and keeps ICU's default renaming (`U_ICU_VERSION_SUFFIX _78`): `Icu.cmake` defines no `U_DISABLE_RENAMING`. Its public headers are copied to `${CMAKE_BINARY_DIR}/icu/include` at configure time | src | `runtime/cmake/Icu.cmake:14-36`; `icu:common/unicode/uvernum.h:82`, `icu:common/unicode/urename.h:34` |
-| So SkUnicode compiled against those headers references `ubrk_open_78` and the like, which the runtime's `rn_tizen_icuuc` archive defines; hidden visibility does not matter inside one shared object. ICU's i18n library is not needed | inf | the rows above |
+| So SkUnicode compiled against those headers references `ubrk_open_78` and the like, which the runtime's `rn_webos_icuuc` archive defines; hidden visibility does not matter inside one shared object. ICU's i18n library is not needed | inf | the rows above |
 | A break iterator opens `brkitr/<locale>.res`, reads its `boundaries` table, then opens the `.brk` rule file it names | src | `icu:common/brkiter.cpp:78-113` |
 | Emoji properties (`UCHAR_EMOJI` ...) load the item `uemoji.icu` | src | `icu:common/emojiprops.cpp:84`, `icu:common/uprops.cpp:465-472` |
 | The app's trimmed `icudt78l.dat` keeps only the trees `''`, `coll`, `curr` and `zone`: the whole `brkitr` tree is dropped today, on purpose ("break iteration [...] are what Hermes never asks ICU for"). `uemoji.icu` and `ulayout.icu` are in the root tree and stay | src | `src/runtime/icu-data.ts:17-25`, `:41-59` |
@@ -542,7 +544,7 @@ and `ninja -C <out> skia skparagraph skshaper skunicode_core skunicode_icu svg
 skresources`, with the seven archives as `BUILD_BYPRODUCTS` of imported static
 targets and `cc_wrapper="ccache"` when ccache is found. The host is compiled
 with the defines read from `<out>/obj/skia.ninja` and links, in this order, the
-Skia archives, `rn_tizen_icuuc`, then `EGL`, `GLESv2`, `dl` and `pthread`. One
+Skia archives, `rn_webos_icuuc`, then `EGL`, `GLESv2`, `dl` and `pthread`. One
 output directory per target and per argument set, in the shared cache, so a
 build costs its 10 to 15 minutes once per machine.
 

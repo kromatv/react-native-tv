@@ -53,10 +53,9 @@ on a TV. Hermes is `hermes-v260318099.0.4`, ICU 78.3, FormatJS as pinned in
 
 | Fact | Tag | Source |
 |---|---|---|
-| Tizen 9.0 ships `libicuuc.so.74`, Tizen 10.0 `libicuuc.so.76`. | O | rootstraps, `usr/lib/libicuuc.so.*` |
-| Samsung builds ICU without symbol renaming: `u_strToUpper` and `icu::TimeZone::createDefault()` carry no version, so the two releases differ by soname and ABI, not by symbol name. | O | `llvm-nm -D` on both rootstraps' `libicuuc.so` and `libicui18n.so`, 2026-11-03 |
-| Loading whichever `libicuuc.so.*` a TV has would serve a C caller across both years, but not Hermes, whose C++ calls ICU requires to be recompiled per release. | I | the two rows above and [icu-design] |
-| Which `LANG` and `TZ` a TV gives an app process, and whether `/etc/localtime` names the zone, is not documented. | I | not found in Samsung's or Tizen's docs, 2026-11-03 |
+| A TV's `libicuuc` has a different soname per generation: `.50` on webOS 1 and 2, `.53` on 3, `.57` on 4, `.62` on 5 and 6, `.66` on 7 and 8, `.70` on 9 and 10, `.74` on 11. | O | `webos-native-toolchain.md`, the libraries table, from the firmware images |
+| No one link line loads on all of them, and Hermes calls ICU's C++ API, which ICU requires to be recompiled per release. | I | the row above and [icu-design] |
+| Which `LANG` and `TZ` a TV gives an app process, and whether `/etc/localtime` names the zone, was not looked up for webOS. | I | open |
 | The language of the TV's menus is `settings.localeInfo.locales.UI` of the settings service, a BCP 47 tag such as `en-GB`; the same object has `FMT`, the locale of formats, and a `timezone` that LG's example leaves empty. | D | `webos-tv-platform.md`, section 4.3 |
 | React Native's `I18nManager` reads the locale once, when its module loads, and has no listener for a change of it. | S | `Libraries/ReactNative/I18nManager.js:15-29` of React Native 0.88 |
 | flutter-webos ships ICU data in the package's `res/`. | D | [ft-package](https://github.com/flutter-webos/flutter-webos/blob/master/lib/build_targets/package.dart) |
@@ -65,7 +64,7 @@ on a TV. Hermes is `hermes-v260318099.0.4`, ICU 78.3, FormatJS as pinned in
 
 - The runtime compiles ICU 78.3 in, symbols hidden, and builds Hermes with its
   Intl on it (`docs/decisions.md`, "ICU inside the runtime"). The TV's ICU is not
-  linked: a package built against one soname does not load on the other year.
+  linked: a package built against one soname does not load on a release with another.
 - Hermes' `NumberFormat` stub and missing services are replaced by FormatJS,
   in every webOS bundle, with the app's locales; the device's locale, as
   Hermes' ICU resolves it, becomes their default.
