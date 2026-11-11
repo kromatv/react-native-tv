@@ -243,7 +243,7 @@ std::unique_ptr<LunaClient> LunaClient::registerAs(const std::string &name, std:
     return nullptr;
   };
   const auto *api = lunaApi();
-  if (api == nullptr) return refuse("luna-service2 is not on this device");
+  if (api == nullptr) return nullptr;
   LSError error{};
   api->errorInit(&error);
   LSHandle *handle = nullptr;

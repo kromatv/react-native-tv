@@ -32,6 +32,7 @@ LunaConnection *connect() {
       log(LogLevel::Info, "[video] on the Luna bus as " + name);
       return client.release();
     }
+    if (refusal.empty()) return nullptr;
     log(LogLevel::Debug, std::format("[video] open question: the Luna bus refused the name {}: {}", name, refusal));
   }
   auto &own = LunaBus::get();

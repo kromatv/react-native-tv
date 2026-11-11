@@ -156,6 +156,7 @@ class MediaPlayer final : public PlayerBackendListener {
   bool playing_{false};
   bool wantsPlaying_{false};
   bool askedPlaying_{false};
+  std::optional<bool> awaitedPlaying_;
   SeekState seek_;
   std::map<TrackKind, int> pendingTracks_;
   Settings settings_;

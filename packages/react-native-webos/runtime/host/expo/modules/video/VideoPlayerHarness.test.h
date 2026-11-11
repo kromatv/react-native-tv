@@ -52,8 +52,8 @@ inline std::string lastEvent(ExpoTestRuntime &expo, const std::string &name) {
   return canonical(expo, "events.filter(([n]) => n === '" + name + "').at(-1).slice(1)");
 }
 
-/// The message the simulator's player shim leads every source to.
-inline constexpr const char *kNoPlayer =
-    "This device has no media player: player_create returned PLAYER_ERROR_FEATURE_NOT_SUPPORTED_ON_DEVICE";
+/// A source the simulated player never finishes loading, for the tests that
+/// play the pipeline's part themselves.
+inline constexpr const char *kNeverLoads = "https://example.com/a.mp4#sim:load=3600";
 
 } // namespace rnwebos::expo::testing

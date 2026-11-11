@@ -46,4 +46,12 @@ TEST_CASE("nothing is shown for a view off the window or too small to draw") {
   CHECK_FALSE(fitVideo({.x = 0, .y = 0, .width = 100, .height = 100}, kScreen, 1000, 1, ContentFit::Contain).has_value());
 }
 
+TEST_CASE("the source rectangle is the crop in frame pixels, and empty while the frame's size is unknown") {
+  CHECK(sourcePixels({}, 1920, 1080) == PixelRect{.x = 0, .y = 0, .width = 1920, .height = 1080});
+  CHECK(sourcePixels({.x = 0.25, .y = 0, .width = 0.5, .height = 1}, 1600, 800) ==
+        PixelRect{.x = 400, .y = 0, .width = 800, .height = 800});
+  CHECK(sourcePixels({.x = 0.999, .y = 0.999, .width = 0.0001, .height = 0.0001}, 100, 100).width == 1);
+  CHECK(sourcePixels({}, 0, 1080) == PixelRect{});
+}
+
 } // namespace rnwebos::expo

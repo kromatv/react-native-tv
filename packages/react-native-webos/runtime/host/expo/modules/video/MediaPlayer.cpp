@@ -28,6 +28,7 @@ void MediaPlayer::open(const std::string &uri, const SourceHeaders &headers) {
   seek_.pending.reset();
   pendingTracks_.clear();
   askedPlaying_ = false;
+  awaitedPlaying_.reset();
   duration_ = 0;
   position_ = 0;
   buffered_ = -1;
@@ -77,6 +78,7 @@ void MediaPlayer::pump() {
   }
   if (wantsPlaying_ == askedPlaying_) return;
   askedPlaying_ = wantsPlaying_;
+  if (awaitedPlaying_ || playing_ != wantsPlaying_) awaitedPlaying_ = wantsPlaying_;
   playerLog(number_, wantsPlaying_ ? "play" : "pause");
   if (wantsPlaying_) {
     backend_->play();
@@ -150,6 +152,7 @@ void MediaPlayer::fail(const std::string &message) {
   playerLog(number_, message, LogLevel::Error);
   wantsPlaying_ = false;
   askedPlaying_ = false;
+  awaitedPlaying_.reset();
   seek_.inFlight = false;
   seek_.pending.reset();
   progress_.cancel();

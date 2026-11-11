@@ -89,8 +89,8 @@ void pauseMediaSessionsForBackground(bool backgroundMediaDeclared) {
   }
   log(LogLevel::Warning,
       std::format(
-          "Background: {} player(s) stay active, but the app did not declare background playback, so the TV may "
-          "stop them; set supportsBackgroundPlayback in expo-video's config plugin",
+          "Background: {} player(s) stay active, but the app's config does not set backgroundMedia, so the TV may "
+          "stop them",
           kept));
 }
 

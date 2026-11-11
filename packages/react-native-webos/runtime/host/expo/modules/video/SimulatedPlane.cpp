@@ -16,6 +16,7 @@ constexpr int kPlaneOrder = Scene::kErrorOrder + 1000;
 constexpr SkColor kPicture = SkColorSetRGB(0x16, 0x1d, 0x2e);
 constexpr SkColor kPattern = SkColorSetRGB(0x3b, 0x4a, 0x6b);
 constexpr SkColor kSubtitle = SkColorSetRGB(0xff, 0xd2, 0x3f);
+constexpr float kFullTextHeight = 600;
 
 SkRect rectOf(const PixelRect &rect) {
   return SkRect::MakeXYWH(
@@ -39,7 +40,7 @@ void SimulatedPlane::show(Scene &scene, const PixelRect &source, const PixelRect
     scene.addLayer(*this, kPlaneOrder);
   }
   if (source == source_ && destination == destination_) return;
-  if (destination.width != destination_.width) {
+  if (destination.width != destination_.width || destination.height != destination_.height) {
     captionText_.reset();
     subtitleText_.reset();
   }
@@ -105,7 +106,8 @@ void SimulatedPlane::drawFrame(SkCanvas &canvas, const SkRect &target) const {
 void SimulatedPlane::draw(SkCanvas &canvas) {
   if (scene_ == nullptr || destination_.width <= 0 || destination_.height <= 0) return;
   const auto target = rectOf(destination_);
-  const auto scale = static_cast<float>(scene_->size().height) / 1080;
+  const auto scale =
+      static_cast<float>(scene_->size().height) / 1080 * std::clamp(target.height() / kFullTextHeight, 0.5f, 1.0f);
   const float margin = 20 * scale;
   const float textWidth = std::max(1.0f, target.width() - 2 * margin);
   if (!captionText_) captionText_ = overlayParagraph({{.text = caption_, .size = 22 * scale}}, textWidth);

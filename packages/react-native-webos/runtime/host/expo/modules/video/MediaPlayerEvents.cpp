@@ -32,9 +32,18 @@ void MediaPlayer::backendLoaded(const LoadedMedia &media) {
   pump();
 }
 
+// A state nobody asked for is the pipeline's own doing, as when the TV pauses
+// it: the player takes it over rather than ask again. One that only differs
+// from the newest request answers an older one, and the newest still follows.
 void MediaPlayer::backendPlayingChanged(bool playing) {
   if (phase_ != Phase::Ready) return;
-  askedPlaying_ = playing;
+  if (awaitedPlaying_ == playing) {
+    awaitedPlaying_.reset();
+  } else if (!awaitedPlaying_ && playing != wantsPlaying_) {
+    playerLog(number_, playing ? "the pipeline started playing by itself" : "the pipeline paused by itself");
+    wantsPlaying_ = playing;
+    askedPlaying_ = playing;
+  }
   setPlaying(playing);
   pump();
 }
@@ -80,9 +89,10 @@ void MediaPlayer::backendEnded() {
     seek_.pending = 0;
   } else {
     wantsPlaying_ = false;
+    awaitedPlaying_.reset();
+    setPlaying(false);
     // Paused so that a replay starts from a state every release answers `play` in.
     backend_->pause();
-    setPlaying(false);
   }
   if (auto observer = observer_.lock()) observer->playerEnded();
   pump();

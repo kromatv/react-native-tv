@@ -24,11 +24,9 @@ LoadedMedia twoLanguages() {
   };
 }
 
-constexpr auto kSource = "'https://example.com/a.mp4'";
-
 std::shared_ptr<VideoPlayer> settledPlayer(ExpoTestRuntime &expo) {
-  auto native = createVideoPlayer(expo, kSource);
-  REQUIRE(awaitEvents(expo, "statusChange"));
+  auto native = createVideoPlayer(expo, std::string("'") + testing::kNeverLoads + "'");
+  for (int round = 0; round < 3; ++round) expo.pump();
   return native;
 }
 
@@ -41,9 +39,9 @@ TEST_CASE("a player's status change reaches JavaScript once, and every error doe
   native->playerStatusChanged(PlayerStatus::ReadyToPlay, "");
   native->playerStatusChanged(PlayerStatus::Error, "first");
   native->playerStatusChanged(PlayerStatus::Error, "second");
-  REQUIRE(awaitEvents(expo, "statusChange", 4));
-  CHECK(canonical(expo, "events.filter(([n]) => n === 'statusChange').slice(1).map(([, e]) => e)") ==
-        R"([{"oldStatus":"error","status":"readyToPlay"},)"
+  REQUIRE(awaitEvents(expo, "statusChange", 3));
+  CHECK(canonical(expo, "events.filter(([n]) => n === 'statusChange').map(([, e]) => e)") ==
+        R"([{"oldStatus":"loading","status":"readyToPlay"},)"
         R"({"error":{"message":"first"},"oldStatus":"readyToPlay","status":"error"},)"
         R"({"error":{"message":"second"},"oldStatus":"error","status":"error"}])");
   CHECK(expo.json("player.status") == "\"error\"");
@@ -86,11 +84,11 @@ TEST_CASE("the media a player loads reaches JavaScript as its source, duration a
   const auto native = settledPlayer(expo);
   native->playerLoaded(twoLanguages());
   REQUIRE(awaitEvents(expo, "videoTrackChange"));
-  CHECK(expo.json("events.slice(1).map(([n]) => n)") ==
+  CHECK(expo.json("events.map(([n]) => n)") ==
         R"(["sourceLoad","availableAudioTracksChange","availableSubtitleTracksChange","audioTrackChange","videoTrackChange"])");
   CHECK(expo.json("(([, e]) => [e.videoSource, e.duration, e.availableVideoTracks.length, e.availableAudioTracks.length,"
                   " e.availableSubtitleTracks.length])(events.find(([n]) => n === 'sourceLoad'))") ==
-        R"(["https://example.com/a.mp4",42,1,2,1])");
+        R"(["https://example.com/a.mp4#sim:load=3600",42,1,2,1])");
   CHECK(lastEvent(expo, "audioTrackChange").find(R"("id":"audio-1")") != std::string::npos);
   CHECK(canonical(expo, "[player.duration, player.audioTrack.label, player.subtitleTrack, player.availableAudioTracks.length,"
                         " player.availableSubtitleTracks[0].language, player.videoTrack.size, player.availableVideoTracks.length]") ==
@@ -145,6 +143,8 @@ TEST_CASE("the TV's media session drives the player and reads it back") {
   CHECK(expo.json("player.currentTime") == "0");
   session.play();
   session.pause();
+  session.appForegroundChanged(false);
+  session.appForegroundChanged(true);
 
   CHECK_FALSE(session.setSubtitlesEnabled(true));
   native->playerLoaded(twoLanguages());
@@ -159,7 +159,7 @@ TEST_CASE("the TV's media session drives the player and reads it back") {
 TEST_CASE("a player JavaScript does not hold, or whose app is gone, reports nothing") {
   ExpoTestRuntime expo;
   const auto unpaired = std::make_shared<VideoPlayer>(expo.context());
-  CHECK(unpaired->webosPlayer() == nullptr);
+  CHECK(unpaired->mediaPlayer() == nullptr);
   unpaired->setMuted(true);
   unpaired->playerEnded();
   unpaired->setSubtitleTrack(nullptr);
@@ -167,10 +167,12 @@ TEST_CASE("a player JavaScript does not hold, or whose app is gone, reports noth
 
   auto orphan = std::make_shared<VideoPlayer>(std::weak_ptr<Context>());
   orphan->open(folly::dynamic::object("uri", "https://example.com/a.mp4"));
-  CHECK(orphan->webosPlayer() != nullptr);
+  CHECK(orphan->mediaPlayer() != nullptr);
   orphan->setVolume(0.5);
   orphan->playerEnded();
-  CHECK(expo.pumpUntil([&orphan] { return orphan->status() == PlayerStatus::Error; }));
+  orphan->playerStatusChanged(PlayerStatus::Error, "gone");
+  for (int round = 0; round < 3; ++round) expo.pump();
+  CHECK(orphan->status() == PlayerStatus::Error);
   CHECK(orphan->volume() == 0.5);
 }
 

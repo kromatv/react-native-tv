@@ -15,8 +15,9 @@ namespace rnwebos {
 /// thread of its own. Any thread.
 class LunaClient final : public LunaConnection {
  public:
-  /// Registers as `name`. Null where luna-service2 is missing, as in the
-  /// simulator, or when the hub refuses the name; `refusal` then says why.
+  /// Registers as `name`. Null when the hub refuses the name, and `refusal`
+  /// then says why; null with `refusal` left empty where luna-service2 is
+  /// missing, as in the simulator.
   static std::unique_ptr<LunaClient> registerAs(const std::string &name, std::string *refusal = nullptr);
 
   ~LunaClient() override;

@@ -164,13 +164,13 @@ void SimulatedPlayer::tick() {
     return;
   }
   listener_.backendPosition(position_);
+  listener_.backendBuffered(std::min(duration, position_ + kBufferAhead));
   if (position_ >= duration) {
     playing_ = false;
     describe();
     listener_.backendEnded();
     return;
   }
-  listener_.backendBuffered(std::min(duration, position_ + kBufferAhead));
   startClock();
 }
 

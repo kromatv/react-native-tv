@@ -46,7 +46,8 @@ void openQuestion(int player, const std::string &what) {
 // Open question 1. A fixed name stays held for a while after a killed process,
 // so the name carries the process id (nuvio's fallback, the reference's first choice).
 std::vector<std::string> busNames(const std::string &appId, int processId) {
-  return {std::format("com.webos.media.client.{}.{}", appId, processId)};
+  const auto owner = appId.empty() ? std::string("app") : appId;
+  return {std::format("com.webos.media.client.{}.{}", owner, processId)};
 }
 
 // Open question 2. LG's plugin sends `mediaTransportType` beside `option` for
