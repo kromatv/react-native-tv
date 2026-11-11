@@ -1,42 +1,84 @@
 # Benchmarks
 
-What react-native-webos costs on a real TV: how long a cold start takes to
-draw, the frame rate of a long list and of a native-driver animation, the
-memory the app holds, and the size of its package. Every number here was
-measured on the TV below with the commands below. None is estimated.
+What react-native-webos costs, as far as it can be measured without a TV.
+Every number here comes from the simulator, on the machine below, with the
+commands below. None is estimated, and none says how fast an LG TV is.
 
-## Device and build
+## What these numbers are good for
+
+The simulator draws with Mesa's llvmpipe, a software renderer on the Mac's
+CPU, in a Linux VM. A TV draws on its own GPU, with its own processor. So:
+
+- A number that compares two builds on the same machine means something: it is
+  how the changes under [What changed, and by how much](#what-changed-and-by-how-much)
+  were judged.
+- A frame rate, a start time or a memory figure says nothing about a TV. The
+  process memory in particular is mostly the software renderer and LLVM, which
+  a TV does not load.
+- Package and executable sizes are the TV's own: they are the files a TV gets.
+
+The same screen and the same commands run on a TV, where `rn-webos perf` reads
+the same counters. Those numbers go here, with the TV's model, year and webOS
+version, once a TV has run it.
+
+## Machine and build
 
 | | |
 |---|---|
-| TV | Samsung GQ75LS03DAUXZG (The Frame, 2024) |
-| webOS | 9.0, armv7 (`cpu_arch:armv7` in sdb's capabilities) |
-| Package floor | 9.0, the default at f6a4af1: the runtime linked against the 9.0 rootstrap, the shell built for `webos90` |
-| UI plane | 1920x1080. The animator ticks at 50 Hz (`hz` in `rn-webos perf`) |
-| Network | the TV and the Mac on the same home LAN |
-| Build machine | Apple M2 Max, macOS 27.2 |
-| react-native-webos | `main` at f6a4af1, plus the bench entry from this page's pull request |
-| App | `example/` with the entry `src/screens/bench/main.ts`: Expo SDK 58, react-native-tvos 0.88.0-0, React 19.3, locales `en` and `fr` |
-| Date | 2026-11-04 |
+| Machine | Apple M2 Max, macOS 27.2 |
+| Simulator | Lima VM `rn-webos-sim`: Ubuntu 26.04 aarch64, 8 CPUs, 12 GiB |
+| Renderer | OpenGL ES 3.2, Mesa 26.0.8 llvmpipe (LLVM 21.1.8), on Xvfb, 1920x1080 |
+| Display pacing | none: Xvfb reports no refresh rate, so the host paces frames at 60 Hz itself |
+| react-native-webos | `main` on 2026-11-11, development runtime (`RelWithDebInfo`) |
+| App | `example/` with the entry `src/screens/bench/main.ts`: Expo SDK 58, react-native-tvos 0.88.0-0, React 19.3, react-native-svg compiled in, locales `en` and `fr` |
 
 ## Results
 
-| What | Median | Runs |
-|---|---|---|
-| Cold start, launch command to first frame, release build | 1,196 ms (1,120 to 2,603) | 17 launches |
-| FlatList of 1,000 rows, focus one row every 200 ms | 54.1 frames/s, 22 dropped frames in 114 s | 3 runs |
-| The same, one row every 50 ms | 52.9 frames/s, 135 dropped frames in 115 s, JavaScript thread 100% busy | 3 runs |
-| 12 views on the native animated driver | 49.9 frames/s, 0 dropped frames in 84 s | 3 runs |
-| Resident memory, release build, list still | 63.7 MB | 3 runs |
-| Resident memory, release build, scrolling at 200 ms | 94.4 MB, peak 103.9 MB | 3 runs |
-| `.tpk` size, release build | 8.0 MB (7,997,694 bytes) | 1 build |
-| The same screen as a webOS web app (react-native-web), cold start | 2,075 ms (1,390 to 2,892) | 17 launches |
-| The web app's `.wgt` | 0.16 MB (163,032 bytes) | 1 build |
+20 s of `rn-webos simulator perf` in each phase of the bench screen:
 
-Frame counts come from a development build, because only a development build
-answers `rn-webos perf`. It runs the development runtime, which carries Hermes'
-debugger and the dev server tooling. A release build was not measured for
-frames.
+| Phase | Frames/s | Dropped | Render, average and 95th percentile | Main loop busy | JavaScript thread busy |
+|---|---|---|---|---|---|
+| Still | 0.1 | 0 | 0.6 ms | 0.3% | 0.1% |
+| FlatList of 1,000 rows, focus one row every 200 ms | 60.0 | 0 of 1,206 | 0.3 ms, 1.5 ms | 2.9% | 5.2% |
+| The same, one row every 50 ms | 60.0 | 0 of 1,205 | 0.3 ms, 1.5 ms | 4.5% | 17.5% |
+| 12 views on the native animated driver | 60.0 | 0 of 1,205 | 0.2 ms, 1.3 ms | 2.4% | 0.0% |
+
+"Render" is the time the main loop spends walking the views and handing Skia
+their drawing. Rasterizing happens on llvmpipe's own threads and is not in it.
+A still screen draws nothing: the 0.1 frames a second are the screen's memory
+label, the two times its text changed.
+
+| What a TV gets | |
+|---|---|
+| The release executable, `react-native-webos` | 20.2 MB (20,224,556 bytes), 32-bit ARM, Thumb-2 |
+| The release package of the example | 10.9 MB (10,947,530 bytes), 25.2 MB installed |
+
+| Start, in the simulator | |
+|---|---|
+| Launch to the bench screen's first frame, development build | 257 to 277 ms over 28 launches, read from the app's log every 5 ms |
+
+## What changed, and by how much
+
+Each row compares two builds that differ by one change, on the bench screen at
+one row every 50 ms unless it says otherwise.
+
+| Change | Before | After |
+|---|---|---|
+| A paragraph is laid out once, on the layout thread, and its view plays the recording (React Native's prepared text layout) | render 4.3 ms at the 95th percentile, 4.5 ms at worst; 5.7 ms mounting paragraphs in 20 s | 1.4 ms, 1.7 ms; 3.6 ms |
+| Frames are paced from when each might have started, not from a timer's late wake | 50.8 frames/s, the loop ticking at 51.9 Hz | 60.0 frames/s, 60.1 Hz |
+| A hidden app frees Skia's GPU caches, collects JavaScript garbage and returns freed heap | 173.6 MB of process memory after a scroll | 167.1 MB while hidden; 4.1 MB of it GPU caches by Skia's count |
+| Skia keeps compiled shaders on disk between runs | 257 to 277 ms to the first frame without the cache | 257 to 272 ms with it: no difference here, where a shader compiles in no time. 35 programs, 356 KB on disk after visiting every example screen |
+
+The screenshots of the example's rendering screens were compared pixel for
+pixel across the first and the fourth change. The four text screens are
+identical with the first. With the fourth, ten screens are identical, the
+transform screen has one pixel one level off, and the three screens that
+scroll by themselves were caught at another position.
+
+The shader cache, the cache limit and the missing stencil buffers follow what
+Flutter does on the same renderer
+([skia-rendering.md](reference/skia-rendering.md), section 7). What they are
+worth on a TV's GPU is not known.
 
 ## The app
 
@@ -44,225 +86,42 @@ frames.
 
 - **FlatList.** 1,000 rows of 96 points, each a colored tile and two lines of
   text, with `getItemLayout`. Focus moves down one row on a timer, and an
-  animated `scrollToIndex` keeps the focused row in the middle. The list has a
-  fixed height of 780 points.
+  animated `scrollToIndex` keeps the focused row in the middle. Enter steps
+  through still, 200 ms and 50 ms.
 - **Native animated driver.** 12 views loop `translateX` over 1,400 points and
   `opacity`, with `useNativeDriver: true`, a 3 s cycle each, started 120 ms
-  apart.
-- **Reports.** The screen posts to `EXPO_PUBLIC_BENCH_REPORT_URL`: the first
-  animation frame after its first mount, and once a second the process's
-  `VmRSS` and `VmHWM`, read from `/proc/self/status` through expo-file-system.
+  apart. Right shows it.
+- **Reports.** The screen logs the first animation frame after its first
+  mount, and posts it to `EXPO_PUBLIC_BENCH_REPORT_URL` when that is set, with
+  the process's `VmRSS` and `VmHWM` once a second.
 - **Timeline.** With `EXPO_PUBLIC_BENCH_TIMELINE=1`, the screen ignores the
   remote and runs a fixed sequence from mount: 20 s still, 40 s with focus
-  moving every 200 ms, 40 s every 50 ms, then 30 s of the animation. It posts
-  each phase as it starts. Remote presses nobody sent reached the app during
-  earlier runs, so the remote cannot change a measurement.
+  moving every 200 ms, 40 s every 50 ms, then 30 s of the animation.
 
-`example/scripts/bench-server.ts` is the machine side: it receives the reports
-and, for cold starts, launches the app.
-
-## Method
-
-### Cold start
-
-The release package was installed once. `bench-server.ts cold-start` then
-launched it 17 times over sdb: 12 launches 8 s apart, then 5 launches 60 s
-apart. For each launch it opens an sdb connection, reads the TV's capabilities,
-starts a clock, sends `0 execute <app id>`, and stops the clock when the app's
-first-frame report arrives over HTTP. It answers that report with `exit`, and
-the app calls `BackHandler.exitApp()`. Every launch got a new process id from
-the TV, so each one started a new process.
-
-The time covers the TV's launcher, the .NET shell, loading
-`libreact-native-webos.so`, Hermes loading the bytecode, the first React
-render, Fabric's first mount, the first frame, and one HTTP request on the LAN.
-The TV answered `0 execute` after a median of 779 ms, and the first frame
-arrived a median of 438 ms after that answer. The first launch after the
-install took 2,603 ms. The others took 1,120 to 1,372 ms. Launches 8 s apart
-and 60 s apart gave medians of 1,206 ms and 1,196 ms.
-
-### Frame rate
-
-The development package was installed and launched 3 times, each time with
-`rn-webos perf --duration 135 --out <file>` running from the launch to the end
-of the timeline. `perf` reports a sample about every 1.24 s. Each sample was
-assigned to a phase by the time it printed, and the first 2 s of each phase
-were left out.
-
-- **Frames/s** is `frames * 1000 / window`: canvas renders that finished
-  (`EVAS_CALLBACK_RENDER_POST`) per second. The median is over every sample of
-  the phase across the 3 runs.
-- **Dropped** is the sum of `dropped`: display ticks the main loop missed while
-  the canvas had something to draw.
-- The animator ticked at 50 Hz in every sample. While the list scrolled, the
-  canvas rendered more often than the animator ticked.
-
-| Phase | Frames/s (median, 5th percentile) | Dropped | JavaScript thread busy | Main loop busy | Render, 95th percentile of the slowest per sample | Hermes heap |
-|---|---|---|---|---|---|---|
-| Still | 0 | 0 in 54 s | 0.2% | 0.4% | | 5.1 MB |
-| Focus every 200 ms | 54.1, 51.7 | 22 in 114 s | 58% | 40% | 9.3 ms | 13.6 MB |
-| Focus every 50 ms | 52.9, 50.7 | 135 in 115 s | 100% | 45% | 9.1 ms | 13.0 MB |
-| Animation | 49.9, 49.6 | 0 in 84 s | 0.2% | 10% | 5.3 ms | 13.1 MB |
-
-At one row every 50 ms the JavaScript thread is busy the whole time, and about
-one frame a second drops. During the animation the JavaScript thread is idle:
-the native driver runs it on the main loop.
-
-### The same screen as a webOS web app
-
-The bench's components were also built for the web with react-native-web,
-packaged as a webOS web app, installed on the same TV and launched with the
-same harness, 12 times 8 s apart and 5 times 60 s apart.
-
-- The web app is a blank Expo SDK 58 app (`create-expo-app --template
-  blank-typescript`, then `npx expo install react-dom react-native-web
-  @expo/metro-runtime`) holding copies of `list-bench.tsx`,
-  `animation-bench.tsx`, `bench-screens.tsx` and `bench-timeline.ts`. Two
-  files differ. `useTVEventHandler` comes from a `keydown` listener, and the
-  report hook exits with `webos.application.getCurrentApplication().exit()`
-  and reads no memory. The list has the same fixed height.
-- `EXPO_PUBLIC_BENCH_REPORT_URL=... npx expo export -p web` wrote 517 KB of
-  minified JavaScript. Its script path was made relative, and a `config.xml`
-  with the `internet` privilege and `required_version="3.0"` was added. The
-  package was signed with the same profile.
-
-| Cold start, launch command to first frame | Native `.tpk` (release) | Web `.wgt` |
-|---|---|---|
-| 12 launches 8 s apart | 1,206 ms | 2,078 ms |
-| 5 launches 60 s apart | 1,196 ms | 1,654 ms |
-| All 17 | 1,196 ms | 2,075 ms |
-| The TV answered `0 execute` after | 779 ms | 1,308 ms |
-| Package | 8.0 MB | 0.16 MB |
-
-Both apps got a new process on every launch. The web series started 23 minutes
-after the native one ended. The web app's `.wgt` is small because the TV already
-carries its browser engine. The native package carries Hermes, React Native and
-ICU.
-
-Frame rate and memory were not compared. A web app cannot read the canvas
-render counter `rn-webos perf` reads, and `requestAnimationFrame` callbacks
-count the page's free main thread, not frames drawn. Its process's resident
-memory is out of the page's reach.
-
-### Memory
-
-The release package was installed and launched 3 times and ran the timeline
-each time. Each phase's figure is the median of the app's `VmRSS` reports in
-that phase, and the table gives the median of the 3 runs.
-
-| Phase | Resident memory (release) | Resident memory (development) |
-|---|---|---|
-| Still | 63.7 MB | 64.3 MB |
-| Focus every 200 ms | 94.4 MB | 92.1 MB |
-| Focus every 50 ms | 90.4 MB | 91.2 MB |
-| Animation, after the list unmounted | 87.8 MB | 88.5 MB |
-| Peak (`VmHWM`) | 103.9 MB | 104.2 MB |
-
-`VmRSS` counts every page the process holds: the .NET runtime of the shell,
-`libreact-native-webos.so`, EFL, the GPU driver's mappings, Hermes and the
-app's views.
-
-### Package size
-
-`rn-webos package` with the bench entry, release build:
-
-| File | Size | In the `.tpk` (deflated) |
-|---|---|---|
-| `lib/libreact-native-webos.so` | 17.2 MB | 6.0 MB |
-| `res/icudt78l.dat` (ICU data for `en` and `fr`) | 2.6 MB | 1.0 MB |
-| `res/index.webos.hbc` (Hermes bytecode) | 2.0 MB | 0.9 MB |
-| The rest: the .NET shell, the preview service, signatures, notices, icon | | 0.05 MB |
-| **The `.tpk`** | | **8.0 MB** |
-
-The runtime ships with its symbol table. Stripped with `llvm-strip`, the same
-library is 11.8 MB. The bytecode holds FormatJS's `Intl` data for the two
-locales the example lists.
-
-## Reproduce
-
-From `example/`, with a TV in Developer mode and a signing profile. The runs
-above used a 9.0 floor, so the commands pass `--platform 9.0`; since 6.0
-became the default floor, every package's shell lands in `webos80/`:
+## Reproducing
 
 ```sh
-export EXPO_PUBLIC_BENCH_REPORT_URL=http://<this machine>:47200 EXPO_PUBLIC_BENCH_TIMELINE=1
-
-# release: cold start and memory
-rn-webos package --platform 9.0 --entry src/screens/bench/main.ts
-cp webos/bin/Release/webos80/org.rnwebos.example-1.0.0.tpk /tmp/bench-release.tpk
-rn-webos install /tmp/bench-release.tpk --device <tv ip>
-BENCH_SETTLE_MS=8000 bun scripts/bench-server.ts cold-start <tv ip> /tmp/bench-release.tpk 12
-bun scripts/bench-server.ts listen > release.jsonl &
-rn-webos install /tmp/bench-release.tpk --device <tv ip> --keep-signature --launch
-
-# development: frames
-rn-webos package --dev --platform 9.0 --device <tv ip> --entry src/screens/bench/main.ts
-rn-webos install webos/bin/Release/webos80/org.rnwebos.example-1.0.0.tpk --device <tv ip> --keep-signature --launch
-rn-webos perf --device <tv ip> --duration 135 --out perf.jsonl
+cd example
+rn-webos simulator run --instance bench --entry src/screens/bench/main.ts
+# once the app is up, stop that command with Ctrl+C: the app keeps running
+rn-webos simulator perf --instance bench --duration 20       # still
+rn-webos simulator key Enter --instance bench                 # one row every 200 ms
+rn-webos simulator perf --instance bench --duration 20
+rn-webos simulator key Enter --instance bench                 # one row every 50 ms
+rn-webos simulator perf --instance bench --duration 20
+rn-webos simulator key Right --instance bench                 # the animation
+rn-webos simulator perf --instance bench --duration 20
 ```
 
-## Raw results
+`perf --out <file.jsonl>` keeps every sample. The fields are in
+[cli.md](cli.md#rn-webos-perf).
 
-### Cold start, per launch
+On a TV, the same with `rn-webos run --no-logs --entry ...` and
+`rn-webos perf --device <ip>`. For cold starts, package the bench entry with
+`EXPO_PUBLIC_BENCH_REPORT_URL=http://<this computer>:47200`, install it, and
+run `bun scripts/bench-server.ts cold-start <tv> <app id>`, which launches the
+app and times each launch to its first-frame report. That script has not run
+against a TV.
 
-| Build | Spacing | Launch | `0 execute` answered (ms) | First frame (ms) |
-|---|---|---|---|---|
-| native release | 8 s | 1 | 1716 | 2603 |
-| native release | 8 s | 2 | 875 | 1227 |
-| native release | 8 s | 3 | 662 | 1132 |
-| native release | 8 s | 4 | 775 | 1298 |
-| native release | 8 s | 5 | 718 | 1120 |
-| native release | 8 s | 6 | 788 | 1222 |
-| native release | 8 s | 7 | 762 | 1223 |
-| native release | 8 s | 8 | 866 | 1190 |
-| native release | 8 s | 9 | 779 | 1183 |
-| native release | 8 s | 10 | 884 | 1322 |
-| native release | 8 s | 11 | 818 | 1148 |
-| native release | 8 s | 12 | 747 | 1163 |
-| native release | 60 s | 1 | 804 | 1349 |
-| native release | 60 s | 2 | 746 | 1196 |
-| native release | 60 s | 3 | 740 | 1191 |
-| native release | 60 s | 4 | 1021 | 1372 |
-| native release | 60 s | 5 | 696 | 1155 |
-| web | 8 s | 1 | 519 | 1390 |
-| web | 8 s | 2 | 2077 | 2892 |
-| web | 8 s | 3 | 1329 | 2187 |
-| web | 8 s | 4 | 1293 | 1977 |
-| web | 8 s | 5 | 1308 | 2076 |
-| web | 8 s | 6 | 1280 | 2092 |
-| web | 8 s | 7 | 1423 | 2080 |
-| web | 8 s | 8 | 1360 | 2070 |
-| web | 8 s | 9 | 1333 | 2171 |
-| web | 8 s | 10 | 1323 | 2010 |
-| web | 8 s | 11 | 1272 | 2075 |
-| web | 8 s | 12 | 1308 | 2082 |
-| web | 60 s | 1 | 1361 | 2135 |
-| web | 60 s | 2 | 513 | 1718 |
-| web | 60 s | 3 | 508 | 1654 |
-| web | 60 s | 4 | 464 | 1552 |
-| web | 60 s | 5 | 302 | 1419 |
-
-### Memory, release build, per run (median VmRSS of each phase, MB)
-
-| Run | Still | Focus every 200 ms | Every 50 ms | Animation | Peak (VmHWM) |
-|---|---|---|---|---|---|
-| 1 | 63.7 | 94.4 | 90.5 | 88.0 | 103.9 |
-| 2 | 63.9 | 91.1 | 90.3 | 87.3 | 106.8 |
-| 3 | 63.7 | 95.3 | 90.4 | 87.8 | 103.7 |
-
-### Frames, development build, per run
-
-| Run | Phase | Seconds sampled | Frames/s (median) | Dropped | JS busy (median) | Main loop busy (median) | Hermes heap (median, MB) |
-|---|---|---|---|---|---|---|---|
-| 1 | Still | 17 | 0.0 | 0 | 0% | 0% | 5.1 |
-| 1 | Every 200 ms | 38 | 54.1 | 6 | 59% | 39% | 13.9 |
-| 1 | Every 50 ms | 38 | 52.9 | 34 | 100% | 45% | 13.5 |
-| 1 | Animation | 28 | 49.8 | 0 | 0% | 10% | 13.5 |
-| 2 | Still | 19 | 0.0 | 0 | 0% | 0% | 5.1 |
-| 2 | Every 200 ms | 38 | 54.3 | 6 | 58% | 40% | 14.3 |
-| 2 | Every 50 ms | 38 | 52.7 | 46 | 100% | 46% | 12.9 |
-| 2 | Animation | 27 | 49.9 | 0 | 0% | 11% | 13.1 |
-| 3 | Still | 18 | 0.0 | 0 | 0% | 0% | 5.1 |
-| 3 | Every 200 ms | 38 | 53.3 | 10 | 56% | 41% | 13.4 |
-| 3 | Every 50 ms | 39 | 53.3 | 55 | 100% | 45% | 13.0 |
-| 3 | Animation | 28 | 49.9 | 0 | 0% | 10% | 12.1 |
+The sizes come from `rn-webos package` in `example/`, and the TV executable
+was checked with `bun scripts/check-tv-binary.ts example/webos/app/react-native-webos`.
