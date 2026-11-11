@@ -1,10 +1,11 @@
 #include "InspectorTransport.h"
 
+#include "platform/MainLoop.h"
+
 #include "network/WebSocketHandshake.h"
 
 #include <doctest/doctest.h>
 
-#include <Ecore.h>
 
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -158,7 +159,7 @@ bool runLoopUntil(const std::function<bool()> &done, std::chrono::milliseconds t
   const auto deadline = std::chrono::steady_clock::now() + timeout;
   while (!done()) {
     if (std::chrono::steady_clock::now() > deadline) return false;
-    ecore_main_loop_iterate();
+    MainLoop::get().iterate();
     std::this_thread::sleep_for(5ms);
   }
   return true;
@@ -167,7 +168,6 @@ bool runLoopUntil(const std::function<bool()> &done, std::chrono::milliseconds t
 } // namespace
 
 TEST_CASE("An inspector socket reports the proxy's messages on the main loop and sends the device's") {
-  ecore_init();
   const auto port = freePort();
   ProxyPeer peer(port, R"({"event":"getPages"})");
   auto delegate = std::make_shared<RecordingDelegate>();
@@ -185,7 +185,6 @@ TEST_CASE("An inspector socket reports the proxy's messages on the main loop and
 }
 
 TEST_CASE("An inspector socket with no proxy to reach reports the failure") {
-  ecore_init();
   auto delegate = std::make_shared<RecordingDelegate>();
   InspectorTransport transport;
 
@@ -197,7 +196,6 @@ TEST_CASE("An inspector socket with no proxy to reach reports the failure") {
 }
 
 TEST_CASE("A scheduled callback runs on the main loop after its delay") {
-  ecore_init();
   InspectorTransport transport;
   bool ran = false;
   const auto scheduled = std::chrono::steady_clock::now();

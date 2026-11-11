@@ -1,8 +1,7 @@
 #pragma once
 
 #include "network/WebSocketConnection.h"
-
-#include <Ecore.h>
+#include "platform/MainLoop.h"
 
 #include <functional>
 #include <memory>
@@ -32,13 +31,13 @@ class PackagerConnection final {
  private:
   void open();
   void retryLater();
+  void retry();
   void receive(std::string_view text);
-  static Eina_Bool retry(void *data);
 
   const std::string url_;
   const Handlers handlers_;
   std::unique_ptr<WebSocketConnection> socket_;
-  Ecore_Timer *retryTimer_{nullptr};
+  MainLoop::Id retryTimer_{0};
   bool reportedFailure_{false};
   std::shared_ptr<PackagerConnection *> lifetime_;
 };

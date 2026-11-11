@@ -5,11 +5,13 @@
 #include "logging/Log.h"
 #include "threading/MainThread.h"
 
+#include <chrono>
+
 namespace rnwebos {
 
 namespace {
 
-constexpr double kRetrySeconds = 2.0;
+constexpr auto kRetryDelay = std::chrono::seconds(2);
 
 } // namespace
 
@@ -20,7 +22,7 @@ PackagerConnection::PackagerConnection(std::string url, Handlers handlers)
 
 PackagerConnection::~PackagerConnection() {
   lifetime_.reset();
-  if (retryTimer_ != nullptr) ecore_timer_del(retryTimer_);
+  if (retryTimer_ != 0) MainLoop::get().removeTimer(retryTimer_);
 }
 
 void PackagerConnection::open() {
@@ -61,16 +63,14 @@ void PackagerConnection::open() {
 }
 
 void PackagerConnection::retryLater() {
-  if (retryTimer_ != nullptr) return;
-  retryTimer_ = ecore_timer_add(kRetrySeconds, retry, this);
+  if (retryTimer_ != 0) return;
+  retryTimer_ = MainLoop::get().addTimer(kRetryDelay, [this] { retry(); });
 }
 
-Eina_Bool PackagerConnection::retry(void *data) {
-  auto &self = *static_cast<PackagerConnection *>(data);
-  self.retryTimer_ = nullptr;
-  self.socket_.reset();
-  self.open();
-  return ECORE_CALLBACK_CANCEL;
+void PackagerConnection::retry() {
+  retryTimer_ = 0;
+  socket_.reset();
+  open();
 }
 
 void PackagerConnection::receive(std::string_view text) {

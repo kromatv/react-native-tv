@@ -1,10 +1,11 @@
 #include "PackagerConnection.h"
 
+#include "platform/MainLoop.h"
+
 #include "network/WebSocketHandshake.h"
 
 #include <doctest/doctest.h>
 
-#include <Ecore.h>
 #include <folly/json.h>
 
 #include <arpa/inet.h>
@@ -149,7 +150,7 @@ bool runLoopUntil(const std::function<bool()> &done, std::chrono::milliseconds t
   const auto deadline = std::chrono::steady_clock::now() + timeout;
   while (!done()) {
     if (std::chrono::steady_clock::now() > deadline) return false;
-    ecore_main_loop_iterate();
+    MainLoop::get().iterate();
     std::this_thread::sleep_for(5ms);
   }
   return true;
@@ -158,7 +159,6 @@ bool runLoopUntil(const std::function<bool()> &done, std::chrono::milliseconds t
 } // namespace
 
 TEST_CASE("The dev server's reload and devMenu reach their handlers on the main loop") {
-  ecore_init();
   const auto port = freePort();
   PackagerPeer peer(port, {R"({"version":2,"method":"reload"})", R"({"version":2,"method":"devMenu"})"}, false);
   int reloads = 0;
@@ -171,7 +171,6 @@ TEST_CASE("The dev server's reload and devMenu reach their handlers on the main 
 }
 
 TEST_CASE("A request the app has no handler for is answered with an error") {
-  ecore_init();
   const auto port = freePort();
   PackagerPeer peer(port, {R"({"version":2,"id":3,"method":"captureHeap"})"}, true);
 
@@ -184,7 +183,6 @@ TEST_CASE("A request the app has no handler for is answered with an error") {
 }
 
 TEST_CASE("With no dev server yet, the socket tries again until one answers") {
-  ecore_init();
   const auto port = freePort();
   int reloads = 0;
   PackagerConnection connection(packagerUrl(port), {.reload = [&reloads] { reloads += 1; }, .devMenu = [] {}});
