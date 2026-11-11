@@ -34,6 +34,7 @@ import {
   printLog,
   requireRunningVm,
   saveScreenshot,
+  sendControl,
   sendLifecycle,
   sendPointer,
   type PointerCommand,
@@ -202,6 +203,18 @@ const ACTIONS: Readonly<Record<string, Action>> = {
       url,
     );
   },
+  text: (invocation) => {
+    const text = requirePositionals(
+      invocation,
+      'the text the on-screen keyboard types, e.g. `text "Blade Runner"`',
+    ).join(' ');
+    return inRunningVm(
+      invocation.reporter,
+      'Text',
+      (task) => sendControl(task, invocation.instance, 'text', [text]),
+      text,
+    );
+  },
   pointer: (invocation) => {
     const words = requirePositionals(
       invocation,
@@ -313,6 +326,7 @@ export const simulatorCommand: Command = {
     'rn-webos simulator screenshot --out shot.png',
     'rn-webos simulator key Down Down Enter  Up Down Left Right Enter Back Play Pause Stop Red ...',
     'rn-webos simulator key Enter:800        hold a key for 800 ms',
+    'rn-webos simulator text "Blade Runner"  type into the focused text field, as the on-screen keyboard does',
     "rn-webos simulator pointer 960 540      move the remote's pointer; click presses its button, wheel -3 scrolls",
     'rn-webos simulator pause                send the app to the background; resume brings it back',
     'rn-webos simulator open-url myapp://item/42',

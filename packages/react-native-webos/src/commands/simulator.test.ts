@@ -17,6 +17,7 @@ vi.mock('../simulator/simulator.ts', () => ({
   requireRunningVm: vi.fn(),
   saveScreenshot: vi.fn(async (_instance: unknown, path: string) => path),
   sendPointer: vi.fn(),
+  sendControl: vi.fn(),
   sendLifecycle: vi.fn(),
   startApp: vi.fn(async () => 4242),
   stopSimulator: vi.fn(),
@@ -111,6 +112,17 @@ describe('rn-webos simulator', () => {
     await simulate('open-url', 'app://a');
 
     expect(simulator.openUrl).toHaveBeenCalledWith(expect.anything(), expect.anything(), 'app://a');
+  });
+
+  it('types text into the focused field', async () => {
+    await simulate('text', 'Blade', 'Runner');
+
+    expect(simulator.sendControl).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      'text',
+      ['Blade Runner'],
+    );
   });
 
   it("moves the remote's pointer, clicks and turns its wheel", async () => {

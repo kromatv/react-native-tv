@@ -52,6 +52,8 @@ everything the tools inside print. Every action takes `--instance <name>` (see
 | `view` | Opens the live screen and remote of the running app. |
 | `screenshot [--out <file.png>]` | Saves the screen as a PNG and prints the path. Default `~/.cache/react-native-webos/simulator/<instance>/screenshot.png`. |
 | `key <key>...` | Presses remote keys in order: `key Down Down Enter`. `<key>:<milliseconds>` holds one: `key Enter:800`. |
+| `text <text>` | Types into the focused text field, as the TV's on-screen keyboard commits text. |
+| `pointer <x> <y>`, `click [<x> <y>]`, `wheel <notches>` | Moves the remote's pointer to a screen pixel, presses its button there, or turns its wheel: `wheel -3` scrolls down three notches. |
 | `pause`, `resume` | Sends the app to the background and back: `AppState` changes as on a TV. |
 | `open-url <url>` | Delivers a deep link, as the TV does when another app opens this one. |
 | `restart` | Starts the staged app again, without rebuilding. |
