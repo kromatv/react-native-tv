@@ -12,8 +12,9 @@ using facebook::react::Transform;
 bool ViewTransform::update(const facebook::react::ViewProps &props, const facebook::react::LayoutMetrics &metrics) {
   auto matrix = Transform::Identity();
   if (!props.transform.operations.empty()) {
-    matrix = props.resolveTransform(metrics);
-    if (!props.transformOrigin.isSet()) matrix = aroundCenter(matrix, metrics.frame.size);
+    // React Native resolves a transform, its transformOrigin included, for a
+    // platform that applies it about the view's center, as iOS and Android do.
+    matrix = aroundCenter(props.resolveTransform(metrics), metrics.frame.size);
   }
   if (matrix == matrix_) return false;
   matrix_ = matrix;

@@ -100,7 +100,12 @@ void ReactHost::createInstance() {
           .isActive = isActive_,
           .reportFatalError = [weakHost = weakHost_](const ErrorReport &report) { reportFatalError(weakHost, report); },
           .launchUrl = launchUrl_,
-          .showAlert = nullptr,
+          .showAlert =
+              [weakHost = weakHost_](AlertRequest request) {
+                runOnMainThread([weakHost, request = std::move(request)]() mutable {
+                  if (auto host = weakHost.lock()) (*host)->alertDialog_->show(std::move(request));
+                });
+              },
       },
       instance_->createJSCallInvoker());
 

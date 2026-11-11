@@ -1,96 +1,67 @@
 #include "ScreenCapture.h"
 
-#include "../HostWindow.h"
-#include "../threading/MainThread.h"
+#include "../logging/Log.h"
 
-#include <Evas.h>
+#include "include/core/SkBitmap.h"
+#include "include/core/SkPixmap.h"
+#include "include/core/SkSurface.h"
 
-#include <algorithm>
 #include <bit>
-#include <cstring>
-#include <memory>
-#include <utility>
 
 namespace rnwebos {
 
 namespace {
 
-static_assert(std::endian::native == std::endian::little, "ARGB8888 words must read as BGRA bytes");
+static_assert(std::endian::native == std::endian::little, "Skia's BGRA_8888 pixels must read as BGRA bytes");
 
-constexpr int kFramesToWait = 10;
-
-struct CaptureJob {
-  Evas_Object *snapshot;
-  int width;
-  int height;
-  CaptureDone done;
-  int framesLeft{kFramesToWait};
-};
-
-Evas_Object *addSnapshot(Evas *evas, int width, int height) {
-  auto *snapshot = evas_object_image_filled_add(evas);
-  evas_object_image_snapshot_set(snapshot, EINA_TRUE);
-  evas_object_pass_events_set(snapshot, EINA_TRUE);
-  evas_object_layer_set(snapshot, EVAS_LAYER_MAX);
-  evas_object_geometry_set(snapshot, 0, 0, width, height);
-  evas_object_show(snapshot);
-  evas_object_raise(snapshot);
-  return snapshot;
+SkImageInfo wireFormat(PixelSize size) {
+  return SkImageInfo::Make(size.width, size.height, kBGRA_8888_SkColorType, kPremul_SkAlphaType);
 }
 
-std::optional<ScreenCapture> readSnapshot(Evas_Object *snapshot) {
-  auto *data = static_cast<std::uint8_t *>(evas_object_image_data_get(snapshot, EINA_FALSE));
-  if (data == nullptr) return std::nullopt;
-  int width = 0;
-  int height = 0;
-  evas_object_image_size_get(snapshot, &width, &height);
-  const auto rowBytes = static_cast<std::size_t>(width) * 4;
-  const auto stride = std::max(static_cast<std::size_t>(evas_object_image_stride_get(snapshot)), rowBytes);
-  ScreenCapture capture{
-      .width = width,
-      .height = height,
+ScreenCapture emptyCapture(PixelSize size) {
+  const auto rowBytes = static_cast<std::size_t>(size.width) * 4;
+  return {
+      .width = size.width,
+      .height = size.height,
       .stride = static_cast<int>(rowBytes),
-      .pixels = std::vector<std::uint8_t>(rowBytes * static_cast<std::size_t>(height)),
+      .pixels = std::vector<std::uint8_t>(rowBytes * static_cast<std::size_t>(size.height)),
   };
-  for (std::size_t row = 0; row < static_cast<std::size_t>(height); ++row) {
-    std::memcpy(capture.pixels.data() + row * rowBytes, data + row * stride, rowBytes);
-  }
-  evas_object_image_data_set(snapshot, data);
+}
+
+// eglSwapBuffers leaves the back buffer undefined unless the surface preserves
+// it, so the frame is drawn again before it is read, then once more to be
+// shown (docs/reference/react-native-dev-tooling.md, section 11).
+std::optional<ScreenCapture> readWindow(Scene &scene, HostWindow &window) {
+  SkBitmap frame;
+  scene.drawInto(window.canvas());
+  const bool read = window.readPixels(frame);
+  scene.invalidate();
+  if (!read) return std::nullopt;
+  auto capture = emptyCapture({frame.width(), frame.height()});
+  const auto format = wireFormat({frame.width(), frame.height()});
+  if (!frame.readPixels(format, capture.pixels.data(), static_cast<std::size_t>(capture.stride), 0, 0)) return std::nullopt;
   return capture;
 }
 
-void onRenderPost(void *data, Evas *evas, void *) {
-  auto *job = static_cast<CaptureJob *>(data);
-  auto capture = readSnapshot(job->snapshot);
-  if (!capture.has_value()) --job->framesLeft;
-  if (!capture.has_value() && job->framesLeft > 0) {
-    evas_object_del(job->snapshot);
-    job->snapshot = addSnapshot(evas, job->width, job->height);
-    return;
-  }
-  evas_event_callback_del_full(evas, EVAS_CALLBACK_RENDER_POST, onRenderPost, job);
-  runOnMainThread([job, capture = std::move(capture)]() mutable {
-    const std::unique_ptr<CaptureJob> finished(job);
-    evas_object_del(finished->snapshot);
-    finished->done(std::move(capture));
-  });
+std::optional<ScreenCapture> drawOnCpu(Scene &scene) {
+  auto capture = emptyCapture(scene.size());
+  const auto surface =
+      SkSurfaces::WrapPixels(wireFormat(scene.size()), capture.pixels.data(), static_cast<std::size_t>(capture.stride));
+  if (!surface) return std::nullopt;
+  scene.drawInto(*surface->getCanvas());
+  return capture;
 }
 
 } // namespace
 
-void captureHostWindow(CaptureDone done) {
-  auto *window = hostWindow();
-  if (window == nullptr) {
-    done(std::nullopt);
-    return;
+std::optional<ScreenCapture> captureScene(Scene &scene) {
+  const auto size = scene.size();
+  if (size.width <= 0 || size.height <= 0) return std::nullopt;
+  if (auto *window = scene.window()) {
+    if (auto capture = readWindow(scene, *window)) return capture;
+    log(LogLevel::Debug, "The window's pixels cannot be read: drawing the screenshot on the CPU");
   }
-  auto *evas = evas_object_evas_get(window);
-  int width = 0;
-  int height = 0;
-  evas_object_geometry_get(window, nullptr, nullptr, &width, &height);
-  auto job = std::make_unique<CaptureJob>(CaptureJob{
-      .snapshot = addSnapshot(evas, width, height), .width = width, .height = height, .done = std::move(done)});
-  evas_event_callback_add(evas, EVAS_CALLBACK_RENDER_POST, onRenderPost, job.release());
+  return drawOnCpu(scene);
 }
 
 } // namespace rnwebos

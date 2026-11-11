@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Alert, BackHandler, StyleSheet, Text, View, useTVEventHandler } from 'react-native';
-import { BackgroundScreen } from './background-screen.tsx';
+import { AlertsScreen } from './alerts-screen.tsx';
+import { LifecycleScreen } from './lifecycle-screen.tsx';
 import { ScreenSizeScreen } from './screen-size-screen.tsx';
 
 const SCREENS = [
-  { title: 'Background audio', Screen: BackgroundScreen },
+  { title: 'Lifecycle', Screen: LifecycleScreen },
+  { title: 'Alerts and errors', Screen: AlertsScreen },
   { title: 'Screen and 4K', Screen: ScreenSizeScreen },
 ] as const;
 

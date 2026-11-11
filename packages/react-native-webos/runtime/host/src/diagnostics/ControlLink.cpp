@@ -12,7 +12,6 @@
 
 #include <array>
 #include <cerrno>
-#include <stdexcept>
 #include <chrono>
 #include <format>
 #include <future>
@@ -165,6 +164,7 @@ bool ControlLink::answer(int socket, const std::string &line) {
 }
 
 std::variant<ScreenCapture, std::string> ControlLink::capture() {
+  if (!captureWindow_) return std::string("the app has no window to capture");
   auto promise = std::make_shared<std::promise<std::optional<ScreenCapture>>>();
   auto future = promise->get_future();
   runOnMainThread([promise, captureWindow = captureWindow_] {
@@ -178,7 +178,7 @@ std::variant<ScreenCapture, std::string> ControlLink::capture() {
     }
   }
   auto captured = future.get();
-  if (!captured) return std::string("Evas gave no pixels for the window");
+  if (!captured) return std::string("the window gave no pixels");
   return std::move(*captured);
 }
 

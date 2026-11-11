@@ -14,7 +14,6 @@
 #include <react/renderer/scheduler/SurfaceHandler.h>
 #include <react/utils/ContextContainer.h>
 
-
 #include <functional>
 #include <memory>
 #include <string>
@@ -22,7 +21,7 @@
 namespace rnwebos::testing {
 
 /// Fabric on a Hermes runtime with one empty surface, mounted by a
-/// MountingManager on a buffer canvas as soon as JavaScript commits through
+/// MountingManager in a scene without a window as soon as JavaScript commits through
 /// `nativeFabricUIManager`.
 class FabricSurface final : public facebook::react::SchedulerDelegate {
  public:
@@ -42,7 +41,7 @@ class FabricSurface final : public facebook::react::SchedulerDelegate {
          .maximumSize = kLogicalScreenSize,
          .layoutDirection = facebook::react::LayoutDirection::LeftToRight},
         {.pointScaleFactor = 1, .fontSizeMultiplier = 1});
-    mountingManager_.startSurface(kSurfaceId);
+    mountingManager_.startSurface(kSurfaceId, Scene::kSurfaceOrder);
     scheduler_.registerSurface(surface_);
     surface_.start();
   }

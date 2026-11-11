@@ -1,10 +1,10 @@
 #include "ControlLink.h"
 
 #include "../network/LoopbackServer.test.h"
+#include "../platform/MainLoop.h"
 
 #include <doctest/doctest.h>
 
-#include <Ecore.h>
 #include <folly/json.h>
 
 #include <atomic>
@@ -39,7 +39,7 @@ bool waitFor(const std::function<bool()> &condition) {
   const auto deadline = std::chrono::steady_clock::now() + 5s;
   while (!condition()) {
     if (std::chrono::steady_clock::now() > deadline) return false;
-    ecore_main_loop_iterate();
+    MainLoop::get().iterate();
     std::this_thread::sleep_for(10ms);
   }
   return true;
@@ -60,7 +60,6 @@ std::string readOnMainLoop(const std::function<std::string()> &read) {
 } // namespace
 
 TEST_CASE("ControlLink greets the listener and takes perf requests until they stop or the link drops") {
-  ecore_init();
   const LoopbackServer listener;
   {
     const ControlLink link("127.0.0.1", listener.port(), kApp);
@@ -86,11 +85,9 @@ TEST_CASE("ControlLink greets the listener and takes perf requests until they st
     CHECK(turnedOnAgain);
     CHECK(dropped);
   }
-  ecore_shutdown();
 }
 
 TEST_CASE("ControlLink answers a screenshot it cannot take with an error") {
-  ecore_init();
   const LoopbackServer listener;
   {
     const ControlLink link("127.0.0.1", listener.port(), kApp);
@@ -106,11 +103,9 @@ TEST_CASE("ControlLink answers a screenshot it cannot take with an error") {
     CHECK(reply["type"] == "screenshot-error");
     CHECK(reply["id"] == 7);
   }
-  ecore_shutdown();
 }
 
 TEST_CASE("ControlLink sends a screenshot as a header line that sizes the pixels, then the pixels") {
-  ecore_init();
   const LoopbackServer listener;
   const std::vector<std::uint8_t> pixels{1, 2, 3, 4, 5, 6, 7, 8};
   {
@@ -132,11 +127,9 @@ TEST_CASE("ControlLink sends a screenshot as a header line that sizes the pixels
           folly::dynamic::object("type", "screenshot")("id", 3)("width", 2)("height", 1)("stride", 8)("bytes", 8));
     CHECK(answer.substr(newline + 1) == std::string(pixels.begin(), pixels.end()));
   }
-  ecore_shutdown();
 }
 
 TEST_CASE("ControlLink answers nothing more once it is destroyed while a screenshot is being taken") {
-  ecore_init();
   const LoopbackServer listener;
   std::vector<CaptureDone> unfinished;
   int client = -1;
@@ -155,7 +148,6 @@ TEST_CASE("ControlLink answers nothing more once it is destroyed while a screens
   const auto received = recv(client, &byte, 1, 0);
   close(client);
   unfinished.clear();
-  ecore_shutdown();
 
   CHECK(received <= 0);
 }

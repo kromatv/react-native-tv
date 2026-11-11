@@ -101,8 +101,9 @@ ParagraphLayout layOutParagraph(
   ParagraphLayout layout;
   layout.paragraph = builder->Build();
   layout.paragraph->layout(widthLimit(maximumWidth, pixelScale));
+  // SkParagraph answers a huge negative longest line for a text with no glyphs.
   layout.size = {
-      .width = std::ceil(layout.paragraph->getLongestLine()) / pixelScale,
+      .width = std::ceil(std::max(0.0f, layout.paragraph->getLongestLine())) / pixelScale,
       .height = std::ceil(layout.paragraph->getHeight()) / pixelScale,
   };
   if (attachmentCount > 0) {

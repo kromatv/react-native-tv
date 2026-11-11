@@ -22,12 +22,9 @@ class ControlLink final {
  public:
   using WindowCapture = std::function<void(CaptureDone)>;
 
-  /// `captureWindow` takes each screenshot, called on the main thread.
-  ControlLink(
-      std::string host,
-      std::uint16_t port,
-      std::string app,
-      WindowCapture captureWindow = captureHostWindow);
+  /// `captureWindow` takes each screenshot, called on the main thread; without
+  /// one, every screenshot request is answered with an error.
+  ControlLink(std::string host, std::uint16_t port, std::string app, WindowCapture captureWindow = nullptr);
   ~ControlLink();
 
   ControlLink(const ControlLink &) = delete;

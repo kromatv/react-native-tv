@@ -42,7 +42,7 @@ if(TARGET expo_modules_common)
   list(APPEND _react_native_roots expo_modules_common)
   target_compile_definitions(rn_webos_host PRIVATE RN_WEBOS_EXPO=1)
 endif()
-if(RN_WEBOS_DEVELOPMENT AND NOT RN_WEBOS_UNPORTED)
+if(RN_WEBOS_DEVELOPMENT)
   target_compile_definitions(rn_webos_host PRIVATE RN_WEBOS_DEV_SUPPORT=1)
 endif()
 if(RN_WEBOS_SIMULATOR)
@@ -93,7 +93,8 @@ if(RN_WEBOS_TESTS)
     target_sources(rn-webos-host-tests PRIVATE
       src/svg/PathData.cpp src/svg/SvgPath.cpp src/svg/SvgViewBox.cpp)
   endif()
-  # The full ICU data file ICU's sources ship, for the host's ICU setup to load.
-  set_source_files_properties(src/intl/IcuData.test.cpp PROPERTIES
-    COMPILE_DEFINITIONS "RN_WEBOS_TEST_ICU_DATA_DIR=\"${icu_SOURCE_DIR}/source/data/in\"")
+  # The full ICU data file ICU's sources ship, for the host's ICU setup to load
+  # and for every test that lays out text (src/text/TextEngineData.test.cpp).
+  target_compile_definitions(rn-webos-host-tests PRIVATE
+    "RN_WEBOS_TEST_ICU_DATA_DIR=\"${icu_SOURCE_DIR}/source/data/in\"")
 endif()

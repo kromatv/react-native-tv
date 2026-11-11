@@ -39,6 +39,10 @@ void Scene::invalidate() {
   if (window_ != nullptr) MainLoop::get().requestFrame();
 }
 
+bool Scene::isInvalid() const {
+  return invalid_;
+}
+
 void Scene::addLayer(SceneLayer &layer, int order) {
   const auto above = std::ranges::find_if(layers_, [order](const Entry &entry) { return entry.order > order; });
   layers_.insert(above, {.layer = &layer, .order = order});
@@ -72,13 +76,20 @@ ComponentView *Scene::viewAt(SkPoint point, SkPoint *local) const {
 }
 
 bool Scene::render() {
-  if (window_ == nullptr || !std::exchange(invalid_, false)) return false;
+  if (!std::exchange(invalid_, false) || window_ == nullptr) return false;
   const auto started = std::chrono::steady_clock::now();
   drawInto(window_->canvas());
   const auto drawn = std::chrono::steady_clock::now();
+  window_->flush();
+  const auto flushed = std::chrono::steady_clock::now();
   window_->present();
   if (frameObserver_) {
-    frameObserver_({.started = started, .draw = drawn - started, .present = std::chrono::steady_clock::now() - drawn});
+    frameObserver_({
+        .started = started,
+        .draw = drawn - started,
+        .flush = flushed - drawn,
+        .present = std::chrono::steady_clock::now() - flushed,
+    });
   }
   return true;
 }

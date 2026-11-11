@@ -1,9 +1,8 @@
 #include "InspectorTransport.h"
 
 #include "network/WebSocketConnection.h"
+#include "platform/MainLoop.h"
 #include "threading/MainThread.h"
-
-#include <Ecore.h>
 
 #include <optional>
 
@@ -47,12 +46,6 @@ class InspectorSocket final : public IWebSocket {
   WebSocketConnection connection_;
 };
 
-Eina_Bool runCallback(void *data) {
-  std::unique_ptr<std::function<void()>> callback(static_cast<std::function<void()> *>(data));
-  (*callback)();
-  return ECORE_CALLBACK_CANCEL;
-}
-
 } // namespace
 
 std::unique_ptr<IWebSocket> InspectorTransport::connectWebSocket(
@@ -63,8 +56,7 @@ std::unique_ptr<IWebSocket> InspectorTransport::connectWebSocket(
 
 void InspectorTransport::scheduleCallback(std::function<void()> callback, std::chrono::milliseconds delay) {
   runOnMainThread([callback = std::move(callback), delay]() mutable {
-    const auto seconds = std::chrono::duration<double>(delay).count();
-    ecore_timer_add(seconds, runCallback, std::make_unique<std::function<void()>>(std::move(callback)).release());
+    MainLoop::get().addTimer(delay, std::move(callback));
   });
 }
 

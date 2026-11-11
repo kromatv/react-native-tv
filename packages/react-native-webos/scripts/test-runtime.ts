@@ -16,8 +16,7 @@ import { pathInside } from './path-inside.ts';
 import { lcovToSonar } from './sonar-coverage.ts';
 
 const TESTS = 'rn-webos-host-tests';
-const RUNTIME_LIBRARY = 'react-native-webos';
-const RUNTIME_LIBRARY_FILE = 'libreact-native-webos.so';
+const RUNTIME = 'react-native-webos';
 
 type Runner = (
   task: Task,
@@ -28,6 +27,7 @@ type Runner = (
 
 interface TestBuild {
   readonly dir: string;
+  readonly skiaRoot: string;
   readonly hermesCompilers: string;
   readonly codegen: string;
   readonly reactNativeDir: string;
@@ -55,6 +55,9 @@ function definitions(build: TestBuild): string[] {
     `-DRN_WEBOS_HERMES_HOST_COMPILERS=${build.hermesCompilers}`,
     `-DEXPO_MODULES_CORE_DIR=${build.expoModulesCoreDir}`,
     `-DEXPO_MODULES_JSI_DIR=${build.expoModulesJsiDir}`,
+    `-DRN_WEBOS_SKIA_ROOT=${build.skiaRoot}`,
+    `-DRN_WEBOS_UNPORTED=${process.env.RN_WEBOS_UNPORTED ?? ''}`,
+    `-DRN_WEBOS_UNPORTED_TESTS=${process.env.RN_WEBOS_UNPORTED_TESTS ?? ''}`,
   ];
 }
 
@@ -72,7 +75,7 @@ async function compileTests(task: Task, build: TestBuild): Promise<void> {
   task.progress('configuring');
   const configure = ['cmake', '-S', RUNTIME_DIR, '-B', build.dir, '-G', 'Ninja'];
   await runGuest(task, [...configure, ...definitions(build)]);
-  const targets = build.coverage ? [TESTS, RUNTIME_LIBRARY] : [TESTS];
+  const targets = build.coverage ? [TESTS, RUNTIME] : [TESTS];
   const compile = ['cmake', '--build', build.dir, '--target', ...targets];
   const ccache = { CCACHE_BASEDIR: build.dir, CCACHE_NOHASHDIR: '1' };
   await runGuest(task, compile, ccache, (line) => {
@@ -85,7 +88,7 @@ async function runTests(task: Task, build: TestBuild, profile: string): Promise<
   task.progress('running');
   await runGuest(task, ['rm', '-f', profile]);
   const ctest = ['ctest', '--test-dir', build.dir, '--output-on-failure', '--verbose'];
-  return runGuest(task, ctest, { LLVM_PROFILE_FILE: profile });
+  return runGuest(task, ctest, { LLVM_PROFILE_FILE: profile, SDL_VIDEODRIVER: 'dummy' });
 }
 
 async function exportCoverage(task: Task, build: TestBuild, profile: string): Promise<string> {
@@ -97,7 +100,7 @@ async function exportCoverage(task: Task, build: TestBuild, profile: string): Pr
     '-format=lcov',
     `-instr-profile=${profdata}`,
     join(build.dir, 'host', TESTS),
-    `-object=${join(build.dir, 'host', RUNTIME_LIBRARY_FILE)}`,
+    `-object=${join(build.dir, 'host', RUNTIME)}`,
   ]);
 }
 
@@ -130,6 +133,7 @@ const buildRoot = await reporter.step('Codegen', async (task) => {
 });
 const build: TestBuild = {
   dir: join(buildRoot, 'host-tests', worktree),
+  skiaRoot: join(buildRoot, 'skia'),
   hermesCompilers: join(buildRoot, 'hermes-host', 'ImportHostCompilers.cmake'),
   codegen,
   reactNativeDir: realpathSync(reactNative.dir),

@@ -3,7 +3,6 @@
 #include <doctest/doctest.h>
 
 #include <unicode/putil.h>
-#include <unicode/uclean.h>
 #include <unicode/uloc.h>
 #include <unicode/utypes.h>
 
@@ -19,16 +18,23 @@ namespace {
 
 constexpr const char *kIcuDataDirectory = RN_WEBOS_TEST_ICU_DATA_DIR;
 
+// Not u_cleanup: it unloads the data the break iterators SkParagraph caches for
+// the tests that draw text point into.
 class FreshIcu {
  public:
   FreshIcu() {
-    u_cleanup();
+    u_setDataDirectory("");
   }
   ~FreshIcu() {
-    u_cleanup();
+    u_setDataDirectory(kIcuDataDirectory);
+    UErrorCode status = U_ZERO_ERROR;
+    uloc_setDefault(locale_.c_str(), &status);
   }
   FreshIcu(const FreshIcu &) = delete;
   FreshIcu &operator=(const FreshIcu &) = delete;
+
+ private:
+  const std::string locale_{uloc_getDefault()};
 };
 
 void setDeviceLocale(const char *locale) {

@@ -1,8 +1,9 @@
 #include "Inspector.h"
 
+#include "platform/MainLoop.h"
+
 #include <doctest/doctest.h>
 
-#include <Ecore.h>
 #include <jsinspector-modern/InspectorInterfaces.h>
 
 #include <memory>
@@ -57,7 +58,6 @@ std::optional<InspectorPageDescription> bridgelessPage() {
 } // namespace
 
 TEST_CASE("The inspector lists the app as a page DevTools can reload, until it goes") {
-  ecore_init();
   const auto server = devServerOf("http://127.0.0.1:9/index.bundle?app=org.example.app");
   {
     Inspector inspector(*server, kDevice, {.reload = [] {}, .showPausedMessage = [](const auto &) {}});
@@ -72,7 +72,6 @@ TEST_CASE("The inspector lists the app as a page DevTools can reload, until it g
 }
 
 TEST_CASE("The inspector names the app, the TV and the platform to DevTools") {
-  ecore_init();
   const auto server = devServerOf("http://127.0.0.1:9/index.bundle?app=org.example.app");
   Inspector inspector(*server, kDevice, {.reload = [] {}, .showPausedMessage = [](const auto &) {}});
 
@@ -88,21 +87,19 @@ TEST_CASE("The inspector names the app, the TV and the platform to DevTools") {
 }
 
 TEST_CASE("A DevTools session attaches to the inspector's target and is answered") {
-  ecore_init();
   const auto server = devServerOf("http://127.0.0.1:9/index.bundle?app=org.example.app");
   Inspector inspector(*server, kDevice, {.reload = [] {}, .showPausedMessage = [](const auto &) {}});
   std::vector<std::string> answers;
 
   auto session = inspector.target().connect(std::make_unique<RecordingFrontend>(answers));
   session->sendMessage(R"({"id":1,"method":"Page.enable"})");
-  for (int turn = 0; turn < 100 && answers.empty(); ++turn) ecore_main_loop_iterate();
+  for (int turn = 0; turn < 100 && answers.empty(); ++turn) MainLoop::get().iterate();
 
   REQUIRE_FALSE(answers.empty());
   CHECK(answers.front().find(R"("id":1)") != std::string::npos);
 }
 
 TEST_CASE("DevTools' reload and paused message reach the host, and resuming needs no runtime") {
-  ecore_init();
   const auto server = devServerOf("http://127.0.0.1:9/index.bundle?app=org.example.app");
   int reloads = 0;
   std::vector<std::optional<std::string>> messages;

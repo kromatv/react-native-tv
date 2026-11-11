@@ -113,8 +113,12 @@ SDL_Window *HostWindow::sdlWindow() const {
   return window_;
 }
 
-void HostWindow::present() {
+void HostWindow::flush() {
   gpu_->flushAndSubmit(surface_.get());
+}
+
+void HostWindow::present() {
+  flush();
   SDL_GL_SwapWindow(window_);
 }
 

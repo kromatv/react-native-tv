@@ -30,6 +30,12 @@ class MainLoopScope final {
     return done;
   }
 
+  /// Runs the loop, a frame every millisecond, for `duration`.
+  void runFor(std::chrono::milliseconds duration) const {
+    const auto until = std::chrono::steady_clock::now() + duration;
+    while (std::chrono::steady_clock::now() < until) iterate();
+  }
+
  private:
   static void iterate() {
     MainLoop::get().iterate(true);

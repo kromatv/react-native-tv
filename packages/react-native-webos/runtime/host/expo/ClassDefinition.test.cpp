@@ -143,7 +143,10 @@ TEST_CASE("Collecting a shared object's JavaScript instance frees its native obj
   ExpoTestRuntime expo;
   const auto before = releasedCounters().load();
   expo.eval("(() => { for (let i = 0; i < 8; ++i) new expo.modules.ClassTestModule.Counter(i); })()");
-  expo.runtime().instrumentation().collectGarbage("test");
+  // Hermes finalizes a collected object while it sweeps, which one collection may not finish.
+  for (int collection = 0; collection < 50 && releasedCounters() < before + 8; ++collection) {
+    expo.runtime().instrumentation().collectGarbage("test");
+  }
   CHECK(releasedCounters() >= before + 8);
 }
 

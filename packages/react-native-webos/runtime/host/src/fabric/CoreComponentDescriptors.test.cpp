@@ -37,7 +37,6 @@ TEST_CASE("every core component has its own descriptor under its React name") {
            {"RCTModalHostView", "ModalHostView"},
            {"RNCMaskedView", "RNCMaskedView"},
            {"RCTActivityIndicatorView", "ActivityIndicatorView"},
-           {"AndroidTextInput", "AndroidTextInput"},
        }) {
     CAPTURE(viewName);
     CHECK(componentName == components.descriptor(viewName).getComponentName());

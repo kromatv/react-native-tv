@@ -12,8 +12,6 @@
 #include <ReactCommon/RuntimeExecutor.h>
 #include <folly/dynamic.h>
 
-#include <Evas.h>
-
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -31,9 +29,8 @@ namespace rnwebos {
 class DevSupport final {
  public:
   struct Host {
-    Evas *evas;
-    int screenWidth;
-    int screenHeight;
+    /// The scene the loading banner is drawn in.
+    Scene *scene;
     /// Tears the React Native instance down and starts a new one.
     std::function<void()> reload;
     /// Starts or stops the surface `AppRegistry` registers as `LogBox`.

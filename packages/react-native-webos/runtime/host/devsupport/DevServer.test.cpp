@@ -73,7 +73,7 @@ TEST_CASE("The packager socket names the TV, the app and the client, as Android 
 
   CHECK(
       server->packagerUrl("QE55Q80 - webOS 9.0") ==
-      "ws://192.168.1.20:8081/message?device=QE55Q80%20-%20WebOS%209.0&app=org.example.app&clientid=DevSupport");
+      "ws://192.168.1.20:8081/message?device=QE55Q80%20-%20webOS%209.0&app=org.example.app&clientid=DevSupport");
 }
 
 TEST_CASE("The inspector's device socket names the TV, the app and its device id, as Android does") {

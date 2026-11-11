@@ -1,13 +1,16 @@
 #pragma once
 
 #include "HostConfig.h"
+#include "diagnostics/ControlLink.h"
 #include "diagnostics/ErrorScreen.h"
+#include "diagnostics/PerfMonitor.h"
 #include "fabric/SurfacePresenter.h"
 #include "input/PointerInput.h"
 #include "input/RemotePresses.h"
 #include "modules/DeviceProfile.h"
 #include "modules/LaunchUrl.h"
 #include "modules/TurboModuleProvider.h"
+#include "modules/dialog/AlertDialog.h"
 #include "platform/HostWindow.h"
 #include "platform/SimulatorControl.h"
 #include "render/Scene.h"
@@ -63,6 +66,7 @@ class ReactHost final {
   /// which fetches the bundle again: what `r` in the dev server's terminal and
   /// `DevSettings.reload()` do.
   void reload();
+  void startPerfMonitor();
   void startDevSupport();
   void devSupportInstanceStarted();
   facebook::react::jsinspector_modern::HostTarget *inspectorTarget();
@@ -75,6 +79,11 @@ class ReactHost final {
   void showFatalError(const ErrorReport &report);
   void setActive(bool isActive);
   void stopReactNative();
+
+  struct Diagnostics {
+    std::unique_ptr<ControlLink> controlLink;
+    std::unique_ptr<PerfMonitor> perfMonitor;
+  };
 
   const HostConfig config_;
   DeviceProfile device_{readDeviceProfile()};
@@ -94,6 +103,8 @@ class ReactHost final {
   std::unique_ptr<RemotePresses> remotePresses_;
   std::unique_ptr<PointerInput> pointerInput_;
   std::unique_ptr<ErrorScreen> errorScreen_;
+  std::unique_ptr<AlertDialog> alertDialog_;
+  Diagnostics diagnostics_;
 #if RN_WEBOS_SIMULATOR
   std::unique_ptr<SimulatorControl> simulatorControl_;
 #endif

@@ -34,6 +34,8 @@ class HostWindow final {
   GrDirectContext &gpu();
   SDL_Window *sdlWindow() const;
 
+  /// Hands what was drawn to the GPU, without showing it.
+  void flush();
   /// Sends what was drawn to the display, and waits for it where the display
   /// paces the swap.
   void present();

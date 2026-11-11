@@ -1,11 +1,14 @@
 #pragma once
 
-#include "../../input/RemoteInput.h"
+#include "../../input/RemotePresses.h"
+#include "../../render/Scene.h"
 
-#include <Evas.h>
+#include "include/core/SkRect.h"
+#include "modules/skparagraph/include/Paragraph.h"
 
 #include <deque>
 #include <functional>
+#include <memory>
 #include <optional>
 #include <string>
 #include <vector>
@@ -31,39 +34,41 @@ struct AlertRequest {
 /// A native alert drawn over the app, driven by the remote: Left and Right
 /// move between the buttons, Select presses one, Back dismisses a cancelable
 /// alert. Alerts asked for while one is shown wait their turn. Main thread only.
-class AlertDialog final {
+class AlertDialog final : public SceneLayer {
  public:
-  explicit AlertDialog(Evas *evas);
-  ~AlertDialog();
+  explicit AlertDialog(Scene &scene);
+  ~AlertDialog() override;
 
   AlertDialog(const AlertDialog &) = delete;
   AlertDialog &operator=(const AlertDialog &) = delete;
 
-  void show(AlertRequest request, int screenWidth, int screenHeight);
+  void show(AlertRequest request);
   bool isShown() const;
 
   /// Takes a remote event while an alert is shown.
   void handle(const RemoteEvent &event);
 
+  void draw(SkCanvas &canvas) override;
+
  private:
+  struct Button {
+    SkRect box;
+    std::unique_ptr<skia::textlayout::Paragraph> label;
+  };
+
   void present();
   void layout();
   void focus(std::size_t index);
   void close(std::optional<int> buttonKey);
-  void clear();
 
-  Evas *const evas_;
-  Evas_Textblock_Style *style_;
-  int screenWidth_{0};
-  int screenHeight_{0};
+  Scene &scene_;
   std::deque<AlertRequest> pending_;
   std::optional<AlertRequest> current_;
   std::size_t focused_{0};
-  Evas_Object *scrim_{nullptr};
-  Evas_Object *panel_{nullptr};
-  Evas_Object *text_{nullptr};
-  std::vector<Evas_Object *> buttonBackgrounds_;
-  std::vector<Evas_Object *> buttonLabels_;
+  bool isLayer_{false};
+  SkRect panel_{};
+  std::unique_ptr<skia::textlayout::Paragraph> text_;
+  std::vector<Button> buttons_;
 };
 
 } // namespace rnwebos

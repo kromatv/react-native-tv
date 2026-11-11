@@ -1,5 +1,6 @@
 #pragma once
 
+#include "AppDirectories.h"
 #include "Context.h"
 #include "ExpoRuntime.h"
 
@@ -22,18 +23,19 @@
 
 namespace rnwebos::expo::testing {
 
-/// The app's data, cache and resource directories, in a directory of their own
-/// that the simulator's app_common shim answers for: set before any test runs,
-/// so appDirectories() reads them the first time it is asked.
+/// The app's data, cache and resource directories, in a directory of their
+/// own, given to the Expo modules before any test asks for them.
 inline const std::filesystem::path &testAppRoot() {
   static const std::filesystem::path root = [] {
     auto pattern = (std::filesystem::temp_directory_path() / "rn-webos-expo-tests-XXXXXX").string();
     if (mkdtemp(pattern.data()) == nullptr) throw std::runtime_error("cannot create the test app directory");
     const std::filesystem::path made(pattern);
     for (const auto *name : {"data", "cache", "res"}) std::filesystem::create_directories(made / name);
-    setenv("RN_WEBOS_SIMULATOR_DATA_DIR", (made / "data").c_str(), 1);
-    setenv("RN_WEBOS_SIMULATOR_CACHE_DIR", (made / "cache").c_str(), 1);
-    setenv("RN_WEBOS_SIMULATOR_RESOURCE_DIR", (made / "res").c_str(), 1);
+    setAppDirectories({
+        .data = (made / "data").string() + "/",
+        .cache = (made / "cache").string() + "/",
+        .resource = (made / "res").string() + "/",
+    });
     return made;
   }();
   return root;
@@ -71,7 +73,7 @@ class QueuedInvoker final : public facebook::react::CallInvoker {
 };
 
 /// Hermes with `globalThis.expo` installed over a Context of its own. The test's
-/// thread is the JavaScript thread and the EFL main loop at once: `settle` and
+/// thread is the JavaScript thread and the main loop at once: `settle` and
 /// `pumpUntil` run what the background pool, the main loop and native callbacks
 /// queued until the awaited result arrives.
 class ExpoTestRuntime final {

@@ -55,7 +55,7 @@ void DevSupport::post(std::function<void(DevSupport &)> task) {
 DevSupport::DevSupport(DevServer server, const DeviceProfile &device, Host host)
     : server_(std::move(server)),
       host_(std::move(host)),
-      banner_(host_.evas, host_.screenWidth, host_.screenHeight) {
+      banner_(*host_.scene) {
   packager_ = std::make_unique<PackagerConnection>(
       server_.packagerUrl(friendlyDeviceName(device)),
       PackagerConnection::Handlers{
