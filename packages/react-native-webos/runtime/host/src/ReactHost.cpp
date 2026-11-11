@@ -1,6 +1,9 @@
 #include "ReactHost.h"
 
 #include "HostFeatureFlags.h"
+#include "diagnostics/CrashReporter.h"
+#include "diagnostics/DevelopmentLinks.h"
+#include "diagnostics/ScreenCapture.h"
 #include "logging/Log.h"
 #include "modules/AppStateModule.h"
 #include "platform/MainLoop.h"
@@ -27,12 +30,18 @@ ReactHost::ReactHost(const std::string &resourceDir)
 
 void ReactHost::start() {
   openMainThreadSync();
+  diagnostics_.controlLink = openDevelopmentLinks(config_, [weakHost = weakHost_](const CaptureDone &done) {
+    const auto host = weakHost.lock();
+    done(host && (*host)->scene_ ? captureScene(*(*host)->scene_) : std::nullopt);
+  });
+  installCrashReporter();
   log(LogLevel::Info,
       "Starting " + config_.appKey + " on " + device_.modelName + " (webOS " + device_.platformVersion + ")");
   overrideFeatureFlagsOnce();
   createWindow();
   startDevSupport();
   createInstance();
+  startPerfMonitor();
   loadBundle();
   remotePresses_ = std::make_unique<RemotePresses>([this](const RemoteEvent &event) { onRemoteEvent(event); });
   MainLoop::get().setEventHandler([this](const SDL_Event &event) { handleEvent(event); });
@@ -57,6 +66,7 @@ ReactHost::~ReactHost() {
 
 void ReactHost::stop() {
   lifetime_.reset();
+  diagnostics_.perfMonitor.reset();
 #if RN_WEBOS_SIMULATOR
   simulatorControl_.reset();
 #endif
@@ -67,20 +77,34 @@ void ReactHost::stop() {
   stopReactNative();
   devSupport_.reset();
   textMeasurer_.reset();
+  alertDialog_.reset();
   errorScreen_.reset();
   scene_.reset();
   window_.reset();
 }
 
+void ReactHost::startPerfMonitor() {
+  if (diagnostics_.controlLink == nullptr) return;
+  diagnostics_.perfMonitor = std::make_unique<PerfMonitor>(PerfMonitor::Sources{
+      .scene = scene_.get(),
+      .controlLink = diagnostics_.controlLink.get(),
+      .jsThread = jsThread_,
+      .runtimeExecutor = instance_->getBufferedRuntimeExecutor(),
+  });
+}
+
 void ReactHost::reload() {
   log(LogLevel::Info, "Reloading " + config_.appKey);
+  diagnostics_.perfMonitor.reset();
   remotePresses_->releaseAll();
   closeMainThreadSync();
   instanceGate_->close();
   stopReactNative();
   openMainThreadSync();
   errorScreen_ = std::make_unique<ErrorScreen>(*scene_);
+  alertDialog_ = std::make_unique<AlertDialog>(*scene_);
   createInstance();
+  startPerfMonitor();
   loadBundle();
   startSurface();
 }

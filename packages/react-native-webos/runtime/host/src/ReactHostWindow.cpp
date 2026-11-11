@@ -17,6 +17,7 @@ void ReactHost::createWindow() {
   scene_ = std::make_unique<Scene>(*window_);
   textMeasurer_ = std::make_shared<SkiaTextMeasurer>();
   errorScreen_ = std::make_unique<ErrorScreen>(*scene_);
+  alertDialog_ = std::make_unique<AlertDialog>(*scene_);
 }
 
 void ReactHost::startSurface() {
@@ -63,6 +64,10 @@ void ReactHost::handleEvent(const SDL_Event &event) {
 void ReactHost::onRemoteEvent(const RemoteEvent &event) {
   if (errorScreen_->isShown()) {
     if (event.isBack) exit();
+    return;
+  }
+  if (alertDialog_->isShown()) {
+    alertDialog_->handle(event);
     return;
   }
   if (event.isBack) {
