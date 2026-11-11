@@ -1,102 +1,36 @@
-# Cross-compiles for a Samsung webOS TV with LLVM (clang + lld) against the
-# rootstrap and the GCC runtime that webOS Studio installs.
+# Cross-compiles for an LG webOS TV with LLVM (clang and lld) against openlgtv's
+# SDK: a glibc 2.12.2 sysroot and GCC's C++ runtime, linked statically
+# (docs/reference/webos-native-toolchain.md, "What this means").
 #
 #   -DCMAKE_TOOLCHAIN_FILE=<this file>
-#   -DWEBOS_ARCH=x86_64|aarch64|armv7l     x86_64 is the emulator
-#   -DWEBOS_PLATFORM_VERSION=9.0           the oldest platform the build runs on
-#   -DWEBOS_ROOTSTRAP_VERSION=<version>    default: WEBOS_PLATFORM_VERSION
-#   -DWEBOS_ROOTSTRAP_PROFILE=webos        iot-headed before 8.0 (src/webos/target.ts)
-#   -DWEBOS_SDK_DIR=<dir>                  default: $WEBOS_SDK_DIR, then ~/webos-studio
-#   -DWEBOS_LLVM_DIR=<dir>                 default: $WEBOS_LLVM_DIR, Homebrew, then PATH
-#
-# See docs/toolchain.md for why this is clang and not Samsung's GCC.
+#   -DWEBOS_SDK_DIR=<dir>    the SDK as `rn-webos setup` extracts it; default: $WEBOS_SDK_DIR
+#   -DWEBOS_LLVM_DIR=<dir>   holds clang and ld.lld; default: $WEBOS_LLVM_DIR, Homebrew, then PATH
+#   -DWEBOS_ARM_MODE=ON      ARM instructions instead of Thumb-2
 
 set(CMAKE_SYSTEM_NAME Linux)
+set(CMAKE_SYSTEM_PROCESSOR armv7l)
+set(WEBOS_TRIPLE arm-webos-linux-gnueabi)
 
-set(WEBOS_ARCH "x86_64" CACHE STRING "Target CPU: x86_64 (emulator), aarch64 or armv7l")
-set_property(CACHE WEBOS_ARCH PROPERTY STRINGS x86_64 aarch64 armv7l)
-set(WEBOS_PLATFORM_VERSION "9.0" CACHE STRING "Oldest webOS platform the build runs on")
-set(WEBOS_ROOTSTRAP_VERSION "${WEBOS_PLATFORM_VERSION}" CACHE STRING "webOS version of the rootstrap")
-set(WEBOS_ROOTSTRAP_PROFILE "webos" CACHE STRING "webOS Studio profile of the rootstrap")
-set_property(CACHE WEBOS_ROOTSTRAP_PROFILE PROPERTY STRINGS webos iot-headed)
-
-if(DEFINED ENV{WEBOS_SDK_DIR})
-  set(WEBOS_SDK_DIR "$ENV{WEBOS_SDK_DIR}" CACHE PATH "webOS Studio installation")
-else()
-  set(WEBOS_SDK_DIR "$ENV{HOME}/webos-studio" CACHE PATH "webOS Studio installation")
+if(NOT WEBOS_SDK_DIR AND DEFINED ENV{WEBOS_SDK_DIR})
+  set(WEBOS_SDK_DIR "$ENV{WEBOS_SDK_DIR}")
 endif()
-if(DEFINED ENV{WEBOS_LLVM_DIR})
-  set(WEBOS_LLVM_DIR "$ENV{WEBOS_LLVM_DIR}" CACHE PATH "Directory holding clang and ld.lld")
+set(WEBOS_SDK_DIR "${WEBOS_SDK_DIR}" CACHE PATH "The extracted webOS SDK (openlgtv buildroot-nc4)")
+if(NOT WEBOS_LLVM_DIR AND DEFINED ENV{WEBOS_LLVM_DIR})
+  set(WEBOS_LLVM_DIR "$ENV{WEBOS_LLVM_DIR}")
 endif()
+set(WEBOS_LLVM_DIR "${WEBOS_LLVM_DIR}" CACHE PATH "Directory holding clang and ld.lld")
+option(WEBOS_ARM_MODE "Compile ARM instructions instead of Thumb-2" OFF)
 
-list(APPEND CMAKE_TRY_COMPILE_PLATFORM_VARIABLES
-  WEBOS_ARCH WEBOS_PLATFORM_VERSION WEBOS_ROOTSTRAP_VERSION WEBOS_ROOTSTRAP_PROFILE WEBOS_SDK_DIR
-  WEBOS_LLVM_DIR WEBOS_USE_RAW_ROOTSTRAP)
+list(APPEND CMAKE_TRY_COMPILE_PLATFORM_VARIABLES WEBOS_SDK_DIR WEBOS_LLVM_DIR WEBOS_ARM_MODE)
 
-if(WEBOS_ARCH STREQUAL "x86_64")
-  set(CMAKE_SYSTEM_PROCESSOR x86_64)
-  set(WEBOS_TRIPLE x86_64-webos-linux-gnu)
-  set(_webos_gcc_dir_prefix x86_64-linux-gnu)
-  set(_webos_rootstrap emulator64)
-  set(WEBOS_LIBDIR lib64)
-elseif(WEBOS_ARCH STREQUAL "aarch64")
-  set(CMAKE_SYSTEM_PROCESSOR aarch64)
-  set(WEBOS_TRIPLE aarch64-webos-linux-gnu)
-  set(_webos_gcc_dir_prefix aarch64-linux-gnu)
-  set(_webos_rootstrap device64)
-  set(WEBOS_LIBDIR lib64)
-elseif(WEBOS_ARCH STREQUAL "armv7l")
-  set(CMAKE_SYSTEM_PROCESSOR armv7l)
-  set(WEBOS_TRIPLE arm-webos-linux-gnueabi)
-  set(_webos_gcc_dir_prefix arm-linux-gnueabi)
-  set(_webos_rootstrap device)
-  set(WEBOS_LIBDIR lib)
-  # The configuration Samsung's own GCC is built with (its configargs.h).
-  set(_webos_arch_flags "-march=armv7-a -mtune=cortex-a8 -mfloat-abi=softfp -mfpu=vfpv3-d16")
-else()
-  message(FATAL_ERROR "WEBOS_ARCH must be x86_64, aarch64 or armv7l, got '${WEBOS_ARCH}'")
-endif()
-
-file(GLOB _webos_gcc_dirs LIST_DIRECTORIES true "${WEBOS_SDK_DIR}/tools/${_webos_gcc_dir_prefix}-gcc-*")
-list(SORT _webos_gcc_dirs COMPARE NATURAL ORDER DESCENDING)
-list(GET _webos_gcc_dirs 0 WEBOS_GCC_DIR)
-file(GLOB _webos_gcc_install_dirs LIST_DIRECTORIES true "${WEBOS_GCC_DIR}/lib/gcc/${WEBOS_TRIPLE}/*")
+set(WEBOS_SYSROOT "${WEBOS_SDK_DIR}/${WEBOS_TRIPLE}/sysroot")
+file(GLOB _webos_gcc_install_dirs LIST_DIRECTORIES true "${WEBOS_SDK_DIR}/lib/gcc/${WEBOS_TRIPLE}/*")
+list(SORT _webos_gcc_install_dirs COMPARE NATURAL ORDER DESCENDING)
+list(APPEND _webos_gcc_install_dirs "")
 list(GET _webos_gcc_install_dirs 0 WEBOS_GCC_INSTALL_DIR)
-if(NOT EXISTS "${WEBOS_GCC_INSTALL_DIR}/crtbegin.o")
+if(NOT EXISTS "${WEBOS_SYSROOT}/usr/lib/libc.so" OR NOT EXISTS "${WEBOS_GCC_INSTALL_DIR}/crtbeginS.o")
   message(FATAL_ERROR
-    "No GCC runtime for ${WEBOS_TRIPLE} under ${WEBOS_SDK_DIR}/tools. "
-    "Install the Native toolchain from the webOS Studio Package Manager.")
-endif()
-
-set(WEBOS_ROOTSTRAP_NAME "${WEBOS_ROOTSTRAP_PROFILE}-${WEBOS_ROOTSTRAP_VERSION}-${_webos_rootstrap}.core")
-set(WEBOS_ROOTSTRAP
-  "${WEBOS_SDK_DIR}/platforms/webos-${WEBOS_ROOTSTRAP_VERSION}/${WEBOS_ROOTSTRAP_PROFILE}/rootstraps/${WEBOS_ROOTSTRAP_NAME}")
-if(NOT IS_DIRECTORY "${WEBOS_ROOTSTRAP}")
-  message(FATAL_ERROR
-    "Rootstrap not found: ${WEBOS_ROOTSTRAP}. Run: rn-webos setup --arch ${WEBOS_ARCH} --platform ${WEBOS_PLATFORM_VERSION}")
-endif()
-
-if(DEFINED ENV{RN_WEBOS_CACHE_DIR})
-  set(RN_WEBOS_CACHE_DIR "$ENV{RN_WEBOS_CACHE_DIR}")
-elseif(DEFINED ENV{XDG_CACHE_HOME})
-  set(RN_WEBOS_CACHE_DIR "$ENV{XDG_CACHE_HOME}/react-native-webos")
-else()
-  set(RN_WEBOS_CACHE_DIR "$ENV{HOME}/.cache/react-native-webos")
-endif()
-
-# The rootstrap's own stubs are unreadable to lld, and its glibc predates GCC
-# 14's runtime: `rn-webos setup` builds a mirror that fixes both (docs/toolchain.md).
-option(WEBOS_USE_RAW_ROOTSTRAP "Compile against the rootstrap itself, without linking" OFF)
-if(WEBOS_USE_RAW_ROOTSTRAP)
-  set(WEBOS_SYSROOT "${WEBOS_ROOTSTRAP}")
-  set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
-else()
-  set(WEBOS_SYSROOT "${RN_WEBOS_CACHE_DIR}/sysroots/${WEBOS_ROOTSTRAP_NAME}")
-  if(NOT EXISTS "${WEBOS_SYSROOT}/.rn-webos-sysroot.json")
-    message(FATAL_ERROR
-      "No linkable sysroot for ${WEBOS_ROOTSTRAP_NAME}. "
-      "Run: rn-webos setup --arch ${WEBOS_ARCH} --platform ${WEBOS_PLATFORM_VERSION}")
-  endif()
+    "WEBOS_SDK_DIR ('${WEBOS_SDK_DIR}') holds no ${WEBOS_TRIPLE} sysroot and GCC runtime. Run: rn-webos setup")
 endif()
 
 set(_webos_llvm_hints "${WEBOS_LLVM_DIR}" /opt/homebrew/opt/llvm/bin /usr/local/opt/llvm/bin)
@@ -106,6 +40,7 @@ find_program(WEBOS_CLANGXX clang++ HINTS ${_webos_llvm_hints} NO_CACHE REQUIRED)
 find_program(WEBOS_LLVM_AR llvm-ar HINTS ${_webos_llvm_hints} NO_CACHE REQUIRED)
 find_program(WEBOS_LLVM_RANLIB llvm-ranlib HINTS ${_webos_llvm_hints} NO_CACHE REQUIRED)
 find_program(WEBOS_LLVM_STRIP llvm-strip HINTS ${_webos_llvm_hints} NO_CACHE REQUIRED)
+find_program(WEBOS_LLVM_READELF llvm-readelf HINTS ${_webos_llvm_hints} NO_CACHE REQUIRED)
 find_program(WEBOS_LLD ld.lld HINTS ${_webos_lld_hints} NO_CACHE REQUIRED)
 
 set(CMAKE_C_COMPILER "${WEBOS_CLANG}")
@@ -125,22 +60,57 @@ set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
 
-set(_webos_common_flags "--gcc-install-dir=${WEBOS_GCC_INSTALL_DIR} -fPIC ${_webos_arch_flags}")
-set(CMAKE_C_FLAGS_INIT "${_webos_common_flags}")
-set(CMAKE_CXX_FLAGS_INIT "${_webos_common_flags}")
-set(CMAKE_ASM_FLAGS_INIT "${_webos_common_flags}")
+# The ABI the SDK's GCC is configured for and every TV runs: armv7 with NEON,
+# floats passed in core registers. Thumb-2 is what Skia's own build chooses for
+# 32-bit ARM.
+if(WEBOS_ARM_MODE)
+  set(_webos_instruction_set -marm)
+else()
+  set(_webos_instruction_set -mthumb)
+endif()
+set(WEBOS_ABI_FLAGS
+  "--gcc-install-dir=${WEBOS_GCC_INSTALL_DIR}" -mcpu=cortex-a9 -mfpu=neon-fp16 -mfloat-abi=softfp
+  ${_webos_instruction_set})
+# runtime/compat/include declares what glibc 2.12.2's headers lack.
+get_filename_component(WEBOS_COMPAT_DIR "${CMAKE_CURRENT_LIST_DIR}/../../compat" ABSOLUTE)
+set(_webos_compile_flags
+  ${WEBOS_ABI_FLAGS} -fPIC "-isystem${WEBOS_COMPAT_DIR}/include"
+  -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64)
+list(JOIN _webos_compile_flags " " _webos_compile_flags)
+set(CMAKE_C_FLAGS_INIT "${_webos_compile_flags}")
+set(CMAKE_CXX_FLAGS_INIT "${_webos_compile_flags}")
+set(CMAKE_ASM_FLAGS_INIT "${_webos_compile_flags}")
 
-# A TV's system libstdc++ is as old as its firmware, so the runtime carries its
-# own: a set from 2022 refuses a library that needs GCC 14's.
-set(_webos_link_flags "--ld-path=${WEBOS_LLD} -static-libstdc++ -static-libgcc")
-set(CMAKE_EXE_LINKER_FLAGS_INIT "${_webos_link_flags}")
-set(CMAKE_SHARED_LINKER_FLAGS_INIT "${_webos_link_flags} -Wl,--no-undefined")
+# A TV's libstdc++ is as old as its firmware and libatomic.so.1 is missing on
+# webOS 1 and 4, so both are linked in. glibc 2.12.2 keeps clock_gettime in librt.
+set(_webos_link_flags
+  "--ld-path=${WEBOS_LLD} -static-libstdc++ -static-libgcc -pthread -Wl,--no-undefined -Wl,--hash-style=both")
+# A C link ignores -static-libstdc++, and clang says so: a configure check that
+# links with -Werror, such as SDL's for -fvisibility, would then fail.
+string(APPEND _webos_link_flags " -Wno-unused-command-line-argument")
+# The SDK's libatomic.a is not position independent, so an executable is linked
+# at a fixed address, as the SDK's GCC links one by default.
+set(CMAKE_EXE_LINKER_FLAGS_INIT "${_webos_link_flags} -no-pie")
+set(CMAKE_SHARED_LINKER_FLAGS_INIT "${_webos_link_flags}")
 set(CMAKE_MODULE_LINKER_FLAGS_INIT "${_webos_link_flags}")
-# Static like libstdc++: armv7 has no instructions for some atomic widths React Native uses.
-set(CMAKE_C_STANDARD_LIBRARIES_INIT "-l:libatomic.a")
-set(CMAKE_CXX_STANDARD_LIBRARIES_INIT "-l:libatomic.a")
+set(_webos_standard_libraries "-l:libatomic.a -Wl,--as-needed -lrt -Wl,--no-as-needed")
+set(CMAKE_C_STANDARD_LIBRARIES_INIT "${_webos_standard_libraries}")
+set(CMAKE_CXX_STANDARD_LIBRARIES_INIT "${_webos_standard_libraries}")
 
 set(ENV{PKG_CONFIG_DIR} "")
 set(ENV{PKG_CONFIG_SYSROOT_DIR} "${WEBOS_SYSROOT}")
-set(ENV{PKG_CONFIG_LIBDIR}
-  "${WEBOS_SYSROOT}/usr/${WEBOS_LIBDIR}/pkgconfig:${WEBOS_SYSROOT}/usr/share/pkgconfig")
+set(ENV{PKG_CONFIG_LIBDIR} "${WEBOS_SYSROOT}/usr/lib/pkgconfig:${WEBOS_SYSROOT}/usr/share/pkgconfig")
+
+# Skia compiles itself with GN, outside CMake: the same compiler, target and
+# ABI, as GN arguments (docs/reference/skia-rendering.md, section 4).
+set(RN_WEBOS_SKIA_CFLAGS "--target=${WEBOS_TRIPLE}" "--sysroot=${WEBOS_SYSROOT}" ${WEBOS_ABI_FLAGS})
+set(_webos_skia_asmflags ${RN_WEBOS_SKIA_CFLAGS})
+list(TRANSFORM _webos_skia_asmflags PREPEND "\"")
+list(TRANSFORM _webos_skia_asmflags APPEND "\"")
+list(JOIN _webos_skia_asmflags ", " _webos_skia_asmflags)
+set(RN_WEBOS_SKIA_TARGET_ARGS
+  "target_cpu = \"arm\""
+  "cc = \"${WEBOS_CLANG}\""
+  "cxx = \"${WEBOS_CLANGXX}\""
+  "ar = \"${WEBOS_LLVM_AR}\""
+  "extra_asmflags = [ ${_webos_skia_asmflags} ]")

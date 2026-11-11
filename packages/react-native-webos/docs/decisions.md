@@ -16,35 +16,34 @@ Samsung reserves signing native libraries to partners
 ([webos-tv-platform.md](reference/webos-tv-platform.md)). Developer Mode works
 with a Public certificate.
 
-## LLVM, a static GCC runtime, the oldest rootstrap
+## LLVM, a static GCC runtime, one sysroot older than any TV
 
-The runtime is compiled with clang and linked with lld against a mirror of the
-package's floor rootstrap (6.0 by default, glibc 2.30), with GCC 14's libstdc++
-linked statically and the glibc symbols it needs beyond 2.30 (three, and
-`_dl_find_object` on aarch64 and x86_64) supplied by a hidden shim. One build
-then runs on every newer TV. Samsung's own GCC for macOS needs Intel Homebrew
-libraries, and lld rejects the rootstrap's stubs as shipped, hence the mirror
-(`runtime/cmake/toolchain/webos.cmake`, `src/sysroot/`). webOS Studio publishes
-no TV rootstrap: floors 6.0 to 7.0 link against IoT Headed, the profile with
-armv7 and aarch64 rootstraps, and 8.0 on against the unified `webos` profile
-(`src/webos/target.ts`).
+The runtime is compiled with clang and linked with lld against openlgtv's SDK:
+a glibc 2.12.2 sysroot, older than the oldest TV's 2.14.1, with GCC 16.2's
+libstdc++, libgcc and libatomic linked statically. One 32-bit armv7 executable
+(softfp, NEON, Thumb-2) then runs on every release; no webOS release gives an
+app a 64-bit userland. What the sources call beyond glibc 2.12.2 is defined,
+hidden, in `runtime/compat/`. From the TV the executable links only libraries
+every release has under the same name, and the build fails on any other
+(`runtime/cmake/WebOSPlatform.cmake`); everything else is compiled in or opened
+with `dlopen`. It is linked at a fixed address, as the SDK's own executables
+are: the SDK's `libatomic.a` is not position independent. The SDK is built for
+a Linux host and serves macOS too, since clang reads only its target files
+([webos-native-toolchain.md](reference/webos-native-toolchain.md)).
 
-## webOS 6.0 is the floor; older TVs get a web build
+Consequence: no TV was at hand for the port, so `scripts/check-tv-binary.ts`
+checks every executable against webosbrew's firmware symbol data, 14 images
+from webOS 1.2 to 11.2, and that is the evidence until a TV runs one.
 
-A package names its floor (the plugin's `platform` prop, default `6.0`) and
-one `.tpk` per CPU runs on that webOS and every later one: 2021 to 2026 TVs.
-Below 6.0 Samsung's TVs refuse the native libraries an app carries, the wall
-flutter-webos hit, and the runtime would also lose glibc, curl and EFL
-symbols; the facts and the cost of each step lower are in
-[webos-versions.md](webos-versions.md). The shell is compiled against WebOSFX
-API 8 whatever the floor, and the manifest's `api-version` is the floor. TV
-features that need a newer webOS check the TV's version at run time and say
-why they are off.
+## webOS 4 is the floor
 
-Consequence: 2015 to 2020 TVs need a react-native-web build packaged as a
-`.wgt`, a second Seller Office application released to those model groups. It
-is designed in [webos-versions.md](webos-versions.md), not built. On webOS 6.0
-the SVG views call nine Evas VG functions that 6.0 exports but did not publish.
+One executable runs on webOS TV 4.x (2018) and every later release. Every
+image back to 1.2 has what the executable imports, and SDL finds every Wayland
+function it requires from 3.4 on; 4 is the floor because the jailer mis-sets an
+app's directory permissions before it and native apps are only properly
+supported from it ([webos-native-toolchain.md](reference/webos-native-toolchain.md),
+sections 4 and 9). A feature that needs a newer webOS checks the TV's version
+at run time and says why it is off.
 
 ## libcurl and Mbed TLS inside the runtime
 

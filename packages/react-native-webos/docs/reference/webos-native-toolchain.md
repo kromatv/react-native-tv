@@ -204,6 +204,28 @@ The whole runtime (Hermes, folly, React Native 0.88, ICU 78.3, Skia m157 with
 the libraries it bundles, SDL 3.4.16-webos.5, curl 8.23.0, Mbed TLS 3.6.7 and
 the host) cross-compiled from macOS with the flags of "What this means".
 
+### What the sources ask beyond glibc 2.12.2
+
+| Fact | Tag | Source |
+|---|---|---|
+| Against the sysroot's headers the sources stop in two places. folly's `net/NetOps.cpp` asserts that `::sendmmsg` exists on every Linux (glibc 2.14; `bits/socket.h` declares `recvmmsg` only). Hermes' `lib/Support/OSCompatPosix.cpp` passes `MADV_HUGEPAGE` to `madvise`: glibc's `bits/mman.h` stops at `MADV_HWPOISON`, while the SDK's own kernel header `asm-generic/mman-common.h` has it as 14. | B, Xo | build log; `folly/net/NetOps.cpp` L38-L42, `OSCompatPosix.cpp` L258; `usr/include/bits/socket.h`, `bits/mman.h`, `asm-generic/mman-common.h` |
+| At link one libc symbol is missing: `getauxval` (glibc 2.16), which the zlib inside Skia calls with `AT_HWCAP` and `AT_HWCAP2` to find the CRC32 instructions. The sysroot has `sys/auxv.h`, which declares it, but `libc.so.6` does not export it. | B, Xo | link; Chromium zlib `cpu_features.c` L110-L115; `usr/include/sys/auxv.h` |
+| The SDK's polyfill for it asks the TV's own glibc first (`dlsym(RTLD_NEXT, "getauxval")`), then reads `/proc/self/auxv`, and aborts when neither works. | D | [polyfills] `src/2.16/getauxval.c` |
+| The kernel headers number system calls up to 379 (`finit_module`), so `SYS_getrandom` is not defined. On ARM `getrandom` is 384 and `memfd_create` 385; `sendmmsg`, 374, is in the headers. | Xo, D | `usr/include/asm/unistd.h`, `bits/syscall.h`; [linux-syscalls] |
+| `std::random_device` is constructed by Hermes for every runtime (`GCBase.cpp`, `Runtime.cpp`), by React Native (`react/utils/Uuid.cpp`) and by the host (WebSocket keys, multipart boundaries, blob ids). The one in the SDK's `libstdc++.a` is `random.o`: it defines `_M_init` (two overloads), `_M_fini`, `_M_getval` and `_M_getentropy`, and calls `open64`, `read` and `ioctl`. `cow-string-inst.o` of the same archive calls `_M_init(const char*, size_t)`: a replacement that leaves that overload out brings `random.o` back, and the link fails on duplicate symbols. | B, Xo | linker map; `llvm-nm` on `libstdc++.a`; `ld.lld --why-extract` |
+| So `runtime/compat` holds: `sendmmsg` (2.14), `getauxval` (2.16), `getrandom` and `getentropy` (2.25, for Mbed TLS's entropy source, section 7), the members of `std::random_device` over `getrandom`, and `MADV_HUGEPAGE`. Nothing else of section 2's list is called: the link, `--no-undefined` against glibc 2.12.2, passes. | B | `runtime/compat/` |
+
+### Linking
+
+| Fact | Tag | Source |
+|---|---|---|
+| The SDK's `libatomic.a` is not position independent. Linked into a position-independent executable, lld refuses it: `relocation R_ARM_ABS32 cannot be used against symbol 'libat_have_strexbhd'; recompile with -fPIC`, from `load_n.c`, `store_n.c`, `gstore.c` and `lock.c`. The link test of section 6 passed as a PIE because it used no atomic that needs the library. The runtime needs two functions of it, `__atomic_load` and `__atomic_store`, both for React Native's `ReactNativeFeatureFlagsAccessor.cpp`. | B | link; linker map |
+| The SDK's own executables are fixed-address ones (`ET_EXEC`): `usr/bin/curl`, `usr/bin/sqlite3`, `usr/bin/gst-inspect-1.0`. clang links a PIE by default; `-no-pie` gives what the SDK's GCC gives. | Xo, B | `llvm-readelf -h` |
+| clang warns `argument unused during compilation: '-static-libstdc++'` when it links a C program. CMake has one set of link flags for C and C++, so a configure check that links with `-Werror` fails: SDL's `HAVE_GCC_FVISIBILITY` did, and SDL was then compiled without `-fvisibility=hidden`. | B | `CMakeConfigureLog.yaml` |
+| lld writes only `DT_GNU_HASH` unless told `--hash-style=both`. | B | `llvm-readelf -d` |
+| The result: ELF32 ARM, `ET_EXEC`, `e_flags 0x5000200`, build attributes `7-A`, ARM v7 profile A, Thumb-2, VFPv3, NEONv1, half-precision, no `Tag_ABI_VFP_args`; interpreter `/lib/ld-linux.so.3`; needs `libm.so.6`, `librt.so.1`, `libz.so.1`, `libEGL.so.1`, `libGLESv2.so.2`, `libdl.so.2`, `libpthread.so.0`, `libc.so.6`, `ld-linux.so.3`. | B | `scripts/check-tv-binary.ts`, `llvm-readelf -h -l -d -A` |
+| Its symbol versions: `GLIBC_2.4` for all but five symbols; `GLIBC_2.7` for `eventfd` and `mkostemp64`, `GLIBC_2.9` for `pipe2`, `GLIBC_2.12` for `pthread_setname_np` and `pthread_getname_np`; `ZLIB_1.2.3.4` for `inflateReset2`. No libstdc++ symbol is imported. | B | `scripts/check-tv-binary.ts` |
+
 ### SDL's webOS backend, cross-compiled
 
 | Fact | Tag | Source |
@@ -217,14 +239,18 @@ the host) cross-compiled from macOS with the flags of "What this means".
 
 ## Open questions
 
-- Does a clang and lld build start on a TV at all? Nothing was run: relocation
-  handling, the `DT_GNU_HASH`-only table clang asks for, PIE in the jail and
-  static libgcc unwinding across the runtime's `.so` are untested on hardware.
-- Which glibc 2.12.2 gaps Hermes, folly, React Native, ICU, curl and mbedTLS
-  hit. Only a real build tells; the list in section 2 is where to look first.
-- Whether the jail exposes `/dev/urandom`, on which webOS versions, and which
-  kernel each release runs (`getrandom(2)` needs Linux 3.17). One project
-  reports it missing; `std::random_device` in the static libstdc++ depends on it.
+- Does the executable start on a TV at all? Nothing was run. It is linked at a
+  fixed address with both hash tables, as the SDK's GCC would link it, but by
+  lld, from clang's code, with exceptions unwound by a static libgcc: none of
+  that has met a TV's loader.
+- Whether the jail exposes `/dev/urandom`, and which kernel each release runs.
+  One project reports the file missing. The runtime asks `getrandom(2)` (Linux
+  3.17) first and reads the file only when the call does not exist, so only a
+  kernel older than 3.17 in a jail without the file leaves it without random
+  numbers, and Hermes then cannot start.
+- Whether `dlsym(RTLD_NEXT, "getauxval")` from the executable finds the TV's
+  glibc, as it does for the SDK's polyfill. If not, zlib sees no CRC32
+  instructions and runs its portable code.
 - Where the CA bundle is on a TV and whether the jail maps it.
 - Whether stdout and stderr of a launcher-started native app go anywhere, and
   whether `prisoner` can read crash reports.
@@ -259,38 +285,75 @@ Verify the sha256, then extract only `arm-webos-linux-gnueabi/sysroot` (without
 `arm-webos-linux-gnueabi/include`, `arm-webos-linux-gnueabi/lib` and
 `lib/gcc/arm-webos-linux-gnueabi/16.2.0`. Do not run `relocate-sdk.sh`: clang
 takes every path as a flag, and `PKG_CONFIG_SYSROOT_DIR` with
-`PKG_CONFIG_LIBDIR` set as `tizen.cmake` does covers pkg-config. No ELF
-patching mirror is needed. LG's NDK cannot be mirrored under its licence.
+`PKG_CONFIG_LIBDIR` naming the sysroot's `usr/lib/pkgconfig` and
+`usr/share/pkgconfig` covers pkg-config. No ELF patching mirror is needed. LG's
+NDK cannot be mirrored under its licence.
 
-**Compile flags.**
+**Compile flags** (`runtime/cmake/toolchain/webos.cmake`).
 
 ```
 --target=arm-webos-linux-gnueabi --sysroot=<sdk>/arm-webos-linux-gnueabi/sysroot
 --gcc-install-dir=<sdk>/lib/gcc/arm-webos-linux-gnueabi/16.2.0
--mcpu=cortex-a9 -mfpu=neon-fp16 -mfloat-abi=softfp -marm -fPIC
+-mcpu=cortex-a9 -mfpu=neon-fp16 -mfloat-abi=softfp -mthumb -fPIC
+-isystem <package>/runtime/compat/include
 -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
 ```
+
+Thumb-2 is what Skia's GN build compiles 32-bit ARM as whatever it is told
+(skia-rendering.md, section 4), so the executable holds Thumb-2 code either
+way; `-DWEBOS_ARM_MODE=ON` compiles the rest as ARM instructions.
 
 **Link flags.**
 
 ```
---ld-path=<ld.lld> -static-libstdc++ -static-libgcc -pthread -Wl,--no-undefined
+--ld-path=<ld.lld> -static-libstdc++ -static-libgcc -pthread -no-pie
+-Wl,--no-undefined -Wl,--hash-style=both -Wno-unused-command-line-argument
 -l:libatomic.a -Wl,--as-needed -lrt -Wl,--no-as-needed
 ```
 
-plus a compat archive of hidden definitions for what glibc 2.12.2 lacks, as
-`runtime/compat/glibc-compat.c` does for Tizen (or `-lglibc_polyfills` for
-`getauxval` and `aligned_alloc`). Linking against the 2.12.2 sysroot with
-`--no-undefined` is itself the glibc check: a libc symbol newer than 2.12
-fails the link.
+plus `runtime/compat`: hidden definitions of what the sources call beyond
+glibc 2.12.2, `std::random_device` over `getrandom`, and a header directory for
+what the sysroot's headers do not declare (section 9). Linking against the 2.12.2 sysroot with `--no-undefined`
+is itself the glibc check: a libc symbol newer than 2.12 fails the link. A
+library compiled into the runtime later may call another one: the link says
+which, and its definition goes into `runtime/compat`, never a newer sysroot.
+
+**Building by hand.** `rn-webos` drives this; the same by hand, from the
+package's root, with LLVM (clang, lld, llvm-ar, llvm-readelf), CMake 3.24 or
+later, Ninja, Python 3, git, pkg-config and a C compiler for the build machine:
+
+```sh
+# Hermes' bytecode compiler for the build machine, once per Hermes version.
+cmake -S <hermes source> -B <hermes host build> -G Ninja -DCMAKE_BUILD_TYPE=Release \
+  -DHERMES_ENABLE_TEST_SUITE=OFF -DHERMES_BUILD_APPLE_FRAMEWORK=OFF -DHERMES_ENABLE_DEBUGGER=OFF
+cmake --build <hermes host build> --target hermesc shermes
+
+cmake -S runtime -B <build> -G Ninja -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_TOOLCHAIN_FILE=runtime/cmake/toolchain/webos.cmake \
+  -DWEBOS_SDK_DIR=<the SDK as extracted above> \
+  -DWEBOS_LLVM_DIR=<the directory of clang and ld.lld> \
+  -DREACT_NATIVE_DIR=<the app's react-native package> \
+  -DRN_WEBOS_CODEGEN_DIR=<React Native's codegen output> \
+  -DRN_WEBOS_HERMES_HOST_COMPILERS=<hermes host build>/ImportHostCompilers.cmake \
+  -DEXPO_MODULES_CORE_DIR=<expo-modules-core> -DEXPO_MODULES_JSI_DIR=<expo-modules-jsi>
+cmake --build <build> --target react-native-webos
+```
+
+The executable is `<build>/host/react-native-webos`. Optional:
+`-DRN_WEBOS_LIBRARIES_FILE=` (the app's native libraries),
+`-DRN_WEBOS_DEVELOPMENT=ON` (the development runtime), `-DRN_WEBOS_CACHE_DIR=`
+(default `~/.cache/react-native-webos`: downloads, Skia's sources and builds,
+`gn`, `wayland-scanner`), `-DRN_WEBOS_UNPORTED=` while the port is brought up.
+The first configure downloads the pinned sources and builds `wayland-scanner`
+for the build machine; the first build compiles Skia, once per machine.
 
 **Link statically or compile in.** libstdc++, libgcc and libatomic (never
 bundle `libstdc++.so.6`; `libatomic.so.1` is missing on webOS 1 and 4). curl
-with mbedTLS (or a static OpenSSL) and a CA bundle file shipped in the ipk: the
-TV's libcurl changes SONAME at webOS 5, lacks the calls the runtime makes
-before webOS 7, has no TLS 1.3 before webOS 6 and trusts an old root list.
-ICU, as on Tizen. libjpeg-turbo, libwebp and harfbuzz if used: wrong SONAME,
-absent before 4.x, absent on 1.2.
+with Mbed TLS (`runtime/cmake/Curl.cmake`) and a CA bundle file shipped in the
+ipk: the TV's libcurl changes SONAME at webOS 5, lacks the calls the runtime
+makes before webOS 7, has no TLS 1.3 before webOS 6 and trusts an old root
+list. ICU, as on Tizen. libjpeg-turbo, libwebp, HarfBuzz, FreeType, libpng and
+zlib come inside Skia; the TV's `libz.so.1` serves curl alone.
 
 **Safe to link from the TV** (same SONAME on all 14 images): `libc.so.6`,
 `libm.so.6`, `libpthread.so.0`, `libdl.so.2`, `librt.so.1`, `libEGL.so.1`,
@@ -303,6 +366,9 @@ name the stub records), `libwayland-webos-client.so.1`, `libxkbcommon.so.0`,
 any TV, so every such call needs the check below. Treat GLES 2 as the baseline
 and probe GLES 3 at run time. Load `libNDL_directmedia.so.1` with `dlopen`: it
 is absent on the 3.4.0 image and older, and has two API generations.
+`runtime/cmake/WebOSPlatform.cmake` holds this list: naming a library outside it
+fails the configure, and an executable that needs one fails the build. Today
+the executable needs eight of them and the loader (section 9).
 
 **Floor.** webOS 4.x (2018) is the lowest release these facts support without
 extra work: Wayland code built from the sysroot's headers needs
@@ -325,10 +391,11 @@ visible from a shell. For a shell run, set `APPID`. For GDB, push the SDK's
 with `ares-novacom --forward`.
 
 [nt]: https://github.com/webosbrew/native-toolchain/blob/730dbd680cc319935655b1b04c2d80fcb62fdb22/README.md
-[wayland]: https://gitlab.freedesktop.org/wayland/wayland/-/blob/1.20.0/src/scanner.c
-[sdl3]: https://github.com/webosbrew/SDL-webOS/tree/release-3.4.16-webos.5
+[linux-syscalls]: https://github.com/torvalds/linux/blob/v6.12/arch/arm/tools/syscall.tbl
 [mbedtls]: https://github.com/Mbed-TLS/mbedtls/tree/mbedtls-3.6.7
 [curl]: https://github.com/curl/curl/tree/curl-8_23_0
+[wayland]: https://gitlab.freedesktop.org/wayland/wayland/-/blob/1.20.0/src/scanner.c
+[sdl3]: https://github.com/webosbrew/SDL-webOS/tree/release-3.4.16-webos.5
 [curl-ca]: https://curl.se/docs/caextract.html
 [nt-rel]: https://github.com/webosbrew/native-toolchain/releases
 [nt-cmake]: https://github.com/webosbrew/native-toolchain/blob/730dbd680cc319935655b1b04c2d80fcb62fdb22/CMakeLists.txt
