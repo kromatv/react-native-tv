@@ -83,6 +83,30 @@ describe('setUpReactNative', () => {
     expect(manifestOf(current).pnpm).toBeUndefined();
   });
 
+  it('leaves an override that already names the same react-native-tvos, and every escape in the file', () => {
+    const root = project({ name: 'monorepo', private: true, workspaces: ['apps/*'] }, 'bun.lock');
+    const text = `{
+  "name": "monorepo",
+  "scripts": { "done": "echo \\"\\u2713 ready \\u2192 dist\\"" },
+  "workspaces": ["apps/*"],
+  "dependencies": { "react-native": "${TVOS}" },
+  "overrides": { "react-native": "${TVOS}" }
+}
+`;
+    writeFileSync(join(root, 'package.json'), text);
+    const app = join(root, 'apps', 'tv');
+    mkdirSync(app, { recursive: true });
+    writeFileSync(
+      join(app, 'package.json'),
+      JSON.stringify({ name: 'tv', dependencies: { 'react-native': TVOS } }),
+    );
+
+    const setup = setUpReactNative(app, noPnpm);
+
+    expect(setup.override.kind).toBe('present');
+    expect(readFileSync(join(root, 'package.json'), 'utf8')).toBe(text);
+  });
+
   it("overrides at a workspace's root with the spec, which the root does not depend on", () => {
     const root = project({ name: 'monorepo', private: true, workspaces: ['apps/*'] }, 'bun.lock');
     const app = join(root, 'apps', 'tv');

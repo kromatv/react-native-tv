@@ -19,10 +19,23 @@ export function readJsonObject(file: string): JsonObject {
   }
 }
 
-/** Writes `value` to `file` with the indentation the file had. */
+const NON_ASCII = /[\u0080-\uffff]/g;
+
+function escaped(character: string): string {
+  return `\\u${character.charCodeAt(0).toString(16).padStart(4, '0')}`;
+}
+
+/**
+ * Writes `value` to `file` with the indentation the file had. A file that
+ * wrote every character outside ASCII as an escape keeps them escaped.
+ */
 export function writeJsonObject(file: string, value: JsonObject): void {
-  const indent = /^([ \t]+)\S/m.exec(readFileSync(file, 'utf8'))?.[1] ?? '  ';
-  writeFileSync(file, `${JSON.stringify(value, null, indent)}\n`);
+  const before = readFileSync(file, 'utf8');
+  const indent = /^([ \t]+)\S/m.exec(before)?.[1] ?? '  ';
+  const json = JSON.stringify(value, null, indent);
+  const asciiOnly = !NON_ASCII.test(before);
+  NON_ASCII.lastIndex = 0;
+  writeFileSync(file, `${asciiOnly ? json.replace(NON_ASCII, escaped) : json}\n`);
 }
 
 /** The object under `key`, or an empty one when there is none. */

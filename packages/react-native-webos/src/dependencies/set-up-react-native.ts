@@ -58,10 +58,16 @@ function entryAt(holder: JsonObject, keys: readonly string[]): unknown {
   return key === undefined ? holder['react-native'] : entryAt(objectAt(holder, key), rest);
 }
 
-function setInPackageJson(root: string, keys: readonly string[], value: string): OverrideSetup {
+function setInPackageJson(
+  root: string,
+  keys: readonly string[],
+  value: string,
+  spec: string,
+): OverrideSetup {
   const file = join(root, 'package.json');
   const manifest = readJsonObject(file);
-  if (entryAt(manifest, keys) === value) return { kind: 'present', file };
+  const current = entryAt(manifest, keys);
+  if (current === value || current === spec) return { kind: 'present', file };
   writeJsonObject(file, withEntry(manifest, keys, value));
   return { kind: 'set', file };
 }
@@ -88,12 +94,12 @@ function setOverride(
   switch (manager.name) {
     case 'npm':
     case 'bun':
-      return setInPackageJson(manager.root, ['overrides'], value);
+      return setInPackageJson(manager.root, ['overrides'], value, spec);
     case 'yarn':
-      return setInPackageJson(manager.root, ['resolutions'], value);
+      return setInPackageJson(manager.root, ['resolutions'], value, spec);
     case 'pnpm':
       return majorOfPnpm(manager.root) < PNPM_WORKSPACE_OVERRIDES_MAJOR
-        ? setInPackageJson(manager.root, ['pnpm', 'overrides'], value)
+        ? setInPackageJson(manager.root, ['pnpm', 'overrides'], value, spec)
         : setPnpmWorkspaceOverride(manager.root, value);
   }
 }
