@@ -60,6 +60,13 @@ target_sources(${RN_WEBOS_LIBRARY_TARGET} PRIVATE ${_maps_sources})
 target_include_directories(${RN_WEBOS_LIBRARY_TARGET} PUBLIC "${RN_WEBOS_LIBRARY_DIR}/common/cpp")
 ```
 
+A library with a native view also links `rn_webos_skia` and
+`SDL3::SDL3-static`: `views/ComponentView.h` includes the headers of both.
+
+```cmake
+target_link_libraries(${RN_WEBOS_LIBRARY_TARGET} PUBLIC rn_webos_skia SDL3::SDL3-static)
+```
+
 The objects are linked into the executable itself, so registrations made by
 static initializers are kept. The host's headers are not a stable API yet: a
 library built against one react-native-webos version may need changes for the
@@ -136,6 +143,27 @@ that directory; nothing else lists it.
 | Package | Directory |
 |---------|-----------|
 | react-native-svg | `runtime/host/src/svg` |
+
+### react-native-svg
+
+Each `<Svg>` draws the tree of its elements with Skia, clipped to the view. It
+records the drawing once and plays it every frame until an element changes; a
+still one is kept as an image, so an icon costs one textured rectangle a frame.
+
+| Works | Not drawn yet |
+|-------|---------------|
+| `Svg` with `viewBox` and `preserveAspectRatio`, `G`, `Path` (all of SVG's path data), `Circle`, `Ellipse`, `Rect` with `rx`/`ry`, `Line`, `Polyline`, `Polygon`, `Defs`, `Use`, `Symbol` | `Image`, `Marker`, `ForeignObject`, `TextPath`, filters |
+| `fill`, `stroke`, `strokeWidth`, `strokeLinecap`, `strokeLinejoin`, `strokeMiterlimit`, `strokeDasharray`, `strokeDashoffset`, `fillRule`, `opacity`, `fillOpacity`, `strokeOpacity`, `currentColor` and `color`, `matrix` and `transform`, `display="none"`, inheritance from `G` and `Svg` | `vectorEffect="non-scaling-stroke"`, `context-fill` and `context-stroke` |
+| `LinearGradient` and `RadialGradient` (both units, `gradientTransform`, a focal point), `Pattern`, `ClipPath` with `clipRule`, `Mask` (luminance and alpha) | `spreadMethod`, which the package does not send: a gradient pads |
+| `Text` and `TSpan`: `x`, `y`, `dx`, `dy`, `fontFamily`, `fontSize`, `fontWeight`, `fontStyle`, `textAnchor`, fills and strokes | Per-glyph positions and `rotate`, `letterSpacing`, `textLength`, text decoration, ligatures and bidirectional text, a fallback font for characters the family lacks, text as a clip |
+| Lengths in user units, `px`, `pt`, `pc`, `mm`, `cm`, `in` and `%`; font sizes in `em` too | `ex` |
+
+`opacity` on a `G` fades the group as one picture, as a browser does. `clipRule`
+is react-native-svg's, not SVG's: it belongs to the element that is clipped, and
+without it overlapping shapes of a `ClipPath` leave a hole, as on Android and
+iOS; `clipRule="nonzero"` clips to their union. A `Use` without `width` and
+`height` gives a `Symbol` the whole viewport. The TurboModules (`getBBox`,
+`isPointInFill`, `toDataURL`...) are missing.
 
 ## Limits
 

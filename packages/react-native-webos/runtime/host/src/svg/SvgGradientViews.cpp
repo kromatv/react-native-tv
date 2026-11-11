@@ -12,9 +12,6 @@ namespace {
 namespace react = facebook::react;
 
 constexpr int kUserSpaceOnUse = 1;
-constexpr Length kNone{.value = 0, .percent = true};
-constexpr Length kHalf{.value = 50, .percent = true};
-constexpr Length kWhole{.value = 100, .percent = true};
 
 template <typename Props>
 GradientDefinition commonDefinition(const Props &props) {
@@ -28,10 +25,10 @@ GradientDefinition commonDefinition(const Props &props) {
 void readLinearGradient(GradientNode &node, const react::RNSVGLinearGradientProps &props) {
   readNodeProps(node, props);
   node.definition = commonDefinition(props);
-  node.definition.x1 = lengthOr(props.x1, kNone);
-  node.definition.y1 = lengthOr(props.y1, kNone);
+  node.definition.x1 = lengthOr(props.x1, kNoPercent);
+  node.definition.y1 = lengthOr(props.y1, kNoPercent);
   node.definition.x2 = lengthOr(props.x2, kWhole);
-  node.definition.y2 = lengthOr(props.y2, kNone);
+  node.definition.y2 = lengthOr(props.y2, kNoPercent);
 }
 
 void readRadialGradient(GradientNode &node, const react::RNSVGRadialGradientProps &props) {

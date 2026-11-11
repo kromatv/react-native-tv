@@ -39,6 +39,10 @@ void readRenderableProps(Node &node, const Props &props) {
   if (props.strokeMiterlimit > 0) node.paint.strokeMiterlimit = props.strokeMiterlimit;
 }
 
+inline constexpr Length kNoPercent{.value = 0, .percent = true};
+inline constexpr Length kHalf{.value = 50, .percent = true};
+inline constexpr Length kWhole{.value = 100, .percent = true};
+
 inline Length lengthOr(const folly::dynamic &value, Length fallback = {}) {
   return lengthFromProp(value).value_or(fallback);
 }

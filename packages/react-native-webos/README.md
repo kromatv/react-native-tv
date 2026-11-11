@@ -410,7 +410,7 @@ Known gaps:
   the native libraries an app carries below 6.0
   ([reference](docs/reference/webos-tv-platform.md#2-model-year-platform-runtime)).
 - No native focus engine, as above.
-- react-native-svg draws no text, images, masks or clip paths yet
+- react-native-svg draws no images, markers or filters yet
   ([details](docs/native-modules.md#react-native-svg)).
 - A native library cannot declare webOS privileges, and an app cannot leave a
   library out of the runtime ([limits](docs/native-modules.md#limits)).

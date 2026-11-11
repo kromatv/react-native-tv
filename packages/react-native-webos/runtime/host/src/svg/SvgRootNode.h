@@ -17,8 +17,10 @@ namespace rnwebos::svg {
 /// node reports a change or the box it is drawn into becomes another. A
 /// picture played a few frames in a row where its pixels fall on the canvas's
 /// own is then kept as an image, so a still icon costs one textured
-/// rectangle a frame whatever its paths; under a scale, a rotation or a
-/// fractional offset the picture is played, which stays sharp.
+/// rectangle a frame whatever its paths. A tree that changes every frame
+/// never becomes one, nor does a large one, an image costing four bytes a
+/// pixel; under a scale, a rotation or a fractional offset the picture is
+/// played, which stays sharp.
 class RootNode final : public GroupNode {
  public:
   SvgViewBox viewBox;

@@ -9,10 +9,7 @@ namespace rnwebos::svg {
 
 namespace {
 
-// A tree that changes every frame, as an animated one does, never gets this
-// far, so it is never drawn on the CPU and uploaded only to be thrown away.
 constexpr int kPlaysBeforeRaster = 3;
-// An image costs four bytes a pixel of GPU memory: a megabyte at this size.
 constexpr int kLargestRasterArea = 512 * 512;
 
 bool mapsPixelsOntoPixels(const SkMatrix &matrix) {

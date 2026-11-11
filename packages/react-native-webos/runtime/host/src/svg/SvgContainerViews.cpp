@@ -18,8 +18,6 @@ namespace react = facebook::react;
 constexpr int kUserSpaceOnUse = 1;
 constexpr int kObjectBoundingBox = 0;
 constexpr int kAlphaMask = 1;
-constexpr Length kNone{.value = 0, .percent = true};
-constexpr Length kWhole{.value = 100, .percent = true};
 
 template <typename Props>
 void readGroupProps(GroupNode &node, const Props &props) {
@@ -41,8 +39,8 @@ void readClipPath(ClipPathNode &node, const react::RNSVGClipPathProps &props) {
 
 void readMask(MaskNode &node, const react::RNSVGMaskProps &props) {
   readGroupProps(node, props);
-  node.x = lengthOr(props.x, kNone);
-  node.y = lengthOr(props.y, kNone);
+  node.x = lengthOr(props.x, kNoPercent);
+  node.y = lengthOr(props.y, kNoPercent);
   node.width = lengthOr(props.width, kWhole);
   node.height = lengthOr(props.height, kWhole);
   node.areaInUserSpace = props.maskUnits == kUserSpaceOnUse;
@@ -69,8 +67,8 @@ void readSymbol(SymbolNode &node, const react::RNSVGSymbolProps &props) {
 
 void readPattern(PatternNode &node, const react::RNSVGPatternProps &props) {
   readGroupProps(node, props);
-  node.x = lengthOr(props.x, kNone);
-  node.y = lengthOr(props.y, kNone);
+  node.x = lengthOr(props.x, kNoPercent);
+  node.y = lengthOr(props.y, kNoPercent);
   node.width = lengthOr(props.width, kWhole);
   node.height = lengthOr(props.height, kWhole);
   node.tileInUserSpace = props.patternUnits == kUserSpaceOnUse;
