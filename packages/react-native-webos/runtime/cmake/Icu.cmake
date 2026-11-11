@@ -29,7 +29,7 @@ target_compile_definitions(rn_webos_icui18n PRIVATE U_I18N_IMPLEMENTATION)
 target_link_libraries(rn_webos_icui18n PUBLIC rn_webos_icuuc)
 
 foreach(_target rn_webos_icuuc rn_webos_icui18n)
-  target_compile_options(${_target} PRIVATE -ffunction-sections -fdata-sections -w)
+  target_compile_options(${_target} PRIVATE -Os -ffunction-sections -fdata-sections -w)
   set_target_properties(${_target} PROPERTIES
     CXX_VISIBILITY_PRESET hidden
     VISIBILITY_INLINES_HIDDEN ON)

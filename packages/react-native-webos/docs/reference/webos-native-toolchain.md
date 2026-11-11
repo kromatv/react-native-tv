@@ -237,6 +237,21 @@ the host) cross-compiled from macOS with the flags of "What this means".
 | On webOS the fork refuses to link Wayland directly: it opens `libwayland-client.so.0`, `libwayland-egl.so`, `libwayland-cursor.so.0` and `libxkbcommon.so.0` (the file names it finds in the sysroot) with `dlopen`, and `libhelpers.so.2` and `libpbnjson_c.so.2` too. None becomes a `DT_NEEDED`. | D, B | [sdl3] `CMakeLists.txt` L1439-L1443, L1893-L1903, `cmake/sdlchecks.cmake` L8-L43, L710-L719; configure log |
 | With `SDL_HIDAPI=OFF` the fork's `src/hidapi/SDL_hidapi.c` does not compile for webOS: `DeleteHIDDeviceWrapper` uses `SDL_HIDAPI_discovery` and `SDL_webOSGetDevicePresenceFlags`, which only exist with HIDAPI on. HIDAPI on needs libudev, whose SONAME changes at webOS 4. | B, D | build log; [sdl3] `src/hidapi/SDL_hidapi.c` L1153-L1158, `CMakeLists.txt` L2002-L2012; section 2 |
 
+### Size
+
+Stripped with `llvm-strip`, for the host as ported on 2026-11-11: images,
+scroll views, text input, SVG, video and the dev tooling are still left out, and
+nothing references Skia's image codecs yet.
+
+| Fact | Tag | Source |
+|---|---|---|
+| The executable is 10,986,096 bytes stripped, 17.4 MB with its symbols: `.text` 8.33 MiB, `.rodata` 1.59, the unwind tables (`.ARM.extab`, `.ARM.exidx`) 0.31, `.data.rel.ro` 0.18. | B | `llvm-size -A` |
+| Where it goes, by the linker's map: Hermes 1.93 MiB, Skia's core and Ganesh 1.43, React Native (ReactCommon, codegen, Expo's common code) 1.41, ICU 1.22, Skia's modules (SkParagraph, SkShaper, SkUnicode, SVG) 0.95, the host 0.65, HarfBuzz 0.55, libstdc++ and libgcc 0.50, SDL 0.41, FreeType 0.36, curl 0.20, Mbed TLS 0.20, folly, glog and fmt 0.09, the image codecs and zlib 0.06, and 0.50 of the linker's own making (merged strings, the unwind index, tables). | B | `ld.lld -Map` |
+| What each setting saved, in the order applied, from 12,590,616 bytes with `-O3`, Thumb-2 and `--gc-sections` on a build whose React Native, host, folly and SDL had no `-ffunction-sections`: `-ffunction-sections -fdata-sections` everywhere 365,332; `-Os` for ICU, curl, Mbed TLS and SDL 474,172; `--icf=safe` and the linker's `-O2` 436,872 (420,680 and 14,016 measured apart); SDL's dynamic API table off 328,144. Together 1,604,520 bytes, 12.7%. | B | one build for each step |
+| SDL calls its own API through a table (`SDL_DYNAMIC_API`) so that another SDL can replace it at run time. The table references every public function, so `--gc-sections` drops none. SDL turns it off for Android, iOS and Emscripten, and elsewhere reserves the switch to a hand edit of `SDL_dynapi.h`: a definition on the command line is an `#error`. | D | [sdl3] `src/dynapi/SDL_dynapi.h` L26-L74 |
+| Not applied. Objects compiled without `-fPIC` for the fixed-address link: 7,016 bytes. `--icf=all` over `--icf=safe`: 73,408 more, at the price of functions that no longer compare unequal. `-Os` for Hermes, React Native, folly and the host too: 1,143,880 more, 0.41 MiB of it Hermes, whose interpreter is the hot path; React Native's own Android release build does compile Hermes with `MinSizeRel`. | B, D | one build for each; `ReactAndroid/hermes-engine/build.gradle.kts` L391-L397 of react-native 0.88 |
+| ARM instructions instead of Thumb-2 (`-DWEBOS_ARM_MODE=ON`, Skia rebuilt with `-marm`): 15,595,920 bytes against 11,314,240 at the same settings, 37.8% more. | B | two builds |
+
 ### Checked against the firmware data
 
 `bun scripts/check-tv-binary.ts <executable> --opens libwayland-client.so.0
@@ -275,7 +290,11 @@ executable and [fw] at commit `2d5a7b6`.
   licence allows any use outside Flutter. Not unpacked.
 - How far [fw] generalises: one SoC per release. GLES 3 is missing on the
   4.4.2 image (W18R) and present on 4.10.0 (W19P).
-- Whether a `-mthumb` build runs and what it saves on the real runtime.
+- Whether Thumb-2 code runs on every TV. The CPU is not in doubt (the build
+  attributes of the SDK's own libraries permit Thumb-2), but the SDK compiles
+  ARM and its glibc recipe calls its own Thumb build broken. ARM costs 37.8%
+  more (section 9) and is one option away.
+- Whether `-Os` for Hermes costs frames on a TV. It would save 0.41 MiB.
 - `native-toolchain`'s `main` gained Linux x86_64 and GCC 14 host builds in
   2025-10 with no release since 2024-03; a newer macOS port may appear.
 
@@ -313,15 +332,17 @@ NDK cannot be mirrored under its licence.
 -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
 ```
 
-Thumb-2 is what Skia's GN build compiles 32-bit ARM as whatever it is told
-(skia-rendering.md, section 4), so the executable holds Thumb-2 code either
-way; `-DWEBOS_ARM_MODE=ON` compiles the rest as ARM instructions.
+plus `-ffunction-sections -fdata-sections`. Thumb-2 is what Skia's GN build
+chooses for 32-bit ARM (skia-rendering.md, section 4) and makes the executable
+a quarter smaller than ARM instructions do; `-DWEBOS_ARM_MODE=ON` compiles
+everything, Skia included, as ARM.
 
 **Link flags.**
 
 ```
 --ld-path=<ld.lld> -static-libstdc++ -static-libgcc -pthread -no-pie
 -Wl,--no-undefined -Wl,--hash-style=both -Wno-unused-command-line-argument
+-Wl,--gc-sections -Wl,--icf=safe -Wl,-O2
 -l:libatomic.a -Wl,--as-needed -lrt -Wl,--no-as-needed
 ```
 
@@ -398,6 +419,11 @@ code loads with `dlopen`. It fails when the first release that passes is newer
 than webOS 4. The data is Apache-2.0 JSON, fetched into the cache at a pinned
 commit; `webosbrew-ipk-verify` has no macOS release. It reads the file and
 cannot see what a `dlsym` will ask for beyond the names it finds as strings.
+
+**Size.** 11.0 MB stripped today, for a host with images, scrolling, text
+input, SVG and video still to come (section 9). Cold libraries (ICU, curl, Mbed
+TLS, SDL) are compiled with `-Os`; Hermes, React Native, Skia and the host keep
+`-O3`.
 
 **One 32-bit build.** No release gives an app a 64-bit userland, and LG's own
 NDK for webOS 26 is 32-bit.

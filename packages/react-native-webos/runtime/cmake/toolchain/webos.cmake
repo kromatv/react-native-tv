@@ -5,7 +5,7 @@
 #   -DCMAKE_TOOLCHAIN_FILE=<this file>
 #   -DWEBOS_SDK_DIR=<dir>    the SDK as `rn-webos setup` extracts it; default: $WEBOS_SDK_DIR
 #   -DWEBOS_LLVM_DIR=<dir>   holds clang and ld.lld; default: $WEBOS_LLVM_DIR, Homebrew, then PATH
-#   -DWEBOS_ARM_MODE=ON      ARM instructions instead of Thumb-2
+#   -DWEBOS_ARM_MODE=ON      ARM instructions instead of Thumb-2: 38% larger
 
 set(CMAKE_SYSTEM_NAME Linux)
 set(CMAKE_SYSTEM_PROCESSOR armv7l)
@@ -74,7 +74,7 @@ set(WEBOS_ABI_FLAGS
 # runtime/compat/include declares what glibc 2.12.2's headers lack.
 get_filename_component(WEBOS_COMPAT_DIR "${CMAKE_CURRENT_LIST_DIR}/../../compat" ABSOLUTE)
 set(_webos_compile_flags
-  ${WEBOS_ABI_FLAGS} -fPIC "-isystem${WEBOS_COMPAT_DIR}/include"
+  ${WEBOS_ABI_FLAGS} -fPIC -ffunction-sections -fdata-sections "-isystem${WEBOS_COMPAT_DIR}/include"
   -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64)
 list(JOIN _webos_compile_flags " " _webos_compile_flags)
 set(CMAKE_C_FLAGS_INIT "${_webos_compile_flags}")
@@ -89,8 +89,9 @@ set(_webos_link_flags
 # links with -Werror, such as SDL's for -fvisibility, would then fail.
 string(APPEND _webos_link_flags " -Wno-unused-command-line-argument")
 # The SDK's libatomic.a is not position independent, so an executable is linked
-# at a fixed address, as the SDK's GCC links one by default.
-set(CMAKE_EXE_LINKER_FLAGS_INIT "${_webos_link_flags} -no-pie")
+# at a fixed address, as the SDK's GCC links one by default. Folding identical
+# functions is the largest of the size settings measured in the reference.
+set(CMAKE_EXE_LINKER_FLAGS_INIT "${_webos_link_flags} -no-pie -Wl,--gc-sections -Wl,--icf=safe -Wl,-O2")
 set(CMAKE_SHARED_LINKER_FLAGS_INIT "${_webos_link_flags}")
 set(CMAKE_MODULE_LINKER_FLAGS_INIT "${_webos_link_flags}")
 set(_webos_standard_libraries "-l:libatomic.a -Wl,--as-needed -lrt -Wl,--no-as-needed")
