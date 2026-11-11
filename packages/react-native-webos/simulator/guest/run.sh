@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# (Re)starts the instance's staged app on its own virtual 1920x1080 screen and
-# returns once its window is up. The app's output goes to $APP_LOG, a crash to
+# (Re)starts the instance's staged app on its own virtual screen and returns
+# once its window is up. The app's output goes to $APP_LOG, a crash to
 # systemd-coredump. Every other instance keeps running. An argument, or
 # RN_WEBOS_SIMULATOR_LAUNCH_PARAMS, is the JSON a TV's app manager would launch
-# the app with, passed as its last argument.
+# the app with, passed as its last argument. RN_WEBOS_SIMULATOR_SCREEN sets the
+# screen's size, which the instance then keeps: 1920x1080 or 1280x720.
 set -euo pipefail
 # shellcheck source=SCRIPTDIR/instance.sh
 source "$(dirname "${BASH_SOURCE[0]}")/instance.sh"
@@ -29,21 +30,40 @@ wait_for_display() {
   exit 1
 }
 
+screen_size() {
+  local size="${RN_WEBOS_SIMULATOR_SCREEN:-$(cat "$SCREEN_SIZE_FILE" 2>/dev/null || echo "$DEFAULT_SCREEN_SIZE")}"
+  if [[ ! "$size" =~ $SCREEN_SIZES ]]; then
+    echo "Not a screen the simulator has: $size" >&2
+    exit 2
+  fi
+  echo "$size"
+}
+
 start_display() {
+  local size was_viewed=false
+  size="$(screen_size)"
+  if is_running "$XVFB_PID_FILE" && [[ "$(cat "$SCREEN_SIZE_FILE" 2>/dev/null || echo "$DEFAULT_SCREEN_SIZE")" != "$size" ]]; then
+    is_running "$VIEWER_PID_FILE" && was_viewed=true
+    for pid_file in "$VIEWER_PID_FILE" "$VNC_PID_FILE" "$WM_PID_FILE" "$XVFB_PID_FILE"; do
+      stop_daemon "$pid_file"
+    done
+  fi
   if ! is_running "$XVFB_PID_FILE"; then
     if xdpyinfo >/dev/null 2>&1; then
       echo "Display $DISPLAY of instance $INSTANCE is taken by $(display_owner): give this instance another name." >&2
       exit 1
     fi
     start_daemon "$XVFB_PID_FILE" "$INSTANCE_DIR/xvfb.log" \
-      Xvfb "$DISPLAY" -screen 0 "${SCREEN_SIZE}x24" -nolisten tcp
+      Xvfb "$DISPLAY" -screen 0 "${size}x24" -nolisten tcp
     echo "$DISPLAY" >"$DISPLAY_FILE"
+    echo "$size" >"$SCREEN_SIZE_FILE"
     wait_for_display
   fi
   # A TV's compositor shows the app fullscreen and focused; matchbox does the
   # same for the one window on this screen.
   start_daemon "$WM_PID_FILE" "$INSTANCE_DIR/wm.log" \
     matchbox-window-manager -use_titlebar no -use_cursor no
+  if "$was_viewed"; then bash "$(dirname "${BASH_SOURCE[0]}")/view.sh"; fi
 }
 
 wait_for_window() {

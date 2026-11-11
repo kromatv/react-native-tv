@@ -57,7 +57,7 @@ everything the tools inside print. Every action takes `--instance <name>` (see
 | `pause`, `resume` | Sends the app to the background and back: `AppState` changes as on a TV. |
 | `open-url <url>` | Delivers a deep link, as the TV does when another app opens this one. |
 | `relaunch [--params <json>]` | Launches the running app again with new parameters, as the TV's app manager does: `relaunch --params '{"contentTarget":"myapp://item/42"}'`. `run` and `restart` take `--params` too, for the first launch. |
-| `restart` | Starts the staged app again, without rebuilding. |
+| `restart` | Starts the staged app again, without rebuilding. `--screen 1280x720` starts it on the screen a Full HD TV gives an app, and `--screen 1920x1080` puts a UHD TV's back; `run` takes it too. |
 | `build` | Rebuilds the app's native runtime only, after a change in `runtime/`; `restart` then runs it. Apps with the same native libraries share it (see [Runtime builds](#runtime-builds)). |
 | `logs [-f] [-n <lines>]` | Prints the app's stdout and stderr, and follows them with `-f`. |
 | `crash` | Prints the backtrace of every thread at the instance's last native crash, with file and line. |
@@ -181,11 +181,11 @@ keeps it warm, so running one app after the other rebuilds neither.
 - **Native crashes.** The VM keeps a core of every crash (systemd-coredump), and
   `crash` symbolizes the instance's last one with gdb, every thread, down to the
   file and line in `runtime/host`. `status` says which app crashed.
-- **An FHD TV.** An app started with `RN_WEBOS_SIMULATOR_SCREEN_SIZE=1280x720`
-  gets a 1280x720 window, so the logical 1920x1080 screen draws at 2/3 in the
-  screen's top-left corner. No command sets it yet: start the instance's
-  launcher by hand from `limactl shell rn-webos-sim`, with the variables
-  `guest/instance.sh` exports.
+- **A Full HD TV.** A Full HD model gives an app a 1280x720 screen, on which
+  the logical 1920x1080 screen draws at 2/3. `run --screen 1280x720` and
+  `restart --screen 1280x720` start the app on one; the instance keeps the size
+  until `--screen 1920x1080` puts it back. Screenshots and pointer positions
+  are then in that screen's pixels.
 - **A debugger.** The runtime is built `RelWithDebInfo`; Skia is built optimized, without debug information.
   `limactl shell rn-webos-sim` opens a shell in the VM, where
   `gdb -p $(cat ~/rn-webos-simulator/instances/<instance>/app.pid)` attaches to

@@ -622,8 +622,8 @@ rn-webos simulator crash               # backtraces of the last native crash
 rn-webos simulator perf --duration 20  # frame times, thread load and heap
 rn-webos simulator run --instance ui-a  # a second app on its own screen
 rn-webos simulator run --entry src/screens/svg/main.ts  # one screen
-rn-webos simulator tile myapp://item/42  # open the app as a Smart Hub tile does
-rn-webos simulator voice '{"type":"selectTitle","title":"Dune"}'  # a voice command, as the TV shell sends it
+rn-webos simulator relaunch --params '{"contentTarget":"myapp://item/42"}'  # launch it again, as the TV does with a deep link
+rn-webos simulator restart --screen 1280x720  # the screen a Full HD TV gives an app
 rn-webos simulator clean               # delete the runtime builds no instance runs
 ```
 

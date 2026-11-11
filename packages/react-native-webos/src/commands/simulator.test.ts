@@ -115,15 +115,14 @@ describe('rn-webos simulator', () => {
   });
 
   it('restarts and relaunches the app with launch parameters', async () => {
-    await simulate('restart', '--params', '{ "contentTarget": "app://a" }');
+    await simulate('restart', '--params', '{ "contentTarget": "app://a" }', '--screen', '1280x720');
     await simulate('relaunch', '--params', '{"contentTarget":"app://b"}');
     await simulate('relaunch');
 
-    expect(simulator.startApp).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.anything(),
-      '{"contentTarget":"app://a"}',
-    );
+    expect(simulator.startApp).toHaveBeenCalledWith(expect.anything(), expect.anything(), {
+      launchParams: '{"contentTarget":"app://a"}',
+      screen: '1280x720',
+    });
     const relaunches = vi.mocked(simulator.sendControl).mock.calls.map((call) => call.slice(2));
     expect(relaunches).toEqual([
       ['relaunch', ['{"contentTarget":"app://b"}']],

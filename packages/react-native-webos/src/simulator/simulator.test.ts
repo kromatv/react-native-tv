@@ -163,6 +163,18 @@ describe('the guest scripts of an instance', () => {
     );
   });
 
+  it('starts the app with launch parameters on the screen asked for', async () => {
+    vi.mocked(lima.guestRun).mockResolvedValue('4242\n');
+
+    await startApp(recordingTask(), instance, { launchParams: '{"a":1}', screen: '1280x720' });
+
+    expect(lima.guestRun).toHaveBeenLastCalledWith(
+      expect.anything(),
+      ['bash', expect.stringMatching(/guest\/run\.sh$/), '{"a":1}'],
+      expect.objectContaining({ RN_WEBOS_SIMULATOR_SCREEN: '1280x720' }),
+    );
+  });
+
   it("finds this Mac's address as the VM sees it", async () => {
     vi.mocked(lima.guestRun).mockResolvedValue('192.168.5.2 STREAM host.lima.internal\n');
 

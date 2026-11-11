@@ -27,6 +27,7 @@ import {
   type SimulatorInstance,
 } from '../simulator/instance.ts';
 import { launchParams } from '../simulator/launch-params.ts';
+import { SCREEN_SIZES, screenSize } from '../simulator/screen-size.ts';
 import { deleteInstance, requireLima } from '../simulator/lima.ts';
 import {
   crashReport,
@@ -78,6 +79,11 @@ const OPTIONS = {
     placeholder: '<json>',
     description:
       'run, restart, relaunch: the parameters the app is launched with, as a TV passes them: \'{"contentTarget":"myapp://item/42"}\'',
+  },
+  screen: {
+    type: 'string',
+    placeholder: '<size>',
+    description: `run, restart: the screen the app gets, ${SCREEN_SIZES[0]} as on a UHD TV or ${SCREEN_SIZES[1]} as on a Full HD TV (default: the instance's last, else ${SCREEN_SIZES[0]})`,
   },
   'no-logs': {
     type: 'boolean',
@@ -280,7 +286,10 @@ const ACTIONS: Readonly<Record<string, Action>> = {
       'Restart',
       async (task) => {
         await requireRunningVm(task);
-        return startApp(task, instance, launchParams(flags.params));
+        return startApp(task, instance, {
+          launchParams: launchParams(flags.params),
+          screen: screenSize(flags.screen),
+        });
       },
       (pid) => `pid ${pid}`,
     );

@@ -22,6 +22,7 @@ import {
   stopInstance,
 } from './lima.ts';
 import { instanceEnv, type SimulatorInstance } from './instance.ts';
+import type { ScreenSize } from './screen-size.ts';
 import { isWithin, mountRoot, requireNarrowMount } from './mount-root.ts';
 
 /** The VM definition, guest scripts and viewer. */
@@ -125,18 +126,26 @@ export async function requireRunningVm(task: Task): Promise<void> {
   if (state.status !== 'Running') await startInstance(task);
 }
 
+/** How an app starts: the JSON a TV's app manager would launch it with, and the screen it gets. */
+export interface StartOptions {
+  readonly launchParams?: string | undefined;
+  /** Kept from the instance's last start when left out. */
+  readonly screen?: ScreenSize | undefined;
+}
+
 /**
  * (Re)starts the app staged in `instance` and returns its process id once its
- * window is up. `launchParams` is the JSON a TV's app manager would launch the
- * app with. No other instance is touched.
+ * window is up. No other instance is touched.
  */
 export async function startApp(
   task: Task,
   instance: SimulatorInstance,
-  launchParams?: string,
+  { launchParams, screen }: StartOptions = {},
 ): Promise<number> {
   const args = launchParams === undefined ? [] : [launchParams];
-  const output = await runInstanceScript(task, instance, 'run', args);
+  const env: Record<string, string> = { ...instanceEnv(instance) };
+  if (screen !== undefined) env['RN_WEBOS_SIMULATOR_SCREEN'] = screen;
+  const output = await guestRun(task, ['bash', guestScript('run'), ...args], env);
   return Number(output.trim().split('\n').at(-1));
 }
 
