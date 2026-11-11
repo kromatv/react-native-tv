@@ -43,7 +43,11 @@ void ReactHost::start() {
   createInstance();
   startPerfMonitor();
   loadBundle();
-  remotePresses_ = std::make_unique<RemotePresses>([this](const RemoteEvent &event) { onRemoteEvent(event); });
+  remotePresses_ = std::make_unique<RemotePresses>(
+      [this](const RemoteEvent &event) { onRemoteEvent(event); },
+      [this](const SDL_KeyboardEvent &key, bool isDown) {
+        return !errorScreen_->isShown() && !alertDialog_->isShown() && keyboardFocus_->handleKey(key, isDown);
+      });
   pointerInput_ = std::make_unique<PointerInput>(*scene_, [this](facebook::react::Tag tag) {
     return presenter_ ? presenter_->mountingManager().findView(tag) : nullptr;
   });
@@ -80,6 +84,7 @@ void ReactHost::stop() {
   if (instanceGate_ != nullptr) instanceGate_->close();
   stopReactNative();
   devSupport_.reset();
+  keyboardFocus_.reset();
   textMeasurer_.reset();
   alertDialog_.reset();
   errorScreen_.reset();
@@ -102,6 +107,7 @@ void ReactHost::reload() {
   diagnostics_.perfMonitor.reset();
   remotePresses_->releaseAll();
   pointerInput_->pointerLeft();
+  keyboardFocus_->releaseKeys();
   closeMainThreadSync();
   instanceGate_->close();
   stopReactNative();
@@ -141,6 +147,7 @@ void ReactHost::setActive(bool isActive) {
 void ReactHost::pause() {
   remotePresses_->releaseAll();
   pointerInput_->pointerLeft();
+  keyboardFocus_->releaseKeys();
   pauseMediaSessionsForBackground(config_.backgroundMedia);
   setActive(false);
 }

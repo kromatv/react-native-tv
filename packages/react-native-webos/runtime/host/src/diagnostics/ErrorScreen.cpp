@@ -56,4 +56,8 @@ void ErrorScreen::draw(SkCanvas &canvas) {
   text_->paint(&canvas, kMargin * scale, kMargin * scale);
 }
 
+bool ErrorScreen::blocksPointer() const {
+  return isShown();
+}
+
 } // namespace rnwebos

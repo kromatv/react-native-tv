@@ -32,6 +32,7 @@ class ErrorScreen final : public SceneLayer {
   bool isShown() const;
 
   void draw(SkCanvas &canvas) override;
+  bool blocksPointer() const override;
 
  private:
   Scene &scene_;

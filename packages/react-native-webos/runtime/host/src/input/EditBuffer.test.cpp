@@ -18,6 +18,34 @@ TEST_CASE("setText puts the caret after the last code point") {
   CHECK(buffer.selectionUtf16() == EditBuffer::Range{.start = 4, .end = 4});
 }
 
+TEST_CASE("setText keeps a caret inside the old text at its relative place, as Android's Editable.replace does") {
+  EditBuffer buffer;
+  buffer.setText("abxc");
+  buffer.moveTo(3, false);
+
+  buffer.setText("ABXC");
+  CHECK(buffer.caret() == 3);
+
+  buffer.setText("AB");
+  CHECK(buffer.caret() == 1);
+}
+
+TEST_CASE("setText leaves a caret at the start where it is, takes one at the end to the new end, and scales a selection") {
+  EditBuffer buffer;
+  buffer.setText("abcd");
+  buffer.moveTo(0, false);
+
+  buffer.setText("ABCDEFGH");
+  CHECK(buffer.caret() == 0);
+
+  buffer.selectUtf16(2, 8);
+  buffer.setText("abcd");
+  CHECK(buffer.selection() == EditBuffer::Range{.start = 1, .end = 4});
+
+  buffer.setText("");
+  CHECK(buffer.caret() == 0);
+}
+
 TEST_CASE("insert keeps what maxLength leaves room for and never splits a surrogate pair") {
   EditBuffer buffer;
   buffer.setText("ab");
@@ -76,16 +104,29 @@ TEST_CASE("deleteBackward and deleteForward delete around the caret") {
   CHECK(buffer.caret() == 0);
 }
 
-TEST_CASE("deleteAround deletes from an offset after the caret, clamped to the text") {
+TEST_CASE("clear deletes the whole text and its composition, and reports an empty text unchanged") {
   EditBuffer buffer;
-  buffer.setText("abcdef");
-  buffer.moveTo(3, false);
+  buffer.setText("abc");
+  buffer.compose(U"de", 2, 100);
 
-  CHECK(buffer.deleteAround(-2, 2));
-  CHECK_FALSE(buffer.deleteAround(10, 1));
+  CHECK(buffer.clear());
+  CHECK_FALSE(buffer.clear());
 
-  CHECK(buffer.utf8() == "adef");
-  CHECK(buffer.caret() == 1);
+  CHECK(buffer.utf8().empty());
+  CHECK(buffer.caret() == 0);
+  CHECK_FALSE(buffer.composing().has_value());
+}
+
+TEST_CASE("positions and UTF-16 offsets convert both ways around a character outside the BMP") {
+  EditBuffer buffer;
+  buffer.setText("a\xF0\x9F\x98\x80" "b");
+
+  CHECK(buffer.utf16Offset(1) == 1);
+  CHECK(buffer.utf16Offset(2) == 3);
+  CHECK(buffer.utf16Offset(9) == 4);
+  CHECK(buffer.positionAtUtf16(2) == 1);
+  CHECK(buffer.positionAtUtf16(3) == 2);
+  CHECK(buffer.positionAtUtf16(9) == 3);
 }
 
 TEST_CASE("selectAll selects the whole text, and typing replaces it") {

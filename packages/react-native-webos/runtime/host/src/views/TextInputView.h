@@ -19,7 +19,7 @@ namespace rnwebos {
 /// event counts. `focus`, `blur` and `setTextAndSelection` are its commands.
 class TextInputView final : public ComponentView, public KeyboardClient {
  public:
-  TextInputView(Evas *evas, facebook::react::Tag tag);
+  TextInputView(Scene &scene, facebook::react::Tag tag);
   ~TextInputView() override;
 
   void updateProps(const facebook::react::Props::Shared &props) override;
@@ -27,17 +27,17 @@ class TextInputView final : public ComponentView, public KeyboardClient {
   void updateLayout(const facebook::react::LayoutMetrics &layoutMetrics) override;
   void handleCommand(const std::string &name, const folly::dynamic &args) override;
 
-  bool keyDown(const Ecore_Event_Key &key, bool repeat) override;
-  void keyUp(const Ecore_Event_Key &key) override;
+  bool keyDown(const SDL_KeyboardEvent &key, bool repeat) override;
+  void keyUp(const SDL_KeyboardEvent &key) override;
   void keyboardLost() override;
   void imeCommit(std::string_view text) override;
   void imePreedit(std::string_view text, int cursor) override;
-  void imeDeleteSurrounding(int offset, int count) override;
-  std::string imeSurrounding(int &cursor) const override;
   void imePanelHidden() override;
 
  protected:
-  void layoutMembers() override;
+  void drawContent(SkCanvas &canvas, float alpha) override;
+  int contentLayers() const override;
+  void layoutContent() override;
   void didMount() override;
 
  private:
@@ -56,16 +56,18 @@ class TextInputView final : public ComponentView, public KeyboardClient {
   bool stepCaret(int delta, bool extend);
   bool stepLine(int lines, bool extend);
   bool leave();
-  void returnPressed();
-  void backPressed();
-  void inputMethodDone();
+  bool reopensKeyboard() const;
+  void okReleased();
+  void backReleased();
   void submit();
   void setTextFromReact(const std::string &text);
   void pushTextToState(const std::string &text, int eventCount) const;
 
   void refresh();
-  TextblockContent content() const;
-  void reportCaretToInputMethod();
+  facebook::react::AttributedString shownText() const;
+  std::size_t shownOffset(std::size_t position) const;
+  PixelRect contentBox() const;
+  void reportCaretToKeyboard();
   void emitSelection();
   void emitContentSize();
   void emit(std::string name, folly::dynamic payload) const;
@@ -75,10 +77,10 @@ class TextInputView final : public ComponentView, public KeyboardClient {
   std::shared_ptr<const TextInputShadowNode::ConcreteState> state_;
   EditBuffer::Range reportedSelection_{};
   std::optional<facebook::react::Size> reportedContentSize_;
-  facebook::react::Float contentScale_{0};
   int nativeEventCount_{0};
   bool focused_{false};
-  bool panelClosed_{false};
+  bool keyboardClosed_{false};
+  bool typedWithKeys_{false};
   bool autoFocused_{false};
 };
 

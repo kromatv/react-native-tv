@@ -23,10 +23,10 @@ and ends with what the facts mean for this package.
 | [expo-cli-integration.md](expo-cli-integration.md) | `app.plugin.js`, `src/config/`, `src/commands/init*.ts`, `src/dependencies/`, `src/metro/`, `src/devtools/`, `devtools/`, `expo-module.config.json`: what `expo install` and `expo start` do with a config plugin and a dev tools plugin, how Expo loads the Metro config, what Expo does not do for webOS |
 
 `react-native-platform-contract.md`, `react-native-dev-tooling.md`,
-`expo-modules-contract.md`, `expo-cli-integration.md`, `text-input.md` and
-`intl.md` came with the port from react-native-tizen: what they say about React
-Native, Expo, Hermes and ICU holds here, and a row that names Tizen, EFL or a
-Samsung TV describes that platform, not webOS.
+`expo-modules-contract.md`, `expo-cli-integration.md` and `intl.md` came with
+the port from react-native-tizen: what they say about React Native, Expo,
+Hermes and ICU holds here, and a row that names Tizen, EFL or a Samsung TV
+describes that platform, not webOS.
 
 ## How a fact is written
 

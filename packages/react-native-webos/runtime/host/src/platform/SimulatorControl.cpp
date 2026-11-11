@@ -15,6 +15,8 @@
 #include <charconv>
 #include <chrono>
 #include <cstdlib>
+#include <memory>
+#include <string>
 #include <string_view>
 #include <utility>
 
@@ -25,19 +27,74 @@ namespace {
 constexpr std::size_t kMaxLine = 4096;
 constexpr auto kPressLength = std::chrono::milliseconds(60);
 
-void sendKey(SDL_Scancode scancode, bool down) {
+constexpr std::string_view kShift = "Shift+";
+constexpr SDL_Keymod kShiftDown = SDL_KMOD_LSHIFT;
+
+struct Key {
+  SDL_Scancode scancode;
+  SDL_Keymod modifiers;
+};
+
+void sendKey(Key key, bool down) {
   SDL_Event event{};
   event.type = down ? SDL_EVENT_KEY_DOWN : SDL_EVENT_KEY_UP;
   event.key.timestamp = SDL_GetTicksNS();
-  event.key.scancode = scancode;
-  event.key.key = SDL_GetKeyFromScancode(scancode, SDL_KMOD_NONE, false);
+  event.key.scancode = key.scancode;
+  event.key.key = SDL_GetKeyFromScancode(key.scancode, key.modifiers, false);
+  event.key.mod = key.modifiers;
   event.key.down = down;
   SDL_PushEvent(&event);
 }
 
-void pressKey(SDL_Scancode scancode, std::chrono::milliseconds length) {
-  sendKey(scancode, true);
-  MainLoop::get().addTimer(length, [scancode] { sendKey(scancode, false); });
+void pressKey(Key key, std::chrono::milliseconds length) {
+  sendKey(key, true);
+  MainLoop::get().addTimer(length, [key] { sendKey(key, false); });
+}
+
+// SDL frees the text of its own events only: this one's is kept until the
+// loop has dispatched it, which it does before it runs what was posted.
+void sendText(SDL_EventType type, std::string_view text) {
+  const auto kept = std::make_shared<const std::string>(text);
+  SDL_Event event{};
+  event.type = type;
+  if (type == SDL_EVENT_TEXT_EDITING) {
+    event.edit.timestamp = SDL_GetTicksNS();
+    event.edit.text = kept->c_str();
+    event.edit.start = -1;
+    event.edit.length = -1;
+  } else {
+    event.text.timestamp = SDL_GetTicksNS();
+    event.text.text = kept->c_str();
+  }
+  SDL_PushEvent(&event);
+  MainLoop::get().post([kept] {});
+}
+
+bool &isComposing() {
+  static bool composing = false;
+  return composing;
+}
+
+void compose(std::string_view text) {
+  isComposing() = !text.empty();
+  sendText(SDL_EVENT_TEXT_EDITING, text);
+}
+
+// As SDL's webOS backend commits: the composition emptied, then the text.
+void commitText(std::string_view text) {
+  if (std::exchange(isComposing(), false)) sendText(SDL_EVENT_TEXT_EDITING, {});
+  sendText(SDL_EVENT_TEXT_INPUT, text);
+}
+
+void sendKeyboardState(std::string_view state) {
+  if (state != "shown" && state != "hidden") {
+    log(LogLevel::Warning, "The simulator's keyboard is shown or hidden, not " + std::string(state));
+    return;
+  }
+  SDL_Event event{};
+  event.type = state == "shown" ? SDL_EVENT_SCREEN_KEYBOARD_SHOWN : SDL_EVENT_SCREEN_KEYBOARD_HIDDEN;
+  event.common.timestamp = SDL_GetTicksNS();
+  SDL_PushEvent(&event);
 }
 
 std::pair<std::string_view, std::string_view> splitWord(std::string_view text) {
@@ -47,21 +104,23 @@ std::pair<std::string_view, std::string_view> splitWord(std::string_view text) {
 }
 
 void runKeyCommand(std::string_view command, std::string_view arguments) {
-  const auto [name, rest] = splitWord(arguments);
-  const auto scancode = scancodeForKeyName(name);
-  if (scancode == SDL_SCANCODE_UNKNOWN) {
+  auto [name, rest] = splitWord(arguments);
+  const bool shifted = name.starts_with(kShift);
+  if (shifted) name.remove_prefix(kShift.size());
+  const Key key{.scancode = scancodeForKeyName(name), .modifiers = shifted ? kShiftDown : SDL_Keymod{}};
+  if (key.scancode == SDL_SCANCODE_UNKNOWN) {
     log(LogLevel::Warning, "The simulator has no remote key named " + std::string(name));
     return;
   }
-  if (command == "key-down") return sendKey(scancode, true);
-  if (command == "key-up") return sendKey(scancode, false);
+  if (command == "key-down") return sendKey(key, true);
+  if (command == "key-up") return sendKey(key, false);
   auto length = kPressLength;
   if (command == "key-hold") {
     int milliseconds = 0;
     std::from_chars(rest.data(), rest.data() + rest.size(), milliseconds);
     if (milliseconds > 0) length = std::chrono::milliseconds(milliseconds);
   }
-  pressKey(scancode, length);
+  pressKey(key, length);
 }
 
 float number(std::string_view text) {
@@ -108,6 +167,9 @@ void runCommand(const SimulatorControl::Host &host, std::string_view line) {
   if (command == "resume") return host.resume();
   if (command == "exit") return host.exit();
   if (command == "open-url") return host.openUrl(std::string(arguments));
+  if (command == "text") return commitText(arguments);
+  if (command == "compose") return compose(arguments);
+  if (command == "keyboard") return sendKeyboardState(arguments);
   if (command.starts_with("key")) return runKeyCommand(command, arguments);
   log(LogLevel::Warning, "Unknown simulator command: " + std::string(line));
 }

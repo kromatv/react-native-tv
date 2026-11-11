@@ -49,6 +49,7 @@ class AlertDialog final : public SceneLayer {
   void handle(const RemoteEvent &event);
 
   void draw(SkCanvas &canvas) override;
+  bool blocksPointer() const override;
 
  private:
   struct Button {

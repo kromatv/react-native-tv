@@ -5,6 +5,7 @@
 #include "diagnostics/ErrorScreen.h"
 #include "diagnostics/PerfMonitor.h"
 #include "fabric/SurfacePresenter.h"
+#include "input/KeyboardFocus.h"
 #include "input/PointerInput.h"
 #include "input/RemotePresses.h"
 #include "modules/DeviceProfile.h"
@@ -100,6 +101,7 @@ class ReactHost final {
   std::shared_ptr<InstanceGate> instanceGate_;
   std::shared_ptr<TurboModuleProvider> modules_;
   std::unique_ptr<SurfacePresenter> presenter_;
+  std::unique_ptr<KeyboardFocus> keyboardFocus_;
   std::unique_ptr<RemotePresses> remotePresses_;
   std::unique_ptr<PointerInput> pointerInput_;
   std::unique_ptr<ErrorScreen> errorScreen_;

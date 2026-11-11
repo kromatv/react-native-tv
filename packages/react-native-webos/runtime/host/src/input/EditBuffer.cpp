@@ -1,6 +1,7 @@
 #include "EditBuffer.h"
 
 #include <algorithm>
+#include <utility>
 
 namespace rnwebos {
 
@@ -52,10 +53,21 @@ EditBuffer::Range EditBuffer::selectionUtf16() const {
 }
 
 void EditBuffer::setText(std::string_view utf8) {
-  text_ = decodeUtf8(utf8);
-  focus_ = text_.size();
-  anchor_ = focus_;
+  auto replacement = decodeUtf8(utf8);
+  const auto oldUnits = utf16Size();
+  const auto anchor = rescaled(anchor_, oldUnits, replacement);
+  const auto focus = rescaled(focus_, oldUnits, replacement);
+  text_ = std::move(replacement);
+  anchor_ = positionAtUtf16(anchor);
+  focus_ = positionAtUtf16(focus);
   composing_.reset();
+}
+
+std::size_t EditBuffer::rescaled(std::size_t position, std::size_t oldUnits, const std::u32string &replacement) const {
+  const auto newUnits = utf16Length(replacement);
+  const auto offset = utf16Offset(position);
+  if (offset >= oldUnits) return newUnits;
+  return offset * newUnits / oldUnits;
 }
 
 void EditBuffer::selectUtf16(std::size_t anchor, std::size_t focus) {
@@ -137,10 +149,8 @@ bool EditBuffer::deleteForward() {
   return range.end < text_.size() && erase(range.end, range.end + 1);
 }
 
-bool EditBuffer::deleteAround(long offset, std::size_t count) {
-  const auto from = std::clamp<long>(static_cast<long>(focus_) + offset, 0, static_cast<long>(text_.size()));
-  const auto start = static_cast<std::size_t>(from);
-  return erase(start, std::min(text_.size(), start + count));
+bool EditBuffer::clear() {
+  return erase(0, text_.size());
 }
 
 bool EditBuffer::erase(std::size_t start, std::size_t end) {

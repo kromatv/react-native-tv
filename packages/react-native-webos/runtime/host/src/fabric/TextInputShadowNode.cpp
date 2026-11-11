@@ -16,8 +16,8 @@ extern const char TextInputComponentName[] = "AndroidTextInput";
 namespace {
 
 // An empty string has no run to carry the input's font, so its one line would
-// measure in the textblock's default size; a zero-width space carries it.
-constexpr const char *kEmptyLine = "​";
+// measure in SkParagraph's default size; a zero-width space carries it.
+constexpr const char *kEmptyLine = "\u200b";
 
 } // namespace
 

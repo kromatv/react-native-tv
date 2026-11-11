@@ -15,6 +15,7 @@ void ReactHost::createWindow() {
     MainLoop::get().setFramePeriod(std::chrono::nanoseconds(static_cast<std::int64_t>(1e9 / rate)));
   }
   scene_ = std::make_unique<Scene>(*window_);
+  keyboardFocus_ = std::make_unique<KeyboardFocus>(*scene_);
   textMeasurer_ = std::make_shared<SkiaTextMeasurer>();
   errorScreen_ = std::make_unique<ErrorScreen>(*scene_);
   alertDialog_ = std::make_unique<AlertDialog>(*scene_);
@@ -44,6 +45,12 @@ void ReactHost::handleEvent(const SDL_Event &event) {
     case SDL_EVENT_KEY_UP:
       remotePresses_->keyUp(event.key);
       return;
+    case SDL_EVENT_TEXT_INPUT:
+    case SDL_EVENT_TEXT_EDITING:
+    case SDL_EVENT_SCREEN_KEYBOARD_SHOWN:
+    case SDL_EVENT_SCREEN_KEYBOARD_HIDDEN:
+      if (!errorScreen_->isShown() && !alertDialog_->isShown()) keyboardFocus_->handleTextEvent(event);
+      return;
     case SDL_EVENT_QUIT:
     case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
       exit();
@@ -57,6 +64,7 @@ void ReactHost::handleEvent(const SDL_Event &event) {
     case SDL_EVENT_WINDOW_FOCUS_LOST:
       remotePresses_->releaseAll();
       pointerInput_->pointerLeft();
+      keyboardFocus_->releaseKeys();
       return;
     case SDL_EVENT_WINDOW_EXPOSED:
       scene_->invalidate();

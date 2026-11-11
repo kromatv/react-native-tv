@@ -142,4 +142,8 @@ void AlertDialog::draw(SkCanvas &canvas) {
   }
 }
 
+bool AlertDialog::blocksPointer() const {
+  return isShown();
+}
+
 } // namespace rnwebos
