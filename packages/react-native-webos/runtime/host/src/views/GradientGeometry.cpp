@@ -109,92 +109,51 @@ Radii keywordRadii(SizeKeyword keyword, bool circle, float centerX, float center
   return {.x = radiusX, .y = radiusX / ratio};
 }
 
-} // namespace
-
-GradientGeometry::GradientGeometry(
-    const facebook::react::BackgroundImage &image,
-    float width,
-    float height,
-    float pointScale)
-    : width_(width), height_(height), pointScale_(pointScale) {
-  if (const auto *linear = std::get_if<facebook::react::LinearGradient>(&image)) {
-    layOutLinear(*linear);
-  } else {
-    layOutRadial(std::get<facebook::react::RadialGradient>(image));
-  }
-}
-
-void GradientGeometry::layOutLinear(const facebook::react::LinearGradient &gradient) {
-  auto angle = std::fmod(angleOf(gradient.direction, width_, height_), 360.0f);
+GradientGeometry layOutLinear(const facebook::react::LinearGradient &gradient, float width, float height) {
+  auto angle = std::fmod(angleOf(gradient.direction, width, height), 360.0f);
   if (angle < 0) angle += 360;
   const auto radians = angle * std::numbers::pi_v<float> / 180;
-  sin_ = std::sin(radians);
-  cos_ = std::cos(radians);
-  length_ = std::abs(width_ * sin_) + std::abs(height_ * cos_);
+  auto sin = std::sin(radians);
+  auto cos = std::cos(radians);
+  auto length = std::abs(width * sin) + std::abs(height * cos);
   if (near(angle, 0) || near(angle, 180) || near(angle, 360)) {
-    sin_ = 0;
-    cos_ = near(angle, 180) ? -1 : 1;
-    length_ = height_;
-    axis_ = Axis::Vertical;
+    sin = 0;
+    cos = near(angle, 180) ? -1 : 1;
+    length = height;
   } else if (near(angle, 90) || near(angle, 270)) {
-    sin_ = near(angle, 90) ? 1 : -1;
-    cos_ = 0;
-    length_ = width_;
-    axis_ = Axis::Horizontal;
+    sin = near(angle, 90) ? 1 : -1;
+    cos = 0;
+    length = width;
   }
+  const SkPoint middle{width / 2, height / 2};
+  const SkVector half{sin * length / 2, -cos * length / 2};
+  return {.radial = false, .start = middle - half, .end = middle + half, .lineLength = length};
 }
 
-void GradientGeometry::layOutRadial(const facebook::react::RadialGradient &gradient) {
-  radial_ = true;
+GradientGeometry layOutRadial(const facebook::react::RadialGradient &gradient, float width, float height, float pointScale) {
   const auto &position = gradient.position;
-  centerX_ = centerOn(position.left, position.right, width_, pointScale_);
-  centerY_ = centerOn(position.top, position.bottom, height_, pointScale_);
+  const auto centerX = centerOn(position.left, position.right, width, pointScale);
+  const auto centerY = centerOn(position.top, position.bottom, height, pointScale);
   const bool circle = gradient.shape == RadialGradientShape::Circle;
   const auto *size = std::get_if<facebook::react::RadialGradientSize::Dimensions>(&gradient.size.value);
   const auto radii = size != nullptr
-      ? explicitRadii(*size, circle, width_, height_, pointScale_)
-      : keywordRadii(std::get<SizeKeyword>(gradient.size.value), circle, centerX_, centerY_, width_, height_);
-  radiusX_ = std::max(radii.x, kSmallestRadius);
-  radiusY_ = std::max(radii.y, kSmallestRadius);
-  length_ = radiusX_;
+      ? explicitRadii(*size, circle, width, height, pointScale)
+      : keywordRadii(std::get<SizeKeyword>(gradient.size.value), circle, centerX, centerY, width, height);
+  const auto radiusX = std::max(radii.x, kSmallestRadius);
+  return {
+      .radial = true,
+      .center = {centerX, centerY},
+      .radiusX = radiusX,
+      .radiusY = std::max(radii.y, kSmallestRadius),
+      .lineLength = radiusX,
+  };
 }
 
-float GradientGeometry::lineLength() const {
-  return length_;
-}
+} // namespace
 
-GradientGeometry::Axis GradientGeometry::axis() const {
-  return axis_;
-}
-
-float GradientGeometry::at(float x, float y) const {
-  if (radial_) return std::hypot((x - centerX_) / radiusX_, (y - centerY_) / radiusY_);
-  if (length_ <= 0) return 0;
-  return ((x - width_ / 2) * sin_ - (y - height_ / 2) * cos_) / length_ + 0.5f;
-}
-
-void GradientGeometry::row(float x0, float step, float y, int count, float *out) const {
-  if (radial_) {
-    const auto dy = (y - centerY_) / radiusY_;
-    const auto dy2 = dy * dy;
-    for (int i = 0; i < count; ++i) {
-      const auto dx = (x0 + static_cast<float>(i) * step - centerX_) / radiusX_;
-      out[i] = std::sqrt(dx * dx + dy2);
-    }
-    return;
-  }
-  if (length_ <= 0) {
-    std::fill(out, out + count, 0.0f);
-    return;
-  }
-  const auto base = (-(y - height_ / 2) * cos_) / length_ + 0.5f;
-  const auto perX = sin_ / length_;
-  for (int i = 0; i < count; ++i) out[i] = base + (x0 + static_cast<float>(i) * step - width_ / 2) * perX;
-}
-
-float GradientGeometry::slope() const {
-  if (radial_) return 1 / std::min(radiusX_, radiusY_);
-  return length_ > 0 ? (std::abs(sin_) + std::abs(cos_)) / length_ : 0;
+GradientGeometry layOutGradient(const facebook::react::BackgroundImage &image, float width, float height, float pointScale) {
+  if (const auto *linear = std::get_if<facebook::react::LinearGradient>(&image)) return layOutLinear(*linear, width, height);
+  return layOutRadial(std::get<facebook::react::RadialGradient>(image), width, height, pointScale);
 }
 
 } // namespace rnwebos
