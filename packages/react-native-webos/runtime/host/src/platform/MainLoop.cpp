@@ -107,6 +107,24 @@ struct MainLoop::State {
     if (renderer) renderer();
   }
 
+  // What a dropped task owns may post, or remove a timer, from its destructor:
+  // everything goes while every container is still alive.
+  void dropPending() {
+    for (;;) {
+      std::deque<Task> tasks;
+      {
+        std::lock_guard lock(mutex);
+        tasks.swap(posted);
+      }
+      const auto droppedTimers = std::exchange(timers, {});
+      const auto droppedCallbacks = std::exchange(frameCallbacks, {});
+      if (tasks.empty() && droppedTimers.empty() && droppedCallbacks.empty()) break;
+    }
+    renderer = nullptr;
+    eventHandler = nullptr;
+    waitObserver = nullptr;
+  }
+
   void pumpEvents(int timeoutMs) {
     SDL_Event event;
     waking.store(false);
@@ -130,6 +148,7 @@ MainLoop::MainLoop() : state_(std::make_unique<State>()) {
 }
 
 MainLoop::~MainLoop() {
+  state_->dropPending();
   SDL_QuitSubSystem(SDL_INIT_EVENTS);
 }
 
