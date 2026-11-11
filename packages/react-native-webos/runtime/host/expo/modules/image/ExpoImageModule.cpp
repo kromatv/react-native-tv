@@ -4,6 +4,8 @@
 #include "../../ModuleDefinition.h"
 
 #include "logging/Log.h"
+#include "threading/MainThread.h"
+#include "views/DecodedImages.h"
 
 namespace rnwebos::expo {
 
@@ -29,7 +31,12 @@ class ExpoImageModule final : public Module {
               }
               return all;
             })
-        .asyncFunction("clearMemoryCache", [] { return true; })
+        .asyncFunction(
+            "clearMemoryCache",
+            [] {
+              runOnMainThread(clearDecodedImages);
+              return true;
+            })
         .asyncFunction("clearDiskCache", [] { return clearImageDiskCache(); })
         .asyncFunction("getCachePathAsync", [](const std::string &cacheKey) { return cachedImagePath(cacheKey); });
   }

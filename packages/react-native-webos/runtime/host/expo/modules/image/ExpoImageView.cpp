@@ -6,9 +6,10 @@
 #include "../../views/ViewDefinition.h"
 
 #include "threading/MainThread.h"
+#include "views/DecodedImages.h"
 
 #include <algorithm>
-#include <cmath>
+#include <chrono>
 #include <string_view>
 
 namespace rnwebos::expo {
@@ -26,11 +27,12 @@ std::string stringField(const folly::dynamic &object, const char *name) {
   return field != nullptr && field->isString() ? field->getString() : std::string();
 }
 
-double fitScale(std::string_view contentFit, double scaleX, double scaleY, double naturalScale) {
-  if (contentFit == "cover") return std::max(scaleX, scaleY);
-  if (contentFit == "contain") return std::min(scaleX, scaleY);
-  if (contentFit == "scale-down") return std::min(naturalScale, std::min(scaleX, scaleY));
-  return naturalScale;
+ImageFit fitOf(std::string_view contentFit) {
+  if (contentFit == "contain") return ImageFit::Contain;
+  if (contentFit == "fill") return ImageFit::Stretch;
+  if (contentFit == "none") return ImageFit::Natural;
+  if (contentFit == "scale-down") return ImageFit::Center;
+  return ImageFit::Cover;
 }
 
 struct FetchedImage {
@@ -50,22 +52,14 @@ FetchedImage fetchImage(const std::string &uri, const std::string &cacheKey) {
 
 } // namespace
 
-ExpoImageView::ExpoImageView(Evas *evas, facebook::react::Tag tag)
-    : ExpoView(evas, tag), image_(evas_object_image_filled_add(evas)), alive_(std::make_shared<ExpoImageView *>(this)) {
-  evas_object_pass_events_set(image_, EINA_TRUE);
-  addMember(image_, true);
+ExpoImageView::ExpoImageView(Scene &scene, facebook::react::Tag tag)
+    : ExpoView(scene, tag), alive_(std::make_shared<ExpoImageView *>(this)) {
   setAlwaysClips(true);
-  evas_object_image_smooth_scale_set(image_, EINA_TRUE);
-  evas_object_event_callback_add(image_, EVAS_CALLBACK_IMAGE_PRELOADED, onPreloaded, this);
-  evas_object_hide(image_);
 }
 
 ExpoImageView::~ExpoImageView() {
   alive_.reset();
-  if (fade_ != nullptr) ecore_animator_del(fade_);
-  evas_object_event_callback_del_full(image_, EVAS_CALLBACK_IMAGE_PRELOADED, onPreloaded, this);
-  cancelDecode();
-  evas_object_del(image_);
+  stopFade();
 }
 
 void ExpoImageView::setSource(const folly::dynamic &value) {
@@ -76,8 +70,8 @@ void ExpoImageView::setSource(const folly::dynamic &value) {
 }
 
 void ExpoImageView::setContentFit(const folly::dynamic &value) {
-  contentFit_ = value.isString() ? value.getString() : "cover";
-  fit();
+  content_.setFit(fitOf(value.isString() ? value.getString() : "cover"));
+  invalidate();
 }
 
 void ExpoImageView::setTransition(const folly::dynamic &value) {
@@ -92,131 +86,130 @@ void ExpoImageView::setTransition(const folly::dynamic &value) {
 }
 
 void ExpoImageView::didUpdateProps() {
-  if (!sourceChanged_) return;
-  sourceChanged_ = false;
-  load();
+  loadIfNeeded();
+}
+
+void ExpoImageView::layoutContent() {
+  ExpoView::layoutContent();
+  content_.layout(box(), static_cast<float>(pointScale()));
+  loadIfNeeded();
+}
+
+int ExpoImageView::contentLayers() const {
+  return content_.hasImage() ? 1 : 0;
+}
+
+void ExpoImageView::drawContent(SkCanvas &canvas, float alpha) {
+  content_.draw(canvas, alpha * fadeAlpha_);
+}
+
+PixelRect ExpoImageView::box() const {
+  const auto size = pixelSize();
+  return {.x = 0, .y = 0, .width = size.width, .height = size.height};
+}
+
+const std::string &ExpoImageView::memoryKey() const {
+  return cacheKey_.empty() ? uri_ : cacheKey_;
+}
+
+void ExpoImageView::loadIfNeeded() {
+  const auto size = pixelSize();
+  if (size.width <= 0 || size.height <= 0) return;
+  if (sourceChanged_) {
+    sourceChanged_ = false;
+    load();
+  } else {
+    sharpenIfNeeded();
+  }
 }
 
 void ExpoImageView::load() {
   const auto request = ++request_;
-  cancelDecode();
-  evas_object_hide(image_);
+  decode_.reset();
+  path_.clear();
+  stopFade();
+  content_.clear();
+  invalidate();
   if (uri_.empty()) return;
   dispatchEvent("onLoadStart", folly::dynamic::object());
+  if (const auto kept = findDecodedImage(memoryKey(), content_.fit(), pixelSize(), static_cast<float>(pointScale()))) {
+    cacheType_ = "memory";
+    display(*kept, false);
+    return;
+  }
   runInBackground([alive = std::weak_ptr<ExpoImageView *>(alive_), uri = uri_, cacheKey = cacheKey_, request] {
     runOnMainThread([alive, image = fetchImage(uri, cacheKey), request] {
-      auto view = alive.lock();
-      if (!view) return;
-      if (image.error.empty()) {
-        (*view)->decode(image.path, image.cacheType, request);
-      } else {
+      const auto view = alive.lock();
+      if (!view || request != (*view)->request_) return;
+      if (!image.error.empty()) {
         (*view)->fail(image.error, request);
+        return;
       }
+      (*view)->path_ = image.path;
+      (*view)->cacheType_ = image.cacheType;
+      (*view)->decode((*view)->pixelSize(), false);
     });
   });
 }
 
-void ExpoImageView::decode(const std::string &path, const std::string &cacheType, unsigned int request) {
-  if (request != request_) return;
-  cancelDecode();
-  evas_object_image_load_size_set(image_, 0, 0);
-  evas_object_image_file_set(image_, path.c_str(), nullptr);
-  if (evas_object_image_load_error_get(image_) != EVAS_LOAD_ERROR_NONE) {
-    fail("Evas cannot decode the image at " + uri_, request);
-    return;
-  }
-  evas_object_image_size_get(image_, &imageWidth_, &imageHeight_);
-  const auto drawn = fittedSize();
-  if (drawn.w > 0 && drawn.h > 0 && imageWidth_ >= 2 * drawn.w && imageHeight_ >= 2 * drawn.h) {
-    evas_object_image_load_size_set(image_, drawn.w, drawn.h);
-    evas_object_image_file_set(image_, path.c_str(), nullptr);
-  }
-  cacheType_ = cacheType;
-  decoding_ = true;
-  evas_object_image_preload(image_, EINA_FALSE);
+void ExpoImageView::sharpenIfNeeded() {
+  if (!content_.hasImage() || path_.empty() || decode_) return;
+  const auto wanted = decodedImageSize(content_.fit(), pixelSize(), content_.size(), static_cast<float>(pointScale()));
+  const auto &image = content_.image();
+  if (image->width() >= wanted.width && image->height() >= wanted.height) return;
+  const auto size = pixelSize();
+  decode({.width = 2 * size.width, .height = 2 * size.height}, true);
 }
 
-void ExpoImageView::cancelDecode() {
-  if (!decoding_) return;
-  decoding_ = false;
-  evas_object_image_preload(image_, EINA_TRUE);
+void ExpoImageView::decode(PixelSize box, bool quiet) {
+  ImageDecodeRequest wanted{
+      .bytes = nullptr, .path = path_, .fit = content_.fit(), .box = box, .naturalScale = static_cast<float>(pointScale())};
+  decode_ = decodeImage(std::move(wanted), [this, quiet, request = request_](DecodedImage decoded) {
+    decode_.reset();
+    if (!decoded.error.empty()) {
+      if (!quiet) fail(decoded.error + ": " + uri_, request);
+      return;
+    }
+    display(keepDecodedImage(scene(), memoryKey(), std::move(decoded)), quiet);
+  });
 }
 
-void ExpoImageView::onPreloaded(void *data, Evas *, Evas_Object *, void *) {
-  auto &self = *static_cast<ExpoImageView *>(data);
-  if (!self.decoding_) return;
-  self.decoding_ = false;
-  self.display();
-}
-
-void ExpoImageView::display() {
-  if (evas_object_image_load_error_get(image_) != EVAS_LOAD_ERROR_NONE) {
-    fail("Evas cannot decode the image at " + uri_, request_);
-    return;
-  }
-  fit();
-  evas_object_show(image_);
+void ExpoImageView::display(const DecodedImage &decoded, bool quiet) {
+  content_.setImage(decoded.image, decoded.size);
+  invalidate();
+  if (quiet) return;
   fadeIn();
-  auto source = folly::dynamic::object("url", uri_)("width", imageWidth_)("height", imageHeight_)("mediaType", nullptr)(
-      "isAnimated", false);
+  auto source = folly::dynamic::object("url", uri_)("width", decoded.size.width)("height", decoded.size.height)(
+      "mediaType", nullptr)("isAnimated", false);
   dispatchEvent("onLoad", folly::dynamic::object("cacheType", cacheType_)("source", std::move(source)));
   dispatchEvent("onDisplay", folly::dynamic::object());
 }
 
 void ExpoImageView::fail(const std::string &message, unsigned int request) {
   if (request != request_) return;
-  evas_object_hide(image_);
+  content_.clear();
+  invalidate();
   dispatchEvent("onError", folly::dynamic::object("error", message));
 }
 
-void ExpoImageView::layoutMembers() {
-  ExpoView::layoutMembers();
-  fit();
-}
-
-Evas_Coord_Size ExpoImageView::fittedSize() const {
-  const auto &box = canvasRect();
-  if (imageWidth_ <= 0 || imageHeight_ <= 0 || box.width <= 0 || box.height <= 0 || contentFit_ == "fill") {
-    return {box.width, box.height};
-  }
-  const double scale = fitScale(
-      contentFit_,
-      static_cast<double>(box.width) / imageWidth_,
-      static_cast<double>(box.height) / imageHeight_,
-      pointScale());
-  return {
-      static_cast<Evas_Coord>(std::lround(imageWidth_ * scale)),
-      static_cast<Evas_Coord>(std::lround(imageHeight_ * scale)),
-  };
-}
-
-void ExpoImageView::fit() {
-  const auto &box = canvasRect();
-  const auto size = fittedSize();
-  setGeometry(
-      image_,
-      {.x = box.x + (box.width - size.w) / 2, .y = box.y + (box.height - size.h) / 2, .width = size.w, .height = size.h});
-}
-
 void ExpoImageView::fadeIn() {
-  if (fade_ != nullptr) {
-    ecore_animator_del(fade_);
-    fade_ = nullptr;
-  }
-  if (transitionSeconds_ <= 0) {
-    evas_object_color_set(image_, 255, 255, 255, 255);
-    return;
-  }
-  evas_object_color_set(image_, 0, 0, 0, 0);
-  fade_ = ecore_animator_timeline_add(transitionSeconds_, &ExpoImageView::fadeStep, this);
+  stopFade();
+  if (transitionSeconds_ <= 0) return;
+  fadeAlpha_ = 0;
+  fadeStarted_ = MainLoop::Clock::now();
+  fade_ = MainLoop::get().addFrameCallback([this](MainLoop::Clock::time_point frameTime) {
+    const auto position = std::chrono::duration<double>(frameTime - fadeStarted_).count() / transitionSeconds_;
+    fadeAlpha_ = static_cast<float>(std::clamp(position, 0.0, 1.0));
+    invalidate();
+    if (position >= 1.0) stopFade();
+  });
 }
 
-Eina_Bool ExpoImageView::fadeStep(void *data, double position) {
-  auto *view = static_cast<ExpoImageView *>(data);
-  const auto alpha = static_cast<int>(std::lround(std::clamp(position, 0.0, 1.0) * 255));
-  evas_object_color_set(view->image_, alpha, alpha, alpha, alpha);
-  if (position >= 1.0) view->fade_ = nullptr;
-  return EINA_TRUE;
+void ExpoImageView::stopFade() {
+  fadeAlpha_ = 1;
+  if (fade_ == 0) return;
+  MainLoop::get().removeFrameCallback(fade_);
+  fade_ = 0;
 }
 
 RN_WEBOS_EXPO_VIEW(ViewDefinition<ExpoImageView>("ExpoImage")

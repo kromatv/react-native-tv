@@ -5,7 +5,7 @@
 
 namespace rnwebos::expo {
 
-/// An image file ready for Evas to decode, with expo-image's `cacheType`:
+/// An image file ready to decode, with expo-image's `cacheType`:
 /// `none` when it was just downloaded, `disk` when it came from the cache.
 struct ImageFile {
   std::string path;

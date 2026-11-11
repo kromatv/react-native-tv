@@ -166,6 +166,10 @@ void ComponentView::setAlwaysClips(bool alwaysClips) {
   invalidate();
 }
 
+void ComponentView::drawBackdrop(SkCanvas &, float) {
+  // A plain view leaves what is behind it as it is.
+}
+
 void ComponentView::drawContent(SkCanvas &, float) {
   // A plain view draws only its box.
 }
@@ -235,6 +239,7 @@ void ComponentView::draw(SkCanvas &canvas) {
   transform_.concat(canvas, pointScale());
   const auto bounds = paintBounds();
   if (canvas.quickReject(bounds)) return;
+  drawBackdrop(canvas, opacity_);
   float alpha = 1;
   if (opacity_ < 1) {
     if (children_.empty() && box_.layerCount() + contentLayers() <= 1) {
@@ -261,9 +266,11 @@ void ComponentView::drawChildren(SkCanvas &canvas) {
   const auto shift = childrenShift();
   SkAutoCanvasRestore restore(&canvas, shift != PixelPoint{});
   if (shift != PixelPoint{}) canvas.translate(static_cast<float>(shift.x), static_cast<float>(shift.y));
-  for (auto *child : children_) {
-    if (!child->isOverlay()) child->draw(canvas);
-  }
+  for (auto *child : children_) drawChild(canvas, *child);
+}
+
+void ComponentView::drawChild(SkCanvas &canvas, ComponentView &child) {
+  if (!child.isOverlay()) child.draw(canvas);
 }
 
 PixelRect ComponentView::canvasRect() const {

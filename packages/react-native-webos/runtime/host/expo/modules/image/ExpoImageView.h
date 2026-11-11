@@ -2,7 +2,9 @@
 
 #include "../../views/ExpoView.h"
 
-#include <Ecore.h>
+#include "platform/MainLoop.h"
+#include "views/ImageContent.h"
+#include "views/ImageDecoder.h"
 
 #include <memory>
 #include <string>
@@ -10,12 +12,12 @@
 namespace rnwebos::expo {
 
 /// expo-image's `Image` view: the first source, downloaded through the disk
-/// cache off the main thread, decoded by Evas's preload thread while hidden
-/// (at about the drawn size when the image is twice it or more), then fitted
-/// by `contentFit` and shown.
+/// cache and decoded off the main thread (at about the drawn size when the
+/// image is twice it or more), then fitted by `contentFit` and faded in over
+/// `transition`.
 class ExpoImageView final : public ExpoView {
  public:
-  ExpoImageView(Evas *evas, facebook::react::Tag tag);
+  ExpoImageView(Scene &scene, facebook::react::Tag tag);
   ~ExpoImageView() override;
 
   void setSource(const folly::dynamic &value);
@@ -24,32 +26,34 @@ class ExpoImageView final : public ExpoView {
 
  protected:
   void didUpdateProps() override;
-  void layoutMembers() override;
+  void layoutContent() override;
+  void drawContent(SkCanvas &canvas, float alpha) override;
+  int contentLayers() const override;
 
  private:
+  void loadIfNeeded();
   void load();
-  void decode(const std::string &path, const std::string &cacheType, unsigned int request);
-  void cancelDecode();
-  void display();
+  void sharpenIfNeeded();
+  void decode(PixelSize box, bool quiet);
+  void display(const DecodedImage &decoded, bool quiet);
   void fail(const std::string &message, unsigned int request);
-  void fit();
-  Evas_Coord_Size fittedSize() const;
-  static void onPreloaded(void *data, Evas *evas, Evas_Object *object, void *info);
+  const std::string &memoryKey() const;
+  PixelRect box() const;
   void fadeIn();
-  static Eina_Bool fadeStep(void *data, double position);
+  void stopFade();
 
-  Evas_Object *const image_;
+  ImageContent content_;
   std::string uri_;
   std::string cacheKey_;
-  std::string contentFit_{"cover"};
+  std::string path_;
   std::string cacheType_;
-  int imageWidth_{0};
-  int imageHeight_{0};
-  bool decoding_{false};
+  std::shared_ptr<ImageDecode> decode_;
   double transitionSeconds_{0};
   bool sourceChanged_{false};
   unsigned int request_{0};
-  Ecore_Animator *fade_{nullptr};
+  MainLoop::Id fade_{0};
+  MainLoop::Clock::time_point fadeStarted_;
+  float fadeAlpha_{1};
   std::shared_ptr<ExpoImageView *> alive_;
 };
 
