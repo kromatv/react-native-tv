@@ -154,7 +154,7 @@ TEST_CASE("An async function runs off the JavaScript thread and settles its prom
   CHECK(rejection(expo, "expo.modules.DefinitionTestModule.double('four')") == "Expected a number");
 }
 
-TEST_CASE("An async function on the main queue runs on the EFL main loop") {
+TEST_CASE("An async function on the main queue runs on the main loop") {
   ExpoTestRuntime expo;
   observed().onMainThread = false;
   CHECK(expo.settle("expo.modules.DefinitionTestModule.onMain()") == "\"main\"");

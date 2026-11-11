@@ -75,7 +75,7 @@ export function App() {
           ? `${Platform.OS} · ${expoWebOS.modelName} · webOS ${expoWebOS.platformVersion}`
           : `${Platform.OS} · no ExpoWebOS module`}
       </Text>
-      <Text style={styles.title}>React Native, native on a Samsung TV</Text>
+      <Text style={styles.title}>React Native, native on an LG TV</Text>
       <View style={styles.row}>
         {PILLARS.map((pillar, index) => (
           <View key={pillar.name} style={[styles.card, index === selected && styles.cardSelected]}>

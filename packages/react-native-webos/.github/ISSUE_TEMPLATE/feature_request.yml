@@ -28,7 +28,7 @@ body:
     id: platform
     attributes:
       label: Platform facts
-      description: What webOS, EFL or Samsung document about it, with links, and the TV models or webOS versions it has to run on.
+      description: What LG, webOS OSE, SDL or Skia document about it, with links, and the TV models or webOS versions it has to run on.
 
   - type: textarea
     id: alternatives

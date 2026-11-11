@@ -20,8 +20,8 @@
 namespace rnwebos::expo {
 
 /// Where an asynchronous function's body runs: a background thread by
-/// default, as for Expo's AsyncFunction, or the EFL main loop for code that
-/// touches Evas or the window.
+/// default, as for Expo's AsyncFunction, or the main loop for code that
+/// touches the scene or the window.
 enum class Queue {
   Background,
   Main,

@@ -1,8 +1,8 @@
 {
   "name": "@kromatv/react-native-webos",
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-alpha.0",
   "type": "module",
-  "description": "React Native and Expo for Samsung webOS TVs: Hermes and Fabric run natively, with no web runtime in between.",
+  "description": "React Native and Expo for LG webOS TVs: Hermes and Fabric run natively, with no web runtime in between.",
   "license": "MIT",
   "author": "Maxime Scharwath <maxscharwath@gmail.com>",
   "repository": {
@@ -17,7 +17,7 @@
     "react-native",
     "expo",
     "webos",
-    "samsung",
+    "lg",
     "smart-tv",
     "hermes"
   ],
