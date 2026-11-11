@@ -6,9 +6,8 @@
 
 namespace rnwebos {
 
-/// The app process's memory as the kernel accounts it, in MB: what Samsung's
-/// budget counts that a process can read about itself (PSS and swap; GPU and
-/// GEM memory are not in `/proc`).
+/// The app process's memory as the kernel accounts it, in MB: what a process
+/// can read about itself (PSS and swap; GPU memory is not in `/proc`).
 struct ProcessMemory {
   double pssMb{0};
   double swapMb{0};

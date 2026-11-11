@@ -546,11 +546,11 @@ Prints, once a second, where a development build's time goes: the frames the
 main loop drew and dropped, their render times, how busy the main loop and the
 JavaScript thread were, Fabric's commits and mounts, the Hermes heap, the app
 process's memory and the CPU. At Ctrl+C, or after `--duration`, it prints the
-run's average, 95th percentile and worst of each, and how far the run's
-highest memory came from Samsung's budget: 380 MB on a UHD model, 300 MB on
-FHD. The memory is the process's PSS and swap, read on the TV from
-`/proc/self/smaps_rollup`; the budget also counts GPU and GEM memory, which an
-app cannot read about itself, so treat the figure as a floor. It listens on the
+run's average, 95th percentile and worst of each, and the run's highest
+memory. The memory is the process's PSS and swap, read on the TV from
+`/proc/self/smaps_rollup`; GPU memory, which an app cannot read about itself,
+comes on top, so treat the figure as a floor. LG publishes no memory budget
+for an app, so the figure is compared with nothing. It listens on the
 log port, as `logs` does, and asks the app for samples: an app measures nothing
 until asked, and stops when `perf` exits. A release build has none of it.
 Samples come from one app: the one `--package` names, else the app in the

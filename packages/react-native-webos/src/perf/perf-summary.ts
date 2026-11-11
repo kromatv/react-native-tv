@@ -1,4 +1,4 @@
-import { processMemoryMb } from './memory-budget.ts';
+import { processMemoryMb } from './process-memory.ts';
 import type { Paint } from '../paint.ts';
 import { share, type MountCost, type PerfSample } from './perf-sample.ts';
 

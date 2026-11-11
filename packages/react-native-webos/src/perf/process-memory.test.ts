@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { painter } from '../paint.ts';
-import { formatMemoryBudget, processMemoryMb } from './memory-budget.ts';
+import { formatMemoryPeak, processMemoryMb } from './process-memory.ts';
 import { idleSample } from './perf-sample.fixtures.ts';
 import { summarizePerf } from './perf-summary.ts';
 
@@ -14,25 +14,28 @@ describe('processMemoryMb', () => {
   });
 });
 
-describe('formatMemoryBudget', () => {
-  it("says how far the run's peak is from the UHD and FHD budgets", () => {
+describe('formatMemoryPeak', () => {
+  it("gives the run's highest PSS and swap", () => {
     const samples = [
       idleSample({ pssMb: 120, swapMb: 0, memorySource: 'smaps_rollup' }),
       idleSample({ pssMb: 178, swapMb: 2, memorySource: 'smaps_rollup' }),
     ];
 
-    expect(formatMemoryBudget(samples, plain)).toEqual([
-      'memory peak 180.0 MB: 200.0 MB under 380 MB, the UHD budget; 120.0 MB under 300 MB, the FHD one',
-      '  PSS and swap; the budget also counts GPU and GEM memory, which the app cannot read',
+    expect(formatMemoryPeak(samples, plain)).toEqual([
+      'memory peak 180.0 MB',
+      '  PSS and swap; GPU memory, which the app cannot read, comes on top',
     ]);
   });
 
-  it('says when the peak is over, names RSS when PSS was not readable, and stays silent without readings', () => {
-    const over = formatMemoryBudget([idleSample({ pssMb: 320, memorySource: 'status' })], plain);
+  it('names RSS when PSS was not readable, and stays silent without readings', () => {
+    const fromStatus = formatMemoryPeak(
+      [idleSample({ pssMb: 320, memorySource: 'status' })],
+      plain,
+    );
 
-    expect(over[0]).toContain('60.0 MB under 380 MB, the UHD budget; 20.0 MB over 300 MB');
-    expect(over[1]).toContain('RSS and swap, which count shared pages in full');
-    expect(formatMemoryBudget([idleSample()], plain)).toEqual([]);
+    expect(fromStatus[0]).toBe('memory peak 320.0 MB');
+    expect(fromStatus[1]).toContain('RSS and swap, which count shared pages in full');
+    expect(formatMemoryPeak([idleSample()], plain)).toEqual([]);
   });
 });
 

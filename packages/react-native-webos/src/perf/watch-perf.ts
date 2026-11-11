@@ -6,7 +6,7 @@ import { untilInterrupted } from '../cli/log-level-option.ts';
 import type { Reporter } from '../cli/reporter.ts';
 import { pickLanAddress } from '../logs/lan-address.ts';
 import { listenForLogs } from '../logs/log-server.ts';
-import { formatMemoryBudget } from './memory-budget.ts';
+import { formatMemoryPeak } from './process-memory.ts';
 import { PerfListener } from './perf-listener.ts';
 import type { PerfChoice } from './perf-options.ts';
 import type { PerfSample } from './perf-sample.ts';
@@ -84,7 +84,7 @@ export async function watchPerf(reporter: Reporter, watch: PerfWatch): Promise<P
   reporter.line(`${samples.length} samples${of}${saved}`);
   const lines = [
     ...formatPerfSummary(summarizePerf(samples), reporter.paint),
-    ...formatMemoryBudget(samples, reporter.paint),
+    ...formatMemoryPeak(samples, reporter.paint),
     ...formatSlowestToMount(slowestToMount(samples), reporter.paint),
   ];
   for (const line of lines) reporter.line(line);
