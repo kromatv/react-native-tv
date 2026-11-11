@@ -7,7 +7,8 @@
 
 #include <jsi/JSIDynamic.h>
 
-#include <cstdlib>
+#include <map>
+#include <string>
 
 namespace rnwebos {
 
@@ -41,19 +42,34 @@ TEST_CASE("DeviceInfo lays every screen out as the logical 1920x1080 one, scaled
   CHECK(uhd["screen"]["scale"].asDouble() == 2);
 }
 
-TEST_CASE("readDeviceProfile reads the model, the platform and the screen from system info") {
-  const auto profile = readDeviceProfile();
-  CHECK(profile.modelName == "Simulator");
-  CHECK(profile.platformVersion == "9.0");
-  CHECK(profile.buildString == "rn-webos-simulator");
+TEST_CASE("readDeviceProfile reads the model, the platform and the build from the environment") {
+  const std::map<std::string, std::string, std::less<>> variables{
+      {"RN_WEBOS_MODEL_NAME", "OLED55C3"},
+      {"RN_WEBOS_PLATFORM_VERSION", "8.3.0"},
+      {"RN_WEBOS_BUILD", "03.33.85"},
+  };
+
+  const auto profile = readDeviceProfile([&variables](const char *name) {
+    const auto found = variables.find(name);
+    return found == variables.end() ? nullptr : found->second.c_str();
+  });
+
+  CHECK(profile.modelName == "OLED55C3");
+  CHECK(profile.platformVersion == "8.3.0");
+  CHECK(profile.buildString == "03.33.85");
   CHECK(profile.screenWidth == 1920);
   CHECK(profile.screenHeight == 1080);
+}
 
-  setenv("RN_WEBOS_SIMULATOR_SCREEN_SIZE", "1280x720", 1);
-  const auto smaller = readDeviceProfile();
-  unsetenv("RN_WEBOS_SIMULATOR_SCREEN_SIZE");
-  CHECK(smaller.screenWidth == 1280);
-  CHECK(smaller.screenHeight == 720);
+TEST_CASE("readDeviceProfile names an LG TV of an unknown version when the environment says nothing") {
+  const auto unset = readDeviceProfile([](const char *) -> const char * { return nullptr; });
+  const auto empty = readDeviceProfile([](const char *) -> const char * { return ""; });
+
+  CHECK(unset.modelName == "LG TV");
+  CHECK(unset.platformVersion == "unknown");
+  CHECK(unset.buildString == "unknown");
+  CHECK(empty.modelName == "LG TV");
+  CHECK(empty.platformVersion == "unknown");
 }
 
 } // namespace rnwebos

@@ -41,27 +41,29 @@ fs::path temporaryRoot() {
   return pattern;
 }
 
-AppPaths resolve() {
-  const auto app = executableDirectory();
-  const auto resource = environment("RN_WEBOS_RESOURCE_DIR");
-  const auto dataOverride = environment("RN_WEBOS_APP_DATA_DIR");
-  auto root = dataOverride.empty() ? app / "appdata" : fs::path(dataOverride);
+} // namespace
+
+AppPaths resolveAppPaths(const AppPathSources &sources) {
+  const fs::path app(sources.executableDirectory);
+  auto root = sources.dataOverride.empty() ? app / "appdata" : fs::path(sources.dataOverride);
   if (!makeWritable(root / "data") || !makeWritable(root / "cache")) {
     root = temporaryRoot();
     makeWritable(root / "data");
     makeWritable(root / "cache");
   }
   return {
-      .resource = withTrailingSlash(resource.empty() ? (app / "res").string() : resource),
+      .resource = withTrailingSlash(sources.resourceOverride.empty() ? (app / "res").string() : sources.resourceOverride),
       .data = withTrailingSlash((root / "data").string()),
       .cache = withTrailingSlash((root / "cache").string()),
   };
 }
 
-} // namespace
-
 const AppPaths &appPaths() {
-  static const AppPaths paths = resolve();
+  static const AppPaths paths = resolveAppPaths({
+      .executableDirectory = executableDirectory().string(),
+      .resourceOverride = environment("RN_WEBOS_RESOURCE_DIR"),
+      .dataOverride = environment("RN_WEBOS_APP_DATA_DIR"),
+  });
   return paths;
 }
 
