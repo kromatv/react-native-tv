@@ -580,7 +580,7 @@ To measure a cold start, start `perf` first, then launch the app. Since
 Each line reads:
 
 ```
-09:00:05  fps  58/60  drop   2  render   3.1/   9.4 ms  main  21%  js  35%  wait   4%  lag    2.0 ms  commit   3x  12.1/  30.2 ms  mount   4.0/   9.0 ms  heap  12.5/   32 MB  mem   142/380 MB  cpu  45%
+09:00:05  fps  58/60  drop   2  render   3.1/   9.4 ms  main  21%  js  35%  wait   4%  lag    2.0 ms  commit   3x  12.1/  30.2 ms  mount   4.0/   9.0 ms  heap  12.5/   32 MB  mem   142 MB  cpu  45%
 ```
 
 A second in which nothing drew, committed or ran prints `idle`. The fields,
