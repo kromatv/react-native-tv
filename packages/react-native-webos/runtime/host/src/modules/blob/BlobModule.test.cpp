@@ -81,8 +81,13 @@ TEST_CASE_FIXTURE(Blobs, "the blob collector JavaScript holds frees the blob's b
   CHECK(BlobStore::shared().resolve(id, 0, std::nullopt) == "collected");
 
   evaluate(rt, "delete globalThis.collector");
-  rt.instrumentation().collectGarbage("test");
-  CHECK_FALSE(BlobStore::shared().resolve(id, 0, std::nullopt).has_value());
+  // Hermes finalizes a collected object while it sweeps, which one collection may not finish.
+  bool freed = false;
+  for (int collection = 0; collection < 50 && !freed; ++collection) {
+    rt.instrumentation().collectGarbage("test");
+    freed = !BlobStore::shared().resolve(id, 0, std::nullopt).has_value();
+  }
+  CHECK(freed);
 }
 
 } // namespace rnwebos

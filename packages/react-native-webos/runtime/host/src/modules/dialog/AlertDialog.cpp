@@ -1,70 +1,52 @@
 #include "AlertDialog.h"
 
+#include "../../render/OverlayText.h"
+
+#include "include/core/SkPaint.h"
+#include "include/core/SkRRect.h"
+
 #include <algorithm>
-#include <cstdlib>
 #include <utility>
 
 namespace rnwebos {
 
 namespace {
 
-constexpr int kPanelWidth = 1040;
-constexpr int kPadding = 56;
-constexpr int kButtonWidth = 260;
-constexpr int kButtonHeight = 76;
-constexpr int kButtonGap = 24;
-constexpr int kTextToButtons = 48;
-constexpr int kLayer = EVAS_LAYER_MAX - 2;
-constexpr const char *kStyle =
-    "DEFAULT='font=Sans font_size=30 color=#d7def0 wrap=word'"
-    " title='+ font_size=42 font_weight=bold color=#ffffff'"
-    " button='+ font_size=30 color=#ffffff align=center wrap=none'";
+constexpr float kLogicalHeight = 1080;
+constexpr float kPanelWidth = 1040;
+constexpr float kPanelRadius = 16;
+constexpr float kPadding = 56;
+constexpr float kButtonWidth = 260;
+constexpr float kButtonHeight = 76;
+constexpr float kButtonRadius = 10;
+constexpr float kButtonGap = 24;
+constexpr float kTextToButtons = 48;
+constexpr float kTitleSize = 42;
+constexpr float kTextSize = 30;
+// Wide enough for any label: a button's text never wraps, it is clipped.
+constexpr float kOneLine = 100000;
+constexpr SkColor kScrim = SkColorSetARGB(170, 0, 0, 0);
+constexpr SkColor kPanel = SkColorSetRGB(0x1f, 0x24, 0x33);
+constexpr SkColor kText = SkColorSetRGB(0xd7, 0xde, 0xf0);
+constexpr SkColor kButton = SkColorSetRGB(0x2d, 0x34, 0x47);
+constexpr SkColor kFocusedButton = SkColorSetRGB(0x3d, 0x5a, 0xfe);
 
-std::string escaped(const std::string &text) {
-  char *markup = evas_textblock_text_utf8_to_markup(nullptr, text.c_str());
-  if (markup == nullptr) return {};
-  std::string result(markup);
-  std::free(markup);
-  return result;
-}
-
-Evas_Object *rectangle(Evas *evas, int r, int g, int b, int a) {
-  auto *object = evas_object_rectangle_add(evas);
-  evas_object_color_set(object, r * a / 255, g * a / 255, b * a / 255, a);
-  evas_object_layer_set(object, kLayer);
-  return object;
-}
-
-Evas_Object *textblock(Evas *evas, Evas_Textblock_Style *style, const std::string &markup) {
-  auto *object = evas_object_textblock_add(evas);
-  evas_object_textblock_style_set(object, style);
-  evas_object_textblock_text_markup_set(object, markup.c_str());
-  evas_object_layer_set(object, kLayer);
-  return object;
-}
-
-int formattedHeight(Evas_Object *text, int width) {
-  evas_object_resize(text, width, 10000);
-  Evas_Coord formattedWidth = 0;
-  Evas_Coord height = 0;
-  evas_object_textblock_size_formatted_get(text, &formattedWidth, &height);
-  return height;
+SkPaint fill(SkColor color) {
+  SkPaint paint;
+  paint.setAntiAlias(true);
+  paint.setColor(color);
+  return paint;
 }
 
 } // namespace
 
-AlertDialog::AlertDialog(Evas *evas) : evas_(evas), style_(evas_textblock_style_new()) {
-  evas_textblock_style_set(style_, kStyle);
-}
+AlertDialog::AlertDialog(Scene &scene) : scene_(scene) {}
 
 AlertDialog::~AlertDialog() {
-  clear();
-  evas_textblock_style_free(style_);
+  if (isLayer_) scene_.removeLayer(*this);
 }
 
-void AlertDialog::show(AlertRequest request, int screenWidth, int screenHeight) {
-  screenWidth_ = screenWidth;
-  screenHeight_ = screenHeight;
+void AlertDialog::show(AlertRequest request) {
   pending_.push_back(std::move(request));
   if (!current_) present();
 }
@@ -90,74 +72,73 @@ void AlertDialog::present() {
   if (pending_.empty()) return;
   current_ = std::move(pending_.front());
   pending_.pop_front();
-  scrim_ = rectangle(evas_, 0, 0, 0, 170);
-  panel_ = rectangle(evas_, 0x1f, 0x24, 0x33, 255);
-  std::string markup = "<title>" + escaped(current_->title) + "</title>";
-  if (!current_->message.empty()) markup += "<br/><br/>" + escaped(current_->message);
-  text_ = textblock(evas_, style_, markup);
-  for (const auto &button : current_->buttons) {
-    buttonBackgrounds_.push_back(rectangle(evas_, 0x2d, 0x34, 0x47, 255));
-    buttonLabels_.push_back(textblock(evas_, style_, "<button>" + escaped(button.text) + "</button>"));
-  }
   layout();
-  focus(current_->buttons.empty() ? 0 : current_->buttons.size() - 1);
+  focused_ = current_->buttons.empty() ? 0 : current_->buttons.size() - 1;
+  if (!std::exchange(isLayer_, true)) scene_.addLayer(*this, Scene::kDialogOrder);
+  scene_.invalidate();
 }
 
 void AlertDialog::layout() {
-  const int textWidth = kPanelWidth - 2 * kPadding;
-  const int textHeight = formattedHeight(text_, textWidth);
-  const int buttonsHeight = buttonBackgrounds_.empty() ? 0 : kTextToButtons + kButtonHeight;
-  const int panelHeight = std::min(screenHeight_, 2 * kPadding + textHeight + buttonsHeight);
-  const int panelX = (screenWidth_ - kPanelWidth) / 2;
-  const int panelY = (screenHeight_ - panelHeight) / 2;
-  evas_object_geometry_set(scrim_, 0, 0, screenWidth_, screenHeight_);
-  evas_object_geometry_set(panel_, panelX, panelY, kPanelWidth, panelHeight);
-  evas_object_geometry_set(text_, panelX + kPadding, panelY + kPadding, textWidth, textHeight);
-  const auto count = static_cast<int>(buttonBackgrounds_.size());
-  const int rowWidth = count * kButtonWidth + std::max(0, count - 1) * kButtonGap;
-  int x = panelX + kPanelWidth - kPadding - rowWidth;
-  const int y = panelY + panelHeight - kPadding - kButtonHeight;
-  for (int index = 0; index < count; ++index) {
-    evas_object_geometry_set(buttonBackgrounds_[index], x, y, kButtonWidth, kButtonHeight);
-    const int labelHeight = formattedHeight(buttonLabels_[index], kButtonWidth);
-    evas_object_geometry_set(
-        buttonLabels_[index], x, y + (kButtonHeight - labelHeight) / 2, kButtonWidth, labelHeight);
-    x += kButtonWidth + kButtonGap;
+  const auto screen = scene_.size();
+  const auto scale = static_cast<float>(screen.height) / kLogicalHeight;
+  std::vector<OverlayRun> runs{{.text = current_->title, .size = kTitleSize * scale, .bold = true}};
+  if (!current_->message.empty()) {
+    runs.push_back({.text = "\n\n" + current_->message, .size = kTextSize * scale, .color = kText});
   }
-  for (auto *object : {scrim_, panel_, text_}) evas_object_show(object);
-  for (std::size_t index = 0; index < buttonBackgrounds_.size(); ++index) {
-    evas_object_show(buttonBackgrounds_[index]);
-    evas_object_show(buttonLabels_[index]);
+  text_ = overlayParagraph(runs, (kPanelWidth - 2 * kPadding) * scale);
+  const auto count = static_cast<float>(current_->buttons.size());
+  const auto buttonsHeight = current_->buttons.empty() ? 0 : (kTextToButtons + kButtonHeight) * scale;
+  const auto panelHeight =
+      std::min(static_cast<float>(screen.height), 2 * kPadding * scale + text_->getHeight() + buttonsHeight);
+  panel_ = SkRect::MakeXYWH(
+      (static_cast<float>(screen.width) - kPanelWidth * scale) / 2,
+      (static_cast<float>(screen.height) - panelHeight) / 2,
+      kPanelWidth * scale,
+      panelHeight);
+  const auto rowWidth = (count * kButtonWidth + std::max(0.0f, count - 1) * kButtonGap) * scale;
+  auto x = panel_.right() - kPadding * scale - rowWidth;
+  const auto y = panel_.bottom() - (kPadding + kButtonHeight) * scale;
+  buttons_.clear();
+  for (const auto &button : current_->buttons) {
+    buttons_.push_back({
+        .box = SkRect::MakeXYWH(x, y, kButtonWidth * scale, kButtonHeight * scale),
+        .label = overlayParagraph({{.text = button.text, .size = kTextSize * scale}}, kOneLine),
+    });
+    x += (kButtonWidth + kButtonGap) * scale;
   }
 }
 
 void AlertDialog::focus(std::size_t index) {
   focused_ = index;
-  for (std::size_t button = 0; button < buttonBackgrounds_.size(); ++button) {
-    if (button == index) {
-      evas_object_color_set(buttonBackgrounds_[button], 0x3d, 0x5a, 0xfe, 255);
-    } else {
-      evas_object_color_set(buttonBackgrounds_[button], 0x2d, 0x34, 0x47, 255);
-    }
-  }
+  scene_.invalidate();
 }
 
 void AlertDialog::close(std::optional<int> buttonKey) {
   auto onClose = std::move(current_->onClose);
-  clear();
   current_.reset();
+  text_.reset();
+  buttons_.clear();
   if (onClose) onClose(buttonKey);
-  present();
+  if (!current_) present();
+  if (!current_ && std::exchange(isLayer_, false)) scene_.removeLayer(*this);
 }
 
-void AlertDialog::clear() {
-  for (auto *object : buttonLabels_) evas_object_del(object);
-  for (auto *object : buttonBackgrounds_) evas_object_del(object);
-  buttonLabels_.clear();
-  buttonBackgrounds_.clear();
-  for (auto **object : {&text_, &panel_, &scrim_}) {
-    if (*object != nullptr) evas_object_del(*object);
-    *object = nullptr;
+void AlertDialog::draw(SkCanvas &canvas) {
+  if (!current_) return;
+  const auto scale = static_cast<float>(scene_.size().height) / kLogicalHeight;
+  canvas.drawColor(kScrim);
+  canvas.drawRRect(SkRRect::MakeRectXY(panel_, kPanelRadius * scale, kPanelRadius * scale), fill(kPanel));
+  text_->paint(&canvas, panel_.left() + kPadding * scale, panel_.top() + kPadding * scale);
+  for (std::size_t index = 0; index < buttons_.size(); ++index) {
+    const auto &button = buttons_[index];
+    const auto shape = SkRRect::MakeRectXY(button.box, kButtonRadius * scale, kButtonRadius * scale);
+    canvas.drawRRect(shape, fill(index == focused_ ? kFocusedButton : kButton));
+    SkAutoCanvasRestore restore(&canvas, true);
+    canvas.clipRRect(shape, true);
+    button.label->paint(
+        &canvas,
+        button.box.centerX() - button.label->getLongestLine() / 2,
+        button.box.centerY() - button.label->getHeight() / 2);
   }
 }
 
