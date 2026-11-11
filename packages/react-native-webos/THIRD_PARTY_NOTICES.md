@@ -27,7 +27,9 @@ ICU's data, and the JavaScript bundle carries the FormatJS polyfills.
 | Boost (headers) | 1.84.0 | BSL-1.0 | the Boost authors |
 | ICU, its code and `icudt78l.dat` | 78.3 | Unicode-3.0, with the third-party terms in ICU's licence | Unicode, Inc. and others |
 | FormatJS: `@formatjs/intl-numberformat`, `intl-pluralrules`, `intl-relativetimeformat` and their locale data | 10.0.2, 7.0.2, 13.0.1 | MIT | FormatJS |
-| GCC's libstdc++ and libatomic | GCC 14 | GPL-3.0-or-later WITH GCC-exception-3.1 | the Free Software Foundation |
+| libcurl | 8.23.0 | curl | Daniel Stenberg and many contributors |
+| Mbed TLS, with Project Everest's Curve25519 code | 3.6.7 | Apache-2.0 or GPL-2.0-or-later, used under Apache-2.0 | The Mbed TLS Contributors; INRIA and Microsoft Corporation |
+| GCC's libstdc++ and libatomic | GCC 16.2.0 | GPL-3.0-or-later WITH GCC-exception-3.1 | the Free Software Foundation |
 | Mozilla's CA certificates, as `res/cacert.pem`, extracted by curl (<https://curl.se/docs/caextract.html>) | 2026-11-05 | MPL-2.0 | Mozilla and the certificate authorities |
 
 The GCC Runtime Library Exception lets a program ship these two libraries
@@ -207,7 +209,34 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-### Apache License 2.0: Folly, webOS's headers, and llvh with the LLVM exceptions below
+### curl: libcurl
+
+```text
+COPYRIGHT AND PERMISSION NOTICE
+
+Copyright (c) 1996 - 2026, Daniel Stenberg, <daniel@haxx.se>, and many
+contributors, see the THANKS file.
+
+All rights reserved.
+
+Permission to use, copy, modify, and distribute this software for any purpose
+with or without fee is hereby granted, provided that the above copyright
+notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT OF THIRD PARTY RIGHTS. IN
+NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+OR OTHER DEALINGS IN THE SOFTWARE.
+
+Except as contained in this notice, the name of a copyright holder shall not
+be used in advertising or otherwise to promote the sale, use or other dealings
+in this Software without prior written authorization of the copyright holder.
+```
+
+### Apache License 2.0: Folly, Mbed TLS, webOS's headers, and llvh with the LLVM exceptions below
 
 ```text
 

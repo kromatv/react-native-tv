@@ -10,13 +10,15 @@ Tags: **D** documented (a page, README or source file opened on 2026-11-11 and
 linked), **Xw** inspected (toolchain release webosbrew/native-toolchain
 `webos-d7ed7ee.6`, darwin-arm64 asset), **Xo** inspected (toolchain release
 openlgtv/buildroot-nc4 `2026.08-webos`, aarch64 asset), **I** inferred (from
-what the row says).
+what the row says), **B** built (the runtime's TV build of section 9: compiled
+and linked against Xo on macOS 27 arm64 with Homebrew clang and lld 23.1.4 on
+2026-11-11, then read with `scripts/check-tv-binary.ts` and `llvm-readelf`).
 
 "Inspected" means read with `llvm-readelf`, `llvm-nm` and `llvm-strings` from
 Homebrew LLVM 23.1.4, and, where a row says "link test", compiled and linked on
 macOS arm64 with Homebrew clang 23.1.4 and `ld.lld` 23.1.4. Nothing from either
-archive was executed and no produced binary was run. **Nothing in this file is
-verified on a TV.**
+archive was executed and no produced binary was run, the runtime of section 9
+included. **Nothing in this file is verified on a TV.**
 
 Rows citing [fw] come from webosbrew's firmware symbol data: 14 firmware
 images covering webOS 1.2.0 to 11.2.0, each from one SoC. They describe those
@@ -177,6 +179,10 @@ libstdc++ file versions map to GCC releases per [gcc-abi].
 | The jail maps `/bin`, `/lib` and `/usr/lib` "among them", read only. Whether it maps `/etc/ssl` is not documented. | D | [brew-vocab] |
 | `libmbedtls` is on the 11.2.0 image only. | D | [fw] |
 | curl publishes Mozilla's root certificates as one PEM file per extraction date, `https://curl.se/ca/cacert-<date>.pem`, with its digest at the same address plus `.sha256`. The file "is only a converted version of the original one and thus it is licensed under the same license as the Mozilla source file: MPL 2.0". `cacert-2026-11-05.pem` is 200,116 bytes, 118 certificates, sha256 `427c064216761a1e72a8b30f0d954d08cb6e4435a82091fb865afd20c8497285` (downloaded; equals the published digest). | D | [curl-ca] |
+| curl 8.23.0 (2026-10-14) builds with "mbedTLS 3.2.0 or greater"; Mbed TLS 3.6.7 (2026-07-07) is the newest release of its 3.6 long-time support branch. `curl-8.23.0.tar.xz` is sha256 `8dadd7d2536a314f982ad05a651b713f426bf7d02cc2c76cffb9796f2218e6c5` (the copy on curl.se hashes the same) and `mbedtls-3.6.7.tar.bz2` `a7e8bcbec0e6f761b4af24f25677626b35f762f68eef79c08677a363212d11f6` (equals the release's `sha256sum.txt`). | D | [curl] `CMakeLists.txt` L875-L879; [mbedtls] `BRANCHES.md`; the two projects' GitHub releases, downloaded 2026-11-11 |
+| "mbedTLS can be used safely in a multi-threaded environment provided that mbedTLS is compiled with MBEDTLS_THREADING_C enabled." Its default configuration leaves that off, and has the server side, DTLS and a key store in files on. | D | [curl] `docs/libcurl/libcurl-thread.md`; [mbedtls] `include/mbedtls/mbedtls_config.h` |
+| Mbed TLS takes entropy from the `getrandom` system call only when `SYS_getrandom` is defined, and reads `/dev/urandom` when it is not, or when the call answers `ENOSYS`. `MBEDTLS_ENTROPY_HARDWARE_ALT` adds a source the application defines, `mbedtls_hardware_poll`, and `MBEDTLS_NO_PLATFORM_ENTROPY` removes the built-in one. curl seeds its generator from that and turns prediction resistance on: "Entropy is gathered before each mbedtls_ctr_drbg_random() call". | D | [mbedtls] `library/entropy_poll.c` L81-L95, L150-L185, `include/mbedtls/mbedtls_config.h` L531-L543, L1201-L1223; [curl] `lib/vtls/mbedtls.c` L1594-L1625 |
+| curl's CMake looks for a CA bundle on the build machine unless it cross-compiles; `CURL_CA_BUNDLE=none` turns that off and a path becomes the compiled-in default. With Mbed TLS as the only backend, HTTP and HTTPS as the only protocols and zlib, it reports the features `AsynchDNS HTTPS-proxy IPv6 Largefile libz SSL threadsafe`. | D, B | [curl] `CMakeLists.txt` L1408-L1470; configure log |
 
 ## 8. Debugging and logs in Developer Mode
 
@@ -302,6 +308,8 @@ visible from a shell. For a shell run, set `APPID`. For GDB, push the SDK's
 with `ares-novacom --forward`.
 
 [nt]: https://github.com/webosbrew/native-toolchain/blob/730dbd680cc319935655b1b04c2d80fcb62fdb22/README.md
+[mbedtls]: https://github.com/Mbed-TLS/mbedtls/tree/mbedtls-3.6.7
+[curl]: https://github.com/curl/curl/tree/curl-8_23_0
 [curl-ca]: https://curl.se/docs/caextract.html
 [nt-rel]: https://github.com/webosbrew/native-toolchain/releases
 [nt-cmake]: https://github.com/webosbrew/native-toolchain/blob/730dbd680cc319935655b1b04c2d80fcb62fdb22/CMakeLists.txt

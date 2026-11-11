@@ -43,5 +43,20 @@
     "version": "3.4.16-webos.5",
     "url": "https://github.com/webosbrew/SDL-webOS/archive/refs/tags/release-3.4.16-webos.5.tar.gz",
     "sha256": "84b43b4b41e794885149364ed46fd88e8859d34ac3d0520dc15429dcdbcce141"
+  },
+  "curl": {
+    "version": "8.23.0",
+    "url": "https://github.com/curl/curl/releases/download/curl-8_23_0/curl-8.23.0.tar.xz",
+    "sha256": "8dadd7d2536a314f982ad05a651b713f426bf7d02cc2c76cffb9796f2218e6c5"
+  },
+  "mbedtls": {
+    "version": "3.6.7",
+    "url": "https://github.com/Mbed-TLS/mbedtls/releases/download/mbedtls-3.6.7/mbedtls-3.6.7.tar.bz2",
+    "sha256": "a7e8bcbec0e6f761b4af24f25677626b35f762f68eef79c08677a363212d11f6"
+  },
+  "cacert": {
+    "version": "2026-11-05",
+    "url": "https://curl.se/ca/cacert-2026-11-05.pem",
+    "sha256": "427c064216761a1e72a8b30f0d954d08cb6e4435a82091fb865afd20c8497285"
   }
 }

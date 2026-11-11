@@ -46,6 +46,18 @@ Consequence: 2015 to 2020 TVs need a react-native-web build packaged as a
 is designed in [webos-versions.md](webos-versions.md), not built. On webOS 6.0
 the SVG views call nine Evas VG functions that 6.0 exports but did not publish.
 
+## libcurl and Mbed TLS inside the runtime
+
+A TV's libcurl changes SONAME at webOS 5 and lacks calls the host makes before
+webOS 7; its OpenSSL has four SONAMEs, no TLS 1.3 before webOS 6 and a root
+list as old as the firmware. The runtime compiles libcurl with Mbed TLS in,
+HTTP and HTTPS only, and every package ships Mozilla's roots as
+`res/cacert.pem`, which the host names for every transfer. The simulator links
+the same two.
+
+Consequence: a TLS fix reaches users with a release of this package, not with
+the TV's firmware.
+
 ## ICU inside the runtime, FormatJS for the rest of `Intl`
 
 Every app gets `Intl` and Unicode-correct strings. webOS 9 ships ICU 74 and
