@@ -10,6 +10,7 @@ import { writeAppConfig } from './app-config-file.ts';
 import { writeAppIcons, writeSplash } from './app-icons.ts';
 import { appInfo, APPINFO_FILE } from './appinfo.ts';
 import { RUNTIME_CONFIG_FILE, runtimeConfig, type LogEndpoint } from './runtime-config.ts';
+import { stripExecutable } from './strip-executable.ts';
 
 /** The directory, in the app's `webos/`, that a package installs as `usr/palm/applications/<id>`. */
 export const APP_DIR = 'app';
@@ -23,6 +24,8 @@ export const CA_BUNDLE_FILE = 'cacert.pem';
 // An app does not own its install directory on a TV, so LG's Flutter tool ships this
 // empty world-writable one for its data (docs/reference/webos-tv-platform.md, section 3.1).
 const APP_DATA_DIR = 'appdata';
+
+const BUILD_DIR = 'build';
 
 const VIDEO_PACKAGE = 'expo-video';
 
@@ -38,9 +41,12 @@ interface AppDirInputs {
   readonly caBundle: string;
 }
 
-/** Where a build of the app keeps the executable it packaged, for symbolizing a crash. */
+/**
+ * Where a build of the app keeps the executable it packaged as it was linked,
+ * with the symbols the packaged copy lost, for naming the frames of a crash.
+ */
 export function stagedExecutable(webosDir: string): string {
-  return join(webosDir, APP_DIR, RUNTIME_EXECUTABLE);
+  return join(webosDir, BUILD_DIR, RUNTIME_EXECUTABLE);
 }
 
 async function writeResources(inputs: AppDirInputs, res: string): Promise<void> {
@@ -62,7 +68,7 @@ async function writeResources(inputs: AppDirInputs, res: string): Promise<void> 
 
 /**
  * Writes the app directory of a package into the app's `webos/app`, replacing
- * the last one: `appinfo.json`, the executable, the icons, the splash image
+ * the last one: `appinfo.json`, the executable without its symbols, the icons, the splash image
  * when the app has one, the resource directory and an empty `appdata`. The
  * `webos/` directory ignores itself, so it never reaches git.
  */
@@ -75,7 +81,10 @@ export async function stageAppDir(inputs: AppDirInputs): Promise<string> {
   await writeAppIcons(app, dir);
   const hasSplash = await writeSplash(app, dir);
   const executable = join(dir, RUNTIME_EXECUTABLE);
+  await mkdir(join(app.webosDir, BUILD_DIR), { recursive: true });
+  await copyFile(inputs.runtime, stagedExecutable(app.webosDir));
   await copyFile(inputs.runtime, executable);
+  stripExecutable(executable);
   await chmod(executable, 0o755);
   await writeResources(inputs, join(dir, RESOURCE_DIR));
   const info = appInfo(app.config, {

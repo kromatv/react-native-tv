@@ -241,15 +241,16 @@ the host) cross-compiled from macOS with the flags of "What this means".
 
 ### Size
 
-Stripped with `llvm-strip`, for the host as ported on 2026-11-11: images,
-scroll views, text input, SVG, video and the dev tooling are still left out, and
-nothing references Skia's image codecs yet.
+Stripped with `llvm-strip`. The first three rows are the host as first
+cross-compiled on 2026-11-11, before images, scroll views, text input, SVG,
+video and the dev tooling were in it; the last row is the whole host.
 
 | Fact | Tag | Source |
 |---|---|---|
 | The executable is 10,986,096 bytes stripped, 17.4 MB with its symbols: `.text` 8.33 MiB, `.rodata` 1.59, the unwind tables (`.ARM.extab`, `.ARM.exidx`) 0.31, `.data.rel.ro` 0.18. | B | `llvm-size -A` |
 | Where it goes, by the linker's map: Hermes 1.93 MiB, Skia's core and Ganesh 1.43, React Native (ReactCommon, codegen, Expo's common code) 1.41, ICU 1.22, Skia's modules (SkParagraph, SkShaper, SkUnicode, SVG) 0.95, the host 0.65, HarfBuzz 0.55, libstdc++ and libgcc 0.50, SDL 0.41, FreeType 0.36, curl 0.20, Mbed TLS 0.20, folly, glog and fmt 0.09, the image codecs and zlib 0.06, and 0.50 of the linker's own making (merged strings, the unwind index, tables). | B | `ld.lld -Map` |
 | What each setting saved, in the order applied, from 12,590,616 bytes with `-O3`, Thumb-2 and `--gc-sections` on a build whose React Native, host, folly and SDL had no `-ffunction-sections`: `-ffunction-sections -fdata-sections` everywhere 365,332; `-Os` for ICU, curl, Mbed TLS and SDL 474,172; `--icf=safe` and the linker's `-O2` 436,872 (420,680 and 14,016 measured apart); SDL's dynamic API table off 328,144. Together 1,604,520 bytes, 12.7%. | B | one build for each step |
+| With every area in, the example's release executable (react-native-svg compiled in) is 12,582,640 bytes stripped and 20,224,556 with its symbol table. `rn-webos` packages the stripped one: the example's package is 9,341,424 bytes and installs 17.6 MB, where the unstripped one made 10,947,530 bytes and 25.2 MB. The stripped executable still passes `scripts/check-tv-binary.ts` on all 14 images. | B | `rn-webos package` in `example/` on 2026-11-11, `ls -l` |
 | SDL calls its own API through a table (`SDL_DYNAMIC_API`) so that another SDL can replace it at run time. The table references every public function, so `--gc-sections` drops none. SDL turns it off for Android, iOS and Emscripten, and elsewhere reserves the switch to a hand edit of `SDL_dynapi.h`: a definition on the command line is an `#error`. | D | [sdl3] `src/dynapi/SDL_dynapi.h` L26-L74 |
 | Not applied. Objects compiled without `-fPIC` for the fixed-address link: 7,016 bytes. `--icf=all` over `--icf=safe`: 73,408 more, at the price of functions that no longer compare unequal. `-Os` for Hermes, React Native, folly and the host too: 1,143,880 more, 0.41 MiB of it Hermes, whose interpreter is the hot path; React Native's own Android release build does compile Hermes with `MinSizeRel`. | B, D | one build for each; `ReactAndroid/hermes-engine/build.gradle.kts` L391-L397 of react-native 0.88 |
 | ARM instructions instead of Thumb-2 (`-DWEBOS_ARM_MODE=ON`, Skia rebuilt with `-marm`): 15,595,920 bytes against 11,314,240 at the same settings, 37.8% more. | B | two builds |
@@ -422,8 +423,8 @@ than webOS 4. The data is Apache-2.0 JSON, fetched into the cache at a pinned
 commit; `webosbrew-ipk-verify` has no macOS release. It reads the file and
 cannot see what a `dlsym` will ask for beyond the names it finds as strings.
 
-**Size.** 11.0 MB stripped today, for a host with images, scrolling, text
-input, SVG and video still to come (section 9). Cold libraries (ICU, curl, Mbed
+**Size.** 12.6 MB stripped with every area in and react-native-svg compiled
+in (section 9), which is what a package carries. Cold libraries (ICU, curl, Mbed
 TLS, SDL) are compiled with `-Os`; Hermes, React Native, Skia and the host keep
 `-O3`.
 

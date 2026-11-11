@@ -19,8 +19,10 @@ import { writeIpk } from './ipk.ts';
 import { plainPng } from './png.fixtures.ts';
 import { readIpk } from './read-ipk.ts';
 import { stageAppDir, stagedExecutable } from './stage-app.ts';
+import { stripExecutable } from './strip-executable.ts';
 
 vi.mock('./app-config-file.ts', () => ({ writeAppConfig: vi.fn(async () => {}) }));
+vi.mock('./strip-executable.ts', () => ({ stripExecutable: vi.fn() }));
 
 let root: string;
 
@@ -85,13 +87,15 @@ describe('stageAppDir', () => {
     expect(writeAppConfig).toHaveBeenCalledWith(root, join(dir, 'res'));
   });
 
-  it('copies the executable, executable, where a crash is symbolized from', async () => {
+  it('packages the executable without its symbols, and keeps the one with them for crashes', async () => {
     const dir = await stageAppDir(inputs());
-    const executable = stagedExecutable(join(root, 'webos'));
+    const packaged = join(dir, 'react-native-webos');
+    const withSymbols = stagedExecutable(join(root, 'webos'));
 
-    expect(executable).toBe(join(dir, 'react-native-webos'));
-    expect(readFileSync(executable).equals(elfHeader(40))).toBe(true);
-    expect(statSync(executable).mode & 0o777).toBe(0o755);
+    expect(stripExecutable).toHaveBeenCalledWith(packaged);
+    expect(statSync(packaged).mode & 0o777).toBe(0o755);
+    expect(withSymbols).toBe(join(root, 'webos', 'build', 'react-native-webos'));
+    expect(readFileSync(withSymbols).equals(elfHeader(40))).toBe(true);
   });
 
   it('writes the appinfo.json of a native app from the config', async () => {

@@ -45,6 +45,9 @@ function(rn_webos_add_native_library package package_dir codegen_name codegen_di
     folly_runtime glog jsi react_codegen_rncore react_debug react_nativemodule_core
     react_renderer_componentregistry react_renderer_core react_renderer_debug react_renderer_graphics
     react_renderer_imagemanager react_renderer_mapbuffer react_utils rrc_image rrc_view yoga)
+  # A library's view derives from the host's ComponentView, whose header
+  # includes Skia's and SDL's.
+  target_link_libraries(${_target} PUBLIC rn_webos_skia SDL3::SDL3-static)
   target_compile_reactnative_options(${_target} PRIVATE)
   target_compile_options(${_target} PRIVATE -Wno-error -include cstdint)
   if(TARGET expo_modules_common)

@@ -48,7 +48,7 @@ the runtime. It creates no target of its own: it adds sources to the one
 
 | Name | What it is |
 |------|------------|
-| `RN_WEBOS_LIBRARY_TARGET` | An OBJECT library linked into the `react-native-webos` executable. It already holds the codegen output, and its include path has React Native's headers, the codegen root (`<name>JSI.h`, `react/renderer/components/<name>/...`) and the host's `runtime/host/src` |
+| `RN_WEBOS_LIBRARY_TARGET` | An OBJECT library linked into the `react-native-webos` executable. It already holds the codegen output, and its include path has React Native's headers, the codegen root (`<name>JSI.h`, `react/renderer/components/<name>/...`), the host's `runtime/host/src`, and Skia's and SDL's headers, which a view draws with |
 | `RN_WEBOS_LIBRARY_PACKAGE` | The npm name |
 | `RN_WEBOS_LIBRARY_DIR` | The package's directory |
 

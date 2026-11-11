@@ -383,7 +383,7 @@ run. A webOS package is not signed. What it holds, under
 | Path | |
 |---|---|
 | `appinfo.json` | A native app (`type: "native"`, `main: "react-native-webos"`), from the config plugin's props. An app that depends on `expo-video` also gets `transparent: true`, which lets the TV's video plane show through the window |
-| `react-native-webos` | The runtime, one 32-bit ARM executable |
+| `react-native-webos` | The runtime, one 32-bit ARM executable, without its symbol table. The copy with symbols stays in `webos/build/`, where `run` and `logs` name the frames of a native crash from |
 | `icon.png`, `largeIcon.png`, `splash.png` | 80x80 and 130x130, scaled from the app's icon; the splash image when the app has one |
 | `res/` | `index.webos.hbc`, `assets/`, [`react-native-webos.json`](runtime-config.md), `icudt78l.dat`, `cacert.pem`, `app.config` and `THIRD_PARTY_NOTICES.md` |
 | `appdata/` | Empty and world-writable: where the app keeps its data and cache on the TV, which does not let an app write elsewhere in its directory on every release |

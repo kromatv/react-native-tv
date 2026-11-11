@@ -17,8 +17,9 @@ the only host verified so far.
   ```
 
   CMake must be 3.24 or newer. ccache is optional. Set `WEBOS_LLVM_DIR` to use
-  a clang and lld that are not Homebrew's. Skia's build also needs Python 3,
-  which macOS has, and GN, which the build downloads when none is installed.
+  a clang and lld that are not Homebrew's. The build also needs git, Python 3
+  and a compiler for its own tools, which Xcode's command line tools bring, and
+  GN, which it downloads when none is installed.
 - The SDK TV builds compile against, openlgtv's: `rn-webos` downloads it into
   the cache on the first build, or ahead of time with `setup`. Nothing of LG's
   is installed: `rn-webos` reaches the TV and writes packages itself, and a

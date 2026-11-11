@@ -92,6 +92,9 @@ macOS on Apple silicon is the only build host tried so far.
   brew install llvm lld cmake ninja ccache
   ```
 
+- Xcode's command line tools (`xcode-select --install`): git, Python 3 and the
+  compiler that builds the build's own tools.
+
 The SDK the runtime compiles against (openlgtv's, a sysroot older than any
 TV's) is downloaded by `rn-webos` on the first build. Nothing from LG is
 installed on the computer.
@@ -261,7 +264,7 @@ Known gaps:
 Measured in the simulator, on a software GPU, so only good for comparing one
 change with another ([docs/benchmarks.md](docs/benchmarks.md)): the example's
 1,000-row list scrolls at 60 frames a second with none dropped, and a release
-package of the example is 10.9 MB.
+package of the example is 9.3 MB.
 
 ## Documentation
 

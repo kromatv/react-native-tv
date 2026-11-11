@@ -50,8 +50,8 @@ label, the two times its text changed.
 
 | What a TV gets | |
 |---|---|
-| The release executable, `react-native-webos` | 20.2 MB (20,224,556 bytes), 32-bit ARM, Thumb-2 |
-| The release package of the example | 10.9 MB (10,947,530 bytes), 25.2 MB installed |
+| The release executable, `react-native-webos`, as packaged | 12.6 MB (12,582,640 bytes), 32-bit ARM, Thumb-2; 20.2 MB before its symbol table is removed |
+| The release package of the example | 9.3 MB (9,341,424 bytes), 17.6 MB installed |
 
 | Start, in the simulator | |
 |---|---|
@@ -67,6 +67,7 @@ one row every 50 ms unless it says otherwise.
 | A paragraph is laid out once, on the layout thread, and its view plays the recording (React Native's prepared text layout) | render 4.3 ms at the 95th percentile, 4.5 ms at worst; 5.7 ms mounting paragraphs in 20 s | 1.4 ms, 1.7 ms; 3.6 ms |
 | Frames are paced from when each might have started, not from a timer's late wake | 50.8 frames/s, the loop ticking at 51.9 Hz | 60.0 frames/s, 60.1 Hz |
 | A hidden app frees Skia's GPU caches, collects JavaScript garbage and returns freed heap | 173.6 MB of process memory after a scroll | 167.1 MB while hidden; 4.1 MB of it GPU caches by Skia's count |
+| The package carries the executable without its symbol table | a 10.9 MB package, 25.2 MB installed | 9.3 MB, 17.6 MB |
 | Skia keeps compiled shaders on disk between runs | 257 to 277 ms to the first frame without the cache | 257 to 272 ms with it: no difference here, where a shader compiles in no time. 35 programs, 356 KB on disk after visiting every example screen |
 
 The screenshots of the example's rendering screens were compared pixel for
