@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { basename } from 'node:path';
 import { findLlvmTools } from '../doctor/find-program.ts';
 import { runSync } from '../exec.ts';
+import { elfLoadBase } from './elf-load-base.ts';
 import type { LogEntry } from './log-line.ts';
 import {
   type CrashFrame,
@@ -33,7 +34,11 @@ function symbolize(
   library: string,
   frames: readonly CrashFrame[],
 ): (string | null)[] {
-  const addresses = frames.map((frame) => `0x${frame.offset}`);
+  const base = elfLoadBase(library) ?? 0n;
+  const addresses = frames.map((frame) => {
+    const linked = BigInt(`0x${frame.offset}`) + base;
+    return `0x${linked.toString(16)}`;
+  });
   try {
     const output = runSync(
       [symbolizer, '--obj', library, '--no-inlines', '--demangle', ...addresses],
@@ -46,9 +51,9 @@ function symbolize(
 }
 
 /**
- * Resolves frames in `library` (an unstripped build of the library the TV
- * runs) with `llvm-symbolizer`; frames in other libraries stay unnamed. Null
- * when the library or llvm-symbolizer is missing.
+ * Resolves frames in `library` (the executable the TV runs, with its symbols)
+ * with `llvm-symbolizer`; frames in other libraries stay unnamed. Null when
+ * the file or llvm-symbolizer is missing.
  */
 export function llvmFrameResolver(library: string): FrameResolver | null {
   const symbolizer = findLlvmTools()['llvm-symbolizer'];

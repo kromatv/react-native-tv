@@ -119,7 +119,7 @@ describe('rn-webos package', () => {
     );
   });
 
-  it('no longer takes the options of a signed, per-CPU Tizen build', async () => {
+  it('takes no option for a CPU, a platform floor or a signing identity: every build is the same', async () => {
     for (const flag of ['--arch', '--platform', '--profile', '--author', '--distributor']) {
       await expect(packageCommand.run([flag, 'x'], context)).rejects.toThrow();
     }

@@ -12,7 +12,7 @@ vi.mock('../exec.ts', async (importOriginal) => ({
   runSync: vi.fn(),
 }));
 
-const CRASH = 'Native crash: SIGSEGV\n#0 libreact-native-webos.so+0x10\n#1 libc.so.6+0x20';
+const CRASH = 'Native crash: SIGSEGV\n#0 react-native-webos+0x10\n#1 libc.so.6+0x20';
 
 let dir: string;
 let library: string;
@@ -31,7 +31,7 @@ function tools(symbolizer: string | null) {
 
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), 'rn-webos-symbolizer-'));
-  library = join(dir, 'libreact-native-webos.so');
+  library = join(dir, 'react-native-webos');
   writeFileSync(library, '');
   tools('/llvm/bin/llvm-symbolizer');
 });
@@ -42,6 +42,26 @@ afterEach(() => {
 });
 
 describe('llvmFrameResolver', () => {
+  it('asks for the addresses a fixed-address executable was linked with', () => {
+    const header = Buffer.alloc(52 + 32);
+    header.writeUInt32BE(0x7f454c46, 0);
+    header[4] = 1;
+    header[5] = 1;
+    header.writeUInt32LE(52, 28);
+    header.writeUInt16LE(32, 42);
+    header.writeUInt16LE(1, 44);
+    header.writeUInt32LE(1, 52);
+    header.writeUInt32LE(0x10000, 60);
+    writeFileSync(library, Buffer.concat([header, Buffer.alloc(16)]));
+    vi.mocked(runSync).mockReturnValue('main\n??:0:0\n\n');
+
+    llvmFrameResolver(library)?.([{ library: 'react-native-webos', offset: '612388' }]);
+
+    expect(runSync).toHaveBeenCalledWith(expect.arrayContaining(['0x622388']), {
+      timeoutMs: 10_000,
+    });
+  });
+
   it('names the frames in the library and leaves the others unnamed', () => {
     vi.mocked(runSync).mockReturnValue('rnwebos::boom()\n/src/Boom.cpp:3:0:0\n\n');
 
@@ -49,7 +69,7 @@ describe('llvmFrameResolver', () => {
 
     expect(
       resolve?.([
-        { library: 'libreact-native-webos.so', offset: '10' },
+        { library: 'react-native-webos', offset: '10' },
         { library: 'libc.so.6', offset: '20' },
       ]),
     ).toEqual(['rnwebos::boom() at /src/Boom.cpp:3', null]);
@@ -62,9 +82,9 @@ describe('llvmFrameResolver', () => {
   it('leaves a frame unnamed when the symbolizer knows nothing of it', () => {
     vi.mocked(runSync).mockReturnValue('??\n??:0:0\n');
 
-    expect(
-      llvmFrameResolver(library)?.([{ library: 'libreact-native-webos.so', offset: '1' }]),
-    ).toEqual([null]);
+    expect(llvmFrameResolver(library)?.([{ library: 'react-native-webos', offset: '1' }])).toEqual([
+      null,
+    ]);
   });
 
   it('leaves every frame unnamed when the symbolizer fails', () => {
@@ -72,9 +92,9 @@ describe('llvmFrameResolver', () => {
       throw new CommandError(['llvm-symbolizer'], 1, '');
     });
 
-    expect(
-      llvmFrameResolver(library)?.([{ library: 'libreact-native-webos.so', offset: '1' }]),
-    ).toEqual([null]);
+    expect(llvmFrameResolver(library)?.([{ library: 'react-native-webos', offset: '1' }])).toEqual([
+      null,
+    ]);
   });
 
   it('runs nothing for a report with no frame in the library', () => {

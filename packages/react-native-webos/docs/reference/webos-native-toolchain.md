@@ -225,6 +225,7 @@ the host) cross-compiled from macOS with the flags of "What this means".
 | clang warns `argument unused during compilation: '-static-libstdc++'` when it links a C program. CMake has one set of link flags for C and C++, so a configure check that links with `-Werror` fails: SDL's `HAVE_GCC_FVISIBILITY` did, and SDL was then compiled without `-fvisibility=hidden`. | B | `CMakeConfigureLog.yaml` |
 | lld writes only `DT_GNU_HASH` unless told `--hash-style=both`. | B | `llvm-readelf -d` |
 | The result: ELF32 ARM, `ET_EXEC`, `e_flags 0x5000200`, build attributes `7-A`, ARM v7 profile A, Thumb-2, VFPv3, NEONv1, half-precision, no `Tag_ABI_VFP_args`; interpreter `/lib/ld-linux.so.3`; needs `libm.so.6`, `librt.so.1`, `libz.so.1`, `libEGL.so.1`, `libGLESv2.so.2`, `libdl.so.2`, `libpthread.so.0`, `libc.so.6`, `ld-linux.so.3`. | B | `scripts/check-tv-binary.ts`, `llvm-readelf -h -l -d -A` |
+| A crash report's frames count from `dli_fbase`, which `dladdr` defines as the "base address at which shared object is loaded". For this `ET_EXEC` executable that is its first `LOAD` segment, linked at 0x10000, while `llvm-symbolizer --obj` reads an address as the file was linked: in the example's release build `main` is at 0x622388, and 0x612388, with or without `--relative-address`, names another function. `rn-webos` adds the segment's address to each offset (`src/logs/elf-load-base.ts`); a position-independent build, as the simulator's, has it at 0. | D, B | [man-dladdr]; `llvm-nm`, `llvm-readelf -l`, `llvm-symbolizer` 23.1.4 on `example/webos/app/react-native-webos` |
 | Its symbol versions: `GLIBC_2.4` for all but five symbols; `GLIBC_2.7` for `eventfd` and `mkostemp64`, `GLIBC_2.9` for `pipe2`, `GLIBC_2.12` for `pthread_setname_np` and `pthread_getname_np`; `ZLIB_1.2.3.4` for `inflateReset2`. No libstdc++ symbol is imported. | B | `scripts/check-tv-binary.ts` |
 
 ### SDL's webOS backend, cross-compiled
@@ -496,4 +497,5 @@ with `ares-novacom --forward`.
 [ose-cli]: https://www.webosose.org/docs/tools/sdk/cli/cli-user-guide/
 [gcc-abi]: https://gcc.gnu.org/onlinedocs/libstdc++/manual/abi.html
 [man-malloc-trim]: https://man7.org/linux/man-pages/man3/malloc_trim.3.html
+[man-dladdr]: https://man7.org/linux/man-pages/man3/dladdr.3.html
 [gcc12-status]: https://gcc.gnu.org/onlinedocs/gcc-12.2.0/libstdc++/manual/manual/status.html

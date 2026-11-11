@@ -3,7 +3,7 @@ import { symbolizeCrashReport } from './native-crash.ts';
 
 const REPORT = [
   'Native crash: SIGSEGV at 0x0',
-  '#0 libreact-native-webos.so+0x1a2b',
+  '#0 react-native-webos+0x1a2b',
   '#1 libc.so.6+0x40',
   '#2 0xdeadbeef',
 ].join('\n');
@@ -12,13 +12,13 @@ describe('symbolizeCrashReport', () => {
   it('appends the function each library frame is in', () => {
     const named = symbolizeCrashReport(REPORT, (frames) =>
       frames.map((frame) =>
-        frame.library === 'libreact-native-webos.so' ? 'rnwebos::boom() at Boom.cpp:3' : null,
+        frame.library === 'react-native-webos' ? 'rnwebos::boom() at Boom.cpp:3' : null,
       ),
     );
 
     expect(named.split('\n')).toEqual([
       'Native crash: SIGSEGV at 0x0',
-      '#0 libreact-native-webos.so+0x1a2b  rnwebos::boom() at Boom.cpp:3',
+      '#0 react-native-webos+0x1a2b  rnwebos::boom() at Boom.cpp:3',
       '#1 libc.so.6+0x40',
       '#2 0xdeadbeef',
     ]);
@@ -31,7 +31,7 @@ describe('symbolizeCrashReport', () => {
       return frames.map(() => null);
     });
 
-    expect(seen).toEqual(['libreact-native-webos.so@1a2b', 'libc.so.6@40']);
+    expect(seen).toEqual(['react-native-webos@1a2b', 'libc.so.6@40']);
   });
 
   it('leaves a message without frames untouched', () => {

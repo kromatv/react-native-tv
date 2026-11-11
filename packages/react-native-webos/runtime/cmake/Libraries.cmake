@@ -1,6 +1,6 @@
 # The app's native libraries: every package with React Native codegen specs, as
 # `rn-webos` lists them in RN_WEBOS_LIBRARIES_FILE (docs/native-modules.md). Each
-# becomes an OBJECT library linked into libreact-native-webos.so, so its
+# becomes an OBJECT library linked into the react-native-webos executable, so its
 # self-registering static initializers are kept: its codegen output, plus the
 # sources its webOS implementation's CMakeLists.txt adds to
 # ${RN_WEBOS_LIBRARY_TARGET}.

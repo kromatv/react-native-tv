@@ -27,7 +27,7 @@ describe('formatSize', () => {
 
 describe('formatPath', () => {
   it('prints a path inside the working directory relative to it', () => {
-    expect(formatPath('/app/webos/build/app.tpk', '/app')).toBe('webos/build/app.tpk');
+    expect(formatPath('/app/webos/app_1.0.0_arm.ipk', '/app')).toBe('webos/app_1.0.0_arm.ipk');
   });
 
   it('prints a path outside the working directory as it is', () => {
