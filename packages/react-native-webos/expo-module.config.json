@@ -1,0 +1,39 @@
+{
+  "platforms": ["devtools"],
+  "devtools": {
+    "webpageRoot": "devtools",
+    "serverEntryPoint": "./dist/devtools/devtools-server.js",
+    "cliExtensions": {
+      "description": "Run the app on a Samsung TV or in the Tizen simulator, find TVs, make a certificate",
+      "entryPoint": "dist/devtools/devtools-cli.js",
+      "commands": [
+        {
+          "name": "run-tv",
+          "title": "Run on TV",
+          "environments": ["cli", "mcp"],
+          "parameters": [
+            {
+              "name": "device",
+              "type": "text",
+              "description": "The TV's IP address; empty for the last one used"
+            }
+          ]
+        },
+        { "name": "run-simulator", "title": "Run in simulator", "environments": ["cli", "mcp"] },
+        { "name": "find-tvs", "title": "Find TVs", "environments": ["cli", "mcp"] },
+        {
+          "name": "create-certificate",
+          "title": "Create certificate",
+          "environments": ["cli", "mcp"],
+          "parameters": [
+            {
+              "name": "name",
+              "type": "text",
+              "description": "A name for the author certificate"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

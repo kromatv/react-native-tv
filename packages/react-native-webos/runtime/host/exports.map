@@ -1,0 +1,6 @@
+{
+  global:
+    rn_tizen_*;
+  local:
+    *;
+};

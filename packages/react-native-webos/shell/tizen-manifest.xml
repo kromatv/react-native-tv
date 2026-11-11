@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest package="{{package}}" version="{{version}}" api-version="{{apiVersion}}" xmlns="http://tizen.org/ns/packages">
+  <profile name="tv" />
+  <ui-application appid="{{package}}" exec="ReactNativeTizen.dll" multiple="false" nodisplay="false" taskmanage="true" type="dotnet" launch_mode="single" hw-acceleration="on">
+    <label>{{label}}</label>
+    <icon>icon.png</icon>{{applicationExtras}}
+  </ui-application>
+  <privileges>
+{{privileges}}
+  </privileges>
+</manifest>

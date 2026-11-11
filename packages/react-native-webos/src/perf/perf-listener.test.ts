@@ -1,0 +1,113 @@
+import { PassThrough } from 'node:stream';
+import { describe, expect, it } from 'vitest';
+import { painter } from '../paint.ts';
+import { PerfListener } from './perf-listener.ts';
+import { idleSample } from './perf-sample.fixtures.ts';
+
+const NINE_AM = new Date(2026, 10, 3, 9, 0, 5);
+
+function listenerFor(device: string | null, app: string | null = null) {
+  const out = new PassThrough();
+  const listener = new PerfListener({
+    paint: painter(false),
+    minimum: 'warn',
+    device,
+    app,
+    out,
+    now: () => NINE_AM,
+  });
+  const printed = () => String(out.read() ?? '');
+  return { listener, printed };
+}
+
+const perfEntry = (frames: number) => ({
+  level: 'debug' as const,
+  message: `perf ${JSON.stringify(idleSample({ frames }))}`,
+});
+
+describe('PerfListener', () => {
+  it('asks every app for perf samples', () => {
+    expect(listenerFor(null).listener.wantsPerf).toBe(true);
+  });
+
+  it('keeps and prints each sample', () => {
+    const { listener, printed } = listenerFor(null);
+
+    listener.onEntry(perfEntry(58), '192.168.1.50');
+
+    expect(listener.samples.map((sample) => sample.frames)).toEqual([58]);
+    expect(printed()).toContain('fps  58/60');
+  });
+
+  it('prints log lines at the minimum level or louder, and drops quieter ones', () => {
+    const { listener, printed } = listenerFor(null);
+
+    listener.onEntry({ level: 'info', message: 'Running "main"' }, '192.168.1.50');
+    listener.onEntry({ level: 'warn', message: 'Slow frame' }, '192.168.1.50');
+
+    expect(printed()).toBe('09:00:05 warn  Slow frame\n');
+  });
+
+  it('ignores another TV when one was named', () => {
+    const { listener, printed } = listenerFor('192.168.1.50');
+
+    listener.onEntry(perfEntry(60), '192.168.1.200');
+    listener.onConnect('192.168.1.200');
+
+    expect(listener.samples).toEqual([]);
+    expect(printed()).toBe('');
+  });
+});
+
+describe('PerfListener.firstSample', () => {
+  it('settles once a sample arrives', async () => {
+    const { listener } = listenerFor(null);
+
+    listener.onEntry({ level: 'warn', message: 'not yet' }, '192.168.1.50');
+    listener.onEntry(perfEntry(1), '192.168.1.50');
+
+    await expect(listener.firstSample).resolves.toBeUndefined();
+  });
+
+  it("says when the TV's app connects and disconnects, and nothing of another TV's", () => {
+    const { listener, printed } = listenerFor('192.168.1.50');
+
+    listener.onConnect('192.168.1.50');
+    const connected = printed();
+    listener.onDisconnect('192.168.1.50');
+    const disconnected = printed();
+    listener.onDisconnect('10.0.0.9');
+
+    expect(connected).toBe('The app connected from 192.168.1.50\n');
+    expect(disconnected).toBe('The app at 192.168.1.50 disconnected\n');
+    expect(printed()).toBe('');
+  });
+
+  it('reads the first app that names itself, and says another one connected too', () => {
+    const { listener, printed } = listenerFor(null);
+
+    listener.onConnect('192.168.1.50', 'tv.kroma.app');
+    const followed = printed();
+    listener.onConnect('192.168.1.50', 'org.rntizen.example');
+    const passedOver = printed();
+    listener.onConnect('192.168.1.50', 'org.rntizen.example');
+    const again = printed();
+    listener.onEntry(perfEntry(30), '192.168.1.50', 'tv.kroma.app');
+    listener.onEntry(perfEntry(5), '192.168.1.50', 'org.rntizen.example');
+
+    expect(listener.app).toBe('tv.kroma.app');
+    expect(listener.samples.map((sample) => sample.frames)).toEqual([30]);
+    expect(followed).toContain('tv.kroma.app connected from 192.168.1.50');
+    expect(passedOver).toContain('org.rntizen.example connected too, not read');
+    expect(again).toBe('');
+  });
+
+  it('reads only the app it was asked for', () => {
+    const { listener } = listenerFor(null, 'org.rntizen.example');
+
+    listener.onEntry(perfEntry(30), '192.168.1.50', 'tv.kroma.app');
+    listener.onEntry(perfEntry(5), '192.168.1.50', 'org.rntizen.example');
+
+    expect(listener.samples.map((sample) => sample.frames)).toEqual([5]);
+  });
+});

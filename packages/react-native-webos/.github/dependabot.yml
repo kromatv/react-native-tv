@@ -1,0 +1,38 @@
+version: 2
+updates:
+  - package-ecosystem: bun
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      dev-tools:
+        dependency-type: development
+    ignore:
+      - dependency-name: react-native
+        update-types: ['version-update:semver-major', 'version-update:semver-minor']
+      - dependency-name: react
+        update-types: ['version-update:semver-major', 'version-update:semver-minor']
+      - dependency-name: '@types/react'
+        update-types: ['version-update:semver-major', 'version-update:semver-minor']
+      - dependency-name: expo
+        update-types: ['version-update:semver-major']
+      - dependency-name: 'expo-*'
+        update-types: ['version-update:semver-major']
+      - dependency-name: babel-preset-expo
+        update-types: ['version-update:semver-major']
+      - dependency-name: react-native-svg
+        update-types: ['version-update:semver-major', 'version-update:semver-minor']
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci
+      include: scope
+    groups:
+      actions:
+        patterns: ['*']
