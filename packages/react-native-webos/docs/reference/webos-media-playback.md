@@ -447,8 +447,8 @@ The Tizen player's calls are in react-native-tizen's
 ### What is built
 
 In `runtime/host/expo/modules/video/` [RNW]. On a webOS 25 TV, HLS and Matroska
-H.264 played, in a box and fullscreen, with audio and subtitle tracks; pause,
-seek, HEVC, HDR and DRM were not tried there
+H.264 played, in a box and fullscreen, with audio and subtitle tracks, pause
+and seek; HEVC, HDR and DRM were not tried there with the example
 ([hardware-verification.md](hardware-verification.md)).
 
 | Part | File | Does |

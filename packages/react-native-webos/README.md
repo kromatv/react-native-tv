@@ -262,7 +262,7 @@ What stands behind each part:
 | The runtime: Hermes, Fabric, views, text, images, `TextInput`, remote keys, the pointer, Expo modules, react-native-svg | Runs in the simulator, the same source built for aarch64 Linux; 1008 C++ tests. The example's screens ran on a webOS 25 TV |
 | The TV executable | Cross-compiles on a Mac; its imports resolve on the firmware images of 14 releases, webOS 1.2 to 11.2 (`scripts/check-tv-binary.ts`). Starts on a webOS 25 TV |
 | The window, input and lifecycle on a TV | Written from SDL's webOS port and LG's and webOS OSE's sources; the simulator uses X11 instead. On a webOS 25 TV: the window, the remote with long presses, Back, relaunch, the pointer, the wheel and the on-screen keyboard |
-| Video | The player logic has tests against a fake of the TV's media service. On a webOS 25 TV: HLS and Matroska H.264 play, in a box and fullscreen, with audio and subtitle tracks. Pause, seek, HEVC, HDR and DRM were not tried there |
+| Video | The player logic has tests against a fake of the TV's media service. On a webOS 25 TV: HLS and Matroska H.264 play, in a box and fullscreen, with audio and subtitle tracks, pause and seek. HEVC, HDR and DRM were not tried there with the example |
 | `connect`, `install`, `run`, `key`, `logs` | Tests against a fake TV. Never run against a real one |
 | Publishing to LG's store | Not submitted. Seller Lounge's upload form took the package as a Native file, registered per chipset, and saved it as a draft; LG's guide reserves native files for sellers with a contract ([reference](docs/reference/webos-tv-platform.md#12-who-may-publish-a-native-app)) |
 
@@ -273,6 +273,9 @@ Known gaps:
   remote events.
 - The floor is webOS TV 4 (2018 models). Earlier releases set the permissions
   of an app's directory wrong.
+- A view that gets a new `VideoPlayer` while its old one is still loaded shows
+  no picture until the new player loads again: seen on a webOS 25 TV. Release
+  the old player first, or call `replace()` on the one the view has.
 - `expo prebuild`, `expo export --platform webos` and `expo run:webos` do not
   exist: Expo's CLI has no way to add a platform. `rn-webos package` and
   `rn-webos run` stand in.
