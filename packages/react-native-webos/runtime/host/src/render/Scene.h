@@ -21,7 +21,9 @@ struct FrameTiming {
   std::chrono::steady_clock::time_point started;
   /// Walking the views and recording Skia's draws.
   std::chrono::nanoseconds draw;
-  /// Flushing to the GPU and swapping, which waits for the display.
+  /// Handing the draws to the GPU.
+  std::chrono::nanoseconds flush;
+  /// Swapping, which waits for the display where it paces the swap.
   std::chrono::nanoseconds present;
 };
 
@@ -53,6 +55,8 @@ class Scene final {
 
   /// Something changed: the scene is drawn at the next frame.
   void invalidate();
+  /// Whether something changed since the last `render`.
+  bool isInvalid() const;
 
   /// Adds `layer` above every layer of the same or a lower order.
   void addLayer(SceneLayer &layer, int order);

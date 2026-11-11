@@ -44,6 +44,7 @@ struct MainLoop::State {
   std::map<Id, FrameCallback> frameCallbacks;
   Renderer renderer;
   EventHandler eventHandler;
+  WaitObserver waitObserver;
   Clock::duration framePeriod{std::chrono::nanoseconds(16'666'667)};
   Clock::time_point lastFrame{};
 
@@ -109,7 +110,12 @@ struct MainLoop::State {
   void pumpEvents(int timeoutMs) {
     SDL_Event event;
     waking.store(false);
-    if (timeoutMs != 0 && SDL_WaitEventTimeout(&event, timeoutMs)) dispatch(event);
+    if (timeoutMs != 0) {
+      if (waitObserver) waitObserver(true);
+      const bool received = SDL_WaitEventTimeout(&event, timeoutMs);
+      if (waitObserver) waitObserver(false);
+      if (received) dispatch(event);
+    }
     while (SDL_PollEvent(&event)) dispatch(event);
   }
 };
@@ -176,6 +182,10 @@ void MainLoop::setRenderer(Renderer renderer) {
 
 void MainLoop::setEventHandler(EventHandler handler) {
   state_->eventHandler = std::move(handler);
+}
+
+void MainLoop::setWaitObserver(WaitObserver observer) {
+  state_->waitObserver = std::move(observer);
 }
 
 MainLoop::Clock::duration MainLoop::framePeriod() const {

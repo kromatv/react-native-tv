@@ -23,6 +23,9 @@ class MainLoop final {
   /// Draws the window when it changed. True when it presented a frame.
   using Renderer = std::function<bool()>;
   using EventHandler = std::function<void(const SDL_Event &event)>;
+  /// Told when the loop starts waiting for something to do (true) and when it
+  /// wakes (false): what `rn-webos perf` adds the loop's load up from.
+  using WaitObserver = std::function<void(bool waiting)>;
 
   static MainLoop &get();
 
@@ -53,6 +56,7 @@ class MainLoop final {
 
   void setRenderer(Renderer renderer);
   void setEventHandler(EventHandler handler);
+  void setWaitObserver(WaitObserver observer);
 
   /// Runs what is due without waiting: events, posted tasks, timers. With
   /// `frame`, also one frame's callbacks and the renderer. For tests, and for
