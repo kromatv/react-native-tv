@@ -1,87 +1,133 @@
 #pragma once
 
-#include "SvgGradient.h"
+#include "SvgFont.h"
 #include "SvgPaint.h"
-#include "SvgPath.h"
+
+#include "include/core/SkCanvas.h"
+#include "include/core/SkMatrix.h"
+#include "include/core/SkPath.h"
+#include "include/core/SkPoint.h"
+#include "include/core/SkRect.h"
+#include "include/core/SkSize.h"
 
 #include <optional>
+#include <span>
+#include <string>
+#include <string_view>
+#include <unordered_map>
 #include <vector>
 
 namespace rnwebos::svg {
 
-/// Where a node draws: the transform to the `<Svg>` view's pixels, the opacity
-/// and paint it inherits, the color `currentColor` stands for, the size
-/// percentages resolve against (the viewBox, else the view), and the gradients
-/// a `url(#id)` paint names.
-struct DrawContext {
-  Affine transform;
-  double opacity{1};
-  Paint paint;
-  Rgba currentColor;
-  double viewportWidth{0};
-  double viewportHeight{0};
-  const GradientDefinitions *gradients{nullptr};
+class Node;
 
-  double viewportDiagonal() const;
-};
+/// The named nodes of one `<Svg>`: what `url(#id)` and `href` resolve to. The
+/// first node with a name wins, as `getElementById` picks.
+class Definitions {
+ public:
+  explicit Definitions(const Node &root);
 
-/// One shape ready for Evas VG: its path in the view's pixels, and its colors
-/// or gradients with every opacity on the way down already applied.
-struct DrawnShape {
-  Path path;
-  std::optional<Rgba> fill;
-  std::optional<Rgba> stroke;
-  std::optional<GradientPaint> fillGradient;
-  std::optional<GradientPaint> strokeGradient;
-  double strokeWidth{0};
-  int strokeLinecap{0};
-  int strokeLinejoin{0};
-};
+  const Node *find(std::string_view name) const;
 
-using Drawing = std::vector<DrawnShape>;
-
-/// What every react-native-svg node carries besides its paint.
-struct NodeAttributes {
-  double opacity{1};
-  Affine matrix;
-  bool hidden{false};
-  std::optional<Rgba> color;
-};
-
-template <typename Props>
-NodeAttributes readNodeAttributes(const Props &props) {
-  NodeAttributes node{.opacity = props.opacity, .hidden = props.display == "none", .color = rgbaFromColor(props.color)};
-  if (props.matrix.size() == 6) {
-    node.matrix = {
-        .a = props.matrix[0],
-        .b = props.matrix[1],
-        .c = props.matrix[2],
-        .d = props.matrix[3],
-        .e = props.matrix[4],
-        .f = props.matrix[5],
-    };
+  template <typename NodeType>
+  const NodeType *findAs(std::string_view name) const {
+    return dynamic_cast<const NodeType *>(find(name));
   }
-  return node;
-}
 
-template <typename Props>
-Paint readPaint(const Props &props) {
-  Paint paint{
-      .fill = brushFromProp(props.fill),
-      .fillOpacity = props.fillOpacity,
-      .fillRule = props.fillRule,
-      .stroke = brushFromProp(props.stroke),
-      .strokeOpacity = props.strokeOpacity,
-      .strokeLinecap = props.strokeLinecap,
-      .strokeLinejoin = props.strokeLinejoin,
-      .listed = paintAttributesFromPropList(props.propList),
-  };
-  if (const auto width = lengthFromProp(props.strokeWidth)) paint.strokeWidth = *width;
-  if (props.strokeMiterlimit > 0) paint.strokeMiterlimit = props.strokeMiterlimit;
-  return paint;
-}
+ private:
+  void collect(const Node &node);
 
-/// Turns a shape's path, in its own user units, into what Evas VG draws.
-DrawnShape drawnShape(const Path &path, const DrawContext &context);
+  std::unordered_map<std::string_view, const Node *> nodes_;
+};
+
+/// What a percentage that is neither a width nor a height resolves against:
+/// SVG's normalized diagonal of the viewport.
+float diagonalOf(SkSize viewport);
+
+/// Where the next glyphs of a `<Text>` go.
+struct TextCursor {
+  SkPoint pen;
+};
+
+/// What a node draws with: the paint, color and font it inherits, and what the
+/// `<Svg>` gives every node.
+struct RenderContext {
+  Paint paint;
+  SkColor4f currentColor{0, 0, 0, 1};
+  Font font;
+  /// Set inside a `<Text>`, whose spans share one pen.
+  TextCursor *text{nullptr};
+  /// The size percentages resolve against: the viewBox's, else the view's.
+  SkSize viewport;
+  /// An opacity the node's one paint applies itself, which spares a layer.
+  float alpha{1};
+  const Definitions *definitions{nullptr};
+  /// How many references deep the drawing is, which ends a cycle of them.
+  int depth{0};
+
+  float viewportDiagonal() const;
+  /// Whether a node may follow one more reference from here.
+  bool canFollowReference() const;
+};
+
+/// One react-native-svg element, with what every element carries. Nodes form
+/// the tree an `<Svg>` draws; a node neither owns its children nor its parent.
+class Node {
+ public:
+  Node() = default;
+  virtual ~Node();
+
+  Node(const Node &) = delete;
+  Node &operator=(const Node &) = delete;
+
+  std::string name;
+  SkMatrix matrix;
+  float opacity{1};
+  bool hidden{false};
+  std::optional<SkColor4f> color;
+  std::string clipPath;
+  int clipRule{0};
+  std::string mask;
+  Paint paint;
+
+  Node *parent() const;
+  std::span<Node *const> children() const;
+  /// Replaces the children, in drawing order. A node has one parent at most.
+  void setChildren(std::vector<Node *> children);
+  /// Reports to the root of the tree that the subtree draws something else now.
+  void invalidate();
+
+  /// Whether the node is drawn only through a reference to it, never in place.
+  virtual bool definesOnly() const;
+  /// Draws the subtree where `parent` draws its children, unless it is hidden.
+  void render(SkCanvas &canvas, const RenderContext &parent) const;
+  /// How many paints the subtree lays over each other in `parent`: 0, 1, or 2
+  /// for more.
+  int paintCount(const RenderContext &parent) const;
+  /// The box around what the subtree fills, in the user space its content is
+  /// drawn in. Empty when it fills nothing.
+  SkRect bounds(const RenderContext &parent) const;
+  /// Adds what the subtree fills, through `transform`, to `outlines`: the area
+  /// a `<ClipPath>` holding the node keeps.
+  void appendOutlines(std::vector<SkPath> &outlines, const SkMatrix &transform, const RenderContext &parent) const;
+
+ protected:
+  virtual void draw(SkCanvas &canvas, const RenderContext &context) const;
+  virtual int contentPaintCount(const RenderContext &context) const;
+  virtual SkRect contentBounds(const RenderContext &context) const;
+  virtual void appendContentOutlines(
+      std::vector<SkPath> &outlines, const SkMatrix &transform, const RenderContext &context) const;
+  /// Adds what the node hands down besides paint and color.
+  virtual void inherit(RenderContext &context) const;
+  /// Runs on the root of a tree when something in it changed.
+  virtual void changed();
+
+ private:
+  RenderContext inherited(const RenderContext &parent) const;
+  bool skipped() const;
+
+  Node *parent_{nullptr};
+  std::vector<Node *> children_;
+};
 
 } // namespace rnwebos::svg

@@ -1,7 +1,11 @@
 #include "PathData.h"
 
+#include "include/core/SkPathBuilder.h"
+#include "include/core/SkPathTypes.h"
+
 #include <cctype>
 #include <charconv>
+#include <cmath>
 #include <optional>
 
 namespace rnwebos::svg {
@@ -87,28 +91,40 @@ class Scanner {
   std::size_t position_{0};
 };
 
-class PathBuilder {
- public:
-  explicit PathBuilder(std::string_view data) : scanner_(data) {}
+struct Position {
+  double x{0};
+  double y{0};
 
-  Path build() {
+  bool operator==(const Position &) const = default;
+};
+
+SkPoint toPoint(Position position) {
+  return {static_cast<float>(position.x), static_cast<float>(position.y)};
+}
+
+class PathReader {
+ public:
+  explicit PathReader(std::string_view data) : scanner_(data) {}
+
+  SkPath read() {
     while (!scanner_.atEnd()) {
       const auto command = scanner_.command();
       if (!command.has_value() || !apply(*command)) break;
     }
-    return std::move(path_);
+    return path_.detach();
   }
 
  private:
   bool apply(char command) {
     const bool relative = std::islower(static_cast<unsigned char>(command)) != 0;
     const auto upper = static_cast<char>(std::toupper(static_cast<unsigned char>(command)));
+    if (!started_ && upper != 'M') return false;
     if (upper == 'Z') {
       path_.close();
+      current_ = start_;
       lastControl_.reset();
       return true;
     }
-    if (path_.empty() && upper != 'M') return false;
     bool first = true;
     do {
       if (!segment(upper == 'M' && !first ? 'L' : upper, relative)) return false;
@@ -117,18 +133,17 @@ class PathBuilder {
     return true;
   }
 
-  std::optional<Point> point(bool relative) {
+  std::optional<Position> point(bool relative) {
     const auto x = scanner_.number();
     const auto y = x.has_value() ? scanner_.number() : std::nullopt;
     if (!y.has_value()) return std::nullopt;
-    const auto origin = relative ? path_.current() : Point{};
-    return Point{.x = origin.x + *x, .y = origin.y + *y};
+    const auto origin = relative ? current_ : Position{};
+    return Position{.x = origin.x + *x, .y = origin.y + *y};
   }
 
-  Point reflectedControl(char expected) const {
-    const auto current = path_.current();
-    if (!lastControl_ || lastKind_ != expected) return current;
-    return {.x = 2 * current.x - lastControl_->x, .y = 2 * current.y - lastControl_->y};
+  Position reflectedControl(char expected) const {
+    if (!lastControl_ || lastKind_ != expected) return current_;
+    return {.x = 2 * current_.x - lastControl_->x, .y = 2 * current_.y - lastControl_->y};
   }
 
   bool segment(char kind, bool relative) {
@@ -154,29 +169,36 @@ class PathBuilder {
   }
 
   bool moveSegment(bool relative) {
-    const auto to = point(relative && !path_.empty());
+    const auto to = point(relative);
     if (!to.has_value()) return false;
-    path_.moveTo(*to);
+    path_.moveTo(toPoint(*to));
+    current_ = *to;
+    start_ = *to;
+    started_ = true;
     lastControl_.reset();
     return true;
+  }
+
+  void lineTo(Position to) {
+    path_.lineTo(toPoint(to));
+    current_ = to;
+    lastControl_.reset();
   }
 
   bool lineSegment(bool relative) {
     const auto to = point(relative);
     if (!to.has_value()) return false;
-    path_.lineTo(*to);
-    lastControl_.reset();
+    lineTo(*to);
     return true;
   }
 
   bool axisSegment(bool horizontal, bool relative) {
     const auto value = scanner_.number();
     if (!value.has_value()) return false;
-    auto to = path_.current();
+    auto to = current_;
     auto &coordinate = horizontal ? to.x : to.y;
     coordinate = relative ? coordinate + *value : *value;
-    path_.lineTo(to);
-    lastControl_.reset();
+    lineTo(to);
     return true;
   }
 
@@ -185,7 +207,8 @@ class PathBuilder {
     const auto control2 = control1.has_value() ? point(relative) : std::nullopt;
     const auto to = control2.has_value() ? point(relative) : std::nullopt;
     if (!to.has_value()) return false;
-    path_.cubicTo(*control1, *control2, *to);
+    path_.cubicTo(toPoint(*control1), toPoint(*control2), toPoint(*to));
+    current_ = *to;
     lastControl_ = control2;
     lastKind_ = 'C';
     return true;
@@ -195,7 +218,8 @@ class PathBuilder {
     const auto control = smooth ? std::optional(reflectedControl('Q')) : point(relative);
     const auto to = control.has_value() ? point(relative) : std::nullopt;
     if (!to.has_value()) return false;
-    path_.quadTo(*control, *to);
+    path_.quadTo(toPoint(*control), toPoint(*to));
+    current_ = *to;
     lastControl_ = control;
     lastKind_ = 'Q';
     return true;
@@ -209,21 +233,32 @@ class PathBuilder {
     const auto sweep = largeArc.has_value() ? scanner_.flag() : std::nullopt;
     const auto to = sweep.has_value() ? point(relative) : std::nullopt;
     if (!to.has_value()) return false;
-    path_.arcTo(*rx, *ry, *rotation, *largeArc, *sweep, *to);
+    // SVG leaves out an arc that ends where it starts; Skia's arcTo would add a line there.
+    if (*to == current_) return true;
+    path_.arcTo(
+        {static_cast<float>(std::abs(*rx)), static_cast<float>(std::abs(*ry))},
+        static_cast<float>(*rotation),
+        *largeArc ? SkPathBuilder::kLarge_ArcSize : SkPathBuilder::kSmall_ArcSize,
+        *sweep ? SkPathDirection::kCW : SkPathDirection::kCCW,
+        toPoint(*to));
+    current_ = *to;
     lastControl_.reset();
     return true;
   }
 
   Scanner scanner_;
-  Path path_;
-  std::optional<Point> lastControl_;
+  SkPathBuilder path_;
+  Position current_;
+  Position start_;
+  bool started_{false};
+  std::optional<Position> lastControl_;
   char lastKind_{0};
 };
 
 } // namespace
 
-Path parsePathData(std::string_view data) {
-  return PathBuilder(data).build();
+SkPath parsePathData(std::string_view data) {
+  return PathReader(data).read();
 }
 
 } // namespace rnwebos::svg

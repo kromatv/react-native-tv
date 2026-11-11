@@ -21,15 +21,15 @@ bool SvgViewBox::present() const {
   return !align.empty() && width > 0 && height > 0;
 }
 
-Affine viewBoxTransform(const SvgViewBox &viewBox, double width, double height) {
-  if (!viewBox.present()) return {};
-  double scaleX = width / viewBox.width;
-  double scaleY = height / viewBox.height;
+SkMatrix viewBoxTransform(const SvgViewBox &viewBox, float width, float height) {
+  if (!viewBox.present()) return SkMatrix::I();
+  float scaleX = width / viewBox.width;
+  float scaleY = height / viewBox.height;
 
   if (viewBox.meetOrSlice == kNone) {
-    const double scale = std::min(scaleX, scaleY);
-    double translateX = -viewBox.minX * scaleX;
-    double translateY = -viewBox.minY * scaleY;
+    const float scale = std::min(scaleX, scaleY);
+    float translateX = -viewBox.minX * scaleX;
+    float translateY = -viewBox.minY * scaleY;
     if (scale > 1) {
       translateX -= (width / scale - viewBox.width) / 2;
       translateY -= (height / scale - viewBox.height) / 2;
@@ -37,7 +37,7 @@ Affine viewBoxTransform(const SvgViewBox &viewBox, double width, double height) 
       translateX -= (width - viewBox.width * scale) / 2;
       translateY -= (height - viewBox.height * scale) / 2;
     }
-    return Affine::translation(translateX, translateY) * Affine::scaling(scale, scale);
+    return SkMatrix::ScaleTranslate(scale, scale, translateX, translateY);
   }
 
   if (viewBox.align != "none" && viewBox.meetOrSlice == kMeet) {
@@ -48,13 +48,13 @@ Affine viewBoxTransform(const SvgViewBox &viewBox, double width, double height) 
     scaleY = std::max(scaleX, scaleY);
     scaleX = scaleY;
   }
-  double translateX = -viewBox.minX * scaleX;
-  double translateY = -viewBox.minY * scaleY;
+  float translateX = -viewBox.minX * scaleX;
+  float translateY = -viewBox.minY * scaleY;
   if (contains(viewBox.align, "xMid")) translateX += (width - viewBox.width * scaleX) / 2;
   if (contains(viewBox.align, "xMax")) translateX += width - viewBox.width * scaleX;
   if (contains(viewBox.align, "YMid")) translateY += (height - viewBox.height * scaleY) / 2;
   if (contains(viewBox.align, "YMax")) translateY += height - viewBox.height * scaleY;
-  return Affine::translation(translateX, translateY) * Affine::scaling(scaleX, scaleY);
+  return SkMatrix::ScaleTranslate(scaleX, scaleY, translateX, translateY);
 }
 
 } // namespace rnwebos::svg
