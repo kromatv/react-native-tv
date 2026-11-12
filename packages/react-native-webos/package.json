@@ -29,7 +29,9 @@
     "rn-webos": "dist/cli/main.js"
   },
   "reactNativeTvPlatform": {
-    "metro": "./metro"
+    "metro": "./metro",
+    "platform": "webos",
+    "cli": "rn-webos"
   },
   "exports": {
     "./metro": {

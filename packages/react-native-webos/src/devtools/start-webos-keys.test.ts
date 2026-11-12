@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { z } from 'zod';
 import type { KnownDevice } from '../webos/known-devices.ts';
 import { FakeStdin } from './expo-stdin.fixtures.ts';
 import { addWebOSKeys, startWebOSKeys, type ExpoTerminal } from './start-webos-keys.ts';
+import { tvStartRegistry } from './tv-start-registry.ts';
 
 function terminal(
   stdin: FakeStdin,
@@ -19,6 +21,7 @@ function terminal(
     env: { NO_COLOR: '1' },
     dir: '/jobs',
     finder: { knownDevices: async () => [], scan: async () => [] },
+    registry: tvStartRegistry({}),
     ...overrides,
     text: () => text,
   };
@@ -57,6 +60,60 @@ describe('startWebOSKeys', () => {
 });
 
 describe('addWebOSKeys', () => {
+  it('registers what it can open, for a package that offers one key for every TV platform', async () => {
+    const stdin = new FakeStdin();
+    const shown = terminal(stdin);
+    addWebOSKeys(shown);
+    const provider = z
+      .object({
+        platform: z.string(),
+        package: z.string(),
+        targets: z.custom<() => Promise<unknown>>((value) => typeof value === 'function'),
+        open: z.custom<(target: string | null) => Promise<void>>(
+          (value) => typeof value === 'function',
+        ),
+      })
+      .parse(shown.registry?.providers.get('webos'));
+
+    expect(provider.platform).toBe('webos');
+    expect(provider.package).toBe('@kromatv/react-native-webos');
+    expect(await provider.targets()).toEqual([{ target: 'simulator', label: 'webOS simulator' }]);
+    await provider.open(null);
+    expect(shown.text()).toContain('No TV in Developer Mode answered');
+  });
+
+  it('adds no key when the keys are claimed, and still opens what it is asked to', async () => {
+    const stdin = new FakeStdin();
+    const registry = tvStartRegistry({});
+    const never = {
+      timeoutMs: 0,
+      intervalMs: 0,
+      status: async () => null,
+      now: () => 0,
+      sleep: async () => undefined,
+    };
+    const shown = terminal(stdin, { registry, poll: never });
+    addWebOSKeys(shown);
+    registry.claimed = true;
+    await readingKeys(stdin);
+
+    stdin.press('t');
+    await settle();
+    expect(shown.text()).toBe('');
+
+    const provider = z
+      .object({
+        open: z.custom<(target: string | null) => Promise<void>>(
+          (value) => typeof value === 'function',
+        ),
+      })
+      .parse(registry.providers.get('webos'));
+    await provider.open('10.0.0.7');
+    expect(shown.text()).toBe(
+      '› The dev server did not answer, so the app was not opened on webOS. Press t again once it runs.\n',
+    );
+  });
+
   it('prints its usage line, and says what to do when t finds no TV', async () => {
     const stdin = new FakeStdin();
     const shown = terminal(stdin);
