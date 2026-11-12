@@ -8,7 +8,7 @@
 namespace rnwebos::expo {
 
 void MediaPlayer::backendLoaded(const LoadedMedia &media) {
-  if (phase_ == Phase::Idle) return;
+  if (phase_ == Phase::Idle || !PipelineClaims::shared().holds(*this)) return;
   timeline_.duration = media.duration;
   video_ = media.video;
   playerLog(

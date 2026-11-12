@@ -26,7 +26,12 @@ void unloadMedia(
     std::shared_ptr<void> plane,
     int player);
 
-/// Runs `task` once no unload is under way: now, when there is none.
+/// Holds every later load back until the function it returns is called, or a
+/// while has passed: for a `load` the pipeline has not answered yet, whose
+/// media cannot be unloaded before its id is known.
+std::function<void()> holdLoads(int player);
+
+/// Runs `task` once no unload is under way and no load is unanswered: now, when there is none.
 void afterUnloads(std::function<void()> task);
 
 } // namespace rnwebos::expo

@@ -5,6 +5,7 @@ namespace rnwebos::expo {
 void MediaPlayer::present(const VideoView *owner, const Presentation &presentation) {
   display_.owner = owner;
   display_.presentation = presentation;
+  PipelineClaims::shared().setShown(*this, true);
   applyDisplay();
 }
 
@@ -12,6 +13,7 @@ void MediaPlayer::withdraw(const VideoView *owner) {
   if (owner != display_.owner) return;
   display_.owner = nullptr;
   display_.presentation.reset();
+  PipelineClaims::shared().setShown(*this, false);
   applyDisplay();
 }
 

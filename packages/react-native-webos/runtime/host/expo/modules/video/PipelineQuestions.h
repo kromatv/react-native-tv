@@ -45,5 +45,7 @@ inline constexpr std::chrono::milliseconds kTrackSelectedWait{1000};
 
 /// How long a load waits for the `unloadCompleted` of the media before it.
 inline constexpr std::chrono::milliseconds kUnloadWait{1500};
+/// How long a load waits for the reply to the `load` before it, which names the media to unload.
+inline constexpr std::chrono::milliseconds kLoadReplyWait{2000};
 
 } // namespace rnwebos::expo::pipeline

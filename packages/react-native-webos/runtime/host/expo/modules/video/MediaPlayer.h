@@ -1,5 +1,6 @@
 #pragma once
 
+#include "PipelineClaims.h"
 #include "PlayerBackend.h"
 #include "PlayerTimer.h"
 #include "VideoFit.h"
@@ -47,8 +48,11 @@ struct Presentation {
 /// pipeline does not do by itself. It opens a source, keeps one seek in
 /// flight and the newest one waiting, holds play and pause until the source
 /// is ready, loops, reports progress at the interval asked for, and places
-/// the backend's video plane where the view that shows it is. Main thread only.
-class MediaPlayer final : public PlayerBackendListener {
+/// the backend's video plane where the view that shows it is. It loads only
+/// while it holds the pipeline (PipelineClaims): when another player takes it,
+/// this one unloads and reports loading, and opens its source again where it
+/// was once the pipeline is back. Main thread only.
+class MediaPlayer final : public PlayerBackendListener, private PipelineClaimant {
  public:
   using BackendFactory = std::function<std::unique_ptr<PlayerBackend>(PlayerBackendListener &listener, int number)>;
 
@@ -139,6 +143,9 @@ class MediaPlayer final : public PlayerBackendListener {
     int videoWidth{0};
     int videoHeight{0};
   };
+
+  void pipelineGranted() override;
+  void pipelineTaken() override;
 
   void fail(const std::string &message);
   void setStatus(PlayerStatus status, const std::string &error = {});

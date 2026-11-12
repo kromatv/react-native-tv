@@ -273,9 +273,11 @@ Known gaps:
   remote events.
 - The floor is webOS TV 4 (2018 models). Earlier releases set the permissions
   of an app's directory wrong.
-- A view that gets a new `VideoPlayer` while its old one is still loaded shows
-  no picture until the new player loads again: seen on a webOS 25 TV. Release
-  the old player first, or call `replace()` on the one the view has.
+- One `VideoPlayer` loads at a time, since a TV showed no picture for a video
+  loaded beside another. The player a view shows goes first: a player no view
+  shows reports `loading` until then, so it cannot preload behind a video on
+  screen, and the one it replaces loads again where it was when it is shown
+  again.
 - `expo prebuild`, `expo export --platform webos` and `expo run:webos` do not
   exist: Expo's CLI has no way to add a platform. `rn-webos package` and
   `rn-webos run` stand in.

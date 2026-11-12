@@ -14,7 +14,9 @@ MediaPlayer::MediaPlayer(std::weak_ptr<PlayerObserver> observer, int number, Bac
 
 // Not released here: a player that reaches its end unreleased was dropped by
 // the closing main loop, and unloading through that loop would call back into it.
-MediaPlayer::~MediaPlayer() = default;
+MediaPlayer::~MediaPlayer() {
+  PipelineClaims::shared().forget(*this);
+}
 
 void MediaPlayer::open(std::string_view uri, const SourceHeaders &headers) {
   if (released_) return;
@@ -40,6 +42,7 @@ void MediaPlayer::open(std::string_view uri, const SourceHeaders &headers) {
   applyDisplay();
   if (uri.empty()) {
     backend_->unload();
+    PipelineClaims::shared().drop(*this);
     setStatus(PlayerStatus::Idle);
   }
 }
@@ -48,7 +51,35 @@ void MediaPlayer::prepare() {
   if (!backend_ || phase_ != Phase::Idle || source_.uri.empty()) return;
   phase_ = Phase::Loading;
   setStatus(PlayerStatus::Loading);
+  if (auto &claims = PipelineClaims::shared(); claims.holds(*this)) {
+    backend_->load(source_);
+  } else {
+    claims.claim(*this, display_.owner != nullptr);
+  }
+}
+
+void MediaPlayer::pipelineGranted() {
+  if (phase_ != Phase::Loading) return;
+  playerLog(number_, "has the pipeline", LogLevel::Debug);
   backend_->load(source_);
+}
+
+void MediaPlayer::pipelineTaken() {
+  if (phase_ == Phase::Idle) {
+    backend_->unload();
+    return;
+  }
+  const auto at = position();
+  playerLog(number_, std::format("gives the pipeline to another player at {} s", decimal(at)));
+  progress_.cancel();
+  phase_ = Phase::Loading;
+  seek_.inFlight = false;
+  seek_.pending = at > 0 ? std::optional(at) : std::nullopt;
+  askedPlaying_ = false;
+  awaitedPlaying_.reset();
+  backend_->unload();
+  setStatus(PlayerStatus::Loading);
+  setPlaying(false);
 }
 
 void MediaPlayer::play() {
@@ -158,6 +189,7 @@ void MediaPlayer::fail(const std::string &message) {
   progress_.cancel();
   phase_ = Phase::Idle;
   if (backend_) backend_->unload();
+  PipelineClaims::shared().drop(*this);
   setStatus(PlayerStatus::Error, message);
   setPlaying(false);
 }
@@ -187,6 +219,7 @@ void MediaPlayer::release() {
   backend_->unload();
   backend_->plane().hide();
   backend_.reset();
+  PipelineClaims::shared().drop(*this);
   playerLog(number_, "released");
   notifyDisplayChange();
 }

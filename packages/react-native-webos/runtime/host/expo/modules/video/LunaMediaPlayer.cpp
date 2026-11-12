@@ -30,6 +30,11 @@ std::string loggable(folly::dynamic payload) {
   return folly::toJson(payload);
 }
 
+std::string mediaIdOf(const folly::dynamic &reply) {
+  const auto *id = reply.isObject() ? reply.get_ptr("mediaId") : nullptr;
+  return id != nullptr && id->isString() ? id->getString() : std::string();
+}
+
 } // namespace
 
 LunaMediaPlayer::LunaMediaPlayer(
@@ -100,10 +105,19 @@ void LunaMediaPlayer::start(const MediaSource &source) {
   textTrack_ = -1;
   const auto payload = pipeline::loadPayload(source, appId_, plane_->windowId(), number_);
   playerLog(number_, "load " + loggable(payload));
-  auto onReply = [this, alive = std::weak_ptr<int>(alive_), generation = generation_](const folly::dynamic &reply) {
-    if (!alive.expired()) onLoadReply(reply, generation);
+  const auto answered = holdLoads(number_);
+  // A player destroyed before the answer never learns its media: the answer unloads it without the player.
+  auto onReply = [this, alive = std::weak_ptr<int>(alive_), generation = generation_, answered, bus = &bus_,
+                  plane = plane_, number = number_](const folly::dynamic &reply) {
+    if (!alive.expired()) {
+      onLoadReply(reply, generation);
+    } else if (const auto mediaId = mediaIdOf(reply); !mediaId.empty()) {
+      unloadMedia(*bus, mediaId, nullptr, nullptr, plane, number);
+    }
+    answered();
   };
   if (!bus_.call(std::string(kService) + "load", payload, std::move(onReply))) {
+    answered();
     later([this, generation = generation_] {
       if (generation == generation_) fail("The TV's media service did not take the load");
     });
@@ -112,8 +126,7 @@ void LunaMediaPlayer::start(const MediaSource &source) {
 
 void LunaMediaPlayer::onLoadReply(const folly::dynamic &reply, unsigned generation) {
   const auto answer = parseLunaMediaEvent(reply);
-  const auto *id = reply.isObject() ? reply.get_ptr("mediaId") : nullptr;
-  const auto mediaId = id != nullptr && id->isString() ? id->getString() : std::string();
+  const auto mediaId = mediaIdOf(reply);
   if (generation != generation_) {
     if (!mediaId.empty()) unloadMedia(bus_, mediaId, nullptr, nullptr, plane_, number_);
     return;

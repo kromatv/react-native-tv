@@ -140,6 +140,10 @@ all did nothing. The lab's Reboot fixed it.
 - Chipsets other than `o24n` and `k24`, 1280x720 TVs and webOS before 24.
 - Where an app's data must live to survive an update: on TV 2 it was gone after
   a re-install by the lab, which may remove the app first.
-- Why a second player on a view plays without a picture, and what the crash
-  report after a re-install was: both need the TV's log.
+- Why a second player on a view played without a picture, which needs the
+  TV's log. The host now unloads the first player's media before it loads the
+  second's ([webos-media-playback.md](webos-media-playback.md), "What is
+  built"): that order showed a picture on TV 1 every time, and the swap itself
+  has not been run on a TV since.
+- What the crash report after a re-install was.
 - `connect`, `install`, `run`, `key`, `logs`, `perf` and `screenshot`.

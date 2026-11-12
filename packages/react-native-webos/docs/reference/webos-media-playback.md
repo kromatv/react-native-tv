@@ -12,9 +12,11 @@ How a fact is known: **D** documented on LG's developer site. **S** read from
 source, the file named; OSE code shows the design, not always what a TV runs.
 **S-report** read from a project's source or docs where its author records
 what their own TV did, not checked by this project. **I** inferred, the reason
-given. **U** unknown.
+given. **U** unknown. **T** seen by this project on a TV, the run recorded in
+[hardware-verification.md](hardware-verification.md).
 
-**Nothing in this file has been verified on a TV by this project.** Version
+**Apart from the facts tagged T, nothing in this file has been verified on a
+TV by this project.** Version
 numbers are platform releases (4.10.0, 11.2.0). LG's marketing names map as
 5.x = 2020, 6.x = 2021, 7.x = webOS TV 22, 8.x = 23, 9.x = 24, 10.x = 25,
 11.x = 26 (I: from [LG-SP]'s year table, [FW]'s release list and [PLX-C]).
@@ -318,6 +320,7 @@ StarfishMediaAPIs.h:88-124].
 | ACB (4.x): `AcbAPI_setState(id, appState, playState, &task)` on every change, `PLAYSTATE_UNLOADED` on release | S [KODI-M:1724-1751] |
 | A killed process leaves its bus name held for a while, so the next launch's fixed name is refused; a pid suffix avoids it | S-report [NUV:1869-1876] |
 | Screensaver: `luna://com.webos.service.tvpower/power/registerScreenSaverRequest` with `{"subscribe":true,"clientName":appId}`, answered through `responseScreenSaverRequest` | S [NUV:1723-1731]. U whether a playing pipeline already holds it off |
+| A video loaded while an earlier video of the same app is still loaded plays without a picture: its `loadCompleted`, `playing` and `currentTime` events arrive, the plane stays black, and it stays black once the earlier video is unloaded. A video loaded after the earlier one's `unload` shows its picture | T: webOS 25 (10.2.0), chipset `o24n`, model `KEY0000002E`, 2026-11-11, the same HLS stream twice, each load on an exported window of its own. U why, whether every release does it, and whether an audio-only media beside a video does the same |
 | Audio focus between apps is not a separate API: the resource manager and the audio service decide. `focus` and `focusChanged` exist on OSE | S [UMS: com.webos.media.api.json:6, uMediaClient.cpp:624-631]. U on TVs |
 
 ## 6. What the simulator can substitute
@@ -374,6 +377,9 @@ Only a TV settles these.
 13. Can a jailed app build a GStreamer pipeline with LG's decoder and sink?
 14. Does the panel switch to HDR10, HLG or Dolby Vision by itself on the URI
     path?
+15. Why does a video loaded beside another show no picture (section 5), which
+    releases and chipsets do it, and does an audio-only media beside a video
+    count? No log of that TV was read.
 
 ## What this means for react-native-webos
 
@@ -454,7 +460,8 @@ and seek; HEVC, HDR and DRM were not tried there with the example
 | Part | File | Does |
 |------|------|------|
 | Backend interface | `PlayerBackend.h` | load, unload, play, pause, seek, rate, volume, track, foreground; reports through `PlayerBackendListener` |
-| TV backend | `LunaMediaPlayer*.cpp`, `LunaMediaEvents.*`, `LunaMediaUnload.*` | the sequence above over a `LunaConnection`: `load`, `notifyForeground`, `subscribe`, then the events. A load waits for the `unloadCompleted` of the media before it, or 1.5 s |
+| TV backend | `LunaMediaPlayer*.cpp`, `LunaMediaEvents.*`, `LunaMediaUnload.*` | the sequence above over a `LunaConnection`: `load`, `notifyForeground`, `subscribe`, then the events. A load waits for the answer to the load before it, or 2 s, since that answer names the media to unload, and for the `unloadCompleted` of the media before it, or 1.5 s. This holds across players |
+| Turns | `PipelineClaims.*`, `MediaPlayer.cpp` | one player holds the pipeline at a time, so that no media is loaded beside another (section 5; audio-only players wait too, since no TV has shown they need not): the player a view shows, the last shown first, and among players no view shows the one that loaded last. A player that loses it unloads, reports `loading` and not playing, and opens its source again at its position, playing if it was, when the pipeline comes back. A player that waits reports `loading` |
 | Bus | `platform/LunaClient.*`, `PlayerBackends.cpp` | registers `com.webos.media.client.<APPID>.<pid>` through luna-service2 on a thread of its own, once per process, never unregistered; falls back to the app's own `libhelpers` connection |
 | Plane | `ExportedWindowPlane.*` | one exported window per player, made at its first load with the whole window as its rectangle, then placed at the view's rectangle on screen; the source is the `contentFit` crop in frame pixels once `videoInfo` or `sourceInfo` gave the size |
 | Hole | `VideoView.*`, `VideoWindow.*` | the view clears its box with `SkBlendMode::kClear`, and the scene is cleared to transparent while a view shows a player. Fullscreen clears the whole window above every view |
@@ -479,6 +486,7 @@ question: ...` when playback meets it:
 | `setPlayRate` with `audioOutput: true` at every rate | 7 |
 | Subtitles are the pipeline's: `selectTrack` then `setSubtitleEnable` | 8 |
 | An `unloadCompleted` nobody asked for means the TV took the pipeline: the player fails with it | 9 |
+| A `load` the pipeline never answers holds the next load for 2 s, then lets it go | none: every load seen on a TV was answered at once |
 | Headers other than User-Agent, Cookie and Referer are dropped with a warning | 10 |
 | `bufferRange.endTime` is seconds | section 4 |
 | `sourceInfo` after `loadCompleted` reports the media a second time; `loadCompleted` without one makes the player ready with no duration | section 4 |
@@ -497,7 +505,9 @@ question: ...` when playback meets it:
 - The rectangle goes through the compositor and a service, so it lags the UI.
   A video view that moves needs its hole hidden meanwhile, as LG's plugin does.
 - Rounded corners, transforms and opacity reach the hole, never the plane.
-- A second player may take the first one's decoder, reported in an unknown way.
+- One player loads at a time, so a player no view shows cannot preload while a
+  view shows another: it reports `loading` until its turn. Whether a TV with
+  two decoders could show two is not known.
 - Whether LG's store accepts a native app that calls `com.webos.media`
   directly is not known. LG's Flutter plugins reach the service through
   `libNDL_media`.
