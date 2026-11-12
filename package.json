@@ -1,0 +1,17 @@
+{
+  "private": true,
+  "packageManager": "bun@1.4.0",
+  "workspaces": [
+    "packages/*",
+    "packages/*/example"
+  ],
+  "scripts": {
+    "typecheck": "bun run --sequential --filter './packages/*' typecheck",
+    "test": "bun run --sequential --filter './packages/*' test",
+    "check": "bun run --sequential --filter './packages/*' check",
+    "build": "bun run --sequential --filter './packages/*' build"
+  },
+  "overrides": {
+    "react-native": "npm:react-native-tvos@0.88.0-0"
+  }
+}
