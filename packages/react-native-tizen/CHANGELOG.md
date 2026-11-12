@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.4](https://github.com/kromatv/react-native-tizen/compare/v0.1.0-alpha.3...v0.1.0-alpha.4) (2026-11-12)
+
+
+### Features
+
+* **metro:** add every TV platform an app depends on with one withTV call ([#85](https://github.com/kromatv/react-native-tizen/issues/85)) ([2e82949](https://github.com/kromatv/react-native-tizen/commit/2e829490a03176be63e6b100af1ed140d58fe195))
+
 ## [0.1.0-alpha.3](https://github.com/kromatv/react-native-tizen/compare/v0.1.0-alpha.2...v0.1.0-alpha.3) (2026-11-12)
 
 
