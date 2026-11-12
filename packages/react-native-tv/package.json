@@ -1,0 +1,78 @@
+{
+  "name": "@kromatv/react-native-tv",
+  "version": "0.0.0",
+  "type": "module",
+  "description": "One setup for an Expo app on every TV: Apple TV, Android TV, Samsung Tizen and LG webOS behind one Metro call, one app.json entry and the Expo CLI.",
+  "license": "MIT",
+  "author": "Maxime Scharwath",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kromatv/react-native-tv.git",
+    "directory": "packages/react-native-tv"
+  },
+  "homepage": "https://github.com/kromatv/react-native-tv#readme",
+  "bugs": {
+    "url": "https://github.com/kromatv/react-native-tv/issues"
+  },
+  "keywords": [
+    "react-native",
+    "expo",
+    "tv",
+    "tvos",
+    "android-tv",
+    "tizen",
+    "webos"
+  ],
+  "packageManager": "bun@1.4.0",
+  "bin": {
+    "rn-tv": "dist/cli/main.js"
+  },
+  "exports": {
+    "./metro": {
+      "types": "./dist/metro/index.d.ts",
+      "default": "./dist/metro/index.js"
+    },
+    "./expo-cli": {
+      "types": "./dist/expo-cli/index.d.ts",
+      "default": "./dist/expo-cli/index.js"
+    },
+    "./app.plugin.js": "./app.plugin.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "docs",
+    "README.md",
+    "CHANGELOG.md",
+    "app.plugin.js",
+    "expo-module.config.json",
+    "!**/*.tsbuildinfo",
+    "!**/*.fixtures.*"
+  ],
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "prepare": "bun run build",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "lint": "oxlint --ignore-path .gitignore --deny-warnings .",
+    "format": "oxfmt .",
+    "check": "bun run lint && oxfmt --check .",
+    "check:fix": "oxlint --ignore-path .gitignore --fix . && oxfmt ."
+  },
+  "dependencies": {
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@vitest/coverage-istanbul": "5.1.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "eslint-plugin-sonarjs": "4.2.2",
+    "oxfmt": "0.77.0",
+    "oxlint": "1.92.0",
+    "typescript": "^7.0.2",
+    "vitest": "5.1.0"
+  }
+}
