@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Tizen TV simulator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0b0e14;
+        --panel: #151a23;
+        --button: #222a36;
+        --button-hover: #2d3746;
+        --text: #e6e9ef;
+        --muted: #8a93a3;
+        --accent: #3d5afe;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        height: 100vh;
+        display: grid;
+        grid-template-columns: 1fr 260px;
+        background: var(--bg);
+        color: var(--text);
+      }
+      main {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        padding: 16px;
+        gap: 8px;
+      }
+      #screen {
+        flex: 1;
+        min-height: 0;
+        background: #000;
+        border-radius: 6px;
+        overflow: hidden;
+      }
+      #status {
+        font-size: 13px;
+        color: var(--muted);
+      }
+      #status[data-state='connected'] {
+        color: #66bb6a;
+      }
+      aside {
+        background: var(--panel);
+        padding: 20px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        overflow-y: auto;
+      }
+      h1 {
+        font-size: 15px;
+        margin: 0;
+      }
+      .grid {
+        display: grid;
+        gap: 6px;
+      }
+      .dpad {
+        grid-template-columns: repeat(3, 1fr);
+      }
+      .row {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .media,
+      .colors {
+        grid-template-columns: repeat(4, 1fr);
+      }
+      button {
+        height: 40px;
+        border: 0;
+        border-radius: 6px;
+        background: var(--button);
+        color: var(--text);
+        font: inherit;
+        font-size: 13px;
+        cursor: pointer;
+      }
+      button:hover {
+        background: var(--button-hover);
+      }
+      button:active,
+      button.pressed {
+        background: var(--accent);
+      }
+      .spacer {
+        visibility: hidden;
+      }
+      .colors button {
+        height: 14px;
+      }
+      [data-key='red'] {
+        background: #e53935;
+      }
+      [data-key='green'] {
+        background: #43a047;
+      }
+      [data-key='yellow'] {
+        background: #fdd835;
+      }
+      [data-key='blue'] {
+        background: #1e88e5;
+      }
+      p {
+        margin: 0;
+        font-size: 12px;
+        line-height: 1.5;
+        color: var(--muted);
+      }
+      kbd {
+        font-family: inherit;
+        color: var(--text);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div id="screen"></div>
+      <div id="status">Connecting</div>
+    </main>
+    <aside>
+      <h1>Remote</h1>
+      <div class="grid dpad">
+        <span class="spacer"></span><button data-key="up">Up</button><span class="spacer"></span>
+        <button data-key="left">Left</button><button data-key="enter">OK</button
+        ><button data-key="right">Right</button> <span class="spacer"></span
+        ><button data-key="down">Down</button><span class="spacer"></span>
+      </div>
+      <div class="grid row">
+        <button data-key="back">Back</button><button data-key="exit">Exit</button>
+      </div>
+      <div class="grid media">
+        <button data-key="rewind">Rew</button><button data-key="play">Play</button
+        ><button data-key="pause">Pause</button><button data-key="fastForward">FF</button>
+        <button data-key="previous">Prev</button><button data-key="stop">Stop</button
+        ><button data-key="info">Info</button><button data-key="next">Next</button>
+      </div>
+      <div class="grid colors">
+        <button data-key="red" aria-label="Red"></button
+        ><button data-key="green" aria-label="Green"></button
+        ><button data-key="yellow" aria-label="Yellow"></button
+        ><button data-key="blue" aria-label="Blue"></button>
+      </div>
+      <div class="grid row">
+        <button id="save">Save screenshot</button><button id="reconnect">Reconnect</button>
+      </div>
+      <p>
+        Keyboard: <kbd>arrows</kbd> move, <kbd>Enter</kbd> selects, <kbd>Esc</kbd> or
+        <kbd>Backspace</kbd> is Back, <kbd>Space</kbd> is Play.
+      </p>
+    </aside>
+    <script type="module" src="viewer.js"></script>
+  </body>
+</html>

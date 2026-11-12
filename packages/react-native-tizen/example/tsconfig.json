@@ -1,0 +1,11 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": [],
+    "paths": {
+      "@kromatv/react-native-tizen/*": ["../src/api/*.ts"]
+    }
+  },
+  "include": ["main.ts", "src"]
+}

@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "incremental": false,
+    "rootDir": ".",
+    "outDir": "../../dist/api",
+    "declaration": true,
+    "rewriteRelativeImportExtensions": true
+  },
+  "exclude": ["*.test.ts"]
+}

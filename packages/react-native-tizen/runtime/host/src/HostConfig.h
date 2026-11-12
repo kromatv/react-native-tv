@@ -1,0 +1,49 @@
+#pragma once
+
+#include <cstdint>
+#include <optional>
+#include <stdexcept>
+#include <string>
+
+namespace rntizen {
+
+/// Where log lines are streamed during development.
+struct LogEndpoint {
+  std::string host;
+  std::uint16_t port;
+};
+
+/// `react-native-tizen.json`, written into the package's `res` directory by
+/// `rn-tizen`. A bundle comes from `bundleUrl` (a dev server) when set, from the
+/// packaged `bundleFile` otherwise. See docs/runtime-config.md.
+struct HostConfig {
+  std::string appKey;
+  /// The Tizen package id, which the log stream and the control link name so
+  /// `rn-tizen` tells apart the builds on one TV. Empty in a config without it.
+  std::string packageId;
+  std::string bundleFile;
+  std::optional<std::string> bundleUrl;
+  std::optional<LogEndpoint> logEndpoint;
+  bool development;
+  std::string resourceDir;
+  /// `expo.tizen.resolution` is `4k`.
+  bool uhd;
+  /// expo-video's `supportsBackgroundPlayback`: the manifest declares the `media` background category.
+  bool backgroundMedia;
+  /// `expo.tizen.voice` is set.
+  bool voice;
+  std::optional<std::string> voiceSearchUrl;
+  /// expo-speech-recognition's config plugin is listed: the manifest declares the `recorder` privilege.
+  bool speechRecognition;
+};
+
+/// `react-native-tizen.json` is missing, too large, or has a bad field, which the message names.
+class HostConfigError : public std::runtime_error {
+ public:
+  using std::runtime_error::runtime_error;
+};
+
+/// Reads and validates the config in `resourceDir`; throws HostConfigError naming the bad field.
+HostConfig loadHostConfig(const std::string &resourceDir);
+
+} // namespace rntizen
