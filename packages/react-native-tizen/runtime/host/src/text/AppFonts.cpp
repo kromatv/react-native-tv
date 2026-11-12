@@ -101,7 +101,7 @@ std::optional<fs::path> trackedAppFont(const std::string &family, int weight, bo
   if (units == 0) return std::nullopt;
   const auto key = std::make_tuple(family, file->style.weight, file->style.italic, units);
   if (const auto cached = state.tracked.find(key); cached != state.tracked.end()) return cached->second;
-  return state.tracked[key] = writeTracked(file->path, units);
+  return state.tracked.try_emplace(key, writeTracked(file->path, units)).first->second;
 }
 
 } // namespace rntizen
