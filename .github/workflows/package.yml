@@ -1,17 +1,35 @@
-name: CI
+# Draft for the monorepo: never run on GitHub.
+name: Package
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      package:
+        description: The directory in packages/ to check.
+        type: string
+        required: true
+      native:
+        description: Compile and test the native runtime.
+        type: boolean
+        default: false
+      native-apt-packages:
+        description: What the native job installs with apt.
+        type: string
+        default: ''
+      native-cache-paths:
+        description: What the native job keeps between runs, one path per line.
+        type: string
+        default: ''
+      pull-request-ccache:
+        description: Keep a pull request's compiled objects between its pushes.
+        type: boolean
+        default: false
+    secrets:
+      SONAR_TOKEN:
+        required: false
 
 permissions:
   contents: read
-
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   check:
@@ -22,19 +40,23 @@ jobs:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: packages/${{ inputs.package }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
-          bun-version-file: .bun-version
+          bun-version-file: package.json
           no-cache: true
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '22.13'
           package-manager-cache: false
       - run: bun install --frozen-lockfile
+        working-directory: .
       - run: bun run typecheck
       - run: bun run test --coverage
       - run: bun run check
@@ -56,106 +78,97 @@ jobs:
     name: Packed install (Node)
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: packages/${{ inputs.package }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
-          bun-version-file: .bun-version
+          bun-version-file: package.json
           no-cache: true
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '22.13'
           package-manager-cache: false
       - run: bun install --frozen-lockfile
-      - name: npm pack, install into a fresh Expo app, rn-tizen bundle under Node
+        working-directory: .
+      - name: npm pack, install into a fresh Expo app, bundle under Node
         run: bun run check:packed
-
-  changes:
-    name: Native inputs
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    outputs:
-      native: ${{ steps.inputs.outputs.native }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
-        with:
-          bun-version-file: .bun-version
-          no-cache: true
-      - id: inputs
-        env:
-          BASE: ${{ github.event.pull_request.base.sha }}
-        run: |
-          if [ -z "$BASE" ]; then
-            echo native=true
-          else
-            git diff --name-only "$BASE" HEAD | bun scripts/native-inputs.ts
-          fi >> "$GITHUB_OUTPUT"
 
   native:
     name: Native runtime (simulator, aarch64 Linux)
-    needs: changes
-    if: needs.changes.outputs.native == 'true'
+    if: inputs.native
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 120
     env:
       CCACHE_MAXSIZE: 2G
+    defaults:
+      run:
+        working-directory: packages/${{ inputs.package }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
-          bun-version-file: .bun-version
+          bun-version-file: package.json
           no-cache: true
       - run: bun install --frozen-lockfile
+        working-directory: .
       - name: Install the build tools
         env:
           DEBIAN_FRONTEND: noninteractive
+          PACKAGES: ${{ inputs.native-apt-packages }}
         run: |
           sudo apt-get update -q
-          sudo apt-get install -y -q --no-install-recommends \
-            clang lld llvm libclang-rt-dev cmake ninja-build pkg-config ccache python3 \
-            libefl-all-dev libevas1-engines-x libcurl4-openssl-dev
+          # shellcheck disable=SC2086
+          sudo apt-get install -y -q --no-install-recommends $PACKAGES
           clang --version
           cmake --version
           echo "CCACHE_DIR=$HOME/.cache/ccache" >> "$GITHUB_ENV"
       - id: native-cache
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: |
-            ~/.cache/ccache
-            ~/.cache/react-native-tizen/downloads
-            ~/rn-tizen-simulator/build/hermes-host
-          key: native-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('runtime/dependencies.json', 'bun.lock') }}-${{ github.sha }}
+          path: ${{ inputs.native-cache-paths }}
+          key: native-${{ inputs.package }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(format('packages/{0}/runtime/dependencies.json', inputs.package), 'bun.lock') }}-${{ github.sha }}
           restore-keys: |
-            native-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('runtime/dependencies.json', 'bun.lock') }}-
-            native-${{ runner.os }}-${{ runner.arch }}-
+            native-${{ inputs.package }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(format('packages/{0}/runtime/dependencies.json', inputs.package), 'bun.lock') }}-
+            native-${{ inputs.package }}-${{ runner.os }}-${{ runner.arch }}-
+      # A pull request keeps its own compiled objects between pushes: main's
+      # cache alone leaves every push to compile again whatever its changes touch.
+      - id: pull-request-ccache
+        if: inputs.pull-request-ccache && github.event_name == 'pull_request'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ccache
+          key: ccache-${{ inputs.package }}-pull-${{ github.event.pull_request.number }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ inputs.package }}-pull-${{ github.event.pull_request.number }}-
       - run: ccache --zero-stats
-      - name: Compile the runtime and the launcher
+      - name: Compile the runtime
         run: bun scripts/compile-simulator-runtime.ts example
       - name: Test the runtime
         run: bun scripts/test-runtime.ts example --coverage coverage/runtime.xml
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: runtime-coverage
-          path: coverage/runtime.xml
+          name: runtime-coverage-${{ inputs.package }}
+          path: packages/${{ inputs.package }}/coverage/runtime.xml
           if-no-files-found: error
           retention-days: 7
       - run: ccache --show-stats
       - if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: |
-            ~/.cache/ccache
-            ~/.cache/react-native-tizen/downloads
-            ~/rn-tizen-simulator/build/hermes-host
+          path: ${{ inputs.native-cache-paths }}
           key: ${{ steps.native-cache.outputs.cache-primary-key }}
+      - if: ${{ !cancelled() && inputs.pull-request-ccache && github.event_name == 'pull_request' }}
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ccache
+          key: ${{ steps.pull-request-ccache.outputs.cache-primary-key }}
 
   sonar:
     name: SonarCloud
@@ -168,6 +181,9 @@ jobs:
       || github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: packages/${{ inputs.package }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -175,17 +191,19 @@ jobs:
           persist-credentials: false
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
-          bun-version-file: .bun-version
+          bun-version-file: package.json
           no-cache: true
       - run: bun install --frozen-lockfile
+        working-directory: .
       - run: bun run test --coverage
       - if: needs.native.result == 'success'
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: runtime-coverage
-          path: coverage
+          name: runtime-coverage-${{ inputs.package }}
+          path: packages/${{ inputs.package }}/coverage
       - uses: SonarSource/sonarqube-scan-action@e805d875275f728fac1885b413934be6d7c63f65 # v8.4.1
         with:
+          projectBaseDir: packages/${{ inputs.package }}
           args: >-
             ${{ github.event_name != 'pull_request' &&
             format('-Dsonar.branch.name={0}', github.ref_name) || '' }}
