@@ -1,10 +1,11 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { dirname, isAbsolute, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { UPSTREAM_TRANSFORMER_ENV } from './tizen-babel-transformer-env.ts';
+import { LIST_FOCUS_GUIDE_STYLE_MODULE } from './tizen-list-focus-guide.ts';
 import { withTizen, type MetroConfigLike } from './with-tizen.ts';
 
 const projectRoot = fileURLToPath(new URL('../../example/', import.meta.url));
@@ -65,6 +66,42 @@ describe('withTizen, resolving React Native for tizen', () => {
     const resolved = resolve?.({ resolveRequest, originModulePath: '/app/index.js' }, 'x', 'ios');
 
     expect(resolved).toEqual({ type: 'sourceFile', filePath: original });
+  });
+});
+
+describe("withTizen, resolving the list wrapper's style", () => {
+  const style = fileURLToPath(
+    new URL(
+      '../../react-native-overrides/Libraries/Lists/list-focus-guide-style.ts',
+      import.meta.url,
+    ),
+  );
+  const resolveRequest = (_context: unknown, name: string, _platform: string | null) => {
+    throw new Error(`${name} is not installed where the list is`);
+  };
+  const resolve = withTizen({ projectRoot, resolver: { resolveRequest } }).resolver?.resolveRequest;
+  const fromList = {
+    resolveRequest,
+    originModulePath: '/app/node_modules/list/VirtualizedList.js',
+  };
+
+  it("gives the name the transformed list requires this package's file", () => {
+    expect(resolve?.(fromList, LIST_FOCUS_GUIDE_STYLE_MODULE, 'tizen')).toEqual({
+      type: 'sourceFile',
+      filePath: style,
+    });
+    expect(existsSync(style)).toBe(true);
+  });
+
+  it('writes no path of this checkout into the name', () => {
+    expect(isAbsolute(LIST_FOCUS_GUIDE_STYLE_MODULE)).toBe(false);
+    expect(LIST_FOCUS_GUIDE_STYLE_MODULE).not.toContain(dirname(projectRoot));
+  });
+
+  it('leaves the name to the resolvers underneath on another platform', () => {
+    expect(() => resolve?.(fromList, LIST_FOCUS_GUIDE_STYLE_MODULE, 'android')).toThrow(
+      'is not installed where the list is',
+    );
   });
 });
 

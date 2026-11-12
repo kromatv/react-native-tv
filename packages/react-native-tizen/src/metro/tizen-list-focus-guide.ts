@@ -1,5 +1,3 @@
-import { fileURLToPath } from 'node:url';
-
 interface AstNode {
   readonly type: string;
 }
@@ -47,13 +45,13 @@ export interface ListFocusGuidePlugin {
 /** The react-native-tvos file that wraps every list in a `TVFocusGuideView`. */
 export const LIST_FILE = 'virtualized-lists/Lists/VirtualizedList.js';
 
-/** The module the wrapper's style comes from, by the absolute path Metro resolves from any file. */
-export const LIST_FOCUS_GUIDE_STYLE_MODULE = fileURLToPath(
-  new URL(
-    '../../react-native-overrides/Libraries/Lists/list-focus-guide-style.ts',
-    import.meta.url,
-  ),
-);
+/**
+ * The name the wrapper's style is required by. `withTizen` resolves it to this
+ * package's file: Metro shares its transform cache between checkouts and keys
+ * it by project-relative path, so the transformed list may not hold a path.
+ */
+export const LIST_FOCUS_GUIDE_STYLE_MODULE =
+  '@kromatv/react-native-tizen/react-native-overrides/Libraries/Lists/list-focus-guide-style';
 
 function isNode<T extends AstNode>(node: AstNode, type: T['type']): node is T {
   return node.type === type;

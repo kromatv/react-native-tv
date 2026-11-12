@@ -4,6 +4,7 @@ import { dirname, extname, join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { appIntlLocales } from './app-locales.ts';
 import { INTL_LOCALES_ENV, UPSTREAM_TRANSFORMER_ENV } from './tizen-babel-transformer-env.ts';
+import { LIST_FOCUS_GUIDE_STYLE_MODULE } from './tizen-list-focus-guide.ts';
 
 /** The platform name a Tizen bundle is requested with. */
 export const TIZEN_PLATFORM = 'tizen';
@@ -16,6 +17,12 @@ const TIZEN_BABEL_TRANSFORMER = fileURLToPath(
   new URL(`./tizen-babel-transformer${extname(import.meta.url)}`, import.meta.url),
 );
 const OVERRIDE_EXTENSIONS = ['.ts', '.js'] as const;
+const LIST_FOCUS_GUIDE_STYLE_FILE = join(
+  OVERRIDES_DIR,
+  'Libraries',
+  'Lists',
+  'list-focus-guide-style.ts',
+);
 
 type Resolution =
   | { readonly type: 'sourceFile'; readonly filePath: string }
@@ -114,6 +121,8 @@ export function withTizen<Config extends MetroConfigLike>(config: Config): Confi
   const resolveRequest: ResolveRequest = (context, moduleName, platform) => {
     const next = upstream ?? context.resolveRequest;
     if (platform !== TIZEN_PLATFORM) return next(context, moduleName, platform);
+    if (moduleName === LIST_FOCUS_GUIDE_STYLE_MODULE)
+      return { type: 'sourceFile', filePath: LIST_FOCUS_GUIDE_STYLE_FILE };
 
     const fallback = next(context, moduleName, FALLBACK_PLATFORM);
     if (fallback.type !== 'sourceFile') return fallback;

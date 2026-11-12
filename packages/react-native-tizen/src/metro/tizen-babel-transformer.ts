@@ -11,7 +11,7 @@ import { tizenAndroidBranchPlugin } from './tizen-android-branch.ts';
 import { tizenListFocusGuidePlugin } from './tizen-list-focus-guide.ts';
 import { tizenPlatformSelectPlugin } from './tizen-platform-select.ts';
 
-const CACHE_VERSION = 'rn-tizen-transform-3';
+const CACHE_VERSION = 'rn-tizen-transform-4';
 
 interface TransformArgs {
   readonly filename?: string;

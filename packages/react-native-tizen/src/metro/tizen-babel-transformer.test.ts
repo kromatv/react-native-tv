@@ -40,13 +40,13 @@ describe('the Tizen Babel transformer', () => {
   });
 
   it('extends the app transformer cache key', () => {
-    expect(transformer.getCacheKey()).toBe('upstream-key$rn-tizen-transform-3$');
+    expect(transformer.getCacheKey()).toBe('upstream-key$rn-tizen-transform-4$');
   });
 
   it('keys the cache by the locales a bundle carries Intl data for', () => {
     process.env[INTL_LOCALES_ENV] = 'en,fr';
 
-    expect(transformer.getCacheKey()).toBe('upstream-key$rn-tizen-transform-3$en,fr');
+    expect(transformer.getCacheKey()).toBe('upstream-key$rn-tizen-transform-4$en,fr');
 
     delete process.env[INTL_LOCALES_ENV];
   });
