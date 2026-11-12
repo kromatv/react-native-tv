@@ -1,7 +1,7 @@
 # react-native-tv
 
-One setup for an Expo app on every TV: `withTV` for Metro, one entry in
-`app.json`, `run:<platform>` commands with a patch that gives Expo CLI those
+One setup for an Expo app on every TV: one entry in `app.json` that also sets
+Metro up, `withTV` for an app without it, `run:<platform>` commands with a patch that gives Expo CLI those
 commands, and one `t` key in `expo start`. Published as
 `@kromatv/react-native-tv` (MIT) from this repository. It holds no platform
 code: Samsung Tizen is
@@ -47,7 +47,7 @@ it, and which TV or simulator.
 | Path | What |
 |------|------|
 | `src/platforms/` | finding the TV platform packages among an app's dependencies |
-| `src/metro/` | `withTV`, what apps import from `@kromatv/react-native-tv/metro` |
+| `src/metro/` | `withTV`, what apps import from `@kromatv/react-native-tv/metro`, and the Metro config the config plugin hands Expo |
 | `src/expo-cli/` | the commands Expo CLI gains, loaded by the patch |
 | `src/expo-patch/` | the patch of `@expo/cli` and the package manager that applies it |
 | `src/config/` | the config plugin `app.plugin.js` exports: one `app.json` entry for every TV |

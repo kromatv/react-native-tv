@@ -39,6 +39,19 @@ inside `expo start`. Checked on 2026-11-12.
 | With the released platform packages, 0.1.0-alpha.4 and 0.1.0-alpha.2 with only `platform` and `cli` added, `expo start` printed `› Press t │ open on Tizen TV` and `› Press t │ open on webOS TV`, and one shift+t both opened the webOS list and started the Tizen search: each package listens on its own. | O | |
 | With the branches that register with the start registry, and this package's plugin: one line, `› Press t │ open on TV`; `?` added that line and `› shift+t │ select a TV or a simulator` once; shift+t printed one list, a Samsung TV connected before, the Tizen simulator and the webOS simulator, each with its platform in front; Esc closed it and Expo's keys worked after. | O | |
 
+## 4. The Metro config Expo loads
+
+| Fact | Tag | Source |
+|---|---|---|
+| Expo CLI evaluates the app config, config plugins included, before it loads the Metro config, in the same process: for the dev server, and for `expo export:embed`. | S | `@expo/cli` `build/src/start/server/metro/instantiateMetro.js:343-349`, `build/src/export/embed/exportEmbedAsync.js:394-399` |
+| It passes `loadUserConfig` the path in `EXPO_OVERRIDE_METRO_CONFIG` as `overrideConfigPath`. The getter reads the environment as it was before any `.env` file, and its comment says the flag "is internal and was added for external tools". | S | `build/src/start/server/metro/instantiateMetro.js:241-246`, `build/src/utils/env.js:176-185` |
+| With an override path, `loadUserConfig` loads that file in place of the app's `metro.config`, takes its `default` when the module sets `__esModule`, awaits it, and merges it over Expo's default config. Without one it searches the app's own. | S | `@expo/metro-config` 58.0.21 `build/config/resolveMetroUserConfig.js:83-96`, `build/config/loadUserConfig.js:24-27` |
+| With this package's plugin listed and no `metro.config` in the app: `expo export:embed` bundled for `webos` and for `tizen`, and `expo start` answered a bundle request for `tizen` and one for `android` with 200. The override was this package's `dist/metro/tv-metro-config.mjs`, an ES module whose default export is a promise. | O | |
+| With the app's `metro.config.mjs` still calling `withTV`, the `webos` bundle was byte for byte the one built without the file. | O | |
+| With `@kromatv/react-native-tizen` and `@kromatv/react-native-webos` from their branches that load the Metro config as Expo does, `rn-tizen bundle` and `rn-webos bundle` printed `Metro config knows tizen` and `knows webos` in that app, and wrote their bytecode. | O | |
+| The example app of react-native-tizen, its `withTV` call removed and its settings in this package's one entry: `rn-tv run:tizen --device <ip> --no-logs` built, installed and launched it, and the TV showed its home screen and logged remote keys. | O | GQ75LS03DAUXZG (The Frame, 2024, Tizen 9.0), 2026-11-12 |
+| With the platform packages as released, 0.1.0-alpha.4 and 0.1.0-alpha.2, the same app stopped at `The app has no webOS settings`: they name no platform, so the plugin gives them no entry. | O | |
+
 ## What this means for this package
 
 - The config plugin turns its props into one entry per TV platform package and
@@ -52,6 +65,13 @@ inside `expo start`. Checked on 2026-11-12.
   package validates no platform's props, the platform's own plugin does.
 - `tvos` is passed to react-native-tvos' plugin as it is, with `isTV` on unless
   the block says otherwise, so an app needs no `EXPO_TV` in its scripts.
+- The plugin sets `EXPO_OVERRIDE_METRO_CONFIG` to `tv-metro-config.mjs` and
+  `RN_TV_PROJECT_ROOT` to the app, unless the first is set to something else.
+  That module calls the app's own `loadUserConfig` without an override, which
+  gives the config Expo would have loaded, and adds the platforms that name
+  themselves and are not among its `resolver.platforms` yet.
+- `withTV` makes the same check, so a config is never wrapped twice for a
+  platform.
 - This package is a dev tools plugin with a server entry only, the one place
   Expo loads a package's code inside `expo start`. It claims the keys there.
   Since shift+m lists it, the entry serves a page that links each platform's

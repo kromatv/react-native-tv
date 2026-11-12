@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { testApp, type TestApp } from '../app.fixtures.ts';
+import {
+  EXPO_METRO_OVERRIDE,
+  TV_METRO_CONFIG,
+  TV_PROJECT_ROOT,
+} from '../metro/expo-metro-override.ts';
 import withReactNativeTV from './config-plugin.ts';
 
 let app: TestApp;
@@ -23,6 +28,8 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  delete process.env[EXPO_METRO_OVERRIDE];
+  delete process.env[TV_PROJECT_ROOT];
   app.remove();
 });
 
@@ -41,6 +48,13 @@ describe('withReactNativeTV', () => {
     expect(
       withReactNativeTV(config, { package: 'tv.example.app', tizen: { preview: true } }),
     ).toEqual({ ...config, applied: platforms, plugins: ['expo-font', ...platforms] });
+  });
+
+  it('gives the Expo CLI that evaluates it a Metro config with every TV platform', () => {
+    withReactNativeTV({ _internal: { projectRoot: app.root } });
+
+    expect(process.env[EXPO_METRO_OVERRIDE]).toBe(TV_METRO_CONFIG);
+    expect(process.env[TV_PROJECT_ROOT]).toBe(app.root);
   });
 
   it("applies react-native-tvos' plugin without listing it", () => {

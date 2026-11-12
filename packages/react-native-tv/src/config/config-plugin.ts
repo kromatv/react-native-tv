@@ -1,6 +1,7 @@
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { z } from 'zod';
+import { overrideExpoMetroConfig } from '../metro/expo-metro-override.ts';
 import { tvPlatformPackages } from '../platforms/tv-platform-packages.ts';
 import { listedPlugins } from './listed-plugins.ts';
 import { tvPluginEntries, type PluginEntry } from './tv-plugin-entries.ts';
@@ -36,13 +37,16 @@ function expoWithPlugins(projectRoot: string): WithPlugins {
  * each TV platform package the app depends on, a block named after a platform
  * goes to that platform, and `tvos` goes to react-native-tvos' plugin, with
  * `isTV` on. It applies those plugins, and adds each platform's entry to the
- * evaluated config, where that platform's own command reads its settings.
+ * evaluated config, where that platform's own command reads its settings. It
+ * also gives the Expo CLI that evaluates it a Metro config with every TV
+ * platform, so the app's own needs no `withTV`.
  */
 export default function withReactNativeTV<Config extends ExpoConfigLike>(
   config: Config,
   props?: unknown,
 ): Config {
   const projectRoot = projectRootOf(config);
+  overrideExpoMetroConfig(projectRoot);
   const entries = tvPluginEntries(
     projectRoot,
     tvProps(props),

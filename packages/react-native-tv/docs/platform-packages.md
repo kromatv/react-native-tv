@@ -30,6 +30,14 @@ The package must list `./package.json` in its `exports`, or it is not found.
 A package that declares `metro` alone still joins `withTV`; it has no `run`
 command until it names `platform` and `cli`.
 
+An app that lists this package's config plugin calls no wrapper: Expo is
+handed a Metro config to which each platform that names its `platform` is
+added, unless that name is among the config's `resolver.platforms` already.
+A platform package that checks the app's Metro config itself before a build
+has to load it as Expo CLI does, the app config first and then
+`loadUserConfig` with the path in `EXPO_OVERRIDE_METRO_CONFIG`, or it refuses
+such an app.
+
 The wrappers run in the order of the package names. When two packages name
 the same platform, the first by name gets `run:<platform>`.
 

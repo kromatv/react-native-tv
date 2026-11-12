@@ -12,20 +12,6 @@ app's dependencies.
 
 Not published yet.
 
-## Metro
-
-```js
-// metro.config.mjs
-import { getDefaultConfig } from 'expo/metro-config';
-import { withTV } from '@kromatv/react-native-tv/metro';
-
-export default withTV(getDefaultConfig(import.meta.dirname));
-```
-
-`withTV` teaches Metro the platform of every TV platform package the app
-depends on. Adding a TV platform is installing its package: the Metro config
-does not change.
-
 ## One entry in `app.json`
 
 ```json
@@ -55,6 +41,26 @@ does not change.
 Each platform package still validates its own props, and its command reads
 them as if the app had listed its plugin itself. A platform the app does list
 itself keeps that entry.
+
+The entry also sets Metro up. Expo is handed a Metro config that is the app's
+own, or Expo's default when the app has none, with every TV platform added. An
+app with this entry needs no change in `metro.config`, and none at all for TV.
+
+## Metro, by hand
+
+An app that does not list the plugin wraps its Metro config once:
+
+```js
+// metro.config.mjs
+import { getDefaultConfig } from 'expo/metro-config';
+import { withTV } from '@kromatv/react-native-tv/metro';
+
+export default withTV(getDefaultConfig(import.meta.dirname));
+```
+
+`withTV` teaches Metro the platform of every TV platform package the app
+depends on, and leaves alone a platform the config knows already. Calling it
+in an app that also lists the plugin changes nothing.
 
 ## Run on a TV
 

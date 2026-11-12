@@ -76,6 +76,33 @@ the platform packages change nothing for this.
 - An entry the app lists itself wins, and a block beside it is an error rather
   than a silent merge.
 
+## The `app.json` entry also sets Metro up
+
+A config plugin cannot reach Metro: Expo gives it the app config and nothing
+else. But Expo CLI evaluates the app config before it loads the Metro config,
+in the same process, and reads the path of a Metro config to load in place of
+the app's own from `EXPO_OVERRIDE_METRO_CONFIG`
+([reference/expo-config-and-start.md](reference/expo-config-and-start.md)). So
+the plugin sets that variable to a Metro config of this package, which loads
+the app's own config as Expo would have, then adds the TV platforms. An app
+with the entry needs no `withTV`.
+
+- Expo's source calls the variable internal. If Expo drops it, the app's Metro
+  config no longer knows the TV platforms and each platform's command stops
+  before the build and says so. `withTV` is the way that does not depend on
+  it, and stays.
+- A Metro config something else put in the variable is left in place.
+- Only a platform package that names its platform is added this way. Whether
+  the app's own config wrapped a platform already is told from the platform's
+  name among the config's platforms, and wrapping one twice would chain its
+  transformer to itself.
+- `withTV` skips a platform the config knows for the same reason, so an app
+  may keep its call.
+- It works for whatever runs Expo CLI on the app: `expo start`, a bundle for a
+  store build, a platform's own command. A platform's command has to load the
+  Metro config as Expo does, the app config first, or its check before a build
+  refuses the app.
+
 ## One key in `expo start`, owned by this package
 
 Two platform packages in one app each added a `t`, and one key press reached

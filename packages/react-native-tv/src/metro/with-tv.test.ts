@@ -28,6 +28,18 @@ describe('withTV', () => {
     });
   });
 
+  it('leaves a platform the config knows already, so a second call changes nothing', () => {
+    const adds = (platform: string) =>
+      `exports.withTvPlatform = (config) => ({ ...config, resolver: { platforms: [...(config.resolver?.platforms ?? []), '${platform}'] } });`;
+    app.dependOn('tv-webos', 'tv-tizen');
+    app.platformPackage('tv-webos', { platform: 'webos' }, adds('webos'));
+    app.platformPackage('tv-tizen', { platform: 'tizen' }, adds('tizen'));
+    const once = withTV({ projectRoot: app.root, resolver: { platforms: ['ios', 'webos'] } });
+
+    expect(once.resolver).toEqual({ platforms: ['ios', 'webos', 'tizen'] });
+    expect(withTV(once)).toBe(once);
+  });
+
   it('reads the app in the current directory when the config names no project root', () => {
     app.dependOn('tv-webos');
     app.platformPackage('tv-webos', {}, addsPlatform('webos'));
