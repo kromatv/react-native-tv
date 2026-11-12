@@ -167,7 +167,7 @@ describe('packageSteps', () => {
 
   it.each([
     ['loads two react-natives', () => vi.mocked(singleReactNativeIssue), 'two copies'],
-    ['Metro config has no withTizen', () => vi.mocked(tizenMetroIssue), 'no tizen platform'],
+    ['Metro config does not know tizen', () => vi.mocked(tizenMetroIssue), 'no tizen platform'],
   ])('stops before compiling anything when the app %s', async (_, check, message) => {
     check().mockReturnValueOnce(new FixableError(message, 'Run npx rn-tizen init'));
 

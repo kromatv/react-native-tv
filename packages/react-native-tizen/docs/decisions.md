@@ -294,9 +294,26 @@ detached job and returns at once. Expo has no `run:tizen`, no Tizen key and no
 Tizen in `prebuild` or `export`, so `rn-tizen` keeps its own commands, and an
 app adds a `"tizen": "rn-tizen run"` script beside Expo's. `expo.tizen` is read
 for one more release, with a deprecation. A config plugin cannot add a platform
-to Metro, so `withTizen` still wraps the app's Metro config, but nobody writes
-it by hand: `npx rn-tizen init` writes `metro.config.mjs` and the plugin's
-props, and every build checks the Metro config before anything else.
+to Metro, so a wrapper still goes around the app's Metro config, but nobody
+writes it by hand: `npx rn-tizen init` writes `metro.config.mjs` and the
+plugin's props, and every build checks the Metro config before anything else.
+
+## One Metro wrapper for every TV platform
+
+An app on several TVs would chain one wrapper per platform,
+`withWebOS(withTizen(config))`, and edit its Metro config for each platform it
+adds. `withTV` is the one call instead. It takes `withTizen` and the wrapper of
+every other TV platform among the app's dependencies: a package is one when
+its `package.json` has `reactNativeTvPlatform.metro`, a subpath of its own
+`exports` whose module exports the wrapper as `withTvPlatform`. This package
+declares itself the same way, so `withTV` from `@kromatv/react-native-webos`
+finds it. The other wrappers are loaded with `require`, which takes an ES
+module from Node 22.12 on, below this package's floor.
+
+No package names another: the declaration is the whole contract, and a third
+platform joins by shipping it. The wrappers run in the order of the package
+names, so the config does not depend on which package `withTV` came from.
+`withTizen` stays, for an app that wants `tizen` alone or an order of its own.
 
 ## The package ships JavaScript, and the CLI runs on Node
 

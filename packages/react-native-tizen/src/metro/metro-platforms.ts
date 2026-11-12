@@ -58,11 +58,11 @@ export function metroPlatforms(root: string): string[] {
   }
 }
 
-/** The reason the app's Metro config cannot bundle for Tizen, or null when `withTizen` wraps it. */
+/** The reason the app's Metro config cannot bundle for Tizen, or null when it knows the platform. */
 export function tizenMetroIssue(root: string): FixableError | null {
   if (metroPlatforms(root).includes(TIZEN_PLATFORM)) return null;
   return new FixableError(
     `The app's Metro config does not know the ${TIZEN_PLATFORM} platform`,
-    `Run ${packageRunner(root)} rn-tizen init: it wraps the Metro config with withTizen.`,
+    `Run ${packageRunner(root)} rn-tizen init: it wraps the Metro config with withTV.`,
   );
 }

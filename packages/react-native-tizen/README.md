@@ -149,12 +149,17 @@ from the slug. It also writes `metro.config.mjs`, which teaches Metro the
 
 ```js
 import { getDefaultConfig } from 'expo/metro-config';
-import { withTizen } from '@kromatv/react-native-tizen/metro';
-export default withTizen(getDefaultConfig(import.meta.dirname));
+import { withTV } from '@kromatv/react-native-tizen/metro';
+export default withTV(getDefaultConfig(import.meta.dirname));
 ```
 
+`withTV` teaches Metro every TV platform the app depends on, so an app that
+also runs on LG TVs with
+[`@kromatv/react-native-webos`](https://github.com/kromatv/react-native-webos)
+keeps this one call, whichever of the two packages it imports `withTV` from.
+
 An app that already has a Metro config keeps it: `init` wraps its export with
-`withTizen`, or prints the two lines to add when it cannot change the file
+`withTV`, or prints the two lines to add when it cannot change the file
 safely.
 
 Last, `init` points `react-native` at
@@ -190,7 +195,7 @@ the same with npm, pnpm, Yarn and Bun (`bunx expo start`).
 
 The first run builds the native runtime, which takes a few minutes; later runs
 only rebuild what changed. Opening checks first that the app loads one
-`react-native` and that its Metro config has `withTizen`, and says to run
+`react-native` and that its Metro config knows `tizen`, and says to run
 `npx rn-tizen init` when not. `npx rn-tizen doctor` names the exact fix for
 anything a build needs.
 

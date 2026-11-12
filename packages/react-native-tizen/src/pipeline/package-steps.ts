@@ -93,7 +93,7 @@ export async function appSetupSteps(reporter: Reporter, app: AppProject): Promis
       const issue = tizenMetroIssue(app.root);
       return issue === null ? Promise.resolve() : Promise.reject(issue);
     },
-    () => 'withTizen',
+    () => 'knows tizen',
   );
 }
 

@@ -80,15 +80,29 @@ config plugin option `supportsBackgroundPlayback` is read too
 
 ### The Metro config
 
-Metro learns the `tizen` platform from `withTizen`, which wraps the app's Metro
+Metro learns the `tizen` platform from `withTV`, which wraps the app's Metro
 config. A config plugin cannot do it: Expo's Metro setup has no hook for a
 package. `rn-tizen init` writes this `metro.config.mjs`, which Expo loads as an
 ES module:
 
 ```js
 import { getDefaultConfig } from 'expo/metro-config';
-import { withTizen } from '@kromatv/react-native-tizen/metro';
-export default withTizen(getDefaultConfig(import.meta.dirname));
+import { withTV } from '@kromatv/react-native-tizen/metro';
+export default withTV(getDefaultConfig(import.meta.dirname));
+```
+
+`withTV` adds every TV platform the app depends on: `tizen`, and the platform
+of each other dependency that declares one, such as `webos` from
+`@kromatv/react-native-webos`. An app on both keeps this one call, imported
+from either package, and a platform added later needs no change here.
+`withTizen`, from the same module, adds `tizen` alone.
+
+A package is a TV platform for `withTV` when its `package.json` names its Metro
+entry, a subpath of its own `exports`, and that entry exports the wrapper as
+`withTvPlatform`. The package must also export its `package.json`:
+
+```json
+{ "reactNativeTvPlatform": { "metro": "./metro" } }
 ```
 
 An app with its own Metro config wraps its export the same way. `bundle`,
@@ -173,7 +187,7 @@ background and prints the address of the plugin's page,
 job's progress and output stream, and a running job can be stopped. Starting
 Run on TV or Run in simulator again stops the previous run of the same
 command. Both refuse to start, with the fix, when the app loads more than one
-`react-native` or its Metro config has no `withTizen`. The jobs are kept in `~/.cache/react-native-tizen/devtools/jobs/`, the
+`react-native` or its Metro config does not know `tizen`. The jobs are kept in `~/.cache/react-native-tizen/devtools/jobs/`, the
 twenty most recent.
 
 A development build loads its JavaScript from the dev server, and needs React
@@ -209,7 +223,8 @@ Sets an Expo app up for Tizen. Running it again changes nothing.
   Expo evaluates an `app.config.*` file, so `init` prints the entry to add to
   it instead.
 - **The Metro config.** It writes `metro.config.mjs` when the app has none. An
-  existing config whose export is a single line is wrapped with `withTizen`.
+  existing config whose export is a single line is wrapped with `withTV`, and
+  one that already calls `withTV` or `withTizen` is left as it is.
   For any other, a JSON one, `package.json`'s `metro` key or a config at the
   workspace root above the app, it prints the two lines to add.
 - **React Native.** It points the app's `react-native` dependency at
@@ -382,7 +397,7 @@ before (it leaves a `.rn-tizen-bundle` file there). Anything else, such as
 Builds a signed `.tpk` from scratch or incrementally: the native runtime, the
 bundle, the `tizen/` project, the .NET build, then signing. It checks the app's
 `react-native` and Metro config and opens the certificates first, so a second
-copy of `react-native`, a Metro config without `withTizen`, a missing profile, a
+copy of `react-native`, a Metro config that does not know `tizen`, a missing profile, a
 wrong password or an expired certificate fails in seconds rather than after a
 build.
 

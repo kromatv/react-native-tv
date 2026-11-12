@@ -40,8 +40,8 @@ describe('setUpMetroConfig', () => {
     expect(read(dir, 'metro.config.mjs')).toBe(
       [
         "import { getDefaultConfig } from 'expo/metro-config';",
-        "import { withTizen } from '@kromatv/react-native-tizen/metro';",
-        'export default withTizen(getDefaultConfig(import.meta.dirname));',
+        "import { withTV } from '@kromatv/react-native-tizen/metro';",
+        'export default withTV(getDefaultConfig(import.meta.dirname));',
         '',
       ].join('\n'),
     );
@@ -54,12 +54,12 @@ describe('setUpMetroConfig', () => {
     expect(setUpMetroConfig(dir)).toMatchObject({ kind: 'wrapped' });
     expect(read(dir, 'metro.config.js').split('\n')).toEqual([
       "const { getDefaultConfig } = require('expo/metro-config');",
-      "const { withTizen } = require('@kromatv/react-native-tizen/metro');",
+      "const { withTV } = require('@kromatv/react-native-tizen/metro');",
       '',
       "/** @type {import('expo/metro-config').MetroConfig} */",
       'const config = getDefaultConfig(__dirname);',
       '',
-      'module.exports = withTizen(config);',
+      'module.exports = withTV(config);',
       '',
     ]);
     expect(setUpMetroConfig(dir)).toMatchObject({ kind: 'present' });
@@ -78,10 +78,10 @@ describe('setUpMetroConfig', () => {
     setUpMetroConfig(hidden);
 
     expect(read(esm, 'metro.config.mjs')).toBe(
-      "import { getDefaultConfig } from 'expo/metro-config';\nimport { withTizen } from '@kromatv/react-native-tizen/metro';\n\nexport default withTizen(getDefaultConfig(import.meta.dirname));\n",
+      "import { getDefaultConfig } from 'expo/metro-config';\nimport { withTV } from '@kromatv/react-native-tizen/metro';\n\nexport default withTV(getDefaultConfig(import.meta.dirname));\n",
     );
     expect(read(hidden, '.config/metro.js')).toBe(
-      "'use strict';\nconst { withTizen } = require('@kromatv/react-native-tizen/metro');\nmodule.exports = withTizen({ resolver: {} });\n",
+      "'use strict';\nconst { withTV } = require('@kromatv/react-native-tizen/metro');\nmodule.exports = withTV({ resolver: {} });\n",
     );
   });
 
@@ -96,8 +96,8 @@ describe('setUpMetroConfig', () => {
       kind: 'manual',
       file: join(dir, 'metro.config.js'),
       lines: [
-        "const { withTizen } = require('@kromatv/react-native-tizen/metro');",
-        `module.exports = withTizen(${value});`,
+        "const { withTV } = require('@kromatv/react-native-tizen/metro');",
+        `module.exports = withTV(${value});`,
       ],
     });
     expect(read(dir, 'metro.config.js')).toBe(text);
@@ -110,14 +110,25 @@ describe('setUpMetroConfig', () => {
     expect(setUpMetroConfig(json)).toMatchObject({
       kind: 'manual',
       lines: [
-        "import { withTizen } from '@kromatv/react-native-tizen/metro';",
-        'export default withTizen(config);',
+        "import { withTV } from '@kromatv/react-native-tizen/metro';",
+        'export default withTV(config);',
       ],
     });
     expect(setUpMetroConfig(pkg)).toMatchObject({
       kind: 'manual',
       file: join(pkg, 'package.json'),
     });
+  });
+
+  it.each([
+    ['withTizen', '@kromatv/react-native-tizen/metro'],
+    ['withTV', '@kromatv/react-native-webos/metro'],
+  ])('leaves a config that already calls %s as it is', (wrapper, from) => {
+    const text = `import { ${wrapper} } from '${from}';\nexport default ${wrapper}(config);\n`;
+    const dir = app({ 'metro.config.mjs': text });
+
+    expect(setUpMetroConfig(dir)).toMatchObject({ kind: 'present' });
+    expect(read(dir, 'metro.config.mjs')).toBe(text);
   });
 
   it('leaves the config of the workspace above the app to the user', () => {
@@ -132,8 +143,8 @@ describe('setUpMetroConfig', () => {
       kind: 'manual',
       file: join(workspace, 'metro.config.mjs'),
       lines: [
-        "import { withTizen } from '@kromatv/react-native-tizen/metro';",
-        'export default withTizen(config);',
+        "import { withTV } from '@kromatv/react-native-tizen/metro';",
+        'export default withTV(config);',
       ],
     });
     expect(setUpMetroConfig(join(outside, 'apps', 'tv'))).toMatchObject({ kind: 'written' });

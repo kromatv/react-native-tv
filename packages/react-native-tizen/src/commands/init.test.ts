@@ -75,7 +75,7 @@ describe('rn-tizen init', () => {
     expect(output.stdout()).toContain(
       'lists the @kromatv/react-native-tizen config plugin already',
     );
-    expect(output.stdout()).toContain('metro.config.mjs uses withTizen already');
+    expect(output.stdout()).toContain('metro.config.mjs teaches Metro tizen already');
     expect(output.stdout()).toContain('then press t to open the app on the TV used last');
   });
 
@@ -107,7 +107,7 @@ describe('rn-tizen init', () => {
       'metro.config.js cannot be changed safely: add these two lines',
     );
     expect(output.stdout()).toContain(
-      "const { withTizen } = require('@kromatv/react-native-tizen/metro');",
+      "const { withTV } = require('@kromatv/react-native-tizen/metro');",
     );
   });
 

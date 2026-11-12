@@ -28,10 +28,13 @@
   "bin": {
     "rn-tizen": "dist/cli/main.js"
   },
+  "reactNativeTvPlatform": {
+    "metro": "./metro"
+  },
   "exports": {
     "./metro": {
-      "types": "./dist/metro/with-tizen.d.ts",
-      "default": "./dist/metro/with-tizen.js"
+      "types": "./dist/metro/index.d.ts",
+      "default": "./dist/metro/index.js"
     },
     "./voice": {
       "types": "./dist/api/voice.d.ts",
