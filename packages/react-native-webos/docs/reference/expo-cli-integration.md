@@ -118,6 +118,7 @@ code is shared. What ran on an LG TV is in
 | In the same app, `t` opened the app on GQ75LS03DAUXZG (The Frame, 2024, Tizen 9.0), the TV used last: Expo's terminal showed the build, install and launch, then the TV's `console.log`; an edit that renamed a log line went from `tick 20` to `tock 25`, the new code with the state kept; `r` restarted the count at 0. | O | TV, 2026-11-04 |
 | In a standalone Bun app (Bun 1.4.2, no config file), `bunx expo start` printed the same line; `t` and `T` typed into the shift+m menu opened nothing; shift+t, then `2`, opened the app in the simulator; an edit kept its state and `r` reloaded it. | O | simulator, 2026-11-04 |
 | `simulator run --dev-server` wrote `webos/build/bundle` without claiming `webos/`, so the next TV build refused it as the app's own. It claims the directory first now. | O | simulator, 2026-11-04 |
+| With a package in the app that claims the keys (section "What this means"), in this repository's example: `expo start` printed one line, `› Press t │ open on TV`, and none of this package's; shift+t listed the webOS simulator under one prompt, and `1` opened the app in the simulator from the dev server; `t` in the same session opened it there again. An edit of `src/app.tsx` applied with the app's seconds counter running on, a syntax error showed LogBox's "Failed to compile" screen with the code frame, and the fixed file came back with the counter running on. | O | simulator, 2026-11-12 |
 
 ## What this means for this package
 
@@ -154,7 +155,11 @@ code is shared. What ran on an LG TV is in
   does for its own prompts. Opening runs Run on TV's job with `--no-logs`
   against `EXPO_DEV_SERVER_ORIGIN`, the only address Expo gives code in its
   process, and copies the job's output to Expo's terminal; the app's logs
-  reach that terminal through Metro.
+  reach that terminal through Metro. The entry also registers what it can
+  open in the registry at `Symbol.for('reactNativeTvPlatform.start')`, and
+  adds no key when `claimed` is set there once Expo's listener appears: every
+  plugin's server entry has loaded by then (section 7), so a package that
+  offers one key for every TV platform can claim them whatever the order.
 - A development build's runtime config carries `bundleUrl`, the virtual entry
   on the dev server Expo passes in, its host replaced when it is a loopback
   address the TV cannot reach.

@@ -5,6 +5,7 @@ import { listenForWebOSKeys, type WebOSKeyActions } from './webos-keys.ts';
 
 function actions(overrides: Partial<WebOSKeyActions> = {}): WebOSKeyActions {
   return {
+    claimed: () => false,
     open: vi.fn(async () => undefined),
     choose: vi.fn(async () => undefined),
     usage: vi.fn(),
@@ -49,6 +50,24 @@ describe('listenForWebOSKeys', () => {
 
     expect(given.usage).toHaveBeenCalledOnce();
     expect(given.usage).toHaveBeenCalledWith(false);
+  });
+
+  it('adds no key and no usage line when another package has claimed the keys by then', () => {
+    let claimed = false;
+    const stdin = new FakeStdin();
+    const given = actions({ claimed: () => claimed });
+    listenForWebOSKeys(stdin, given);
+    claimed = true;
+    stdin.startExpo();
+
+    stdin.press('t');
+    stdin.press('T');
+    stdin.press('?');
+
+    expect(given.usage).not.toHaveBeenCalled();
+    expect(given.open).not.toHaveBeenCalled();
+    expect(given.choose).not.toHaveBeenCalled();
+    expect(stdin.expoKeys).toEqual(['t', 'T', '?']);
   });
 
   it('opens on t, asks on T, and adds its lines to the list ? prints', () => {

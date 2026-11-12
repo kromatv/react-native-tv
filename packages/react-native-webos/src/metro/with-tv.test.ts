@@ -7,14 +7,15 @@ import { z } from 'zod';
 import { PACKAGE_ROOT } from '../package-paths.ts';
 import * as metro from './index.ts';
 import { OWN_PACKAGE, withTV } from './with-tv.ts';
-import { withWebOS } from './with-webos.ts';
+import { WEBOS_PLATFORM, withWebOS } from './with-webos.ts';
 
 const example = fileURLToPath(new URL('../../example/', import.meta.url));
 const manifest = z
   .object({
     name: z.string(),
     exports: z.record(z.string(), z.unknown()),
-    reactNativeTvPlatform: z.object({ metro: z.string() }),
+    bin: z.record(z.string(), z.string()),
+    reactNativeTvPlatform: z.object({ metro: z.string(), platform: z.string(), cli: z.string() }),
   })
   .parse(JSON.parse(readFileSync(join(PACKAGE_ROOT, 'package.json'), 'utf8')));
 
@@ -87,6 +88,8 @@ describe('the package, as a TV platform', () => {
     expect(manifest.name).toBe(OWN_PACKAGE);
     expect(manifest.exports).toHaveProperty(manifest.reactNativeTvPlatform.metro);
     expect(metro.withTvPlatform).toBe(withWebOS);
+    expect(manifest.reactNativeTvPlatform.platform).toBe(WEBOS_PLATFORM);
+    expect(manifest.bin).toHaveProperty(manifest.reactNativeTvPlatform.cli);
     expect(metro.withTV).toBe(withTV);
   });
 });
