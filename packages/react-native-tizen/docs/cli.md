@@ -102,8 +102,13 @@ entry, a subpath of its own `exports`, and that entry exports the wrapper as
 `withTvPlatform`. The package must also export its `package.json`:
 
 ```json
-{ "reactNativeTvPlatform": { "metro": "./metro" } }
+{ "reactNativeTvPlatform": { "metro": "./metro", "platform": "tizen", "cli": "rn-tizen" } }
 ```
+
+`platform` and `cli` are for a package that groups TV platforms: they name the
+platform, and the command of this package's `bin` whose `run` puts the app on a
+TV, so that package can offer `run:tizen` beside the `run` of every other
+platform. `withTV` reads `metro` alone.
 
 An app with its own Metro config wraps its export the same way. `bundle`,
 `package`, `run`, `simulator run`, and Run on TV and Run in simulator under
@@ -162,6 +167,12 @@ adds two keys to `npx expo start`, beside Expo's `a` and `i`:
 |---|---|
 | **t** | Opens the app on the TV used last, else on the only TV in Developer mode on the network |
 | **shift+t** | Lists the TVs used before, those on the network and the simulator, and opens the app on the one whose number you press; Esc cancels |
+
+In an app on several TV platforms, each platform package would add its own
+`t`. A package that groups them takes the keys over instead: this package
+registers what it can open, the TVs connected before and the simulator, under
+`Symbol.for('reactNativeTvPlatform.start')` on `globalThis`, and adds no key of
+its own once `claimed` is set there by the time `expo start` reads keys.
 
 `expo start` prints `› Press t │ open on Tizen TV` under its own keys, and both
 lines in the list `?` shows. Opening does what Run on TV does below, with this

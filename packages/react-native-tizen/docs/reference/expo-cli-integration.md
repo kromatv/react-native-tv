@@ -112,6 +112,10 @@ how they load the app's Metro config. Checked on 2026-11-03 and 2026-11-04.
 | In the same app, `t` opened the app on GQ75LS03DAUXZG (The Frame, 2024, Tizen 9.0), the TV used last: Expo's terminal showed the build, install and launch, then the TV's `console.log`; an edit that renamed a log line went from `tick 20` to `tock 25`, the new code with the state kept; `r` restarted the count at 0. | O | TV, 2026-11-04 |
 | In a standalone Bun app (Bun 1.4.2, no config file), `bunx expo start` printed the same line; `t` and `T` typed into the shift+m menu opened nothing; shift+t, then `2`, opened the app in the simulator; an edit kept its state and `r` reloaded it. | O | simulator, 2026-11-04 |
 | `simulator run --dev-server` wrote `tizen/build/bundle` without claiming `tizen/`, so the next TV build refused it as the app's own. It claims the directory first now. | O | simulator, 2026-11-04 |
+| With a package in the app that claims the keys (section "What this means"), in this repository's example: `expo start` printed one line, `› Press t │ open on TV`, and none of this package's; shift+t listed the TV connected before and the Tizen simulator under one prompt, and `1` built, installed and launched the app on the TV from the dev server; `t` in a later `expo start` opened it there again. | O | GQ75LS03DAUXZG (The Frame, 2024, Tizen 9.0), 2026-11-12 |
+| On that TV, an edit of `src/app.tsx` showed in the first screenshot, taken 1.1 s after the save, with the app's seconds counter running on. A syntax error put LogBox's "Failed to compile" screen with the code frame on the TV; the fixed file came back with the counter running on, and the next edit applied. The HMR socket carried `update-start`, `error` (14.6 kB), `update-done`, then `update-start`, `update` (7.4 kB), `update-done`. The screen's line "This error cannot be dismissed." was blank on the TV. | O | GQ75LS03DAUXZG (The Frame, 2024, Tizen 9.0), 2026-11-12 |
+| A file saved back to the content the app already runs gives an `update` with no module, 120 bytes, and nothing refreshes: after an error, a "fix" that restores the last version that built changes nothing on screen, by design. | O | the same TV, 2026-11-12 |
+| A script that drives `expo start` in a pseudo-terminal has to keep reading its output. With the output unread for six seconds after a syntax error, the TV kept "Refreshing..." and received nothing for the fixed file, and the error's lines reached the script only when it read again: the dev server had most likely blocked on the terminal while it printed the error. | O | the same TV, `expect` on macOS, 2026-11-12 |
 
 ## What this means for this package
 
@@ -148,7 +152,11 @@ how they load the app's Metro config. Checked on 2026-11-03 and 2026-11-04.
   does for its own prompts. Opening runs Run on TV's job with `--no-logs`
   against `EXPO_DEV_SERVER_ORIGIN`, the only address Expo gives code in its
   process, and copies the job's output to Expo's terminal; the app's logs
-  reach that terminal through Metro.
+  reach that terminal through Metro. The entry also registers what it can
+  open in the registry at `Symbol.for('reactNativeTvPlatform.start')`, and
+  adds no key when `claimed` is set there once Expo's listener appears: every
+  plugin's server entry has loaded by then (section 7), so a package that
+  offers one key for every TV platform can claim them whatever the order.
 - A development build's runtime config carries `bundleUrl`, the virtual entry
   on the dev server Expo passes in, its host replaced when it is a loopback
   address the TV cannot reach.

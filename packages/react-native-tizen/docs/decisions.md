@@ -315,6 +315,24 @@ platform joins by shipping it. The wrappers run in the order of the package
 names, so the config does not depend on which package `withTV` came from.
 `withTizen` stays, for an app that wants `tizen` alone or an order of its own.
 
+## A TV platform says what it is, and steps aside for a package that groups them
+
+Beside its Metro entry, `reactNativeTvPlatform` names the `platform`, `tizen`,
+and the `cli`, `rn-tizen`: enough for a package that knows no platform to offer
+`run:tizen`, by starting this package's own `run` with the arguments it was
+given. The options, the help and the exit code stay this package's.
+
+Inside `expo start`, two platform packages would each add a `t`. So the keys
+have one owner. Each platform package registers a provider under its platform
+in a registry on `globalThis`, `Symbol.for('reactNativeTvPlatform.start')`: its
+targets, and a function that opens the app on one of them or on the TV used
+last. A package that offers one key for every platform sets `claimed` there,
+and this package then adds no key and prints no usage line. It decides when
+Expo starts reading keys, by which time every dev tools plugin has loaded
+([expo-cli-integration.md](reference/expo-cli-integration.md), section 7), so
+the order the plugins load in does not matter. With nothing claimed, `t` and
+shift+t are this package's, as before.
+
 ## The package ships JavaScript, and the CLI runs on Node
 
 Node refuses to strip types from a file under `node_modules`, and everything a
