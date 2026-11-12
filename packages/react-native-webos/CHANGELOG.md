@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.1.0-alpha.2](https://github.com/kromatv/react-native-webos/compare/v0.1.0-alpha.1...v0.1.0-alpha.2) (2026-11-12)
+
+
+### Features
+
+* **metro:** add every TV platform an app depends on with one withTV call ([#19](https://github.com/kromatv/react-native-webos/issues/19)) ([6f173b2](https://github.com/kromatv/react-native-webos/commit/6f173b2e6557d38b251a7b17dbaebfc82e4851e5))
+
+
+### Bug fixes
+
+* **metro:** bundle a second checkout of an app that shares Metro's cache ([#16](https://github.com/kromatv/react-native-webos/issues/16)) ([857340b](https://github.com/kromatv/react-native-webos/commit/857340b81c2e30fd803269fde5c60453c878b8bd))
+* **metro:** require the list wrapper's style by name, so a transform cache shared by two checkouts bundles in both ([857340b](https://github.com/kromatv/react-native-webos/commit/857340b81c2e30fd803269fde5c60453c878b8bd))
+* **video:** show the picture of a player that replaces another on a view ([#18](https://github.com/kromatv/react-native-webos/issues/18)) ([7307826](https://github.com/kromatv/react-native-webos/commit/7307826da50c392cb8f9ba5a624f3f6dbaae928f))
+
 ## [0.1.0-alpha.1](https://github.com/kromatv/react-native-webos/compare/v0.1.0-alpha.0...v0.1.0-alpha.1) (2026-11-11)
 
 
