@@ -21,7 +21,14 @@ try {
   const fromExpo = createRequire(fromApp.resolve('expo/package.json'));
   const { loadUserConfig } = fromApp('expo/metro-config');
   const { getMetroServerRoot } = fromExpo('@expo/config/paths');
-  loadUserConfig({ projectRoot: root, serverRoot: getMetroServerRoot(root) }).then(
+  try {
+    fromApp('expo/config').getConfig(root, { skipSDKVersionRequirement: true });
+  } catch {}
+  loadUserConfig({
+    projectRoot: root,
+    serverRoot: getMetroServerRoot(root),
+    overrideConfigPath: process.env.EXPO_OVERRIDE_METRO_CONFIG || undefined,
+  }).then(
     (config) => writeFileSync(out, JSON.stringify(config.resolver.platforms ?? [])),
     fail,
   );
@@ -37,8 +44,10 @@ const ERROR_LINES = 12;
 
 /**
  * The platforms the app's Metro config resolves, loaded as `expo start` loads
- * it, with Expo's `loadUserConfig`. Throws an `Error` whose message is the
- * reason Expo gave when the config does not load.
+ * it: the app config is evaluated first, then Expo's `loadUserConfig` reads
+ * the app's Metro config, or the one a config plugin named in
+ * `EXPO_OVERRIDE_METRO_CONFIG`. Throws an `Error` whose message is the reason
+ * Expo gave when the config does not load.
  */
 export function metroPlatforms(root: string): string[] {
   const dir = mkdtempSync(join(tmpdir(), 'rn-tizen-metro-'));
