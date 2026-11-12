@@ -11,7 +11,7 @@ import { webosAndroidBranchPlugin } from './webos-android-branch.ts';
 import { webosListFocusGuidePlugin } from './webos-list-focus-guide.ts';
 import { webosPlatformSelectPlugin } from './webos-platform-select.ts';
 
-const CACHE_VERSION = 'rn-webos-transform-3';
+const CACHE_VERSION = 'rn-webos-transform-4';
 
 interface TransformArgs {
   readonly filename?: string;

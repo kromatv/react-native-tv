@@ -79,6 +79,7 @@ code is shared. What ran on an LG TV is in
 | `withMetroMultiPlatformAsync` sets `resolver.platforms` to the platforms of the Expo config plus those of the Metro config. No step lets a package add a platform, and config plugins change only the app config and the native projects, so `withWebOS` must wrap the Metro config. | S | `src/start/server/metro/withMetroMultiPlatform.js:719-765` |
 | `expo/metro-config` is `module.exports = require('@expo/metro-config')`, and `import { getDefaultConfig } from 'expo/metro-config'` gives the function on Node 22.13.1 and 26.5. | S, O | `expo` 58.0.22 `metro-config.js:1` |
 | `loadUserConfig({ projectRoot, serverRoot: getMetroServerRoot(projectRoot) })`, from `expo/metro-config` and `@expo/config/paths`, returned the example's config in 0.6 s, its `resolver.platforms` `ios android tvos macos webos`. | S, O | `@expo/config` 58.0.10 `build/paths/paths.js:31-32` |
+| Expo's default config keeps Metro's transform cache in `os.tmpdir()/metro-cache`, one store for every project on the machine. Metro keys an entry by the file's path relative to the project root, the transform options, the transformers' cache keys and the file's SHA-1: nothing in the key says where the project is. Two checkouts of one app therefore share entries, so a transformer's output may not hold an absolute path. On 2026-11-11 a cached `VirtualizedList.js` that required this package's list style by its path in one checkout stopped a second checkout from bundling; `withWebOS` now resolves that file from a module name. | S | `@expo/metro-config` 58.0.21 `build/ExpoMetroConfig.js:280-294`; `metro` 0.87.3 `src/DeltaBundler/Transformer.js:82-127`, `src/DeltaBundler/getTransformCacheKey.js:14-33` |
 | `expo prebuild` suggests an Android package from the iOS bundle id when it is valid, else `com.<owner>.<slug>` with `anonymous` for an owner it does not know. It sanitizes it: characters other than letters, digits, `_` and `.` dropped, empty segments removed, `com.` added until there are two segments, and `x` before a segment that does not start with a letter. | S | `src/utils/getOrPromptApplicationId.js:93, 192-210`; `src/utils/validateApplicationId.js:108-130` |
 
 ## 6. react-native-tvos and the package managers
@@ -165,6 +166,7 @@ The files above, under `node_modules/.bun/@expo+cli@58.1.18*/node_modules/@expo/
 `node_modules/.bun/@expo+metro-config@58.0.20*/`,
 `node_modules/.bun/@expo+config@58.0.10*/`,
 `node_modules/.bun/metro-config@0.87.1*/`, `node_modules/.bun/metro-config@0.87.2*/`,
+`node_modules/.bun/metro@0.87.3*/`, `node_modules/.bun/@expo+metro-config@58.0.21*/`,
 `node_modules/.bun/expo@58.0.22*/` (with its `expo-modules-core`) and
 `node_modules/.bun/expo-modules-autolinking@58.0.16*/`.
 
