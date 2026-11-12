@@ -34,6 +34,24 @@ describe('metroPlatforms', () => {
     expect(issue?.hint).toContain('npx rn-webos init');
   });
 
+  it('takes the Metro config a config plugin names for Expo, as expo start does', () => {
+    const dir = app(null);
+    writeFileSync(
+      join(dir, 'tv.metro.cjs'),
+      "module.exports = { resolver: { platforms: ['ios', 'android', 'webos'] } };\n",
+    );
+    writeFileSync(
+      join(dir, 'plugin.cjs'),
+      "module.exports = (config) => { process.env.EXPO_OVERRIDE_METRO_CONFIG = require('node:path').join(__dirname, 'tv.metro.cjs'); return config; };\n",
+    );
+    writeFileSync(
+      join(dir, 'app.json'),
+      JSON.stringify({ expo: { name: 'Metro', slug: 'metro', plugins: ['./plugin.cjs'] } }),
+    );
+
+    expect(webosMetroIssue(dir)).toBeNull();
+  });
+
   it('says why when Expo cannot load the config', () => {
     const dir = app("throw new Error('broken metro config');\n");
 

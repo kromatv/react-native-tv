@@ -74,6 +74,8 @@ code is shared. What ran on an LG TV is in
 |---|---|---|
 | `expo start` and `expo export:embed` load the app's Metro config with `loadUserConfig` from `@expo/metro-config`, not with Metro's own `loadConfig`, and merge it over Expo's default config. | S | `@expo/cli` `src/start/server/metro/instantiateMetro.js:241-245`; `@expo/metro-config` `build/config/loadUserConfig.js:24-27` |
 | `loadUserConfig` looks for `metro.config`, then `.config/metro`, with `.js .cjs .mjs .json .ts .cts .mts`, from the project root up to the Metro server root, then for a `metro` key in the project's `package.json`. It loads the file with `loadModuleSync` and takes `default` when the module sets `__esModule`. | S | `@expo/metro-config` `build/config/resolveMetroUserConfig.js:48-56, 83-91, 100-124` |
+| Expo CLI evaluates the app config, config plugins included, before it loads the Metro config, for `expo start` and for `expo export:embed`. It passes `loadUserConfig` the path in `EXPO_OVERRIDE_METRO_CONFIG` as `overrideConfigPath`, read from the environment as it was before any `.env` file, and the file at that path is loaded in place of the app's own. Expo's source calls the variable internal, "added for external tools". | S | `@expo/cli` 58.1.19 `build/src/start/server/metro/instantiateMetro.js:241-246, 343-349`, `build/src/export/embed/exportEmbedAsync.js:394-399`, `build/src/utils/env.js:176-185`; `@expo/metro-config` 58.0.21 `build/config/resolveMetroUserConfig.js:93-96` |
+| A config plugin that set `EXPO_OVERRIDE_METRO_CONFIG` while Expo evaluated the app config made `expo export:embed --platform webos` and `expo start` load the file it named, in an app with no `metro.config`: both bundled for `webos`. | O | an app in a temporary directory, `expo` 58.0.23, `@expo/cli` 58.1.20, Bun 1.4.2, 2026-11-12 |
 | `loadModuleSync` compiles a `.mjs` file as an ES module itself (`Module._compile` with the `module` format), so `import.meta.dirname` and named imports work in it. | S | `@expo/require-utils` `build/load.js:135-157, 205-265, 406-431` |
 | Metro's own `loadConfig` searches the same names and falls back to `import()` when `require` fails. Expo 58 ships `metro-config` 0.87.1 through `@expo/metro` 58.0.0. | S | `metro-config` 0.87.1 `src/loadConfig.js:57-64, 303-323`; 0.87.2 `src/loadConfig.js:57-64, 328-348` |
 | `withMetroMultiPlatformAsync` sets `resolver.platforms` to the platforms of the Expo config plus those of the Metro config. No step lets a package add a platform, and config plugins change only the app config and the native projects, so `withWebOS` must wrap the Metro config. | S | `src/start/server/metro/withMetroMultiPlatform.js:719-765` |
@@ -131,8 +133,12 @@ code is shared. What ran on an LG TV is in
 - `rn-webos init` writes `metro.config.mjs` or wraps an existing config, and
   suggests the app's `android.package`, else `com.anonymous.<slug>` sanitized
   as `expo prebuild` does, for the package id. Builds load the Metro config
-  with `loadUserConfig` before anything else, and stop with `npx rn-webos init`
-  as the fix when its platforms lack `webos`.
+  before anything else, as Expo CLI would: the app config first, then
+  `loadUserConfig` with the path a config plugin may have put in
+  `EXPO_OVERRIDE_METRO_CONFIG` (section 5). They stop with `npx rn-webos init`
+  as the fix when its platforms lack `webos`. So an app whose config plugin
+  gives Expo a Metro config with `webos` builds without a `withTV` call of its
+  own.
 - `rn-webos init` points `react-native` at `npm:react-native-tvos@0.88.0-0`,
   the release this repository builds against, unless the app names a
   react-native-tvos already. An exact version, because Bun refuses the

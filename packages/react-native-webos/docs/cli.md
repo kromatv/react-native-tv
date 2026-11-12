@@ -106,6 +106,12 @@ shift+m, load the config as `expo start` does before anything else. When it
 does not know the `webos` platform, they stop and say to run
 `npx rn-webos init`.
 
+A config plugin can also hand Expo a Metro config that has the platform, by
+naming it in `EXPO_OVERRIDE_METRO_CONFIG` while Expo evaluates the app config.
+The app's own Metro config then needs no wrapper, and these commands accept
+it, since they load the config as Expo does: the app config first, then the
+Metro config Expo would take.
+
 ## Where things go
 
 | What | Where |
