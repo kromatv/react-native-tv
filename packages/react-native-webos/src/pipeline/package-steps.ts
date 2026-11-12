@@ -79,7 +79,7 @@ export async function appSetupSteps(reporter: Reporter, app: AppProject): Promis
       const issue = webosMetroIssue(app.root);
       return issue === null ? Promise.resolve() : Promise.reject(issue);
     },
-    () => 'withWebOS',
+    () => 'knows webos',
   );
 }
 

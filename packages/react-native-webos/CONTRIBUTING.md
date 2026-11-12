@@ -25,7 +25,7 @@ the only host verified so far.
   is installed: `rn-webos` reaches the TV and writes packages itself, and a
   webOS package is not signed.
 - Node.js, which runs Expo's CLI when the app is bundled. `npx expo start` in
-  the example needs 22.18 or newer: its Metro config imports `withWebOS` from
+  the example needs 22.18 or newer: its Metro config imports `withTV` from
   `src/`, so Node must strip TypeScript types on its own.
 - For the simulator: [Lima](https://lima-vm.io) 2.0 or newer (`brew install
   lima`) and about 8 GB of free disk.

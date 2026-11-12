@@ -133,7 +133,7 @@ describe('packageSteps', () => {
 
   it.each([
     ['loads two react-natives', () => vi.mocked(singleReactNativeIssue), 'two copies'],
-    ['Metro config has no withWebOS', () => vi.mocked(webosMetroIssue), 'no webos platform'],
+    ['Metro config does not know webos', () => vi.mocked(webosMetroIssue), 'no webos platform'],
   ])('stops before compiling anything when the app %s', async (_, check, message) => {
     check().mockReturnValueOnce(new FixableError(message, 'Run npx rn-webos init'));
 

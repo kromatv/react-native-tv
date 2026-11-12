@@ -244,8 +244,25 @@ The webOS settings are the props of this package's config plugin
 (`app.plugin.js`), and the package is also a dev tools plugin
 (`expo-module.config.json`): `npx expo start` lists Run on TV, Run in
 simulator and Find TVs. Expo has no `run:webos`, so `rn-webos` keeps its own
-commands. A config plugin cannot add a platform to Metro, so `withWebOS` wraps
-the app's Metro config; `npx rn-webos init` writes it.
+commands. A config plugin cannot add a platform to Metro, so a wrapper around
+the app's Metro config does; `npx rn-webos init` writes it.
+
+## One Metro wrapper for every TV platform
+
+An app on several TVs would chain one wrapper per platform,
+`withWebOS(withTizen(config))`, and edit its Metro config for each platform it
+adds. `withTV` is the one call instead. It takes `withWebOS` and the wrapper of
+every other TV platform among the app's dependencies: a package is one when
+its `package.json` has `reactNativeTvPlatform.metro`, a subpath of its own
+`exports` whose module exports the wrapper as `withTvPlatform`. This package
+declares itself the same way, so `withTV` from `@kromatv/react-native-tizen`
+finds it. The other wrappers are loaded with `require`, which takes an ES
+module from Node 22.12 on, below this package's floor.
+
+No package names another: the declaration is the whole contract, and a third
+platform joins by shipping it. The wrappers run in the order of the package
+names, so the config does not depend on which package `withTV` came from.
+`withWebOS` stays, for an app that wants `webos` alone or an order of its own.
 
 ## The package ships JavaScript, and the CLI runs on Node
 

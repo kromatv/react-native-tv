@@ -74,7 +74,7 @@ describe('rn-webos init', () => {
     expect(output.stdout()).toContain(
       'lists the @kromatv/react-native-webos config plugin already',
     );
-    expect(output.stdout()).toContain('metro.config.mjs uses withWebOS already');
+    expect(output.stdout()).toContain('metro.config.mjs teaches Metro webos already');
     expect(output.stdout()).toContain('then press t to open the app on the TV used last');
   });
 
@@ -106,7 +106,7 @@ describe('rn-webos init', () => {
       'metro.config.js cannot be changed safely: add these two lines',
     );
     expect(output.stdout()).toContain(
-      "const { withWebOS } = require('@kromatv/react-native-webos/metro');",
+      "const { withTV } = require('@kromatv/react-native-webos/metro');",
     );
   });
 

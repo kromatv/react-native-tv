@@ -58,11 +58,11 @@ export function metroPlatforms(root: string): string[] {
   }
 }
 
-/** The reason the app's Metro config cannot bundle for webOS, or null when `withWebOS` wraps it. */
+/** The reason the app's Metro config cannot bundle for webOS, or null when it knows the platform. */
 export function webosMetroIssue(root: string): FixableError | null {
   if (metroPlatforms(root).includes(WEBOS_PLATFORM)) return null;
   return new FixableError(
     `The app's Metro config does not know the ${WEBOS_PLATFORM} platform`,
-    `Run ${packageRunner(root)} rn-webos init: it wraps the Metro config with withWebOS.`,
+    `Run ${packageRunner(root)} rn-webos init: it wraps the Metro config with withTV.`,
   );
 }

@@ -123,11 +123,23 @@ npx rn-webos init
 ```
 
 `init` asks for the app's webOS id, writes `metro.config.mjs` (or wraps the
-one you have with `withWebOS`), points `react-native` at
+one you have with `withTV`), points `react-native` at
 [react-native-tvos](https://github.com/react-native-tvos/react-native-tvos),
 the TV fork of React Native this package is built against, and runs your
 package manager's install. Running it again changes nothing. With Bun, pnpm or
 Yarn, run `rn-webos` with `bunx`, `pnpm exec` or `yarn`.
+
+`withTV` teaches Metro every TV platform the app depends on, so an app that
+also runs on Samsung TVs with
+[`@kromatv/react-native-tizen`](https://github.com/kromatv/react-native-tizen)
+keeps one call in its Metro config, whichever of the two packages it imports
+`withTV` from:
+
+```js
+import { getDefaultConfig } from 'expo/metro-config';
+import { withTV } from '@kromatv/react-native-webos/metro';
+export default withTV(getDefaultConfig(import.meta.dirname));
+```
 
 ### 4. Connect the TV, once
 

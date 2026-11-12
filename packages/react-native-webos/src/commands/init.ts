@@ -76,20 +76,20 @@ function reportMetro(reporter: Reporter, setup: MetroSetup, cwd: string): void {
   }
   const done = {
     written: 'written',
-    wrapped: 'wrapped with withWebOS',
-    present: 'uses withWebOS already',
+    wrapped: 'wrapped with withTV',
+    present: 'teaches Metro webos already',
   }[setup.kind];
   reporter.field('Metro config', `${file} ${done}`);
 }
 
 /**
  * `rn-webos init`: lists the config plugin in the app's config, wraps its Metro
- * config with `withWebOS`, and installs one react-native-tvos.
+ * config with `withTV`, and installs one react-native-tvos.
  */
 export const initCommand: Command = {
   name: 'init',
   summary:
-    'Set an Expo app up for webOS: the config plugin, withWebOS in the Metro config, one react-native-tvos',
+    'Set an Expo app up for webOS: the config plugin, withTV in the Metro config, one react-native-tvos',
   options: OPTIONS,
   examples: ['npx rn-webos init', 'npx rn-webos init --package com.example.myapp'],
   async run(args, context) {

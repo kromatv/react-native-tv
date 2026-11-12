@@ -70,15 +70,29 @@ An unknown key is an error, so a typo does not pass silently.
 
 ### The Metro config
 
-Metro learns the `webos` platform from `withWebOS`, which wraps the app's Metro
+Metro learns the `webos` platform from `withTV`, which wraps the app's Metro
 config. A config plugin cannot do it: Expo's Metro setup has no hook for a
 package. `rn-webos init` writes this `metro.config.mjs`, which Expo loads as an
 ES module:
 
 ```js
 import { getDefaultConfig } from 'expo/metro-config';
-import { withWebOS } from '@kromatv/react-native-webos/metro';
-export default withWebOS(getDefaultConfig(import.meta.dirname));
+import { withTV } from '@kromatv/react-native-webos/metro';
+export default withTV(getDefaultConfig(import.meta.dirname));
+```
+
+`withTV` adds every TV platform the app depends on: `webos`, and the platform
+of each other dependency that declares one, such as `tizen` from
+`@kromatv/react-native-tizen`. An app on both keeps this one call, imported
+from either package, and a platform added later needs no change here.
+`withWebOS`, from the same module, adds `webos` alone.
+
+A package is a TV platform for `withTV` when its `package.json` names its Metro
+entry, a subpath of its own `exports`, and that entry exports the wrapper as
+`withTvPlatform`. The package must also export its `package.json`:
+
+```json
+{ "reactNativeTvPlatform": { "metro": "./metro" } }
 ```
 
 An app with its own Metro config wraps its export the same way. `bundle`,
@@ -152,7 +166,7 @@ background and prints the address of the plugin's page,
 job's progress and output stream, and a running job can be stopped. Starting
 Run on TV or Run in simulator again stops the previous run of the same
 command. Both refuse to start, with the fix, when the app loads more than one
-`react-native` or its Metro config has no `withWebOS`. The jobs are kept in `~/.cache/react-native-webos/devtools/jobs/`, the
+`react-native` or its Metro config does not know `webos`. The jobs are kept in `~/.cache/react-native-webos/devtools/jobs/`, the
 twenty most recent.
 
 A development build loads its JavaScript from the dev server, and needs React
@@ -187,7 +201,8 @@ Sets an Expo app up for webOS. Running it again changes nothing.
   `expo prebuild` does; without one it takes the suggestion. Expo evaluates an
   `app.config.*` file, so `init` prints the entry to add to it instead.
 - **The Metro config.** It writes `metro.config.mjs` when the app has none. An
-  existing config whose export is a single line is wrapped with `withWebOS`.
+  existing config whose export is a single line is wrapped with `withTV`, and
+  one that already calls `withTV` or `withWebOS` is left as it is.
   For any other, a JSON one, `package.json`'s `metro` key or a config at the
   workspace root above the app, it prints the two lines to add.
 - **React Native.** It points the app's `react-native` dependency at
@@ -373,7 +388,7 @@ Builds an `.ipk` from scratch or incrementally: the native runtime, the bundle,
 the ICU data and the CA bundle, the app directory in `webos/app/`, then the
 package, `webos/<package>_<version>_arm.ipk`. It checks the app's
 `react-native` and Metro config first, so a second copy of `react-native` or a
-Metro config without `withWebOS` fails in seconds rather than after a build.
+Metro config that does not know `webos` fails in seconds rather than after a build.
 
 `rn-webos` writes the package itself, in the layout LG's `ares-package` writes
 ([webos-ipk-format.md](reference/webos-ipk-format.md)); `ares-package` is never

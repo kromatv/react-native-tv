@@ -28,10 +28,13 @@
   "bin": {
     "rn-webos": "dist/cli/main.js"
   },
+  "reactNativeTvPlatform": {
+    "metro": "./metro"
+  },
   "exports": {
     "./metro": {
-      "types": "./dist/metro/with-webos.d.ts",
-      "default": "./dist/metro/with-webos.js"
+      "types": "./dist/metro/index.d.ts",
+      "default": "./dist/metro/index.js"
     },
     "./webos": {
       "types": "./dist/webos/index.d.ts",

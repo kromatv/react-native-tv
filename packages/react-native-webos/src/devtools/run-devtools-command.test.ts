@@ -78,7 +78,7 @@ describe('runDevtoolsCommand', () => {
     expect(lines[0]?.text).toContain(message);
   });
 
-  it('refuses to run the app when its Metro config has no withWebOS, and says how to fix it', async () => {
+  it('refuses to run the app when its Metro config does not know webos, and says how to fix it', async () => {
     vi.mocked(webosMetroIssue).mockReturnValueOnce(
       new FixableError(
         "The app's Metro config does not know the webos platform",
