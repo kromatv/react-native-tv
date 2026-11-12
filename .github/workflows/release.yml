@@ -81,7 +81,7 @@ jobs:
       matrix:
         include: >-
           ${{ fromJSON(github.event_name == 'pull_request'
-          && '[{"package":"react-native-tizen"},{"package":"react-native-webos"}]'
+          && '[{"package":"react-native-tizen"},{"package":"react-native-tv"},{"package":"react-native-webos"}]'
           || needs.release-please.outputs.packages) }}
     runs-on: ubuntu-latest
     timeout-minutes: 20

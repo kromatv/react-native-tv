@@ -22,6 +22,7 @@ jobs:
     outputs:
       react-native-tizen: ${{ steps.packages.outputs.react-native-tizen }}
       react-native-tizen-native: ${{ steps.packages.outputs.react-native-tizen-native }}
+      react-native-tv: ${{ steps.packages.outputs.react-native-tv }}
       react-native-webos: ${{ steps.packages.outputs.react-native-webos }}
       react-native-webos-native: ${{ steps.packages.outputs.react-native-webos-native }}
     steps:
@@ -58,6 +59,17 @@ jobs:
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
+  react-native-tv:
+    name: react-native-tv
+    needs: changes
+    if: needs.changes.outputs.react-native-tv == 'true'
+    uses: ./.github/workflows/package.yml
+    with:
+      package: react-native-tv
+      packed: false
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
   react-native-webos:
     name: react-native-webos
     needs: changes
@@ -84,7 +96,7 @@ jobs:
   # that required each package's jobs would wait for ever. It requires this one.
   result:
     name: CI result
-    needs: [changes, react-native-tizen, react-native-webos]
+    needs: [changes, react-native-tizen, react-native-tv, react-native-webos]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
