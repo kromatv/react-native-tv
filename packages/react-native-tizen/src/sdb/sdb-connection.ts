@@ -80,7 +80,7 @@ export class SdbConnection implements StreamTransport {
   private onHandshakeFailed: ((error: Error) => void) | null = null;
 
   private constructor(private readonly socket: Socket) {
-    socket.on('data', (chunk) => this.receive(chunk));
+    socket.on('data', (chunk: Buffer) => this.receive(chunk));
     socket.on('error', (error) => this.fail(error));
     socket.on('close', () => this.fail(new Error('sdb: the TV closed the connection')));
   }

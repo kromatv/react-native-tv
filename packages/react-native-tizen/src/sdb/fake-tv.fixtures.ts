@@ -89,7 +89,7 @@ export async function fakeTv({
     let nextId = 0x700;
     const send = (command: number, arg0: number, arg1: number, data = EMPTY) =>
       socket.write(encodePacket({ command, arg0, arg1, data }));
-    socket.on('data', (chunk) => {
+    socket.on('data', (chunk: Buffer) => {
       for (const packet of reader.push(chunk)) {
         packets.push(packet);
         if (packet.command === SDB_COMMAND.CNXN && handshake === 'silent') continue;
