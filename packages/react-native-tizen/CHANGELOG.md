@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.0-alpha.3](https://github.com/kromatv/react-native-tizen/compare/v0.1.0-alpha.2...v0.1.0-alpha.3) (2026-11-12)
+
+
+### Features
+
+* **speech:** search by voice with expo-speech-recognition and the remote's mic button ([#82](https://github.com/kromatv/react-native-tizen/issues/82)) ([0a9ec10](https://github.com/kromatv/react-native-tizen/commit/0a9ec10685c841492395210380069fe179d71eeb))
+
+
+### Bug fixes
+
+* **metro:** bundle a second checkout of an app that shares Metro's cache ([#84](https://github.com/kromatv/react-native-tizen/issues/84)) ([7bf2edc](https://github.com/kromatv/react-native-tizen/commit/7bf2edc41b21c1c510969ce72450f4b8c14659d1))
+
 ## [0.1.0-alpha.2](https://github.com/kromatv/react-native-tizen/compare/v0.1.0-alpha.1...v0.1.0-alpha.2) (2026-11-04)
 
 
