@@ -1,0 +1,39 @@
+#include "HostFeatureFlags.h"
+
+#include <react/featureflags/ReactNativeFeatureFlags.h>
+#include <react/featureflags/ReactNativeFeatureFlagsOverridesOSSStable.h>
+
+#include <memory>
+#include <mutex>
+
+namespace rnwebos {
+
+namespace {
+
+class WebOSFeatureFlags final : public facebook::react::ReactNativeFeatureFlagsOverridesOSSStable {
+ public:
+  bool cxxNativeAnimatedEnabled() override {
+    return true;
+  }
+
+  // One layout per paragraph: its shadow node prepares it and ParagraphView
+  // plays it (docs/reference/react-native-platform-contract.md, Text layout).
+  bool enablePreparedTextLayout() override {
+    return true;
+  }
+
+  // The remote's pointer hovers: Pressable reads it from W3C pointer events.
+  bool shouldPressibilityUseW3CPointerEventsForHover() override {
+    return true;
+  }
+};
+
+} // namespace
+
+void overrideFeatureFlagsOnce() {
+  static std::once_flag once;
+  std::call_once(
+      once, [] { facebook::react::ReactNativeFeatureFlags::override(std::make_unique<WebOSFeatureFlags>()); });
+}
+
+} // namespace rnwebos

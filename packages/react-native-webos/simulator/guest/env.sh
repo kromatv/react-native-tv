@@ -1,0 +1,95 @@
+# shellcheck shell=bash disable=SC2034
+# Paths and settings every guest script shares: the runtime builds and the
+# instances. Sourced, never run.
+
+SIMULATOR_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PACKAGE_DIR="$(dirname "$SIMULATOR_DIR")"
+RUNTIME_DIR="$PACKAGE_DIR/runtime"
+
+WORK_DIR="${RN_WEBOS_SIMULATOR_HOME:-$HOME/rn-webos-simulator}"
+SOURCE_DIR="$WORK_DIR/src"
+BUILD_DIR="$WORK_DIR/build"
+SKIA_DIR="$BUILD_DIR/skia"
+HERMES_HOST_BUILD_DIR="$BUILD_DIR/hermes-host"
+HERMES_HOST_LOCK="$BUILD_DIR/hermes-host.lock"
+# The one build from before each set of native libraries had its own, which
+# an instance staged before then keeps running until it is staged again.
+LEGACY_RUNTIME_DIR="$BUILD_DIR/runtime"
+LEGACY_BUILD_LOCK="$WORK_DIR/build.lock"
+RUNTIMES_DIR="$BUILD_DIR/runtimes"
+RUNTIME_KEY='^[0-9a-f]{12}$'
+RUNTIME_USED_FILE=".rn-webos-used"
+INSTANCES_DIR="$WORK_DIR/instances"
+INSTANCE_NAME='^[a-z0-9][a-z0-9_-]{0,31}$'
+
+DEFAULT_SCREEN_SIZE="1920x1080"
+SCREEN_SIZES='^(1920x1080|1280x720)$'
+
+mkdir -p "$WORK_DIR"
+
+is_running() {
+  local pid_file="$1"
+  [[ -f "$pid_file" ]] && kill -0 "$(cat "$pid_file")" 2>/dev/null
+}
+
+runtime_dir() {
+  local key="$1"
+  if [[ -z "$key" ]]; then echo "$LEGACY_RUNTIME_DIR"; else echo "$RUNTIMES_DIR/$key"; fi
+}
+
+runtime_lock() {
+  local dir="$1"
+  if [[ "$dir" == "$LEGACY_RUNTIME_DIR" ]]; then echo "$LEGACY_BUILD_LOCK"; else echo "$dir.lock"; fi
+}
+
+launcher_in() {
+  local runtime="$1"
+  echo "$runtime/host/react-native-webos"
+}
+
+instance_runtime_key() {
+  local instance_dir="$1"
+  cat "$instance_dir/runtime" 2>/dev/null || true
+}
+
+instance_runtime_dir() {
+  local instance_dir="$1"
+  runtime_dir "$(instance_runtime_key "$instance_dir")"
+}
+
+# The command line run.sh started an instance's app with, which it records:
+# systemd-coredump keeps it with each core, and it is what tells one instance's
+# crashes from another's. The app takes its directories from the environment
+# and ignores the instance directory it is given.
+app_command_line() {
+  local instance_dir="$1"
+  if [[ -f "$instance_dir/command-line" ]]; then
+    cat "$instance_dir/command-line"
+  else
+    echo "$(launcher_in "$(instance_runtime_dir "$instance_dir")") $instance_dir"
+  fi
+}
+
+start_daemon() {
+  local pid_file="$1" log="$2"
+  shift 2
+  if is_running "$pid_file"; then return; fi
+  setsid "$@" >"$log" 2>&1 </dev/null &
+  echo $! >"$pid_file"
+}
+
+stop_daemon() {
+  local pid_file="$1" pid
+  if ! is_running "$pid_file"; then
+    rm -f "$pid_file"
+    return 0
+  fi
+  pid="$(cat "$pid_file")"
+  kill "$pid"
+  for _ in $(seq 50); do
+    kill -0 "$pid" 2>/dev/null || break
+    sleep 0.1
+  done
+  kill -9 "$pid" 2>/dev/null || true
+  rm -f "$pid_file"
+}

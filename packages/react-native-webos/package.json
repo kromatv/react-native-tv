@@ -1,0 +1,101 @@
+{
+  "name": "@kromatv/react-native-webos",
+  "version": "0.1.0-alpha.2",
+  "type": "module",
+  "description": "React Native and Expo for LG webOS TVs: Hermes and Fabric run natively, with no web runtime in between.",
+  "license": "MIT",
+  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kromatv/react-native-webos.git"
+  },
+  "homepage": "https://github.com/kromatv/react-native-webos#readme",
+  "bugs": {
+    "url": "https://github.com/kromatv/react-native-webos/issues"
+  },
+  "keywords": [
+    "react-native",
+    "expo",
+    "webos",
+    "lg",
+    "smart-tv",
+    "hermes"
+  ],
+  "packageManager": "bun@1.4.0",
+  "workspaces": [
+    "example"
+  ],
+  "bin": {
+    "rn-webos": "dist/cli/main.js"
+  },
+  "reactNativeTvPlatform": {
+    "metro": "./metro"
+  },
+  "exports": {
+    "./metro": {
+      "types": "./dist/metro/index.d.ts",
+      "default": "./dist/metro/index.js"
+    },
+    "./webos": {
+      "types": "./dist/webos/index.d.ts",
+      "default": "./dist/webos/index.js"
+    },
+    "./app.plugin.js": "./app.plugin.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "runtime",
+    "simulator",
+    "react-native-overrides",
+    "docs",
+    "README.md",
+    "CHANGELOG.md",
+    "app.plugin.js",
+    "expo-module.config.json",
+    "devtools",
+    "THIRD_PARTY_NOTICES.md",
+    "!docs/assets/**",
+    "!**/*.tsbuildinfo",
+    "!**/*.fixtures.*"
+  ],
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "prepare": "bun run build",
+    "typecheck": "tsc -p tsconfig.json && tsc -p example/tsconfig.json",
+    "test": "vitest run",
+    "test:runtime": "bun scripts/test-runtime.ts",
+    "lint": "oxlint --ignore-path .gitignore --deny-warnings .",
+    "format": "oxfmt .",
+    "check": "bun run lint && oxfmt --check .",
+    "check:fix": "oxlint --ignore-path .gitignore --fix . && oxfmt .",
+    "check:packed": "bun scripts/check-packed-install.ts"
+  },
+  "dependencies": {
+    "@formatjs/intl-numberformat": "10.0.2",
+    "@formatjs/intl-pluralrules": "7.0.2",
+    "@formatjs/intl-relativetimeformat": "13.0.1",
+    "ssh2": "1.17.0",
+    "ws": "8.22.2",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/ssh2": "^1.15.6",
+    "@types/ws": "^8.18.2",
+    "@vitest/coverage-istanbul": "5.1.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "eslint-plugin-sonarjs": "4.2.2",
+    "oxfmt": "0.77.0",
+    "oxlint": "1.92.0",
+    "react-native": "npm:react-native-tvos@0.88.0-0",
+    "typescript": "^7.0.2",
+    "vitest": "5.1.0"
+  },
+  "peerDependencies": {
+    "react-native": ">=0.88.0-0"
+  }
+}

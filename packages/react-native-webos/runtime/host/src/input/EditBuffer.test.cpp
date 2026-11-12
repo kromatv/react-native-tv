@@ -1,0 +1,236 @@
+#include "EditBuffer.h"
+
+#include <doctest/doctest.h>
+
+#include <string>
+
+namespace rnwebos {
+
+TEST_CASE("setText puts the caret after the last code point") {
+  EditBuffer buffer;
+
+  buffer.setText("h\xC3\xA9\xF0\x9F\x98\x80");
+
+  CHECK(buffer.size() == 3);
+  CHECK(buffer.utf16Size() == 4);
+  CHECK(buffer.caret() == 3);
+  CHECK_FALSE(buffer.hasSelection());
+  CHECK(buffer.selectionUtf16() == EditBuffer::Range{.start = 4, .end = 4});
+}
+
+TEST_CASE("setText keeps a caret inside the old text at its relative place, as Android's Editable.replace does") {
+  EditBuffer buffer;
+  buffer.setText("abxc");
+  buffer.moveTo(3, false);
+
+  buffer.setText("ABXC");
+  CHECK(buffer.caret() == 3);
+
+  buffer.setText("AB");
+  CHECK(buffer.caret() == 1);
+}
+
+TEST_CASE("setText leaves a caret at the start where it is, takes one at the end to the new end, and scales a selection") {
+  EditBuffer buffer;
+  buffer.setText("abcd");
+  buffer.moveTo(0, false);
+
+  buffer.setText("ABCDEFGH");
+  CHECK(buffer.caret() == 0);
+
+  buffer.selectUtf16(2, 8);
+  buffer.setText("abcd");
+  CHECK(buffer.selection() == EditBuffer::Range{.start = 1, .end = 4});
+
+  buffer.setText("");
+  CHECK(buffer.caret() == 0);
+}
+
+TEST_CASE("insert keeps what maxLength leaves room for and never splits a surrogate pair") {
+  EditBuffer buffer;
+  buffer.setText("ab");
+
+  const bool changed = buffer.insert(U"c\U0001F600d", 4);
+
+  CHECK(changed);
+  CHECK(buffer.utf8() == "abc");
+  CHECK(buffer.caret() == 3);
+}
+
+TEST_CASE("insert replaces the selection") {
+  EditBuffer buffer;
+  buffer.setText("hello");
+  buffer.selectUtf16(1, 4);
+
+  buffer.insert(U"EY", 100);
+
+  CHECK(buffer.utf8() == "hEYo");
+  CHECK(buffer.caret() == 3);
+}
+
+TEST_CASE("compose keeps the composition and puts the caret inside it") {
+  EditBuffer buffer;
+  buffer.setText("ab");
+  buffer.moveTo(1, false);
+
+  buffer.compose(U"xyz", 1, 100);
+
+  CHECK(buffer.utf8() == "axyzb");
+  CHECK(buffer.composing() == EditBuffer::Range{.start = 1, .end = 4});
+  CHECK(buffer.caret() == 2);
+}
+
+TEST_CASE("commit replaces the composition and ends it") {
+  EditBuffer buffer;
+  buffer.compose(U"ka", 2, 100);
+
+  buffer.commit(U"か", 100);
+
+  CHECK(buffer.utf8() == "\xE3\x81\x8B");
+  CHECK_FALSE(buffer.composing().has_value());
+  CHECK(buffer.caret() == 1);
+}
+
+TEST_CASE("deleteBackward and deleteForward delete around the caret") {
+  EditBuffer buffer;
+  buffer.setText("abc");
+  buffer.moveTo(1, false);
+
+  CHECK(buffer.deleteBackward());
+  CHECK_FALSE(buffer.deleteBackward());
+  CHECK(buffer.deleteForward());
+
+  CHECK(buffer.utf8() == "c");
+  CHECK(buffer.caret() == 0);
+}
+
+TEST_CASE("clear deletes the whole text and its composition, and reports an empty text unchanged") {
+  EditBuffer buffer;
+  buffer.setText("abc");
+  buffer.compose(U"de", 2, 100);
+
+  CHECK(buffer.clear());
+  CHECK_FALSE(buffer.clear());
+
+  CHECK(buffer.utf8().empty());
+  CHECK(buffer.caret() == 0);
+  CHECK_FALSE(buffer.composing().has_value());
+}
+
+TEST_CASE("positions and UTF-16 offsets convert both ways around a character outside the BMP") {
+  EditBuffer buffer;
+  buffer.setText("a\xF0\x9F\x98\x80" "b");
+
+  CHECK(buffer.utf16Offset(1) == 1);
+  CHECK(buffer.utf16Offset(2) == 3);
+  CHECK(buffer.utf16Offset(9) == 4);
+  CHECK(buffer.positionAtUtf16(2) == 1);
+  CHECK(buffer.positionAtUtf16(3) == 2);
+  CHECK(buffer.positionAtUtf16(9) == 3);
+}
+
+TEST_CASE("selectAll selects the whole text, and typing replaces it") {
+  EditBuffer buffer;
+  buffer.setText("abc");
+
+  buffer.selectAll();
+
+  CHECK(buffer.text() == U"abc");
+  CHECK(buffer.selection() == EditBuffer::Range{.start = 0, .end = 3});
+  CHECK(buffer.insert(U"x", 100));
+  CHECK(buffer.utf8() == "x");
+}
+
+TEST_CASE("moveTo with extend moves only the selection's moving end, and stops at the end of the text") {
+  EditBuffer buffer;
+  buffer.setText("abcdef");
+  buffer.moveTo(1, false);
+
+  buffer.moveTo(4, true);
+  CHECK(buffer.selection() == EditBuffer::Range{.start = 1, .end = 4});
+  buffer.moveTo(0, true);
+  CHECK(buffer.selection() == EditBuffer::Range{.start = 0, .end = 1});
+  CHECK(buffer.caret() == 0);
+  buffer.moveTo(99, false);
+
+  CHECK(buffer.caret() == 6);
+  CHECK_FALSE(buffer.hasSelection());
+}
+
+TEST_CASE("selectUtf16 never lands inside a surrogate pair and stops at the end of the text") {
+  EditBuffer buffer;
+  buffer.setText("a\xF0\x9F\x98\x80z");
+
+  buffer.selectUtf16(2, 99);
+
+  CHECK(buffer.selection() == EditBuffer::Range{.start = 1, .end = 3});
+  CHECK(buffer.selectionUtf16() == EditBuffer::Range{.start = 1, .end = 4});
+}
+
+TEST_CASE("an insert into a field at its maxLength changes nothing") {
+  EditBuffer buffer;
+  buffer.setText("abcd");
+
+  CHECK_FALSE(buffer.insert(U"e", 4));
+
+  CHECK(buffer.utf8() == "abcd");
+  CHECK(buffer.caret() == 4);
+}
+
+TEST_CASE("replacing the selection with the same text is no change, and the caret goes after it") {
+  EditBuffer buffer;
+  buffer.setText("abc");
+  buffer.selectUtf16(0, 1);
+
+  CHECK_FALSE(buffer.insert(U"a", 100));
+
+  CHECK(buffer.utf8() == "abc");
+  CHECK(buffer.caret() == 1);
+}
+
+TEST_CASE("an empty composition removes the composed text") {
+  EditBuffer buffer;
+  buffer.setText("x");
+  buffer.compose(U"ka", 2, 100);
+
+  CHECK(buffer.compose(U"", 0, 100));
+
+  CHECK(buffer.utf8() == "x");
+  CHECK_FALSE(buffer.composing().has_value());
+  CHECK(buffer.caret() == 1);
+}
+
+TEST_CASE("finishComposing keeps the composed text as typed text") {
+  EditBuffer buffer;
+  buffer.compose(U"ka", 2, 100);
+
+  buffer.finishComposing();
+  buffer.insert(U"!", 100);
+
+  CHECK(buffer.utf8() == "ka!");
+  CHECK_FALSE(buffer.composing().has_value());
+}
+
+TEST_CASE("deleteBackward and deleteForward delete the selection when there is one") {
+  EditBuffer buffer;
+  buffer.setText("abcdef");
+
+  buffer.selectUtf16(1, 3);
+  CHECK(buffer.deleteBackward());
+  buffer.selectUtf16(3, 1);
+  CHECK(buffer.deleteForward());
+
+  CHECK(buffer.utf8() == "af");
+  CHECK(buffer.caret() == 1);
+}
+
+TEST_CASE("deleteForward at the end of the text deletes nothing") {
+  EditBuffer buffer;
+  buffer.setText("ab");
+
+  CHECK_FALSE(buffer.deleteForward());
+
+  CHECK(buffer.utf8() == "ab");
+}
+
+} // namespace rnwebos

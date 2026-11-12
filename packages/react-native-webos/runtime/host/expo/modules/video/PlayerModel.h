@@ -1,0 +1,49 @@
+#pragma once
+
+#include <string>
+#include <string_view>
+#include <vector>
+
+namespace rnwebos::expo {
+
+/// expo-video's `VideoPlayerStatus`.
+enum class PlayerStatus { Idle, Loading, ReadyToPlay, Error };
+
+const char *statusName(PlayerStatus status);
+
+/// One audio or text track of the media: its index in the pipeline's list and
+/// the language the pipeline names, `und` when the file names none.
+struct MediaTrack {
+  int index{0};
+  std::string language;
+};
+
+/// The video stream playing now; zero where the player does not say.
+struct VideoStream {
+  int width{0};
+  int height{0};
+  int fps{0};
+  int bitrate{0};
+  std::string codec;
+
+  bool operator==(const VideoStream &) const = default;
+};
+
+/// What the player learned once the source was prepared.
+struct LoadedMedia {
+  double duration{0};
+  std::vector<MediaTrack> audioTracks;
+  std::vector<MediaTrack> textTracks;
+  int audioTrack{-1};
+  int textTrack{-1};
+  VideoStream video;
+};
+
+enum class TrackKind { Audio, Text };
+
+/// expo-video's `contentFit`.
+enum class ContentFit { Contain, Cover, Fill };
+
+ContentFit contentFitFrom(std::string_view name);
+
+} // namespace rnwebos::expo

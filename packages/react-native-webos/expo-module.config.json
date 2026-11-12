@@ -1,0 +1,44 @@
+{
+  "platforms": ["devtools"],
+  "devtools": {
+    "webpageRoot": "devtools",
+    "serverEntryPoint": "./dist/devtools/devtools-server.js",
+    "cliExtensions": {
+      "description": "Run the app on an LG TV or in the webOS simulator, find TVs, connect one",
+      "entryPoint": "dist/devtools/devtools-cli.js",
+      "commands": [
+        {
+          "name": "run-tv",
+          "title": "Run on TV",
+          "environments": ["cli", "mcp"],
+          "parameters": [
+            {
+              "name": "device",
+              "type": "text",
+              "description": "The TV's IP address or name; empty for the last one used"
+            }
+          ]
+        },
+        { "name": "run-simulator", "title": "Run in simulator", "environments": ["cli", "mcp"] },
+        { "name": "find-tvs", "title": "Find TVs", "environments": ["cli", "mcp"] },
+        {
+          "name": "connect-tv",
+          "title": "Connect TV",
+          "environments": ["cli", "mcp"],
+          "parameters": [
+            {
+              "name": "device",
+              "type": "text",
+              "description": "The TV's IP address, with Key Server on in its Developer Mode app"
+            },
+            {
+              "name": "passphrase",
+              "type": "text",
+              "description": "The six characters the Developer Mode app shows"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

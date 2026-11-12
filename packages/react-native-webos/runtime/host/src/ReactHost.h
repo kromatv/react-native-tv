@@ -1,0 +1,146 @@
+#pragma once
+
+#include "HostConfig.h"
+#include "diagnostics/ControlLink.h"
+#include "diagnostics/ErrorScreen.h"
+#include "diagnostics/PerfMonitor.h"
+#include "fabric/SurfacePresenter.h"
+#include "input/KeyboardFocus.h"
+#include "input/PointerInput.h"
+#include "input/RemotePresses.h"
+#include "modules/DeviceProfile.h"
+#include "modules/LaunchState.h"
+#include "modules/TurboModuleProvider.h"
+#include "modules/dialog/AlertDialog.h"
+#include "platform/AppRegistration.h"
+#include "platform/HostWindow.h"
+#include "platform/LaunchParameters.h"
+#include "platform/ScreenSaver.h"
+#include "platform/SimulatorControl.h"
+#include "render/Scene.h"
+#include "text/SkiaTextMeasurer.h"
+#include "threading/InstanceGate.h"
+#include "threading/TaskQueueThread.h"
+
+#include <react/runtime/ReactInstance.h>
+#include <react/runtime/TimerManager.h>
+
+#include <atomic>
+#include <chrono>
+#include <memory>
+#include <string>
+
+namespace rnwebos {
+
+class DevSupport;
+
+/// One React Native app on a TV: its window, its Hermes runtime on a dedicated
+/// JavaScript thread, its TurboModules and its Fabric surface. Every method runs
+/// on the main thread.
+class ReactHost final {
+ public:
+  /// Reads the config in `resourceDir` and starts the app the TV launched with
+  /// `launch`; throws std::runtime_error when it cannot.
+  explicit ReactHost(const std::string &resourceDir, const LaunchParameters &launch = {});
+  ~ReactHost();
+
+  ReactHost(const ReactHost &) = delete;
+  ReactHost &operator=(const ReactHost &) = delete;
+
+  void pause();
+  void resume();
+  void releaseMemory();
+
+  /// Records how the app was launched: the deep link in its launch parameters,
+  /// which `Linking.getInitialURL` answers.
+  void setInitialUrl(const std::string &url);
+
+  /// Delivers a URI the app is opened with while it runs, as a `url` event.
+  void openUrl(const std::string &url);
+
+  /// Takes the parameters the TV launches the running app again with: shows
+  /// the app, emits `webOSRelaunch`, and delivers their deep link as a `url` event.
+  void relaunch(const folly::dynamic &parameters);
+
+  /// Leaves the app the way Back does on its first screen, which is also what
+  /// `BackHandler.exitApp` asks for.
+  void leave() const;
+
+  /// Ends the main loop, which closes the app.
+  void exit();
+
+  /// Takes one event of the window: a key, a lifecycle change, a close request.
+  void handleEvent(const SDL_Event &event);
+
+ private:
+  void start(const LaunchParameters &launch);
+  void registerApp(const LaunchParameters &launch);
+  void readDevice(const DeviceProfileRequest &request, std::chrono::steady_clock::time_point deadline);
+  void stop();
+  void createWindow();
+  void createInstance();
+  /// Replaces the React Native instance with a new one on the same window,
+  /// which fetches the bundle again: what `r` in the dev server's terminal and
+  /// `DevSettings.reload()` do.
+  void reload();
+  void startPerfMonitor();
+  void startDevSupport();
+  void devSupportInstanceStarted();
+  facebook::react::jsinspector_modern::HostTarget *inspectorTarget();
+  void showLogBox(bool shown);
+  void loadBundle();
+  void startSurface();
+  void emitDeviceEvent(const std::string &eventName, folly::dynamic payload);
+  void onRemoteEvent(const RemoteEvent &event);
+  static void reportFatalError(const std::weak_ptr<ReactHost *> &weakHost, ErrorReport report);
+  void showFatalError(const ErrorReport &report);
+  void setActive(bool isActive);
+  void stopReactNative();
+
+  struct TvServices {
+    std::unique_ptr<AppRegistration> registration;
+    std::unique_ptr<ScreenSaver> screenSaver;
+  };
+
+  struct Input {
+    std::unique_ptr<KeyboardFocus> keyboardFocus;
+    std::unique_ptr<RemotePresses> remotePresses;
+    std::unique_ptr<PointerInput> pointerInput;
+  };
+
+  struct Overlays {
+    std::unique_ptr<ErrorScreen> errorScreen;
+    std::unique_ptr<AlertDialog> alertDialog;
+  };
+
+  struct Diagnostics {
+    std::unique_ptr<ControlLink> controlLink;
+    std::unique_ptr<PerfMonitor> perfMonitor;
+#if RN_WEBOS_SIMULATOR
+    std::unique_ptr<SimulatorControl> simulatorControl;
+#endif
+  };
+
+  const HostConfig config_;
+  DeviceProfile device_{readDeviceProfile()};
+  std::shared_ptr<std::atomic<bool>> isActive_{std::make_shared<std::atomic<bool>>(true)};
+  std::shared_ptr<LaunchState> launch_{std::make_shared<LaunchState>()};
+  std::shared_ptr<ReactHost *> lifetime_;
+  const std::weak_ptr<ReactHost *> weakHost_;
+  TvServices tv_;
+  std::unique_ptr<HostWindow> window_;
+  std::unique_ptr<Scene> scene_;
+  std::shared_ptr<SkiaTextMeasurer> textMeasurer_;
+  std::shared_ptr<TaskQueueThread> jsThread_;
+  std::shared_ptr<facebook::react::TimerManager> timerManager_;
+  std::unique_ptr<facebook::react::ReactInstance> instance_;
+  std::shared_ptr<InstanceGate> instanceGate_;
+  std::shared_ptr<TurboModuleProvider> modules_;
+  std::unique_ptr<SurfacePresenter> presenter_;
+  Input input_;
+  Overlays overlays_;
+  Diagnostics diagnostics_;
+  std::shared_ptr<DevSupport> devSupport_;
+};
+
+} // namespace rnwebos

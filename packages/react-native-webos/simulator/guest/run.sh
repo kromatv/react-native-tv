@@ -1,0 +1,107 @@
+#!/usr/bin/env bash
+# (Re)starts the instance's staged app on its own virtual screen and returns
+# once its window is up. The app's output goes to $APP_LOG, a crash to
+# systemd-coredump. Every other instance keeps running. An argument, or
+# RN_WEBOS_SIMULATOR_LAUNCH_PARAMS, is the JSON a TV's app manager would launch
+# the app with, passed as its last argument. RN_WEBOS_SIMULATOR_SCREEN sets the
+# screen's size, which the instance then keeps: 1920x1080 or 1280x720.
+set -euo pipefail
+# shellcheck source=SCRIPTDIR/instance.sh
+source "$(dirname "${BASH_SOURCE[0]}")/instance.sh"
+
+display_owner() {
+  local dir
+  for dir in "$INSTANCES_DIR"/*; do
+    [[ "$dir" == "$INSTANCE_DIR" ]] && continue
+    if is_running "$dir/xvfb.pid" && [[ "$(cat "$dir/display" 2>/dev/null)" == "$DISPLAY" ]]; then
+      basename "$dir"
+      return
+    fi
+  done
+  echo "a program outside the simulator"
+}
+
+wait_for_display() {
+  for _ in $(seq 50); do
+    xdpyinfo >/dev/null 2>&1 && return
+    sleep 0.1
+  done
+  echo "Xvfb did not start; see $INSTANCE_DIR/xvfb.log" >&2
+  exit 1
+}
+
+screen_size() {
+  local size="${RN_WEBOS_SIMULATOR_SCREEN:-$(cat "$SCREEN_SIZE_FILE" 2>/dev/null || echo "$DEFAULT_SCREEN_SIZE")}"
+  if [[ ! "$size" =~ $SCREEN_SIZES ]]; then
+    echo "Not a screen the simulator has: $size" >&2
+    exit 2
+  fi
+  echo "$size"
+}
+
+start_display() {
+  local size was_viewed=false
+  size="$(screen_size)"
+  if is_running "$XVFB_PID_FILE" && [[ "$(cat "$SCREEN_SIZE_FILE" 2>/dev/null || echo "$DEFAULT_SCREEN_SIZE")" != "$size" ]]; then
+    is_running "$VIEWER_PID_FILE" && was_viewed=true
+    for pid_file in "$VIEWER_PID_FILE" "$VNC_PID_FILE" "$WM_PID_FILE" "$XVFB_PID_FILE"; do
+      stop_daemon "$pid_file"
+    done
+  fi
+  if ! is_running "$XVFB_PID_FILE"; then
+    if xdpyinfo >/dev/null 2>&1; then
+      echo "Display $DISPLAY of instance $INSTANCE is taken by $(display_owner): give this instance another name." >&2
+      exit 1
+    fi
+    start_daemon "$XVFB_PID_FILE" "$INSTANCE_DIR/xvfb.log" \
+      Xvfb "$DISPLAY" -screen 0 "${size}x24" -nolisten tcp
+    echo "$DISPLAY" >"$DISPLAY_FILE"
+    echo "$size" >"$SCREEN_SIZE_FILE"
+    wait_for_display
+  fi
+  # A TV's compositor shows the app fullscreen and focused; matchbox does the
+  # same for the one window on this screen.
+  start_daemon "$WM_PID_FILE" "$INSTANCE_DIR/wm.log" \
+    matchbox-window-manager -use_titlebar no -use_cursor no
+  if "$was_viewed"; then bash "$(dirname "${BASH_SOURCE[0]}")/view.sh"; fi
+}
+
+wait_for_window() {
+  for _ in $(seq 300); do
+    if ! is_running "$APP_PID_FILE"; then
+      echo "The app exited during startup:" >&2
+      tail -n 40 "$APP_LOG" >&2
+      exit 1
+    fi
+    local window
+    window="$(app_window)"
+    if [[ -n "$window" ]]; then
+      xdotool windowfocus --sync "$window"
+      return
+    fi
+    sleep 0.1
+  done
+  echo "The app opened no window in 30 s; see $APP_LOG" >&2
+  exit 1
+}
+
+if [[ ! -x "$LAUNCHER" ]]; then
+  echo "No launcher at $LAUNCHER: run \`rn-webos simulator run$INSTANCE_FLAG\` from the app first." >&2
+  exit 1
+fi
+touch "$RUNTIME_BUILD_DIR/$RUNTIME_USED_FILE"
+if [[ ! -f "$APP_DIR/react-native-webos.json" ]]; then
+  echo "No app is staged in instance $INSTANCE: run \`rn-webos simulator run$INSTANCE_FLAG\` from the app first." >&2
+  exit 1
+fi
+
+stop_daemon "$APP_PID_FILE"
+start_display
+rm -f "$CONTROL_FIFO"
+mkfifo -m 600 "$CONTROL_FIFO"
+ulimit -c unlimited
+launch_params="${1:-${RN_WEBOS_SIMULATOR_LAUNCH_PARAMS:-}}"
+printf '%s' "$LAUNCHER $INSTANCE_DIR${launch_params:+ $launch_params}" >"$INSTANCE_DIR/command-line"
+start_daemon "$APP_PID_FILE" "$APP_LOG" "$LAUNCHER" "$INSTANCE_DIR" ${launch_params:+"$launch_params"}
+wait_for_window
+cat "$APP_PID_FILE"

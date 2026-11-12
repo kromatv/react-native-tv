@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "RN webOS Example",
+    "slug": "react-native-webos-example",
+    "version": "1.0.0",
+    "orientation": "landscape",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "plugins": [
+      [
+        "../app.plugin.js",
+        {
+          "package": "org.rnwebos.example",
+          "title": "RN webOS Example",
+          "locales": ["en", "fr"]
+        }
+      ],
+      [
+        "expo-video",
+        {
+          "supportsBackgroundPlayback": true
+        }
+      ]
+    ]
+  }
+}
