@@ -7,7 +7,7 @@ CRAPPER_SHA=6fd92c4c9bcc56efb64a2f8743d5a2993bcfd42d
 DRYER_SHA=66ff6d21a42c04afcad89c78a80066176d1294b0
 MUTATOR_SHA=a5a0cb803b66e0cdb8bf471b3b08af701d424a41
 
-cd "$(git rev-parse --show-toplevel)"
+cd "$(dirname "$0")/../.."
 TOOLS="${UB_MODE_HOME:-$PWD/.cache/ub-mode}"
 PYTHON="${UB_MODE_PYTHON:-python3}"
 OUT=.metrics/ub-mode

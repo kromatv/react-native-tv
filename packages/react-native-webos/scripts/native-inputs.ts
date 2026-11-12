@@ -37,7 +37,7 @@ function importClosure(entries: readonly string[]): Set<string> {
 function releaseBumpOnly(file: string, base: string | undefined): boolean {
   if (file !== 'package.json' || !base) return false;
   try {
-    const before = runSync(['git', 'show', `${base}:package.json`], { maxBytes: 1_000_000 });
+    const before = runSync(['git', 'show', `${base}:./package.json`], { maxBytes: 1_000_000 });
     return onlyVersionChanged(before, readFileSync(file, 'utf8'));
   } catch {
     return false;
