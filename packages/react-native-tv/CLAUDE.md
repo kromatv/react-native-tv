@@ -5,8 +5,8 @@ Metro up, `withTV` for an app without it, `run:<platform>` commands with a patch
 commands, and one `t` key in `expo start`. Published as
 `@kromatv/react-native-tv` (MIT) from this repository. It holds no platform
 code: Samsung Tizen is
-[react-native-tizen](https://github.com/kromatv/react-native-tizen), LG webOS is
-[react-native-webos](https://github.com/kromatv/react-native-webos), and Apple
+[react-native-tizen](https://github.com/kromatv/react-native-tv/tree/main/packages/react-native-tizen), LG webOS is
+[react-native-webos](https://github.com/kromatv/react-native-tv/tree/main/packages/react-native-webos), and Apple
 TV and Android TV are react-native-tvos. Nothing here may depend on a platform
 package, on KROMA or on any other app.
 

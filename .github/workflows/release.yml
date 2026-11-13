@@ -19,15 +19,13 @@ concurrency:
 
 jobs:
   release-please:
-    name: Release pull request and draft release
+    name: Release pull requests and draft releases
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
-      created: ${{ steps.release.outputs.release_created }}
-      tag: ${{ steps.release.outputs.tag_name }}
-      version: ${{ steps.release.outputs.version }}
-      sha: ${{ steps.release.outputs.sha }}
+      created: ${{ steps.release.outputs.releases_created }}
+      packages: ${{ steps.packages.outputs.packages }}
     steps:
       - name: Refuse to run without the release app
         env:
@@ -40,7 +38,7 @@ jobs:
           fi
 
       # A pull request opened with GITHUB_TOKEN runs no workflow until someone
-      # approves it, and only the app can pass the ruleset on v* tags.
+      # approves it, and only the app can pass the ruleset on release tags.
       - id: token
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
@@ -55,28 +53,53 @@ jobs:
         with:
           token: ${{ steps.token.outputs.token }}
 
+      - id: packages
+        name: List the packages released
+        env:
+          OUTPUTS: ${{ toJSON(steps.release.outputs) }}
+        run: |
+          jq --compact-output '
+            . as $outputs
+            | (.paths_released // "[]" | fromjson)
+            | map({
+                package: (split("/") | last),
+                tag: $outputs["\(.)--tag_name"],
+                version: $outputs["\(.)--version"],
+                sha: $outputs["\(.)--sha"]
+              })
+          ' <<< "$OUTPUTS" | sed 's/^/packages=/' | tee -a "$GITHUB_OUTPUT"
+
   pack:
-    name: Check and pack
+    name: Check and pack (${{ matrix.package }})
     needs: release-please
     if: >-
       !cancelled()
       && (github.event_name == 'pull_request' || needs.release-please.outputs.created == 'true')
+    strategy:
+      fail-fast: false
+      matrix:
+        include: >-
+          ${{ fromJSON(github.event_name == 'pull_request'
+          && '[{"package":"react-native-tizen"},{"package":"react-native-tv"},{"package":"react-native-webos"}]'
+          || needs.release-please.outputs.packages) }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    outputs:
-      dist-tag: ${{ steps.version.outputs.dist-tag }}
+    defaults:
+      run:
+        working-directory: packages/${{ matrix.package }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ needs.release-please.outputs.sha }}
+          ref: ${{ matrix.sha }}
           persist-credentials: false
 
       - name: Refuse a private package or repository
         env:
+          PACKAGE: ${{ matrix.package }}
           REPOSITORY_PRIVATE: ${{ github.event.repository.private }}
         run: |
           if [ "$(jq -r '.private // false' package.json)" = "true" ]; then
-            echo "::error file=package.json::package.json is \"private\": true. Remove that line in a commit, then release that commit."
+            echo "::error file=packages/$PACKAGE/package.json::package.json is \"private\": true. Remove that line in a commit, then release that commit."
             exit 1
           fi
           if [ "$REPOSITORY_PRIVATE" = "true" ]; then
@@ -86,7 +109,7 @@ jobs:
 
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
-          bun-version-file: .bun-version
+          bun-version-file: package.json
           no-cache: true
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -94,18 +117,19 @@ jobs:
           package-manager-cache: false
 
       - run: bun install --frozen-lockfile
+        working-directory: .
 
       - name: Read the version and its dist-tag
         id: version
         env:
-          RELEASED: ${{ needs.release-please.outputs.version }}
+          RELEASED: ${{ matrix.version }}
         run: |
           version="$(jq -r .version package.json)"
           if [ -n "$RELEASED" ] && [ "$RELEASED" != "$version" ]; then
             echo "::error::Release Please released $RELEASED, but package.json at that commit says $version."
             exit 1
           fi
-          bun scripts/print-dist-tag.ts | tee -a "$GITHUB_OUTPUT"
+          bun ../react-native-tizen/scripts/print-dist-tag.ts | tee -a "$GITHUB_OUTPUT"
 
       - run: bun run typecheck
       - run: bun run test
@@ -121,22 +145,33 @@ jobs:
           DIST_TAG: ${{ steps.version.outputs.dist-tag }}
         run: npm publish "$RUNNER_TEMP"/package/*.tgz --dry-run --access public --tag "$DIST_TAG"
 
+      # The jobs of a matrix share one set of outputs, so the dist-tag of each
+      # package travels with its tarball.
+      - name: Keep the dist-tag with the tarball
+        env:
+          DIST_TAG: ${{ steps.version.outputs.dist-tag }}
+        run: printf '%s\n' "$DIST_TAG" > "$RUNNER_TEMP/package/dist-tag"
+
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: package
-          path: ${{ runner.temp }}/package/*.tgz
+          name: package-${{ matrix.package }}
+          path: ${{ runner.temp }}/package/
           if-no-files-found: error
           retention-days: 7
 
   publish:
-    name: Publish to npm and the GitHub release
+    name: Publish to npm and the GitHub release (${{ matrix.package }})
     needs: [release-please, pack]
     if: needs.release-please.outputs.created == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.release-please.outputs.packages) }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:
       name: npm
-      url: https://www.npmjs.com/package/@kromatv/react-native-webos/v/${{ needs.release-please.outputs.version }}
+      url: https://www.npmjs.com/package/@kromatv/${{ matrix.package }}/v/${{ matrix.version }}
     permissions:
       contents: write
       id-token: write
@@ -154,26 +189,27 @@ jobs:
 
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: package
+          name: package-${{ matrix.package }}
           path: ${{ runner.temp }}/package
 
-      # npm's trusted publisher for the package names this file and the npm
+      # npm's trusted publisher for each package names this file and the npm
       # environment: renaming either stops publishing until npm trust is redone.
       - name: Publish
         env:
-          DIST_TAG: ${{ needs.pack.outputs.dist-tag }}
-          VERSION: ${{ needs.release-please.outputs.version }}
+          NAME: '@kromatv/${{ matrix.package }}'
+          VERSION: ${{ matrix.version }}
         run: |
-          if npm view "@kromatv/react-native-webos@$VERSION" version >/dev/null 2>&1; then
+          dist_tag="$(cat "$RUNNER_TEMP/package/dist-tag")"
+          if npm view "$NAME@$VERSION" version >/dev/null 2>&1; then
             echo "$VERSION is on npm already: a re-run, so only the GitHub release is left."
           else
-            npm publish "$RUNNER_TEMP"/package/*.tgz --provenance --access public --tag "$DIST_TAG"
+            npm publish "$RUNNER_TEMP"/package/*.tgz --provenance --access public --tag "$dist_tag"
           fi
 
       - name: Attach the tarball and publish the draft release
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ needs.release-please.outputs.tag }}
+          TAG: ${{ matrix.tag }}
         run: |
           gh release upload "$TAG" "$RUNNER_TEMP"/package/*.tgz --clobber --repo "$GITHUB_REPOSITORY"
           gh release edit "$TAG" --draft=false --repo "$GITHUB_REPOSITORY"

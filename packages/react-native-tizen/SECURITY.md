@@ -3,7 +3,7 @@
 ## Reporting a vulnerability
 
 Report it privately through GitHub: Security, Advisories, Report a vulnerability
-([direct link](https://github.com/kromatv/react-native-tizen/security/advisories/new)).
+([direct link](https://github.com/kromatv/react-native-tv/security/advisories/new)).
 Do not open a public issue or pull request for it.
 
 Include the affected part, the version or commit, the steps to reproduce and what

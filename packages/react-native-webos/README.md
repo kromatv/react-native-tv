@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/kromatv/react-native-webos/main/docs/assets/wordmark-dark.svg">
-    <img alt="react-native-webos" src="https://raw.githubusercontent.com/kromatv/react-native-webos/main/docs/assets/wordmark-light.svg" width="480">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/kromatv/react-native-tv/main/packages/react-native-webos/docs/assets/wordmark-dark.svg">
+    <img alt="react-native-webos" src="https://raw.githubusercontent.com/kromatv/react-native-tv/main/packages/react-native-webos/docs/assets/wordmark-light.svg" width="480">
   </picture>
 </p>
 
@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="https://www.npmjs.com/package/@kromatv/react-native-webos"><img alt="npm" src="https://img.shields.io/npm/v/@kromatv/react-native-webos?label=npm"></a>
-  <a href="https://github.com/kromatv/react-native-webos/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/kromatv/react-native-webos/actions/workflows/ci.yml/badge.svg?branch=main"></a>
+  <a href="https://github.com/kromatv/react-native-tv/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/kromatv/react-native-tv/actions/workflows/ci.yml/badge.svg?branch=main"></a>
   <a href="https://sonarcloud.io/summary/new_code?id=kromatv_react-native-webos"><img alt="Quality gate" src="https://sonarcloud.io/api/project_badges/measure?project=kromatv_react-native-webos&metric=alert_status"></a>
   <a href="https://sonarcloud.io/component_measures?id=kromatv_react-native-webos&metric=coverage"><img alt="Coverage" src="https://sonarcloud.io/api/project_badges/measure?project=kromatv_react-native-webos&metric=coverage"></a>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue"></a>
@@ -22,7 +22,7 @@
 </p>
 
 <p align="center">
-  <img alt="The example app in the simulator: the title React Native, native on an LG TV, and three cards for Hermes, Fabric and Expo" src="https://raw.githubusercontent.com/kromatv/react-native-webos/main/docs/assets/screenshot-home.png" width="720">
+  <img alt="The example app in the simulator: the title React Native, native on an LG TV, and three cards for Hermes, Fabric and Expo" src="https://raw.githubusercontent.com/kromatv/react-native-tv/main/packages/react-native-webos/docs/assets/screenshot-home.png" width="720">
   <br>
   <sub>The example app in the simulator, captured with <code>rn-webos simulator screenshot</code>.</sub>
 </p>
@@ -50,7 +50,7 @@ For an Expo app, webOS is one more platform. The same project and the same
 `app.json` build for it, and `Platform.OS` is `'webos'`.
 
 It is the sibling of
-[react-native-tizen](https://github.com/kromatv/react-native-tizen), which does
+[react-native-tizen](https://github.com/kromatv/react-native-tv/tree/main/packages/react-native-tizen), which does
 the same for Samsung TVs, and shares its CLI design, its React Native and Expo
 integration and its simulator.
 
@@ -131,7 +131,7 @@ Yarn, run `rn-webos` with `bunx`, `pnpm exec` or `yarn`.
 
 `withTV` teaches Metro every TV platform the app depends on, so an app that
 also runs on Samsung TVs with
-[`@kromatv/react-native-tizen`](https://github.com/kromatv/react-native-tizen)
+[`@kromatv/react-native-tizen`](https://github.com/kromatv/react-native-tv/tree/main/packages/react-native-tizen)
 keeps one call in its Metro config, whichever of the two packages it imports
 `withTV` from:
 

@@ -1,0 +1,110 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  changes:
+    name: Changed packages
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      react-native-tizen: ${{ steps.packages.outputs.react-native-tizen }}
+      react-native-tizen-native: ${{ steps.packages.outputs.react-native-tizen-native }}
+      react-native-tv: ${{ steps.packages.outputs.react-native-tv }}
+      react-native-webos: ${{ steps.packages.outputs.react-native-webos }}
+      react-native-webos-native: ${{ steps.packages.outputs.react-native-webos-native }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: package.json
+          no-cache: true
+      - name: ShellCheck the repository's own scripts
+        run: shellcheck -x scripts/*.sh
+      - id: packages
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: scripts/changed-packages.sh >> "$GITHUB_OUTPUT"
+
+  react-native-tizen:
+    name: react-native-tizen
+    needs: changes
+    if: needs.changes.outputs.react-native-tizen == 'true'
+    uses: ./.github/workflows/package.yml
+    with:
+      package: react-native-tizen
+      native: ${{ needs.changes.outputs.react-native-tizen-native == 'true' }}
+      native-apt-packages: >-
+        clang lld llvm libclang-rt-dev cmake ninja-build pkg-config ccache python3
+        libefl-all-dev libevas1-engines-x libcurl4-openssl-dev
+      native-cache-paths: |
+        ~/.cache/ccache
+        ~/.cache/react-native-tizen/downloads
+        ~/rn-tizen-simulator/build/hermes-host
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  react-native-tv:
+    name: react-native-tv
+    needs: changes
+    if: needs.changes.outputs.react-native-tv == 'true'
+    uses: ./.github/workflows/package.yml
+    with:
+      package: react-native-tv
+      packed: false
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  react-native-webos:
+    name: react-native-webos
+    needs: changes
+    if: needs.changes.outputs.react-native-webos == 'true'
+    uses: ./.github/workflows/package.yml
+    with:
+      package: react-native-webos
+      native: ${{ needs.changes.outputs.react-native-webos-native == 'true' }}
+      native-apt-packages: >-
+        clang lld llvm libclang-rt-dev cmake ninja-build generate-ninja pkg-config ccache python3
+        libegl-dev libgles-dev libcurl4-openssl-dev libicu-dev
+        libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev libxfixes-dev libxss-dev
+        libxtst-dev libxkbcommon-dev fonts-dejavu-core fonts-noto-core
+      native-cache-paths: |
+        ~/.cache/ccache
+        ~/.cache/react-native-webos/downloads
+        ~/rn-webos-simulator/build/hermes-host
+        ~/rn-webos-simulator/build/skia
+      pull-request-ccache: true
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  # A job a path filter skips reports nothing under its own name, so a ruleset
+  # that required each package's jobs would wait for ever. It requires this one.
+  result:
+    name: CI result
+    needs: [changes, react-native-tizen, react-native-tv, react-native-webos]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Every job passed or was skipped
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "$RESULTS"
+          case " $RESULTS " in
+            *' failure '* | *' cancelled '*) exit 1 ;;
+          esac

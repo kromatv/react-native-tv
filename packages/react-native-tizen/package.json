@@ -7,11 +7,12 @@
   "author": "Maxime Scharwath <maxscharwath@gmail.com>",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kromatv/react-native-tizen.git"
+    "url": "git+https://github.com/kromatv/react-native-tv.git",
+    "directory": "packages/react-native-tizen"
   },
-  "homepage": "https://github.com/kromatv/react-native-tizen#readme",
+  "homepage": "https://github.com/kromatv/react-native-tv/tree/main/packages/react-native-tizen#readme",
   "bugs": {
-    "url": "https://github.com/kromatv/react-native-tizen/issues"
+    "url": "https://github.com/kromatv/react-native-tv/issues"
   },
   "keywords": [
     "react-native",
