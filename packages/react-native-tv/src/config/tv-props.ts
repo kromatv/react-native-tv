@@ -28,9 +28,7 @@ export class TvPropsError extends Error {
   }
 }
 
-function isShared(key: string): boolean {
-  return SHARED_FIELDS.some((field) => field === key);
-}
+const sharedFields = new Set<string>(SHARED_FIELDS);
 
 /** Sorts the plugin's props: a shared field stays as given, and every other key must hold a block. */
 export function tvProps(props: unknown): TvProps {
@@ -39,7 +37,7 @@ export function tvProps(props: unknown): TvProps {
   const shared: Record<string, unknown> = {};
   const blocks = new Map<string, Record<string, unknown>>();
   for (const [key, value] of Object.entries(fields.data)) {
-    if (isShared(key)) {
+    if (sharedFields.has(key)) {
       shared[key] = value;
       continue;
     }

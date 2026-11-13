@@ -60,7 +60,7 @@ export function removeOldPatchEntries(
   const kept = entriesOf(manifest, entries);
   const removed: PatchEntry[] = [];
   let text = manifest?.text ?? '';
-  for (const [key, entry] of [...kept]) {
+  for (const [key, entry] of kept) {
     const file = patchFile(installDir, entry);
     if (file === null || !isOld(entry) || !isOurPatch(file)) continue;
     text = removeJsonMember(text, [entries.member, key]);
