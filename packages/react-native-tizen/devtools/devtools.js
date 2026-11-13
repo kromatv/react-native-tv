@@ -6,7 +6,9 @@ const elements = {
   stop: document.getElementById('stop'),
   log: document.getElementById('log'),
 };
-let selected = new URLSearchParams(location.search).get('job');
+const JOB_ID = /^[a-z0-9-]{1,64}$/;
+const requested = new URLSearchParams(location.search).get('job');
+let selected = requested !== null && JOB_ID.test(requested) ? requested : null;
 let offset = 0;
 
 async function getJson(path, init) {
@@ -46,7 +48,9 @@ async function refresh() {
   selected ??= jobs[0]?.id ?? null;
   renderJobs(jobs);
   if (selected === null) return;
-  const { job, text, next } = await getJson(`api/jobs/${selected}/log?from=${offset}`);
+  const { job, text, next } = await getJson(
+    `api/jobs/${encodeURIComponent(selected)}/log?from=${offset}`,
+  );
   if (job === undefined) return;
   const atBottom =
     elements.log.scrollTop + elements.log.clientHeight >= elements.log.scrollHeight - 8;
@@ -59,16 +63,16 @@ async function refresh() {
 }
 
 elements.stop.addEventListener('click', async () => {
-  if (selected !== null) await getJson(`api/jobs/${selected}/stop`, { method: 'POST' });
+  if (selected !== null)
+    await getJson(`api/jobs/${encodeURIComponent(selected)}/stop`, { method: 'POST' });
 });
 
-async function loop() {
-  try {
-    await refresh();
-  } catch (error) {
-    elements.status.textContent = `The dev server did not answer: ${error}`;
-  }
-  setTimeout(loop, 1000);
+function loop() {
+  refresh()
+    .finally(() => setTimeout(loop, 1000))
+    .catch((error) => {
+      elements.status.textContent = `The dev server did not answer: ${error}`;
+    });
 }
 
 loop();

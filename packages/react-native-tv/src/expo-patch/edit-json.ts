@@ -72,7 +72,7 @@ export function setJsonString(
   if (root === null) return null;
   const rootStyle = styleOf(text, root) ?? TWO_SPACES;
   const inner = oneLevelDeeper(rootStyle);
-  const held = root.members.filter((member) => member.key === holder).at(-1);
+  const held = root.members.findLast((member) => member.key === holder);
   const written = (style: MemberStyle) =>
     `${JSON.stringify(key)}${style.colon}${JSON.stringify(value)}`;
   if (held === undefined) {
@@ -82,7 +82,7 @@ export function setJsonString(
   }
   const object = jsonObjectAt(text, held.valueStart);
   if (object === null) return null;
-  const existing = object.members.filter((member) => member.key === key).at(-1);
+  const existing = object.members.findLast((member) => member.key === key);
   if (existing !== undefined) {
     return (
       text.slice(0, existing.valueStart) + JSON.stringify(value) + text.slice(existing.valueEnd)

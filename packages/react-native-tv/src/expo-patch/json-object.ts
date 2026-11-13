@@ -96,7 +96,7 @@ export function jsonObjectAt(text: string, from: number): JsonObject | null {
 export function jsonObjectIn(text: string, path: readonly string[]): JsonObject | null {
   let object = jsonObjectAt(text, 0);
   for (const key of path) {
-    const member = object?.members.filter((candidate) => candidate.key === key).at(-1);
+    const member = object?.members.findLast((candidate) => candidate.key === key);
     if (member === undefined) return null;
     object = jsonObjectAt(text, member.valueStart);
   }
