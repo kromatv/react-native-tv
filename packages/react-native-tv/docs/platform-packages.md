@@ -31,7 +31,7 @@ one reaches is still found:
 |---|---|---|
 | `metro` | yes | A subpath of the package's `exports`, starting with `./`. Its module exports `withTvPlatform`, a function that takes a Metro config and returns it with the platform added. `withTV` requires it, so it loads synchronously: CommonJS, or an ES module without top-level `await` |
 | `platform` | for `run` | The name the platform has in Metro and in `Platform.OS`: lowercase letters and digits, starting with a letter. It names the command, `run:<platform>` |
-| `cli` | for `run` | A command of the package's `bin`. `run:<platform> [options]` starts its script with Node as `<script> run [options]`, on the terminal of the caller, and exits with its code |
+| `cli` | for `run` | A command of the package's `bin`. `run:<platform> [options]` starts its script with Node as `<script> run [options]`, on the terminal of the caller, and exits with its code. `rn-tv <platform> [arguments]` starts it as `<script> [arguments]` |
 
 The package must list `./package.json` in its `exports`, or it is not found,
 and `./app.plugin.js`, which Expo is given as a file when the app cannot reach
@@ -49,6 +49,22 @@ such an app.
 
 The wrappers run in the order of the package names. When two packages name
 the same platform, the first by name gets `run:<platform>`.
+
+## Its API, through this package
+
+For a platform among this package's own dependencies, every subpath of the
+platform's `exports` that is one plain name, other than its Metro entry, is
+re-exported under the platform's name:
+
+| The platform exports | An app imports |
+|---|---|
+| `@kromatv/react-native-tizen/preview` | `@kromatv/react-native-tv/tizen/preview` |
+| `@kromatv/react-native-tizen/tizen`, the subpath named after the platform | `@kromatv/react-native-tv/tizen` |
+
+The modules are written when this package is built, one `export * from` and
+its types per subpath, so they follow the platform version this package was
+built with. A default export is not re-exported. A platform the app adds
+itself is imported from its own package.
 
 ## Settings
 

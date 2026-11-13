@@ -3,6 +3,8 @@ import { z } from 'zod';
 import type { CliIo } from './cli-io.ts';
 import { expoPatchCommand } from './expo-patch-command.ts';
 import { platformsCommand } from './platforms-command.ts';
+import { runnablePlatforms } from '../expo-cli/extend-expo-cli.ts';
+import { runPlatformCommand } from '../expo-cli/run-platform-cli.ts';
 import { runCommand } from './run-command.ts';
 import { USAGE } from './usage.ts';
 
@@ -29,6 +31,8 @@ export function runCli(argv: readonly string[], io: CliIo): number {
   if (command.startsWith(RUN_PREFIX)) return runCommand(command.slice(RUN_PREFIX.length), rest, io);
   const [platform, ...options] = rest;
   if (command === 'run' && platform !== undefined) return runCommand(platform, options, io);
+  const script = runnablePlatforms(io.cwd).get(command);
+  if (script !== undefined) return runPlatformCommand(script, rest, io.runScript);
   io.err(`Unknown command: ${argv.join(' ')}\n\n${USAGE}`);
   return 2;
 }

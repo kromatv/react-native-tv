@@ -23,9 +23,27 @@ app does. Building for a TV needs that platform's toolchain: the README of
 each platform package says what to install.
 
 An app that lists a platform package itself keeps its own copy, which is how
-to pin a version. An app that imports a platform's own API, such as
-`@kromatv/react-native-tizen/preview`, and installs with pnpm or Yarn
-Plug'n'Play lists that package too.
+to pin a version.
+
+## A platform's own API and commands
+
+What one platform has and the others do not is imported under its name:
+
+```ts
+import { SmartHubPreview } from '@kromatv/react-native-tv/tizen/preview';
+import { MicButton } from '@kromatv/react-native-tv/tizen/mic-button';
+```
+
+Each is the module of the same name in the platform package, here
+`@kromatv/react-native-tizen/preview`, whose README documents it.
+
+The command line of a platform is under its name too:
+
+```sh
+npx rn-tv tizen simulator run     # rn-tizen simulator run
+npx rn-tv webos package           # rn-webos package
+npx rn-tv tizen doctor
+```
 
 ## One entry in `app.json`
 
@@ -86,7 +104,8 @@ npx rn-tv platforms
 ```
 
 `run:<platform>` is the platform's own `run`, with its own options:
-`rn-tv run:tizen --help` prints the help of `rn-tizen run`.
+`rn-tv run:tizen --help` prints the help of `rn-tizen run`. It is short for
+`rn-tv tizen run`.
 
 ## The same commands in Expo CLI
 

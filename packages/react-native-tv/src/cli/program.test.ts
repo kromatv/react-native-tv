@@ -54,6 +54,20 @@ function withBothPlatforms(): void {
 }
 
 describe('rn-tv', () => {
+  it("runs a platform's own command line under the platform's name, and exits with its code", () => {
+    withBothPlatforms();
+
+    expect(runCli(['tizen', 'simulator', 'run', '--no-logs'], io())).toBe(5);
+    expect(scripts).toEqual([
+      [
+        join(realpathSync(app.root), 'node_modules/tizen/cli.js'),
+        ['simulator', 'run', '--no-logs'],
+      ],
+    ]);
+    expect(runCli(['webos'], io())).toBe(5);
+    expect(scripts[1]).toEqual([join(realpathSync(app.root), 'node_modules/webos/cli.js'), []]);
+  });
+
   it.each([[[]], [['--help']], [['-h']]])('prints its usage for %j', (argv) => {
     expect(runCli(argv, io())).toBe(0);
     expect(out).toBe(USAGE);
