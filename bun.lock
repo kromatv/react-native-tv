@@ -5,7 +5,7 @@
     "": {},
     "packages/react-native-tizen": {
       "name": "@kromatv/react-native-tizen",
-      "version": "0.1.0-alpha.4",
+      "version": "0.1.0-alpha.5",
       "bin": {
         "rn-tizen": "dist/cli/main.js",
       },
@@ -79,7 +79,7 @@
     },
     "packages/react-native-webos": {
       "name": "@kromatv/react-native-webos",
-      "version": "0.1.0-alpha.2",
+      "version": "0.1.0-alpha.3",
       "bin": {
         "rn-webos": "dist/cli/main.js",
       },
