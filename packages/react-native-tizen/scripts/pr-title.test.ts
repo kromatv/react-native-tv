@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { changelogTypes, prTitleProblem } from './pr-title.ts';
 
-const types = changelogTypes(readFileSync('release-please-config.json', 'utf8'));
+const types = changelogTypes(readFileSync('../../release-please-config.json', 'utf8'));
 
 describe('changelogTypes', () => {
   it('reads every type the changelog has a section for, shown or hidden', () => {

@@ -8,6 +8,18 @@ body:
         Title format: `<area>: <the capability>`, for example
         `expo: support expo-video`.
 
+  - type: dropdown
+    id: package
+    attributes:
+      label: Package
+      options:
+        - "@kromatv/react-native-tizen (Samsung)"
+        - "@kromatv/react-native-webos (LG)"
+        - "@kromatv/react-native-tv (the shared setup)"
+        - More than one, or not sure
+    validations:
+      required: true
+
   - type: textarea
     id: problem
     attributes:
@@ -28,7 +40,7 @@ body:
     id: platform
     attributes:
       label: Platform facts
-      description: What LG, webOS OSE, SDL or Skia document about it, with links, and the TV models or webOS versions it has to run on.
+      description: What Samsung, Tizen, EFL, LG, webOS OSE, SDL or Skia document about it, with links, and the TV models or OS versions it has to run on.
 
   - type: textarea
     id: alternatives
