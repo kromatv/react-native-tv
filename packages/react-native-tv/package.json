@@ -1,6 +1,6 @@
 {
   "name": "@kromatv/react-native-tv",
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-alpha.2",
   "type": "module",
   "description": "One setup for an Expo app on every TV: Apple TV, Android TV, Samsung Tizen and LG webOS behind one Metro call, one app.json entry and the Expo CLI.",
   "license": "MIT",
