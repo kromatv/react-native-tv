@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.0-alpha.3](https://github.com/kromatv/react-native-webos/compare/v0.1.0-alpha.2...v0.1.0-alpha.3) (2026-11-12)
+
+
+### Features
+
+* **expo:** a package that groups TV platforms can run this one and own the t key ([#20](https://github.com/kromatv/react-native-webos/issues/20)) ([d95480c](https://github.com/kromatv/react-native-webos/commit/d95480cd5e25e0392763961a18d8674b9baca2d9))
+* **metro:** build an app whose config plugin hands Expo the Metro config ([#22](https://github.com/kromatv/react-native-webos/issues/22)) ([fe25260](https://github.com/kromatv/react-native-webos/commit/fe252607ddac70e992b855abb98e51887472935f))
+
 ## [0.1.0-alpha.2](https://github.com/kromatv/react-native-webos/compare/v0.1.0-alpha.1...v0.1.0-alpha.2) (2026-11-12)
 
 
