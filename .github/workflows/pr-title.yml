@@ -1,4 +1,3 @@
-# Draft for the monorepo: never run on GitHub.
 name: Pull request title
 
 on:

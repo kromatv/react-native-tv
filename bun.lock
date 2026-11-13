@@ -59,7 +59,7 @@
     },
     "packages/react-native-tv": {
       "name": "@kromatv/react-native-tv",
-      "version": "0.0.0",
+      "version": "0.1.0-alpha.0",
       "bin": {
         "rn-tv": "dist/cli/main.js",
       },

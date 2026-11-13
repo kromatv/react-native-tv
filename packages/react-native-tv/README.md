@@ -3,14 +3,23 @@
 One setup for an Expo app on every TV. Apple TV and Android TV come from
 [react-native-tvos](https://github.com/react-native-tvos/react-native-tvos),
 Samsung Tizen from
-[`@kromatv/react-native-tizen`](https://github.com/kromatv/react-native-tizen)
+[`@kromatv/react-native-tizen`](https://github.com/kromatv/react-native-tv/tree/main/packages/react-native-tizen)
 and LG webOS from
-[`@kromatv/react-native-webos`](https://github.com/kromatv/react-native-webos).
+[`@kromatv/react-native-webos`](https://github.com/kromatv/react-native-tv/tree/main/packages/react-native-webos).
 This package is what an app sets up once for all of them. It holds no platform
 code and depends on none of them: it finds the TV platform packages among the
 app's dependencies.
 
-Not published yet.
+## Install
+
+```sh
+npm install @kromatv/react-native-tv
+```
+
+Add the platform packages for the TVs the app runs on, each set up as its own
+README says. The shared `t` key and the Metro setup from `app.json` need
+`@kromatv/react-native-tizen` 0.1.0-alpha.5 or later and
+`@kromatv/react-native-webos` 0.1.0-alpha.3 or later.
 
 ## One entry in `app.json`
 

@@ -7,11 +7,12 @@
   "author": "Maxime Scharwath <maxscharwath@gmail.com>",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kromatv/react-native-webos.git"
+    "url": "git+https://github.com/kromatv/react-native-tv.git",
+    "directory": "packages/react-native-webos"
   },
-  "homepage": "https://github.com/kromatv/react-native-webos#readme",
+  "homepage": "https://github.com/kromatv/react-native-tv/tree/main/packages/react-native-webos#readme",
   "bugs": {
-    "url": "https://github.com/kromatv/react-native-webos/issues"
+    "url": "https://github.com/kromatv/react-native-tv/issues"
   },
   "keywords": [
     "react-native",

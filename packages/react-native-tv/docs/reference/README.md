@@ -11,7 +11,7 @@ every fact and ends with what the facts mean for this package.
 
 How Expo loads a Metro config, config plugins and dev tools plugins is in the
 reference of the platform packages:
-[`expo-cli-integration.md`](https://github.com/kromatv/react-native-webos/blob/main/docs/reference/expo-cli-integration.md).
+[`expo-cli-integration.md`](https://github.com/kromatv/react-native-tv/blob/main/packages/react-native-webos/docs/reference/expo-cli-integration.md).
 
 ## How a fact is written
 

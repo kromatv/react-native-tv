@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/kromatv/react-native-tizen/main/docs/assets/wordmark-dark.svg">
-    <img alt="react-native-tizen" src="https://raw.githubusercontent.com/kromatv/react-native-tizen/main/docs/assets/wordmark-light.svg" width="480">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/kromatv/react-native-tv/main/packages/react-native-tizen/docs/assets/wordmark-dark.svg">
+    <img alt="react-native-tizen" src="https://raw.githubusercontent.com/kromatv/react-native-tv/main/packages/react-native-tizen/docs/assets/wordmark-light.svg" width="480">
   </picture>
 </p>
 
@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="https://www.npmjs.com/package/@kromatv/react-native-tizen"><img alt="npm" src="https://img.shields.io/npm/v/@kromatv/react-native-tizen?label=npm"></a>
-  <a href="https://github.com/kromatv/react-native-tizen/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/kromatv/react-native-tizen/actions/workflows/ci.yml/badge.svg?branch=main"></a>
+  <a href="https://github.com/kromatv/react-native-tv/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/kromatv/react-native-tv/actions/workflows/ci.yml/badge.svg?branch=main"></a>
   <a href="https://sonarcloud.io/summary/new_code?id=kromatv_react-native-tizen"><img alt="Quality gate" src="https://sonarcloud.io/api/project_badges/measure?project=kromatv_react-native-tizen&metric=alert_status"></a>
   <a href="https://sonarcloud.io/component_measures?id=kromatv_react-native-tizen&metric=coverage"><img alt="Coverage" src="https://sonarcloud.io/api/project_badges/measure?project=kromatv_react-native-tizen&metric=coverage"></a>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue"></a>
@@ -22,7 +22,7 @@
 </p>
 
 <p align="center">
-  <img alt="The example app on a Samsung TV: the title React Native, native on a Samsung TV, and three cards for Hermes, Fabric and Expo" src="https://raw.githubusercontent.com/kromatv/react-native-tizen/main/docs/assets/screenshot-home.png" width="720">
+  <img alt="The example app on a Samsung TV: the title React Native, native on a Samsung TV, and three cards for Hermes, Fabric and Expo" src="https://raw.githubusercontent.com/kromatv/react-native-tv/main/packages/react-native-tizen/docs/assets/screenshot-home.png" width="720">
   <br>
   <sub>The example app on a Samsung The Frame (2024), Tizen 9.0, captured by the app itself with <code>rn-tizen screenshot</code>, which never includes video.</sub>
 </p>
@@ -155,7 +155,7 @@ export default withTV(getDefaultConfig(import.meta.dirname));
 
 `withTV` teaches Metro every TV platform the app depends on, so an app that
 also runs on LG TVs with
-[`@kromatv/react-native-webos`](https://github.com/kromatv/react-native-webos)
+[`@kromatv/react-native-webos`](https://github.com/kromatv/react-native-tv/tree/main/packages/react-native-webos)
 keeps this one call, whichever of the two packages it imports `withTV` from.
 
 An app that already has a Metro config keeps it: `init` wraps its export with
@@ -428,7 +428,7 @@ native animated driver. Each figure is a median.
 | `.tpk` size (release) | 8.0 MB, against 0.16 MB for the web app | 1 build |
 
 <p align="center">
-  <img alt="The benchmark screen on the TV: a FlatList of 1,000 rows scrolling, row 75 focused, resident memory 87.2 MB" src="https://raw.githubusercontent.com/kromatv/react-native-tizen/main/docs/assets/screenshot-flatlist.png" width="640">
+  <img alt="The benchmark screen on the TV: a FlatList of 1,000 rows scrolling, row 75 focused, resident memory 87.2 MB" src="https://raw.githubusercontent.com/kromatv/react-native-tv/main/packages/react-native-tizen/docs/assets/screenshot-flatlist.png" width="640">
 </p>
 
 Frame counts come from a development build, the only kind `rn-tizen perf`
@@ -470,7 +470,7 @@ Known gaps:
 - [Tizen versions](docs/tizen-versions.md): which Samsung TVs a package
   reaches, and why the floor is 6.0
 - [Benchmarks](docs/benchmarks.md): the method and the raw results
-- [Releases](https://github.com/kromatv/react-native-tizen/releases): what
+- [Releases](https://github.com/kromatv/react-native-tv/releases): what
   each version changed, also in `CHANGELOG.md`
 
 **CLI**

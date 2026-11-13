@@ -5,7 +5,7 @@ host in one executable, `react-native-webos`, drawn with Skia on OpenGL ES in a
 window SDL opens, packaged as a native `.ipk`. Published as
 `@kromatv/react-native-webos` (MIT) from this repository; nothing here may
 depend on KROMA or any other app. It is the webOS sibling of
-[react-native-tizen](https://github.com/kromatv/react-native-tizen), ported
+[react-native-tizen](https://github.com/kromatv/react-native-tv/tree/main/packages/react-native-tizen), ported
 from it: where the two can share a design, they do.
 
 ## Read the decisions, then the reference

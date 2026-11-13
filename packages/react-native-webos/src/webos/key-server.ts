@@ -59,7 +59,7 @@ export function decryptDeveloperKey(pem: string, passphrase: string): string {
   if (key.asymmetricKeyType !== 'rsa') {
     throw new FixableError(
       `The TV served a ${key.asymmetricKeyType ?? 'key of an unknown type'}, not the RSA key rn-webos expects`,
-      'Report it with the TV model and webOS version: https://github.com/kromatv/react-native-webos/issues',
+      'Report it with the TV model and webOS version: https://github.com/kromatv/react-native-tv/issues',
     );
   }
   return key.export({ type: 'pkcs1', format: 'pem' }).toString();
