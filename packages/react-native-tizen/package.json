@@ -95,10 +95,10 @@
     "check:packed": "bun scripts/check-packed-install.ts"
   },
   "dependencies": {
-    "@formatjs/intl-numberformat": "10.0.2",
-    "@formatjs/intl-pluralrules": "7.0.2",
-    "@formatjs/intl-relativetimeformat": "13.0.1",
-    "ws": "8.22.1",
+    "@formatjs/intl-numberformat": "10.0.4",
+    "@formatjs/intl-pluralrules": "7.0.4",
+    "@formatjs/intl-relativetimeformat": "13.0.3",
+    "ws": "8.22.2",
     "zod": "^4.6.7"
   },
   "devDependencies": {
