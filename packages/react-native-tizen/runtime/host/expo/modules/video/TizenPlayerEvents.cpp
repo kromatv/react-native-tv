@@ -140,6 +140,7 @@ void TizenPlayer::onBuffering(int percent) {
   } else if (percent >= 100 && status_ == Loading) {
     setStatus(ReadyToPlay);
   }
+  if (percent < 100) picture_.watch.stalled(PictureWatch::Clock::now());
 }
 
 void TizenPlayer::onError(int code) {
@@ -149,6 +150,7 @@ void TizenPlayer::onError(int code) {
 void TizenPlayer::onInterrupted(int code) {
   const auto current = state();
   playerLog(number_, std::format("interrupted ({}), now {}", code, playerStateName(current)), LogLevel::Warning);
+  losePicture();
   refreshPlaying();
   if (current == PLAYER_STATE_IDLE) {
     phase_ = Phase::Idle;

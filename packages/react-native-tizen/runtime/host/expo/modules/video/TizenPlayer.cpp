@@ -42,10 +42,12 @@ void TizenPlayer::open(const std::string &uri, const SourceHeaders &headers) {
     return;
   }
   stopProgress();
+  losePicture();
   if (state() != PLAYER_STATE_IDLE || phase_ == Phase::Preparing) {
     phase_ = Phase::Idle;
     lend(
-        [number = number_](player_h handle) {
+        [number = number_, holeClosed = picture_.holeClosed](player_h handle) {
+          awaitHoleClosed(holeClosed);
           const auto started = std::chrono::steady_clock::now();
           const int unprepared = player_unprepare(handle);
           playerLog(
@@ -140,7 +142,10 @@ void TizenPlayer::seekTo(double seconds, bool accurate, unsigned generation) {
 void TizenPlayer::pump() {
   if (handle_ == nullptr || phase_ != Phase::Ready || seek_.inFlight) return;
   auto current = state();
-  if (seek_.pending && !(seek_.waitsForStart && current == PLAYER_STATE_READY) && issueSeek(current)) return;
+  if (seek_.pending && !(seek_.waitsForStart && current == PLAYER_STATE_READY) && issueSeek(current)) {
+    followPicture();
+    return;
+  }
   if (wantsPlaying_ && current != PLAYER_STATE_PLAYING) {
     const int started = player_start(handle_);
     playerLog(number_, std::format("player_start {}", playerErrorName(started)));
@@ -154,6 +159,7 @@ void TizenPlayer::pump() {
     retryTracks();
     if (seek_.pending && seek_.waitsForStart) issueSeek(current);
   }
+  followPicture();
 }
 
 bool TizenPlayer::issueSeek(player_state_e current) {
@@ -220,6 +226,7 @@ void TizenPlayer::retryTracks() {
 
 void TizenPlayer::fail(const std::string &message) {
   playerLog(number_, message, LogLevel::Error);
+  losePicture();
   wantsPlaying_ = false;
   setStatus(PlayerStatus::Error, message);
   refreshPlaying();
@@ -233,12 +240,13 @@ void TizenPlayer::setStatus(PlayerStatus status, const std::string &error) {
 }
 
 void TizenPlayer::refreshPlaying() {
-  const bool playing = handle_ != nullptr && state() == PLAYER_STATE_PLAYING;
-  if (playing == playing_) return;
-  playing_ = playing;
-  reportProgress(false);
-  if (auto observer = observer_.lock()) observer->playerPlayingChanged(playing);
-  notifyFirstFrame();
+  if (const bool playing = handle_ != nullptr && state() == PLAYER_STATE_PLAYING; playing != playing_) {
+    playing_ = playing;
+    reportProgress(false);
+    if (auto observer = observer_.lock()) observer->playerPlayingChanged(playing);
+    notifyFirstFrame();
+  }
+  followPicture();
 }
 
 player_state_e TizenPlayer::state() const {

@@ -16,11 +16,21 @@ void TizenPlayer::withdraw(const VideoView *owner) {
   if (owner != display_.owner) return;
   display_.owner = nullptr;
   display_.presentation.reset();
-  applyDisplay();
+  if (hasPicture()) {
+    noteHoleClosing();
+  } else {
+    applyDisplay();
+  }
 }
 
 void TizenPlayer::applyDisplay() {
   if (handle_ == nullptr || !display_.bound) return;
+  const bool had = hasPicture();
+  placeDisplay();
+  if (hasPicture() != had) notifyDisplayChange();
+}
+
+void TizenPlayer::placeDisplay() {
   const auto &presentation = display_.presentation;
   const auto plane =
       presentation ? fitVideo(presentation->view, presentation->window, video_.width, video_.height, presentation->fit)

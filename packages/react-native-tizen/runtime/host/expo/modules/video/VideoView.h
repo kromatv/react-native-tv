@@ -11,12 +11,15 @@
 namespace rntizen::expo {
 
 class SubtitleOverlay;
+class TizenPlayer;
 class VideoPlayer;
+struct VideoHoles;
 
 /// expo-video's `VideoView`. The video is on the overlay plane under the
 /// window, so the view only places it: its box in window pixels becomes the
-/// player's ROI, fitted by `contentFit`, and a transparent hole over the box
-/// lets the plane show. Main thread only.
+/// player's ROI, fitted by `contentFit`, and a hole over the box lets the
+/// plane show. The hole is opaque black until the plane has a picture.
+/// Main thread only.
 class VideoView final : public ExpoView {
  public:
   VideoView(Evas *evas, facebook::react::Tag tag);
@@ -36,7 +39,8 @@ class VideoView final : public ExpoView {
 
  private:
   void present();
-  void showHoles(bool shown, bool mapped);
+  void presentOn(TizenPlayer &tizen);
+  void showHoles(const VideoHoles &holes);
   void detachPlayer();
   void setShown(bool shown);
   void followScreenRect(bool follow);
