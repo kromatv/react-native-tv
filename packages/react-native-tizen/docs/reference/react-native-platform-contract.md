@@ -425,8 +425,10 @@ Tizen bundle gives it the flex its ScrollView would take
 How Tizen wires it: `host/HostFeatureFlags.cpp` turns on
 `cxxNativeAnimatedEnabled`; `host/animated/NativeAnimatedModule.cpp` serves
 `NativeAnimatedModule` with a provider whose start and stop callbacks drive
-`host/animated/AnimationFrameLoop.cpp`, an Ecore animator calling `onRender` on
-the main loop that holds the provider while a frame runs, as iOS does;
+`host/animated/AnimationFrameLoop.cpp`, which calls `onRender` once before each
+drawn frame (`host/threading/FrameTicker.cpp`: a TV ticks an animator several
+times in one turn of the loop, `efl-rendering.md` section 1) and holds the
+provider while a frame runs, as iOS does;
 `SurfacePresenter::schedulerShouldSynchronouslyUpdateViewOnUIThread` applies
 the props through `host/animated/AnimatedViewProps.cpp`, the iOS way, with the
 component handle `MountingManager` records for each view. Layout animations

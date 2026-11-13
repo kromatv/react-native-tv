@@ -67,7 +67,7 @@ void TizenPlayer::lend(std::function<player_h(player_h)> work, std::function<voi
       if (auto self = weak.lock()) {
         self->reclaim(back);
       } else {
-        releaseOnPlayerThread(back, target, number, false);
+        releaseOnPlayerThread(back, {.target = target, .number = number, .preparing = false, .holeClosed = {}});
       }
     });
   });
@@ -101,16 +101,25 @@ void TizenPlayer::releaseHandle() {
   const bool preparing = phase_ == Phase::Preparing;
   phase_ = Phase::Closed;
   if (handle_ == nullptr) return;
-  setVisible(false);
-  releaseOnPlayerThread(std::exchange(handle_, nullptr), target_, number_, preparing);
+  const bool shown = hasPicture();
+  losePicture();
+  if (shown) {
+    display_.visible = false;
+  } else {
+    setVisible(false);
+  }
   display_.bound = false;
   notifyDisplayChange();
+  releaseOnPlayerThread(
+      std::exchange(handle_, nullptr),
+      {.target = target_, .number = number_, .preparing = preparing, .holeClosed = picture_.holeClosed});
 }
 
-void TizenPlayer::releaseOnPlayerThread(
-    player_h handle, std::shared_ptr<CallbackTarget> target, int number, bool preparing) {
+void TizenPlayer::releaseOnPlayerThread(player_h handle, Release release) {
   if (handle == nullptr) return;
-  runOnPlayerThread([handle, target = std::move(target), number, preparing] {
+  runOnPlayerThread([handle, target = std::move(release.target), number = release.number,
+                     preparing = release.preparing, holeClosed = std::move(release.holeClosed)] {
+    awaitHoleClosed(holeClosed);
     const auto started = Clock::now();
     unsetCallbacks(handle);
     player_state_e current = PLAYER_STATE_NONE;

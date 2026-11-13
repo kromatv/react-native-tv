@@ -1,21 +1,21 @@
 #pragma once
 
-#include <react/renderer/graphics/Point.h>
+#include "../threading/FrameTicker.h"
 
-#include <Ecore.h>
+#include <react/renderer/graphics/Point.h>
 
 #include <functional>
 
 namespace rntizen {
 
 /// An animated scroll: moves an offset from one point to another over a
-/// quarter of a second, decelerating, one step per frame on the main loop.
+/// quarter of a second, decelerating, one step per drawn frame on the main
+/// loop.
 class ScrollAnimation final {
  public:
   using Step = std::function<void(facebook::react::Point offset, bool finished)>;
 
   ScrollAnimation() = default;
-  ~ScrollAnimation();
 
   ScrollAnimation(const ScrollAnimation &) = delete;
   ScrollAnimation &operator=(const ScrollAnimation &) = delete;
@@ -26,12 +26,13 @@ class ScrollAnimation final {
   bool isRunning() const;
 
  private:
-  static Eina_Bool onFrame(void *data, double position);
+  void onFrame();
 
-  Ecore_Animator *animator_{nullptr};
+  FrameTicker ticker_;
   facebook::react::Point from_;
   facebook::react::Point to_;
   Step step_;
+  double startedAt_{0};
 };
 
 } // namespace rntizen

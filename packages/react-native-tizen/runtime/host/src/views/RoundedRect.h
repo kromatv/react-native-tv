@@ -22,6 +22,15 @@ struct RoundedRect {
   void coverageRow(int pixelY, int count, float *out) const;
 };
 
+/// A border in a `width` x `height` image: the rounded box and the hole the
+/// border's `widths` leave in it.
+struct BorderRing {
+  RoundedRect outer;
+  RoundedRect hole;
+};
+
+BorderRing borderRing(const Corners &corners, const Edges &widths, int width, int height);
+
 /// The coverage of the pixel at (`x`, `y`) by a `width` x `height` box with
 /// `corners` at the origin, 1 without sampling away from the corners.
 float roundedCoverage(const Corners &corners, int width, int height, int x, int y);

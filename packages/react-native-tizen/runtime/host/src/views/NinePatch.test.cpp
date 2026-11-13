@@ -60,6 +60,22 @@ TEST_CASE("filledPatch keeps the corners as borders around one stretched pixel")
   CHECK(alphaAt(patch, patch.width - 1, patch.height - 1) == 255);
 }
 
+TEST_CASE("wholeFilledPatch is the filled patch at the box's size: the same corners, an opaque middle, no border") {
+  const auto corners = filledPatch(kMixed);
+  const auto &whole = wholeFilledPatch(kMixed, 40, 30);
+
+  CHECK(whole.width == 40);
+  CHECK(whole.height == 30);
+  CHECK(whole.border.isZero());
+  CHECK(whole.pixels.size() == 40 * 30);
+  CHECK(alphaAt(whole, 0, 0) == alphaAt(corners, 0, 0));
+  CHECK(alphaAt(whole, 1, 2) == alphaAt(corners, 1, 2));
+  CHECK(alphaAt(whole, 39, 0) == alphaAt(corners, corners.width - 1, 0));
+  CHECK(alphaAt(whole, 38, 29) == alphaAt(corners, corners.width - 2, corners.height - 1));
+  CHECK(alphaAt(whole, 20, 15) == 255);
+  CHECK(alphaAt(whole, 20, 0) == 255);
+}
+
 TEST_CASE("filledPatch pixels are white premultiplied by their coverage") {
   const auto &patch = filledPatch(kMixed);
 

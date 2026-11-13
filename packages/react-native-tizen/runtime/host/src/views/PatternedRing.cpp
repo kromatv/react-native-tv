@@ -173,7 +173,7 @@ struct DashedRing {
   }
 };
 
-NinePatch paint(const Corners &c, const Edges &w, int width, int height, StrokePattern pattern) {
+NinePatch paint(const Corners &c, const Edges &w, int width, int height, StrokePattern pattern, const RingPart &part) {
   const auto fw = static_cast<float>(width);
   const auto fh = static_cast<float>(height);
   const Outline outline(c, w, fw, fh);
@@ -200,12 +200,16 @@ NinePatch paint(const Corners &c, const Edges &w, int width, int height, StrokeP
   const auto bottom = height - std::max({w.bottom, c.bottomLeft.y, c.bottomRight.y});
   const auto left = std::max({w.left, c.topLeft.x, c.bottomLeft.x});
   const auto right = width - std::max({w.right, c.topRight.x, c.bottomRight.x});
+  const SideJoins joins{
+      .widths = w, .reach = {.left = left, .top = top, .right = width - right, .bottom = height - bottom}, .width = width, .height = height};
+  const auto shows = [&ring](float x, float y) { return ring.shows(x, y); };
   NinePatch patch{.width = width, .height = height};
   patch.pixels.resize(static_cast<std::size_t>(width) * static_cast<std::size_t>(height));
   for (int y = 0; y < height; ++y) {
     for (int x = 0; x < width; ++x) {
       if (y >= top && y < bottom && x >= left && x < right) continue;
-      patch.pixels[static_cast<std::size_t>(y * width + x)] = alphaPixel(ring.coverage(x, y));
+      const auto coverage = part.isWhole() ? ring.coverage(x, y) : partCoverage(joins, part, x, y, shows);
+      patch.pixels[static_cast<std::size_t>(y * width + x)] = alphaPixel(coverage);
     }
   }
   return patch;
@@ -218,12 +222,16 @@ const NinePatch *patternedRingPatch(
     const Edges &widths,
     int width,
     int height,
-    StrokePattern pattern) {
+    StrokePattern pattern,
+    const RingPart &part) {
   if (pattern == StrokePattern::Solid || width <= 0 || height <= 0 || width > kMaxSide || height > kMaxSide) return nullptr;
   auto key = patchKey(PatchKind::PatternedRing, corners);
   appendEdges(key, widths);
   key.insert(key.end(), {static_cast<float>(pattern), static_cast<float>(width), static_cast<float>(height)});
-  const auto &patch = cachedPatch(key, [&corners, &widths, width, height, pattern] { return paint(corners, widths, width, height, pattern); });
+  if (!part.isWhole()) key.insert(key.end(), {static_cast<float>(part.sides.bits()), static_cast<float>(part.under.bits())});
+  const auto &patch = cachedPatch(key, [&corners, &widths, width, height, pattern, &part] {
+    return paint(corners, widths, width, height, pattern, part);
+  });
   return patch.pixels.empty() ? nullptr : &patch;
 }
 

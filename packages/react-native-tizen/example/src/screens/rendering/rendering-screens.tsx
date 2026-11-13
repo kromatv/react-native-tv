@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTVEventHandler } from 'react-native';
+import { BorderScreen } from './border-screen.tsx';
 import { BoxScreen } from './box-screen.tsx';
 import { ImageScreen } from './image-screen.tsx';
 import { ModalScreen } from './modal-screen.tsx';
@@ -14,9 +15,10 @@ const SCREENS = [
   TransformScreen,
   TextScreen,
   ModalScreen,
+  BorderScreen,
 ] as const;
 
-/** The rendering screen the number keys picked: 1 to 6 open one, 0 returns home (null). */
+/** The rendering screen the number keys picked: 1 to 7 open one, 0 returns home (null). */
 export function useRenderingScreen(): number | null {
   const [screen, setScreen] = useState<number | null>(null);
   useTVEventHandler((event) => {

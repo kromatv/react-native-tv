@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.1.0-alpha.5](https://github.com/kromatv/react-native-tizen/compare/v0.1.0-alpha.4...v0.1.0-alpha.5) (2026-11-13)
+
+
+### Features
+
+* **expo:** a package that groups TV platforms can run this one and own the t key ([#90](https://github.com/kromatv/react-native-tizen/issues/90)) ([97c8164](https://github.com/kromatv/react-native-tizen/commit/97c8164f28878cc3e6f904fde6a08e7b09a20a47))
+* **metro:** build an app whose config plugin hands Expo the Metro config ([#92](https://github.com/kromatv/react-native-tizen/issues/92)) ([ff7e1f1](https://github.com/kromatv/react-native-tizen/commit/ff7e1f17e47da3a731c1fbafea134be5eafe4823))
+
+
+### Bug fixes
+
+* **expo-video:** a video view stays black until its player has a picture ([#95](https://github.com/kromatv/react-native-tizen/issues/95)) ([b72f4e9](https://github.com/kromatv/react-native-tizen/commit/b72f4e9a7a4679dd1188061e0e56faeed411d66e))
+* **rendering:** draw a color per border side on rounded corners ([#94](https://github.com/kromatv/react-native-tizen/issues/94)) ([5f45d19](https://github.com/kromatv/react-native-tizen/commit/5f45d1960915860b841a1d8101ab4577ffe009c6))
+* **views:** masks, focus rings and frame pacing while a page scrolls ([#93](https://github.com/kromatv/react-native-tizen/issues/93)) ([945d9b3](https://github.com/kromatv/react-native-tizen/commit/945d9b3ff60e50f47fd7f903a09c0b92441fc667))
+
 ## [0.1.0-alpha.4](https://github.com/kromatv/react-native-tizen/compare/v0.1.0-alpha.3...v0.1.0-alpha.4) (2026-11-12)
 
 

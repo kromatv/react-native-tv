@@ -1,5 +1,6 @@
 #pragma once
 
+#include "PictureWatch.h"
 #include "PlayerModel.h"
 #include "VideoFit.h"
 
@@ -8,6 +9,7 @@
 
 #include <deque>
 #include <functional>
+#include <future>
 #include <map>
 #include <memory>
 #include <optional>
@@ -41,7 +43,7 @@ struct Presentation {
   ContentFit fit{ContentFit::Contain};
   /// Runs once the plane shows this owner a playing source.
   std::function<void()> onFirstFrame;
-  /// Runs when hasDisplay() changes.
+  /// Runs when hasDisplay() or hasPicture() changes.
   std::function<void()> onDisplayChange;
   /// Receives the selected text track's lines, each shown for its duration in milliseconds.
   std::function<void(const std::string &text, unsigned long milliseconds)> onSubtitle;
@@ -93,6 +95,9 @@ class TizenPlayer final : public std::enable_shared_from_this<TizenPlayer> {
 
   /// Whether the handle is bound to the window's overlay, so there is a plane to show.
   bool hasDisplay() const;
+  /// Whether the plane shows a picture of the current source. Until it does, and
+  /// once it stops, a hole over the plane shows what is under the window instead.
+  bool hasPicture() const;
 
   /// Stops and destroys the handle; the player stays released.
   void release();
@@ -134,11 +139,24 @@ class TizenPlayer final : public std::enable_shared_from_this<TizenPlayer> {
     bool subtitlesShown{false};
   };
 
+  struct PictureState {
+    PictureWatch watch;
+    Ecore_Timer *probe{nullptr};
+    std::shared_future<void> holeClosed;
+  };
+
+  struct Release {
+    std::shared_ptr<CallbackTarget> target;
+    int number;
+    bool preparing;
+    std::shared_future<void> holeClosed;
+  };
+
   void create(std::function<void(TizenPlayer &)> then);
   void lend(std::function<player_h(player_h)> work, std::function<void(TizenPlayer &)> resume);
   void reclaim(player_h handle);
   void releaseHandle();
-  static void releaseOnPlayerThread(player_h handle, std::shared_ptr<CallbackTarget> target, int number, bool preparing);
+  static void releaseOnPlayerThread(player_h handle, Release release);
   static void unsetCallbacks(player_h handle);
   void bindDisplay();
   void setCallbacks();
@@ -155,7 +173,12 @@ class TizenPlayer final : public std::enable_shared_from_this<TizenPlayer> {
   LoadedMedia readMedia();
   VideoStream readVideo();
   void applyDisplay();
+  void placeDisplay();
   void setVisible(bool visible);
+  void followPicture();
+  void losePicture();
+  void noteHoleClosing();
+  static void awaitHoleClosed(const std::shared_future<void> &holeClosed);
   void notifyFirstFrame();
   void notifyDisplayChange();
   void applySettings();
@@ -171,6 +194,7 @@ class TizenPlayer final : public std::enable_shared_from_this<TizenPlayer> {
   void onSubtitle(const std::string &text, unsigned long milliseconds);
 
   static Eina_Bool progressTick(void *data);
+  static Eina_Bool pictureTick(void *data);
   static void preparedCallback(void *data);
   static void completedCallback(void *data);
   static void seekCompletedCallback(void *data);
@@ -199,6 +223,7 @@ class TizenPlayer final : public std::enable_shared_from_this<TizenPlayer> {
   Ecore_Timer *progress_{nullptr};
   VideoStream video_;
   DisplayState display_;
+  PictureState picture_;
 };
 
 } // namespace rntizen::expo

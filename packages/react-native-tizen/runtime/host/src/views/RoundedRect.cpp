@@ -109,4 +109,20 @@ float roundedCoverage(const Corners &corners, int width, int height, int x, int 
   return RoundedRect{.width = static_cast<float>(width), .height = static_cast<float>(height), .corners = corners}.coverage(x, y);
 }
 
+BorderRing borderRing(const Corners &corners, const Edges &widths, int width, int height) {
+  const auto w = static_cast<float>(width);
+  const auto h = static_cast<float>(height);
+  return {
+      .outer = {.width = w, .height = h, .corners = corners},
+      .hole =
+          {
+              .x = static_cast<float>(widths.left),
+              .y = static_cast<float>(widths.top),
+              .width = w - static_cast<float>(widths.left + widths.right),
+              .height = h - static_cast<float>(widths.top + widths.bottom),
+              .corners = corners.inset(widths),
+          },
+  };
+}
+
 } // namespace rntizen

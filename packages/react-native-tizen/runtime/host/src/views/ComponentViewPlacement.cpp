@@ -8,6 +8,11 @@ namespace rntizen {
 
 namespace {
 
+// How far past a clipping view's box its content is still placed and drawn, in
+// points: room for what a view draws past the bounds Fabric knows, as a focus
+// glow or a scale.
+constexpr facebook::react::Float kShownRoom = 160;
+
 Evas_Coord overflowPixels(facebook::react::Float inset, facebook::react::Float scale) {
   return toPixels(-std::min(facebook::react::Float{0}, inset), scale);
 }
@@ -36,16 +41,55 @@ PixelPoint ComponentView::childrenOrigin() const {
   return {.x = rect_.x + toPixels(offset.x, scale), .y = rect_.y + toPixels(offset.y, scale)};
 }
 
-PixelRect ComponentView::bounds() const {
+Edges ComponentView::ownOverflow() const {
   const auto scale = pointScale();
   const auto &inset = layoutMetrics_.overflowInset;
   const auto box = box_.overflow();
-  return inflated(
-      rect_,
-      std::max(box.left, overflowPixels(inset.left, scale)),
-      std::max(box.top, overflowPixels(inset.top, scale)),
-      std::max(box.right, overflowPixels(inset.right, scale)),
-      std::max(box.bottom, overflowPixels(inset.bottom, scale)));
+  return {
+      .left = std::max(box.left, overflowPixels(inset.left, scale)),
+      .top = std::max(box.top, overflowPixels(inset.top, scale)),
+      .right = std::max(box.right, overflowPixels(inset.right, scale)),
+      .bottom = std::max(box.bottom, overflowPixels(inset.bottom, scale)),
+  };
+}
+
+Edges ComponentView::paintedOverflow() const {
+  auto edges = ownOverflow();
+  if (box_.clipper() != nullptr) return edges;
+  const auto scale = pointScale();
+  const auto offset = childrenOffset();
+  const auto width = toPixels(layoutMetrics_.frame.size.width, scale);
+  const auto height = toPixels(layoutMetrics_.frame.size.height, scale);
+  for (const auto *child : children_) {
+    if (child->isOverlay() || child->layoutMetrics_.displayType == facebook::react::DisplayType::None) continue;
+    const auto reach = child->paintedOverflow();
+    const auto shift = child->transform_.translation(scale);
+    const auto &frame = child->layoutMetrics_.frame;
+    const auto left = toPixels(frame.origin.x + offset.x, scale) + shift.x;
+    const auto top = toPixels(frame.origin.y + offset.y, scale) + shift.y;
+    const auto right = left + toPixels(frame.size.width, scale);
+    const auto bottom = top + toPixels(frame.size.height, scale);
+    edges.left = std::max(edges.left, reach.left - left);
+    edges.top = std::max(edges.top, reach.top - top);
+    edges.right = std::max(edges.right, right + reach.right - width);
+    edges.bottom = std::max(edges.bottom, bottom + reach.bottom - height);
+  }
+  return edges;
+}
+
+// Evas renders a mapped smart object into a surface the size of its geometry
+// (efl-rendering.md section 3): a mapped view's reaches as far as anything
+// under it draws, a child's shadow or outline included, which the layout
+// overflow Fabric reports leaves out.
+PixelRect ComponentView::bounds() const {
+  const auto edges = transform_.isMapped() ? paintedOverflow() : ownOverflow();
+  return inflated(rect_, edges.left, edges.top, edges.right, edges.bottom);
+}
+
+void ComponentView::growMappedAncestors() const {
+  for (auto *ancestor = parent_; ancestor != nullptr; ancestor = ancestor->parent_) {
+    if (ancestor->placed_ && ancestor->transform_.isMapped()) ancestor->place();
+  }
 }
 
 void ComponentView::mountAsRoot() {
@@ -75,15 +119,33 @@ void ComponentView::place() {
       .width = std::max(0, toPixels(size.width, scale)),
       .height = std::max(0, toPixels(size.height, scale)),
   };
+  const auto region = inParent ? parent_->childrenRegion_ : std::nullopt;
   const bool moved = !placed_ || rect.x != rect_.x || rect.y != rect_.y;
   rect_ = rect;
   placed_ = true;
   const auto outer = bounds();
+  const bool culled = region.has_value() && !transform_.isMapped() && !overlap(outer, *region);
+  const bool returned = culled_ && !culled;
+  if (culled != culled_) {
+    culled_ = culled;
+    applyVisibility();
+  }
+  if (culled_) return;
   setGeometry(root_, outer);
   box_.layout(rect_);
   layoutMembers();
   transform_.apply(root_, rect_, outer, scale);
-  if (moved) placeChildren();
+  auto forChildren = visibleRegionForChildren(region);
+  const bool narrowed = forChildren != childrenRegion_;
+  childrenRegion_ = std::move(forChildren);
+  if (moved || narrowed || returned) placeChildren();
+}
+
+std::optional<PixelRect> ComponentView::visibleRegionForChildren(const std::optional<PixelRect> &outside) const {
+  if (box_.clipper() == nullptr) return outside;
+  const auto room = toPixels(kShownRoom, pointScale());
+  const auto shown = inflated(rect_, room, room, room, room);
+  return outside.has_value() ? intersection(shown, *outside) : shown;
 }
 
 void ComponentView::placeChildren() {

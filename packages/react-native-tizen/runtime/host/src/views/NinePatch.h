@@ -63,6 +63,10 @@ struct NinePatch {
 /// Main thread only.
 const NinePatch &filledPatch(const Corners &corners);
 
+/// A filled rounded rectangle of `width` x `height` pixels as one image with no
+/// border, from the shared patch cache. Main thread only.
+const NinePatch &wholeFilledPatch(const Corners &corners, int width, int height);
+
 /// The rounded rectangle minus the one inset by `widths`, from the shared
 /// patch cache. Main thread only.
 const NinePatch &ringPatch(const Corners &corners, const Edges &widths);

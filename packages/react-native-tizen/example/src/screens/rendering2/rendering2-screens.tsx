@@ -3,6 +3,7 @@ import { useTVEventHandler } from 'react-native';
 import { BlurScreen } from './blur-screen.tsx';
 import { MaskScreen } from './mask-screen.tsx';
 import { RailBlurScreen } from './rail-blur-screen.tsx';
+import { ScrollMaskScreen } from './scroll-mask-screen.tsx';
 import { TypeScreen } from './type-screen.tsx';
 
 function BlurredRail() {
@@ -24,9 +25,10 @@ const SCREENS = [
   MaskScreen,
   BlurBesideRail,
   TypeScreen,
+  ScrollMaskScreen,
 ] as const;
 
-/** The second rendering pass's screens: 1 to 6 pick one. */
+/** The second rendering pass's screens: 1 to 7 pick one. */
 export function Rendering2Screens() {
   const [index, setIndex] = useState(0);
   useTVEventHandler((event) => {

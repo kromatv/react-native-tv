@@ -1,6 +1,7 @@
 #include "ScrollView.h"
 
 #include "../mounting/ComponentViewRegistry.h"
+#include "EventFreeze.h"
 
 #include <react/renderer/components/scrollview/ScrollViewEventEmitter.h>
 #include <react/renderer/components/scrollview/ScrollViewProps.h>
@@ -110,6 +111,7 @@ void ScrollView::keepOffsetInContent() {
 
 void ScrollView::moveContent(Point offset) {
   contentOffset_ = offset;
+  const EventFreeze freeze(evas());
   placeChildren();
 }
 

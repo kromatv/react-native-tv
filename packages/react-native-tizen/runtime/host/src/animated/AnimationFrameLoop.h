@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Ecore.h>
+#include "../threading/FrameTicker.h"
 
 #include <chrono>
 #include <functional>
@@ -10,8 +10,8 @@ namespace rntizen {
 
 /// The frame clock React Native's C++ animated driver asks its platform for
 /// (`NativeAnimatedNodesManager`'s start and stop callbacks): runs a callback
-/// on every frame of the EFL main loop from an Ecore animator, as iOS runs it
-/// from a CADisplayLink. `start` and `stop` may be called from any thread; the
+/// before every frame the EFL main loop draws, as iOS runs it from a
+/// CADisplayLink. `start` and `stop` may be called from any thread; the
 /// callback runs on the main thread, and never once the owner given to
 /// `follow` has died, so a frame queued during teardown cannot reach a
 /// destroyed driver.
@@ -31,12 +31,12 @@ class AnimationFrameLoop final : public std::enable_shared_from_this<AnimationFr
   void stop();
 
  private:
-  static Eina_Bool tick(void *data);
+  void frame();
   void startOnMainThread(std::function<void()> onFrame);
   void stopOnMainThread();
 
   std::weak_ptr<const void> owner_;
-  Ecore_Animator *animator_{nullptr};
+  std::shared_ptr<FrameTicker> ticker_{std::make_shared<FrameTicker>()};
   std::function<void()> onFrame_;
   bool ticking_{false};
   int frames_{0};

@@ -1,6 +1,7 @@
 #include "VideoView.h"
 
 #include "SubtitleOverlay.h"
+#include "VideoHoles.h"
 #include "VideoPlayer.h"
 #include "VideoWindow.h"
 
@@ -23,18 +24,22 @@ class UnsupportedFeatureError : public std::runtime_error {
   using std::runtime_error::runtime_error;
 };
 
-Evas_Object *transparentHole(Evas *evas) {
-  auto *hole = evas_object_rectangle_add(evas);
-  evas_object_color_set(hole, 0, 0, 0, 0);
-  evas_object_render_op_set(hole, EVAS_RENDER_COPY);
-  return hole;
+void paintHole(Evas_Object *hole, HoleLook look) {
+  if (look == HoleLook::Hidden) {
+    evas_object_hide(hole);
+    return;
+  }
+  const bool clear = look == HoleLook::Clear;
+  evas_object_color_set(hole, 0, 0, 0, clear ? 0 : 255);
+  evas_object_render_op_set(hole, clear ? EVAS_RENDER_COPY : EVAS_RENDER_BLEND);
+  evas_object_show(hole);
 }
 
 } // namespace
 
 VideoView::VideoView(Evas *evas, facebook::react::Tag tag)
     : ExpoView(evas, tag),
-      hole_(transparentHole(evas)),
+      hole_(evas_object_rectangle_add(evas)),
       subtitle_(std::make_unique<SubtitleOverlay>(evas)),
       alive_(std::make_shared<VideoView *>(this)) {
   addMember(hole_, true);
@@ -106,11 +111,18 @@ void VideoView::present() {
   const bool showing = tizen != nullptr && tizen->hasDisplay() && box.width > 0 && box.height > 0;
   setShown(showing);
   screen_ = screenRect();
-  showHoles(showing, screen_ != box);
-  if (!tizen) return;
+  if (tizen) presentOn(*tizen);
+  showHoles(videoHoles(
+      {.showsPlayer = showing,
+       .hasPicture = showing && tizen->hasPicture(),
+       .fullscreen = fullscreen_,
+       .mapped = screen_ != box}));
+}
+
+void VideoView::presentOn(TizenPlayer &tizen) {
   const auto window = windowRect();
   const std::weak_ptr<VideoView *> alive = alive_;
-  tizen->present(
+  tizen.present(
       this,
       Presentation{
           .view = fullscreen_ ? window : screen_,
@@ -131,23 +143,17 @@ void VideoView::present() {
       });
 }
 
-void VideoView::showHoles(bool shown, bool mapped) {
-  if (shown && !fullscreen_ && !mapped) {
-    evas_object_show(hole_);
-  } else {
-    evas_object_hide(hole_);
-  }
-  const bool onTop = shown && (fullscreen_ || mapped);
-  if (onTop && topHole_ == nullptr) topHole_ = transparentHole(evas());
+void VideoView::showHoles(const VideoHoles &holes) {
+  paintHole(hole_, holes.inView);
+  const bool onTop = holes.onTop != HoleLook::Hidden;
+  if (onTop && topHole_ == nullptr) topHole_ = evas_object_rectangle_add(evas());
   if (topHole_ == nullptr) return;
-  if (!onTop) {
-    evas_object_hide(topHole_);
-    return;
+  if (onTop) {
+    evas_object_layer_set(topHole_, fullscreen_ ? kFullscreenLayer : 0);
+    setGeometry(topHole_, fullscreen_ ? windowRect() : screen_);
+    evas_object_raise(topHole_);
   }
-  evas_object_layer_set(topHole_, fullscreen_ ? kFullscreenLayer : 0);
-  setGeometry(topHole_, fullscreen_ ? windowRect() : screen_);
-  evas_object_raise(topHole_);
-  evas_object_show(topHole_);
+  paintHole(topHole_, holes.onTop);
 }
 
 void VideoView::detachPlayer() {

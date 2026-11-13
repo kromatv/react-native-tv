@@ -27,11 +27,16 @@ PixelPoint ViewTransform::translation(Float scale) const {
   return {.x = toPixels(matrix_.matrix[12], scale), .y = toPixels(matrix_.matrix[13], scale)};
 }
 
-void ViewTransform::apply(Evas_Object *root, const PixelRect &box, const PixelRect &bounds, Float scale) const {
+bool ViewTransform::isMapped() const {
+  return !isTranslation_;
+}
+
+void ViewTransform::apply(Evas_Object *root, const PixelRect &box, const PixelRect &bounds, Float scale) {
   if (isTranslation_ || scale <= 0) {
-    if (evas_object_map_enable_get(root)) {
+    if (mapEnabled_) {
       waitForRenderThread(root);
       evas_object_map_enable_set(root, EINA_FALSE);
+      mapEnabled_ = false;
     }
     return;
   }
@@ -52,6 +57,7 @@ void ViewTransform::apply(Evas_Object *root, const PixelRect &box, const PixelRe
   evas_map_alpha_set(map, EINA_TRUE);
   evas_object_map_set(root, map);
   evas_object_map_enable_set(root, EINA_TRUE);
+  mapEnabled_ = true;
   evas_map_free(map);
 }
 

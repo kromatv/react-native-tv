@@ -1,5 +1,6 @@
 #pragma once
 
+#include "BorderLayers.h"
 #include "BoxStyle.h"
 #include "PixelGeometry.h"
 
@@ -12,8 +13,8 @@ namespace rntizen {
 
 /// A view's border and outline, drawn above its children. One color: a tinted
 /// ring nine-patch, which follows rounded corners; dashed or dotted, a ring
-/// painted at the box's size. A color per side: four solid rectangles,
-/// square-cornered; with rounded corners the ring takes the top color.
+/// painted at the box's size. A color per side: four solid rectangles when the
+/// box is square; with rounded corners, one image per color (`BorderLayers.h`).
 class BoxBorder final {
  public:
   BoxBorder(Evas *evas, Evas_Object *smart);
@@ -30,14 +31,15 @@ class BoxBorder final {
   int overflow() const;
 
  private:
-  bool updateRing(const BoxStyle &style, bool wanted);
+  bool updateRings(const BoxStyle &style, const std::vector<BorderLayer> &layers);
   bool updateSides(const BoxStyle &style, bool wanted);
   bool updateOutline(const BoxStyle &style);
   void paintPattern(const PixelRect &box);
 
   Evas *const evas_;
   Evas_Object *const smart_;
-  Evas_Object *ring_{nullptr};
+  std::vector<Evas_Object *> rings_;
+  std::vector<RingPart> parts_;
   std::array<Evas_Object *, 4> sides_{};
   Evas_Object *outline_{nullptr};
   PixelRect patterned_;

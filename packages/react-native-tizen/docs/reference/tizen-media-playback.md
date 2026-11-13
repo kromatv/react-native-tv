@@ -112,7 +112,7 @@ Rules that hold for every type, all D from `player.h`:
 | Its example app leaves `IsWindowTransparent` at its default `false`, so per-pixel alpha in the UI buffer is enough on a TV | I from [FE:75] and the example's `App.cs` |
 | `elm_win_alpha_set(win, EINA_TRUE)` turns the canvas alpha channel on, "subject to the underlying system supporting it" | D [EW:2170-2186] |
 | `EVAS_RENDER_COPY` makes an object's pixels replace what is below, but Evas warns not to assume it can poke a hole in a window | D [EV:2205-2225] |
-| This package's window has an opaque black rectangle `(0, 0, 0, 255)` behind every view. `setHostWindowTransparent` turns window alpha on while a video view shows a player and keeps that rectangle, so only the views' holes are transparent (section 7) | D [RNT: HostWindow.cpp] |
+| This package's window has an opaque black rectangle `(0, 0, 0, 255)` behind every view. `setHostWindowTransparent` turns window alpha on while a video view shows a player and keeps that rectangle, so only the views' holes are transparent, and a hole is transparent only while its plane has a picture (section 7) | D [RNT: HostWindow.cpp, VideoHoles.cpp] |
 | With window alpha on and the background cleared, every pixel the app leaves undrawn shows what is under the window: on H-1 that was Samsung's home screen with its app icons, behind KROMA's player | H, seen on screen |
 | On H-1, `elm_win_alpha_set` returns in 0.1 to 0.2 ms turning alpha on and 0.2 to 8.4 ms turning it off. On Wayland the change makes the GL engine create a new output window (efl-rendering.md section 1), yet KROMA's first frames took as long with alpha on from the window's creation (536 ms) as right after the switch (544 and 597 ms): the switch adds no frame time anyone can measure, so the window keeps alpha off until a video shows | H, timers around the call and `rn-tizen perf`, KROMA's launch with its intro video, 2026-11-03 |
 | A view's `EVAS_RENDER_COPY` hole inside a subtree an ancestor maps (a scale or rotate transform) cuts nothing: the map renders the subtree into a surface first, then blends it. So while an ancestor maps the video view, the hole is a top-level object at the view's on-screen rect, and the ROI follows that rect every frame. Seen on H-1 with KROMA's settings card, which scales the player stage to 1070x446 | H, `rn-tizen screenshot` and the ROI log |
@@ -121,6 +121,27 @@ Rules that hold for every type, all D from `player.h`:
 | `player_set_display_roi_area` in window pixels returns `PLAYER_ERROR_NONE` before prepare and while playing, for every rect the example's view took (1160x656 at 724,204; 576x324 at 724,604; 1920x1080 at 0,0); `player_set_video_roi_area` returns it too for a `cover` crop | H-1 |
 | Nothing drawn by the UI can sit under the video; clipping, transforms and rounded corners never reach the plane, only the hole above it | I: the plane is a separate hardware layer [NG, TFX-X] |
 | Every ROI change goes to the hardware compositor, so a no-op resize is worth skipping | H (KROMA, AVPlay `setDisplayRect`) [K-plane] |
+
+### When the plane has a picture
+
+Until the player has put a frame on the plane, a transparent hole over it shows
+what is under the window. No callback says when that frame is there.
+
+| Fact | Known |
+|------|-------|
+| `player.h` declares no callback for a frame drawn on an overlay. Its callbacks are subtitle updated, prepared, completed, seek completed, interrupted, error, video captured, decoded video and audio packets, media-stream buffer status and seek, video stream changed, buffering and adaptive variant | D by absence [PH:275-481] |
+| The one callback per video frame, `player_set_media_packet_video_frame_decoded_cb`, needs `PLAYER_DISPLAY_TYPE_NONE` | D [PH:1091] |
+| `player_video_stream_changed_cb` comes "just before rendering operation". Tizen's open player posts it when the video sink's pad gets its caps, so before a frame is drawn, not after | D [PH:437, PH:2244; MMP: mm_player_priv.c:2329-2361] |
+| On H-1 it came once for Apple's fMP4 HLS and not within four seconds of Mux's MPEG-TS HLS (section 4), so nothing can wait for it | H-1 |
+| `player_prepared_cb` is "invoked when player has reached the begin of stream" and leaves the player READY. Tizen's open player gets there by `mm_player_pause`, GStreamer's PAUSED state, after it copies the handle's visible flag to the sink's `visible` property | D [PH:288; LP:786-792, LP:865-890, LP:940-958; MMP: mm_player_priv.c:1949-1966] |
+| Whether a frame is on the plane at READY | U: the open player's video sink was not read, and Samsung's TV build of the player is not published |
+| `player_start` in Tizen's open player sets the overlay visible when the handle's visible flag is on, sets the pipeline to PLAYING, waits for that state change, then reports PLAYING. PLAYING says the pipeline runs, not that a frame is on the plane | D [PH:799, PH:818; LP:1124-1159; MMP: mm_player_gst.c:3464-3566] |
+| `player_get_play_position` is the pipeline's position query; while paused it repeats the last position read | D [LP:1250-1263; MMP: mm_player_gst.c:4030-4078] |
+| `player_stop` hides the overlay before it stops the pipeline, and `player_unprepare` turns the handle's visible flag back on | D [LP:1161-1174, LP:1008] |
+| flutter-tizen's videohole player waits for no frame: it paints its hole whenever the widget is built, calls `player_set_display_visible(true)` when it opens a source, and reports `player_prepared_cb` as "initialized" | D [FH: lib/video_player.dart:1083, tizen/src/media_player.cc:145, 938-957] |
+| Samsung's TV player library, plusplayer, has callbacks for prepared, playing and "state changed to playing", and none for a drawn frame | D [FA: tizen/inc/plusplayer/plusplayer_wrapper.h:441-495] |
+| So the earliest sign of a picture an app gets is the play position moving on after `player_start`: the position is the pipeline's clock, and a clock that moves has frames to draw | I from the rows above. U: how far the TV's plane lags that clock, and whether every source reports a position that moves (a live stream may not) |
+| On H-1, while the hole was transparent from the moment the display was bound (right after `player_create`, before prepare), KROMA's player showed Samsung's home screen through it for some frames before each video played | H, seen on screen, reported 2026-11-13 |
 
 ### The other two paths
 
@@ -328,6 +349,8 @@ change size. Skip calls whose rect did not change [K-plane].
 | 3 | HEVC Main10 HDR10 in MKV switches the panel to HDR on the overlay | HEVC Main10 in MKV and HEVC HDR10 in MP4 prepare and play (no public HDR10 MKV was found). The panel switches to HDR for the HDR10 MP4 (checked on screen) |
 | 4 | Seek and audio-track selection at READY on capi, against the AVPlay refusals | Both accepted at READY (section 4) |
 | 5 | Which callbacks arrive off the main loop | All seven seen, off the main loop (section 4) |
+| 6 | No frame shows the home screen through a video view: before a video plays, across a `replace`, when the player is released and when its view goes away | Not checked: the rule of section 7 (Picture) was written without the TV, 2026-11-13 |
+| 7 | Where the play position stands when the first frame is on the plane (the `picture: playback reached` log line against the screen), for a file, an HLS stream and a resumed position; whether the plane shows a frame at READY, and keeps one through a seek | Not checked |
 
 Record each result here with the set's model, year and Tizen version.
 
@@ -338,11 +361,12 @@ every source in the sources table.
 
 | Piece | Files | Does |
 |-------|-------|------|
-| `TizenPlayer` | `TizenPlayer.cpp`, `TizenPlayerEvents.cpp`, `TizenPlayerDisplay.cpp`, `TizenPlayerLifecycle.cpp`, `TizenPlayerSettings.cpp`, `PlayerThread.cpp` | One handle. Created on the player thread, then bound to the window on the main loop and given its URI and its User-Agent and Cookie headers in IDLE, then prepared on the player thread. While that thread holds the handle (create, prepare, the unprepare of a `replace`, the release), commands and callback effects wait in order and run when it hands the handle back; one thread for every player keeps a release ahead of the next create. One seek in flight, the next coalesced to the latest target; play and pause wait for it. A seek or track refused at READY is retried once PLAYING (capi did not refuse either, section 4). Progress polls on an `ecore_timer` at `timeUpdateEventInterval`, or every 0.5 s for the getters. Release hides the plane on the main loop, then unsets callbacks, stops, unprepares and destroys on the player thread |
+| `TizenPlayer` | `TizenPlayer.cpp`, `TizenPlayerEvents.cpp`, `TizenPlayerDisplay.cpp`, `TizenPlayerLifecycle.cpp`, `TizenPlayerSettings.cpp`, `PlayerThread.cpp` | One handle. Created on the player thread, then bound to the window on the main loop and given its URI and its User-Agent and Cookie headers in IDLE, then prepared on the player thread. While that thread holds the handle (create, prepare, the unprepare of a `replace`, the release), commands and callback effects wait in order and run when it hands the handle back; one thread for every player keeps a release ahead of the next create. One seek in flight, the next coalesced to the latest target; play and pause wait for it. A seek or track refused at READY is retried once PLAYING (capi did not refuse either, section 4). Progress polls on an `ecore_timer` at `timeUpdateEventInterval`, or every 0.5 s for the getters. Release unsets callbacks, stops, unprepares and destroys on the player thread; the main loop hides the plane first unless a hole shows it (Picture, below) |
 | `VideoPlayer` | `VideoPlayer.cpp`, `VideoPlayerEvents.cpp`, `VideoTracks.cpp` | The SharedObject. Getters read a snapshot the main loop keeps; `currentTime` extrapolates from the last report at the playback rate. Setters update the snapshot and queue the call. Prepare waits one JavaScript turn, so settings made right after `new` (KROMA's `bufferOptions`) reach the player in IDLE. Events go out on the JavaScript thread once the object is paired |
 | `ExpoVideo` | `VideoModule.cpp` | The module and the `VideoPlayer` class. `isPictureInPictureSupported` is false, the cache functions do nothing |
-| `VideoView` | `VideoView.cpp`, `VideoFit.cpp`, `SubtitleOverlay.cpp` | The view's box in window pixels (`canvasRect`, at the surface's point scale) is the ROI, recomputed on every layout and on a rendition change, fitted by `contentFit`. A hole over the box, a fullscreen hole on layer 2000, `onFirstFrameRender` at the first PLAYING it shows, the selected text track drawn over the bottom of the box |
-| Window | `VideoWindow.cpp`, `runtime/host/src/HostWindow.cpp` | Window alpha and each view's hole, the only composition that works over a page background (section 3). Window alpha is on only while a view shows a player that holds an overlay |
+| `VideoView` | `VideoView.cpp`, `VideoHoles.cpp`, `VideoFit.cpp`, `SubtitleOverlay.cpp` | The view's box in window pixels (`canvasRect`, at the surface's point scale) is the ROI, recomputed on every layout and on a rendition change, fitted by `contentFit`. A hole over the box, a fullscreen hole on layer 2000, `onFirstFrameRender` at the first PLAYING it shows, the selected text track drawn over the bottom of the box. While the view shows a player bound to the overlay, the hole is opaque black `(0, 0, 0, 255)` until the plane has a picture and transparent with `EVAS_RENDER_COPY` while it has one; under a mapped ancestor the black is drawn inside the map and only the transparent hole goes on top |
+| Picture | `PictureWatch.cpp`, `TizenPlayerPicture.cpp`, `NextFrame.cpp` | Decides when the plane has a picture, since no callback does (section 3). Once the player is PLAYING with no seek in flight, the play position is read 30 times a second: the picture counts as there when the position is 100 ms past where playback ran from. The 100 ms are I, a few frames for the plane to catch up with its clock, not measured on a TV. If the position has not moved after 2 s of playing, counted again from each `player_buffering_cb` under 100 %, the picture is assumed and a warning logged, so a source that reports no position still shows. A pause, a seek or a stall before the picture puts it off; once there it stays through pause, seek, buffering and the end of the media. It goes with a new source (`replace`, before the unprepare), an error, an interrupt and the release, and counts for nothing while the plane is hidden. When the host ends the picture itself (a `replace`, the release, the view going away) the hole closes first: the unprepare, the release and the hiding of the plane wait until Evas has drawn the next frame (`EVAS_CALLBACK_RENDER_POST`), 100 ms at most, so the plane never goes before the hole over it. A prepared player that never played stays black, as nothing tells whether its first frame is on the plane |
+| Window | `VideoWindow.cpp`, `runtime/host/src/HostWindow.cpp` | Window alpha and each view's hole, the only composition that works over a page background (section 3). Window alpha is on only while a view shows a player that holds an overlay; with alpha on and every hole black, each pixel of the window is opaque, as the "window alpha alone" check of section 3 saw |
 | Simulator | `simulator/shims/src/player.c` | `player_create` fails, so a player's status is `error` with "This device has no media player: player_create returned PLAYER_ERROR_FEATURE_NOT_SUPPORTED_ON_DEVICE" and nothing is drawn or cleared |
 
 | expo-video surface | On Tizen |
@@ -365,13 +389,18 @@ every source in the sources table.
 
 Not handled: two views showing one player (the last to lay out owns the ROI);
 the app's Back during fullscreen (the app calls `exitFullscreen`); a player the
-app never releases outlives its JavaScript runtime until the process exits.
+app never releases outlives its JavaScript runtime until the process exits; a
+source without video in a view, whose hole opens once playback moves on though
+its plane never has a picture (`player_get_video_size` "can be invalid if there
+is no video" [PH:1620-1623], so it cannot tell).
 
 ## Sources
 
 | Tag | Source |
 |-----|--------|
 | PH | `~/tizen-studio/platforms/tizen-9.0/tizen/rootstraps/tizen-9.0-device.core/usr/include/media/player.h` |
+| LP | Tizen 9.0 `mmsvc-player`, the open implementation behind capi-media-player, [`legacy/src/legacy_player.c`](https://git.tizen.org/cgit/platform/core/multimedia/mmsvc-player/tree/legacy/src/legacy_player.c?id=c2efea535c1f8c42e4bd93617aa167b5d4940819) at `c2efea5` (branch `tizen_9.0`). Samsung's TV build of the player is not published, so a row from here holds on a TV only where another row says H |
+| MMP | Tizen 9.0 `libmm-player`, the GStreamer player under it, [`src/`](https://git.tizen.org/cgit/platform/core/multimedia/libmm-player/tree/src?id=f9a9e1ce04118122a02484d909d1b2a5d153077a) at `f9a9e1c` (branch `tizen_9.0`); the same caveat |
 | EV | same rootstrap, `evas-1/Evas_Legacy.h` |
 | EW | same rootstrap, `elementary-1/elm_win_legacy.h` |
 | NG | Tizen native guide, [Media Playback](https://docs.tizen.org/application/native/guides/multimedia/media-playback/) ([source](https://github.com/Samsung/tizen-docs/blob/master/docs/application/native/guides/multimedia/media-playback.md)) |
