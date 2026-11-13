@@ -80,8 +80,9 @@ bun run typecheck && bun run test && bun run check
 
 The Tizen and webOS packages were developed in `kromatv/react-native-tizen`
 and `kromatv/react-native-webos` until November 2026. Their commits are in this
-repository's history, and a reference such as `kromatv/react-native-tizen#84`
-in a commit or a changelog points at a pull request of the old repository.
+repository's history. Those two repositories no longer exist: a reference such
+as `kromatv/react-native-tizen#84` in a commit or a changelog names one of
+their pull requests, which can no longer be opened.
 
 ## License
 

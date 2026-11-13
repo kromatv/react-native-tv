@@ -1,89 +1,89 @@
 # Changelog
 
-## [0.1.0-alpha.5](https://github.com/kromatv/react-native-tizen/compare/v0.1.0-alpha.4...v0.1.0-alpha.5) (2026-11-13)
+## [0.1.0-alpha.5](https://github.com/kromatv/react-native-tv/compare/react-native-tizen-v0.1.0-alpha.4...react-native-tizen-v0.1.0-alpha.5) (2026-11-13)
 
 
 ### Features
 
-* **expo:** a package that groups TV platforms can run this one and own the t key ([#90](https://github.com/kromatv/react-native-tizen/issues/90)) ([97c8164](https://github.com/kromatv/react-native-tizen/commit/97c8164f28878cc3e6f904fde6a08e7b09a20a47))
-* **metro:** build an app whose config plugin hands Expo the Metro config ([#92](https://github.com/kromatv/react-native-tizen/issues/92)) ([ff7e1f1](https://github.com/kromatv/react-native-tizen/commit/ff7e1f17e47da3a731c1fbafea134be5eafe4823))
+* **expo:** a package that groups TV platforms can run this one and own the t key (kromatv/react-native-tizen#90) ([4996310](https://github.com/kromatv/react-native-tv/commit/4996310da7338fa4511319c2b99c2df97f98a991))
+* **metro:** build an app whose config plugin hands Expo the Metro config (kromatv/react-native-tizen#92) ([be41682](https://github.com/kromatv/react-native-tv/commit/be41682c249127d1ff4c04448e1f6d611c29d0a9))
 
 
 ### Bug fixes
 
-* **expo-video:** a video view stays black until its player has a picture ([#95](https://github.com/kromatv/react-native-tizen/issues/95)) ([b72f4e9](https://github.com/kromatv/react-native-tizen/commit/b72f4e9a7a4679dd1188061e0e56faeed411d66e))
-* **rendering:** draw a color per border side on rounded corners ([#94](https://github.com/kromatv/react-native-tizen/issues/94)) ([5f45d19](https://github.com/kromatv/react-native-tizen/commit/5f45d1960915860b841a1d8101ab4577ffe009c6))
-* **views:** masks, focus rings and frame pacing while a page scrolls ([#93](https://github.com/kromatv/react-native-tizen/issues/93)) ([945d9b3](https://github.com/kromatv/react-native-tizen/commit/945d9b3ff60e50f47fd7f903a09c0b92441fc667))
+* **expo-video:** a video view stays black until its player has a picture (kromatv/react-native-tizen#95) ([2f60350](https://github.com/kromatv/react-native-tv/commit/2f603501fc6482579bf4b043b74dc12734d4b684))
+* **rendering:** draw a color per border side on rounded corners (kromatv/react-native-tizen#94) ([3c3cbff](https://github.com/kromatv/react-native-tv/commit/3c3cbff3cdc42962d097ab2722bc87a10b1f392b))
+* **views:** masks, focus rings and frame pacing while a page scrolls (kromatv/react-native-tizen#93) ([d0ec5d3](https://github.com/kromatv/react-native-tv/commit/d0ec5d3895e5b9c07477954fcdc6e42fc217a2fa))
 
-## [0.1.0-alpha.4](https://github.com/kromatv/react-native-tizen/compare/v0.1.0-alpha.3...v0.1.0-alpha.4) (2026-11-12)
-
-
-### Features
-
-* **metro:** add every TV platform an app depends on with one withTV call ([#85](https://github.com/kromatv/react-native-tizen/issues/85)) ([2e82949](https://github.com/kromatv/react-native-tizen/commit/2e829490a03176be63e6b100af1ed140d58fe195))
-
-## [0.1.0-alpha.3](https://github.com/kromatv/react-native-tizen/compare/v0.1.0-alpha.2...v0.1.0-alpha.3) (2026-11-12)
+## [0.1.0-alpha.4](https://github.com/kromatv/react-native-tv/compare/react-native-tizen-v0.1.0-alpha.3...react-native-tizen-v0.1.0-alpha.4) (2026-11-12)
 
 
 ### Features
 
-* **speech:** search by voice with expo-speech-recognition and the remote's mic button ([#82](https://github.com/kromatv/react-native-tizen/issues/82)) ([0a9ec10](https://github.com/kromatv/react-native-tizen/commit/0a9ec10685c841492395210380069fe179d71eeb))
+* **metro:** add every TV platform an app depends on with one withTV call (kromatv/react-native-tizen#85) ([ad15571](https://github.com/kromatv/react-native-tv/commit/ad15571036498f0bbf94fd56e712d17ff1137c2d))
+
+## [0.1.0-alpha.3](https://github.com/kromatv/react-native-tv/compare/react-native-tizen-v0.1.0-alpha.2...react-native-tizen-v0.1.0-alpha.3) (2026-11-12)
+
+
+### Features
+
+* **speech:** search by voice with expo-speech-recognition and the remote's mic button (kromatv/react-native-tizen#82) ([f665969](https://github.com/kromatv/react-native-tv/commit/f665969b0af6e0b8125c1a65128f72b59d512440))
 
 
 ### Bug fixes
 
-* **metro:** bundle a second checkout of an app that shares Metro's cache ([#84](https://github.com/kromatv/react-native-tizen/issues/84)) ([7bf2edc](https://github.com/kromatv/react-native-tizen/commit/7bf2edc41b21c1c510969ce72450f4b8c14659d1))
+* **metro:** bundle a second checkout of an app that shares Metro's cache (kromatv/react-native-tizen#84) ([a215286](https://github.com/kromatv/react-native-tv/commit/a2152860f711ffd0d3ed7240e2613f703d3d0bfb))
 
-## [0.1.0-alpha.2](https://github.com/kromatv/react-native-tizen/compare/v0.1.0-alpha.1...v0.1.0-alpha.2) (2026-11-04)
-
-
-### Features
-
-* **devtools:** open the app on Tizen with t in expo start ([#63](https://github.com/kromatv/react-native-tizen/issues/63)) ([7a73eb4](https://github.com/kromatv/react-native-tizen/commit/7a73eb4c8d41cf7ce83a595bbc7d6227fec5dd82))
-
-## [0.1.0-alpha.1](https://github.com/kromatv/react-native-tizen/compare/v0.1.0-alpha.0...v0.1.0-alpha.1) (2026-11-04)
+## [0.1.0-alpha.2](https://github.com/kromatv/react-native-tv/compare/react-native-tizen-v0.1.0-alpha.1...react-native-tizen-v0.1.0-alpha.2) (2026-11-04)
 
 
 ### Features
 
-* **cli:** make platform a floor, 6.0 by default, with run-time version checks ([#41](https://github.com/kromatv/react-native-tizen/issues/41)) ([bba6e7e](https://github.com/kromatv/react-native-tizen/commit/bba6e7e5a095938f8925a9e6ee0349b86b2f1520))
-* **cli:** rn-tizen init installs one react-native-tvos, and builds refuse a second copy ([#55](https://github.com/kromatv/react-native-tizen/issues/55)) ([b567857](https://github.com/kromatv/react-native-tizen/commit/b567857a5b4e88b72dfc29de3443417a2646347c))
-* **cli:** rn-tizen init sets an Expo app up, with ESM wherever users look ([#43](https://github.com/kromatv/react-native-tizen/issues/43)) ([ba11fa8](https://github.com/kromatv/react-native-tizen/commit/ba11fa8b92ed094e5f164b81909a514b1bd71a47))
-* **devsupport:** Fast Refresh, reload, logs and LogBox from expo start ([#31](https://github.com/kromatv/react-native-tizen/issues/31)) ([d88a8c7](https://github.com/kromatv/react-native-tizen/commit/d88a8c7eceb1cf14f075b2667051ea531ad2761d))
-* **devsupport:** open React Native DevTools on the TV with j ([#34](https://github.com/kromatv/react-native-tizen/issues/34)) ([c65bd54](https://github.com/kromatv/react-native-tizen/commit/c65bd546cfddcb9a87123c2b2d0c40037f8e22c8))
-* **expo:** a config plugin, and Tizen commands in expo start ([#30](https://github.com/kromatv/react-native-tizen/issues/30)) ([1858e62](https://github.com/kromatv/react-native-tizen/commit/1858e62ae26af5de436377df244e7eea4169700a))
-* **perf:** show the app's memory against Samsung's 380 MB budget ([#54](https://github.com/kromatv/react-native-tizen/issues/54)) ([601a692](https://github.com/kromatv/react-native-tizen/commit/601a692b4fd4b8685ee75b093fdac4632fd5a968))
-* **sdb:** reach the TV over sdb's protocol instead of Tizen Studio's sdb ([#5](https://github.com/kromatv/react-native-tizen/issues/5)) ([89464bd](https://github.com/kromatv/react-native-tizen/commit/89464bd0cd81197cc01edfd1c62e88badf15866c))
-* **signing:** sign packages in TypeScript instead of with the tizen CLI ([#10](https://github.com/kromatv/react-native-tizen/issues/10)) ([b24332a](https://github.com/kromatv/react-native-tizen/commit/b24332a195241b5c8ca1ec4c142dca005e3d7ef0))
-* **tizen:** find TVs, manage certificates and deploy any package ([#18](https://github.com/kromatv/react-native-tizen/issues/18)) ([1b9d212](https://github.com/kromatv/react-native-tizen/commit/1b9d212b5d0bb3090db92cdaaf3bef6c93edf03e))
-* **toolchain:** build the runtime against any floor's rootstrap from 6.0 ([#40](https://github.com/kromatv/react-native-tizen/issues/40)) ([ad7d70f](https://github.com/kromatv/react-native-tizen/commit/ad7d70fa81e427f65c3244e0db501f7f81e94fed))
+* **devtools:** open the app on Tizen with t in expo start (kromatv/react-native-tizen#63) ([55f2996](https://github.com/kromatv/react-native-tv/commit/55f29961cc23ff0859b4f6754d3a74c18e3beb1c))
+
+## [0.1.0-alpha.1](https://github.com/kromatv/react-native-tv/releases/tag/react-native-tizen-v0.1.0-alpha.1) (2026-11-04)
+
+
+### Features
+
+* **cli:** make platform a floor, 6.0 by default, with run-time version checks (kromatv/react-native-tizen#41) ([3f0421a](https://github.com/kromatv/react-native-tv/commit/3f0421aa3d657a63ae6b059f0b153be34aefbeb1))
+* **cli:** rn-tizen init installs one react-native-tvos, and builds refuse a second copy (kromatv/react-native-tizen#55) ([39bfb95](https://github.com/kromatv/react-native-tv/commit/39bfb95311669175f252ab9a99c6f0b6596c1998))
+* **cli:** rn-tizen init sets an Expo app up, with ESM wherever users look (kromatv/react-native-tizen#43) ([bb760de](https://github.com/kromatv/react-native-tv/commit/bb760de3708fd9735c0c70bbe6eb5ec03276f3b0))
+* **devsupport:** Fast Refresh, reload, logs and LogBox from expo start (kromatv/react-native-tizen#31) ([5e0ef7b](https://github.com/kromatv/react-native-tv/commit/5e0ef7b9a50bd55bdbf11e13911658281aa8adc1))
+* **devsupport:** open React Native DevTools on the TV with j (kromatv/react-native-tizen#34) ([aa6bea0](https://github.com/kromatv/react-native-tv/commit/aa6bea00d85ded1bad6411250322f0b656ec22ec))
+* **expo:** a config plugin, and Tizen commands in expo start (kromatv/react-native-tizen#30) ([aaefa41](https://github.com/kromatv/react-native-tv/commit/aaefa41cc9640e277a8e23a49267633d84c0e1d4))
+* **perf:** show the app's memory against Samsung's 380 MB budget (kromatv/react-native-tizen#54) ([e2cff83](https://github.com/kromatv/react-native-tv/commit/e2cff83dcae212bb2a99f4369930ac5c207e7f5f))
+* **sdb:** reach the TV over sdb's protocol instead of Tizen Studio's sdb (kromatv/react-native-tizen#5) ([cb505da](https://github.com/kromatv/react-native-tv/commit/cb505dac70a7064ea3ccf9e61f66ea9aafd3f455))
+* **signing:** sign packages in TypeScript instead of with the tizen CLI (kromatv/react-native-tizen#10) ([44f9319](https://github.com/kromatv/react-native-tv/commit/44f93197809fdf944ef873d7773a1b31626cdbfe))
+* **tizen:** find TVs, manage certificates and deploy any package (kromatv/react-native-tizen#18) ([3f8f231](https://github.com/kromatv/react-native-tv/commit/3f8f2318a7b66d76f1aa0fb4be5ac0a58fe48ce7))
+* **toolchain:** build the runtime against any floor's rootstrap from 6.0 (kromatv/react-native-tizen#40) ([911d8aa](https://github.com/kromatv/react-native-tv/commit/911d8aa08f55bce73c5f2f70618cd3154a35a0e1))
 
 
 ### Bug fixes
 
-* clear the SonarCloud issues in src, example and the overrides ([#6](https://github.com/kromatv/react-native-tizen/issues/6)) ([ec21e6d](https://github.com/kromatv/react-native-tizen/commit/ec21e6da338deab8940c840f011d6eafea987280))
-* **cli:** name the rootstrap package and the package manager's command in init, doctor and the docs ([#48](https://github.com/kromatv/react-native-tizen/issues/48)) ([10514f9](https://github.com/kromatv/react-native-tizen/commit/10514f9b4e5640610f9a47399cacdb206b7e19f9))
-* **cli:** read one app by package id in logs, perf and screenshot ([#53](https://github.com/kromatv/react-native-tizen/issues/53)) ([60a62d7](https://github.com/kromatv/react-native-tizen/commit/60a62d77e59eaf7a3e3c4332913c857f70655826))
-* **expo:** keep the fallback app directory private, clear the core's Sonar issues ([#12](https://github.com/kromatv/react-native-tizen/issues/12)) ([82e8ce6](https://github.com/kromatv/react-native-tizen/commit/82e8ce68f5645c4aa03356f7b53bfef3cf6155eb))
-* guard the app's own files, explain every failure, and press keys under Node ([#17](https://github.com/kromatv/react-native-tizen/issues/17)) ([cf42c3e](https://github.com/kromatv/react-native-tizen/commit/cf42c3eba83bae1abb854652603221f7c018de07))
-* **host:** tear down a ReactHost whose start throws ([#23](https://github.com/kromatv/react-native-tizen/issues/23)) ([b4b6da0](https://github.com/kromatv/react-native-tizen/commit/b4b6da0b39d66ccfe3c8e668a910e16d38804d95))
-* **input,tv,text:** decode UTF-8 per WHATWG, finish held presses, reject bad voice indices, clear the Sonar issues ([#24](https://github.com/kromatv/react-native-tizen/issues/24)) ([86f025e](https://github.com/kromatv/react-native-tizen/commit/86f025ee3f3fa11d47bd5355ab8811b4fbdb9a13))
-* **lists:** give react-native-tvos's list wrapper the list's flex ([#57](https://github.com/kromatv/react-native-tizen/issues/57)) ([54d82f9](https://github.com/kromatv/react-native-tizen/commit/54d82f9648f6a388bac892cb2bd240bcbfbf15ef))
-* **modules:** draw blob ids from the OS random source, clear the Sonar issues ([#15](https://github.com/kromatv/react-native-tizen/issues/15)) ([c401aeb](https://github.com/kromatv/react-native-tizen/commit/c401aebf124f497796fb50897f1f68ed16a91ba9))
-* **networking:** send form data and file bodies ([#26](https://github.com/kromatv/react-native-tizen/issues/26)) ([1d5ce54](https://github.com/kromatv/react-native-tizen/commit/1d5ce547dddbaaf68356307255c4e337cbe4045c))
-* **network:** refuse header injection, send GET without a body, require TLS 1.2 ([#19](https://github.com/kromatv/react-native-tizen/issues/19)) ([e718644](https://github.com/kromatv/react-native-tizen/commit/e718644fe22f78c72190a3243497cc04a3a5b8ef))
-* **package,tizen:** ship the runtime flavour built, and stop sdb refusals after Install ([#47](https://github.com/kromatv/react-native-tizen/issues/47)) ([080fe53](https://github.com/kromatv/react-native-tizen/commit/080fe534df288aa99b7d04e35f977b841283204c)), closes [#44](https://github.com/kromatv/react-native-tizen/issues/44)
-* **signing:** refuse every wrong PKCS[#12](https://github.com/kromatv/react-native-tizen/issues/12) password as one ([#36](https://github.com/kromatv/react-native-tizen/issues/36)) ([a740246](https://github.com/kromatv/react-native-tizen/commit/a740246313c29f1475abe1d59a80c7e28afeaa25))
-* **simulator:** clear the SonarCloud issues in the shims, launcher and guest scripts ([#8](https://github.com/kromatv/react-native-tizen/issues/8)) ([891242d](https://github.com/kromatv/react-native-tizen/commit/891242d8f72166363786f7d34f7a96a12eadc555))
-* **threading:** fire timers by deadline, and never hang or end the app on a throwing task ([#11](https://github.com/kromatv/react-native-tizen/issues/11)) ([91fac9b](https://github.com/kromatv/react-native-tizen/commit/91fac9b8124ebe85144dedf507f045fde1a710e7))
-* **threading:** queue a main-loop task as an Ecore job when the main loop posts it ([#33](https://github.com/kromatv/react-native-tizen/issues/33)) ([f6a4af1](https://github.com/kromatv/react-native-tizen/commit/f6a4af1431eb13285afcf52fa21ac77f84d4d7ed))
-* **views:** leave a ring's clear middle undrawn, so the TV does not shade the box ([#35](https://github.com/kromatv/react-native-tizen/issues/35)) ([894918b](https://github.com/kromatv/react-native-tizen/commit/894918b0db1c0301081cd1c12588e525c8c2154f))
+* clear the SonarCloud issues in src, example and the overrides (kromatv/react-native-tizen#6) ([a68a7d6](https://github.com/kromatv/react-native-tv/commit/a68a7d6b2b0a3c9e5cc407c1a2f40d847980f94a))
+* **cli:** name the rootstrap package and the package manager's command in init, doctor and the docs (kromatv/react-native-tizen#48) ([19c0e52](https://github.com/kromatv/react-native-tv/commit/19c0e52b6abb0030633dd5645c514a21bd6e1e2e))
+* **cli:** read one app by package id in logs, perf and screenshot (kromatv/react-native-tizen#53) ([4bf8a23](https://github.com/kromatv/react-native-tv/commit/4bf8a236035b765182ce6e6e2f5aabe243989137))
+* **expo:** keep the fallback app directory private, clear the core's Sonar issues (kromatv/react-native-tizen#12) ([ca077a9](https://github.com/kromatv/react-native-tv/commit/ca077a97c3f2d0c990f827052793905317b12ed7))
+* guard the app's own files, explain every failure, and press keys under Node (kromatv/react-native-tizen#17) ([3d50286](https://github.com/kromatv/react-native-tv/commit/3d502865992c869fd7c8fdfcb83d8bbdbbf8a7ee))
+* **host:** tear down a ReactHost whose start throws (kromatv/react-native-tizen#23) ([b1dfef0](https://github.com/kromatv/react-native-tv/commit/b1dfef086ce6e8a85b9fb6351e29b60ea23fa63f))
+* **input,tv,text:** decode UTF-8 per WHATWG, finish held presses, reject bad voice indices, clear the Sonar issues (kromatv/react-native-tizen#24) ([e8f8b11](https://github.com/kromatv/react-native-tv/commit/e8f8b11c31505b2aaf4576eb4fd2317544adc1d9))
+* **lists:** give react-native-tvos's list wrapper the list's flex (kromatv/react-native-tizen#57) ([e82b486](https://github.com/kromatv/react-native-tv/commit/e82b486764b63b2fd4184974435c251609339ef1))
+* **modules:** draw blob ids from the OS random source, clear the Sonar issues (kromatv/react-native-tizen#15) ([f0c55c3](https://github.com/kromatv/react-native-tv/commit/f0c55c389dcb9226ffa4fcf7d17f92055cfbcdab))
+* **networking:** send form data and file bodies (kromatv/react-native-tizen#26) ([90c4478](https://github.com/kromatv/react-native-tv/commit/90c447879fd888e3cf61c3352ae7723ff32ead28))
+* **network:** refuse header injection, send GET without a body, require TLS 1.2 (kromatv/react-native-tizen#19) ([0c2b50a](https://github.com/kromatv/react-native-tv/commit/0c2b50aef6f5c8840908bf84c951f9173aba7372))
+* **package,tizen:** ship the runtime flavour built, and stop sdb refusals after Install (kromatv/react-native-tizen#47) ([9a0c736](https://github.com/kromatv/react-native-tv/commit/9a0c736d8ef71abcc94ab2aa1e76fc28b0a7bac9)), closes kromatv/react-native-tizen#44
+* **signing:** refuse every wrong PKCSkromatv/react-native-tizen#12 password as one (kromatv/react-native-tizen#36) ([c67112f](https://github.com/kromatv/react-native-tv/commit/c67112f79aeb208b11cc44cf3f46a3db55002f6b))
+* **simulator:** clear the SonarCloud issues in the shims, launcher and guest scripts (kromatv/react-native-tizen#8) ([a0cfa1d](https://github.com/kromatv/react-native-tv/commit/a0cfa1d6ec2d80b1cf68c2bf7675a304dd2f3894))
+* **threading:** fire timers by deadline, and never hang or end the app on a throwing task (kromatv/react-native-tizen#11) ([1225e57](https://github.com/kromatv/react-native-tv/commit/1225e570b2f739e07aa4327b3c31a08d7fbf2cce))
+* **threading:** queue a main-loop task as an Ecore job when the main loop posts it (kromatv/react-native-tizen#33) ([c2e5459](https://github.com/kromatv/react-native-tv/commit/c2e5459dae640ac77b71fc12ce0394ad9b486e84))
+* **views:** leave a ring's clear middle undrawn, so the TV does not shade the box (kromatv/react-native-tizen#35) ([6817a63](https://github.com/kromatv/react-native-tv/commit/6817a631842725c163038a39c3b4a560e10aff93))
 
 
 ### Documentation
 
-* a README for the first release, and benchmarks measured on a TV ([#42](https://github.com/kromatv/react-native-tizen/issues/42)) ([689206f](https://github.com/kromatv/react-native-tizen/commit/689206f0313d2e46354cdbe88c54691204b378a7))
-* add contributing guide, security policy and templates ([32f9992](https://github.com/kromatv/react-native-tizen/commit/32f9992420f58938b9cdc535ab8bd6b98ae67c13))
-* drop the FlatList flex gap, fixed by [#57](https://github.com/kromatv/react-native-tizen/issues/57) ([#58](https://github.com/kromatv/react-native-tizen/issues/58)) ([e329b0f](https://github.com/kromatv/react-native-tizen/commit/e329b0f096cf4b02c9263088b494f872495d4a3f))
-* **reference:** record what the 2024 Frame's compositor offers an app on a 4K panel ([#61](https://github.com/kromatv/react-native-tizen/issues/61)) ([8bc8ae5](https://github.com/kromatv/react-native-tizen/commit/8bc8ae55ea0311b748c40e66a7b844cfa0bf1cd3))
-* **reference:** Tizen 4.0 to 10.0 per version, and what the runtime lacks below 6.0 ([#39](https://github.com/kromatv/react-native-tizen/issues/39)) ([b769bdf](https://github.com/kromatv/react-native-tizen/commit/b769bdf44c80fec257441143284f1e0d58c283ab))
+* a README for the first release, and benchmarks measured on a TV (kromatv/react-native-tizen#42) ([ed9c7c5](https://github.com/kromatv/react-native-tv/commit/ed9c7c52cd10b8c671b80692c4ee39a3be033d42))
+* add contributing guide, security policy and templates ([4237635](https://github.com/kromatv/react-native-tv/commit/4237635373e1360edf21267df48dbfedfe14d4c5))
+* drop the FlatList flex gap, fixed by kromatv/react-native-tizen#57 (kromatv/react-native-tizen#58) ([a551eee](https://github.com/kromatv/react-native-tv/commit/a551eee047419ce1c2065e64dbb1b275d5d1b891))
+* **reference:** record what the 2024 Frame's compositor offers an app on a 4K panel (kromatv/react-native-tizen#61) ([3cea367](https://github.com/kromatv/react-native-tv/commit/3cea367e122cddb87f81e4eac0ad50e182ff7aa1))
+* **reference:** Tizen 4.0 to 10.0 per version, and what the runtime lacks below 6.0 (kromatv/react-native-tizen#39) ([932ad92](https://github.com/kromatv/react-native-tv/commit/932ad9216aeb439f48fef7c68123cad66800fec1))
