@@ -26,9 +26,14 @@ and nothing else.
   where only this package reaches it; its Metro entry, its command and its
   config plugin are then loaded from there
   ([reference/expo-config-and-start.md](reference/expo-config-and-start.md)).
-- An app that imports a platform's own API, such as
-  `@kromatv/react-native-tizen/preview`, imports from that platform's package.
-  Under an install that does not hoist it lists that package too.
+- An app reaches a platform's own API and its own command line through this
+  package too, so one dependency is enough under an install that does not
+  hoist, where the app can neither import a brought package nor find its
+  command. `@kromatv/react-native-tv/tizen/preview` re-exports
+  `@kromatv/react-native-tizen/preview`, and `rn-tv tizen <command>` is
+  `rn-tizen <command>`. The re-exports are written at build time from the
+  `exports` of each platform among this package's dependencies
+  ([platform-packages.md](platform-packages.md)): no source file names one.
 
 `withTV` started in `@kromatv/react-native-tizen` and
 `@kromatv/react-native-webos`, each exporting it. An app then imported the
@@ -41,6 +46,9 @@ were not there. The neutral package is where it belongs.
 arguments as given. This package parses none of them, so a platform's options,
 help and exit codes are the platform's, in whatever version the app has
 installed. Nothing of a platform is imported into Expo CLI's process.
+`rn-tv <platform> [arguments]` starts the same command with the arguments
+alone, which is the whole command line of the platform: its simulator, its
+doctor, its packaging.
 
 ## Expo CLI learns the commands through a patch the app owns
 

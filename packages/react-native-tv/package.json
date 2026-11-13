@@ -37,7 +37,11 @@
       "default": "./dist/expo-cli/index.js"
     },
     "./app.plugin.js": "./app.plugin.js",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./*": {
+      "types": "./dist/api/*.d.ts",
+      "default": "./dist/api/*.js"
+    }
   },
   "files": [
     "dist",
@@ -46,6 +50,7 @@
     "CHANGELOG.md",
     "app.plugin.js",
     "expo-module.config.json",
+    "!dist/build",
     "!**/*.tsbuildinfo",
     "!**/*.fixtures.*"
   ],
@@ -53,7 +58,7 @@
     "node": ">=22.13.0"
   },
   "scripts": {
-    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json && node dist/build/build-platform-api.js",
     "prepare": "bun run build",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
