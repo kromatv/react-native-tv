@@ -61,17 +61,8 @@ NinePatch makeRing(const Corners &corners, const Edges &widths) {
       .right = std::max(extents.right, widths.right),
       .bottom = std::max(extents.bottom, widths.bottom),
   });
-  const auto w = static_cast<float>(patch.width);
-  const auto h = static_cast<float>(patch.height);
-  const RoundedRect outer{.width = w, .height = h, .corners = corners};
-  const RoundedRect hole{
-      .x = static_cast<float>(widths.left),
-      .y = static_cast<float>(widths.top),
-      .width = w - static_cast<float>(widths.left + widths.right),
-      .height = h - static_cast<float>(widths.top + widths.bottom),
-      .corners = corners.inset(widths),
-  };
-  paint(patch, [&outer, &hole](int x, int y) { return outer.coverage(x, y) - hole.coverage(x, y); });
+  const auto ring = borderRing(corners, widths, patch.width, patch.height);
+  paint(patch, [&ring](int x, int y) { return ring.outer.coverage(x, y) - ring.hole.coverage(x, y); });
   patch.hollow = true;
   return patch;
 }

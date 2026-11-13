@@ -14,7 +14,7 @@ namespace rntizen {
 using PatchKey = std::vector<float>;
 
 /// The kinds of patches the shared cache holds, the first value of their key.
-enum class PatchKind { Filled, Ring, Shadow, PatternedRing, Gradient, WholeFilled };
+enum class PatchKind { Filled, Ring, Shadow, PatternedRing, Gradient, WholeFilled, SideRing };
 
 /// A key for `kind` that starts with the eight radii of `corners`.
 PatchKey patchKey(PatchKind kind, const Corners &corners);

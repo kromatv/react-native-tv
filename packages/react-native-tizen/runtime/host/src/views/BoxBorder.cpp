@@ -1,15 +1,15 @@
 #include "BoxBorder.h"
 
 #include "EvasColor.h"
+#include "SideRing.h"
 #include "SmartMembers.h"
 
 #include <algorithm>
+#include <utility>
 
 namespace rntizen {
 
 namespace {
-
-using facebook::react::SharedColor;
 
 bool hasBorder(const BoxStyle &style) {
   const auto &c = style.borderColors;
@@ -22,12 +22,9 @@ bool hasOneColor(const BoxStyle &style) {
   return c.left == c.top && c.top == c.right && c.right == c.bottom;
 }
 
-const SharedColor &ringColor(const BoxStyle &style) {
-  const auto &c = style.borderColors;
-  for (const auto *color : {&c.top, &c.right, &c.bottom, &c.left}) {
-    if (isVisible(*color)) return *color;
-  }
-  return c.top;
+const NinePatch &solidPatch(const BoxStyle &style, const RingPart &part) {
+  if (part.isWhole()) return ringPatch(style.corners, style.borderWidths);
+  return sideRingPatch(style.corners, style.borderWidths, part);
 }
 
 void remove(Evas_Object *&object) {
@@ -41,36 +38,33 @@ void remove(Evas_Object *&object) {
 BoxBorder::BoxBorder(Evas *evas, Evas_Object *smart) : evas_(evas), smart_(smart) {}
 
 BoxBorder::~BoxBorder() {
-  remove(ring_);
+  for (auto *ring : rings_) evas_object_del(ring);
   for (auto *&side : sides_) remove(side);
   remove(outline_);
 }
 
 bool BoxBorder::update(const BoxStyle &style) {
-  const bool border = hasBorder(style);
-  const bool ring = border && (hasOneColor(style) || !style.corners.isSquare());
-  bool changed = updateRing(style, ring);
-  changed = updateSides(style, border && !ring) || changed;
+  const bool rectangles = hasBorder(style) && !hasOneColor(style) && style.corners.isSquare();
+  bool changed = updateRings(style, rectangles ? std::vector<BorderLayer>{} : borderLayers(style.borderWidths, style.borderColors));
+  changed = updateSides(style, rectangles) || changed;
   changed = updateOutline(style) || changed;
   style_ = style;
   return changed;
 }
 
-bool BoxBorder::updateRing(const BoxStyle &style, bool wanted) {
-  if (!wanted) {
-    const bool had = ring_ != nullptr;
-    remove(ring_);
-    return had;
+bool BoxBorder::updateRings(const BoxStyle &style, const std::vector<BorderLayer> &layers) {
+  std::vector<RingPart> parts;
+  for (const auto &layer : layers) parts.push_back(layer.part);
+  const bool resized = resizePatchImages(rings_, layers.size(), evas_, smart_);
+  const bool reshaped = resized || parts != parts_ || style.corners != style_.corners ||
+      style.borderWidths != style_.borderWidths || style.borderPattern != style_.borderPattern;
+  if (reshaped) patterned_ = {};
+  for (std::size_t i = 0; i < rings_.size(); ++i) {
+    if (reshaped && style.borderPattern == StrokePattern::Solid) setNinePatch(rings_[i], solidPatch(style, parts[i]));
+    setColor(rings_[i], layers[i].color);
   }
-  const bool created = ring_ == nullptr;
-  if (created) ring_ = addPatchImage(evas_, smart_);
-  if (created || style.corners != style_.corners || style.borderWidths != style_.borderWidths ||
-      style.borderPattern != style_.borderPattern) {
-    patterned_ = {};
-    if (style.borderPattern == StrokePattern::Solid) setNinePatch(ring_, ringPatch(style.corners, style.borderWidths));
-  }
-  setColor(ring_, ringColor(style));
-  return created;
+  parts_ = std::move(parts);
+  return resized;
 }
 
 bool BoxBorder::updateSides(const BoxStyle &style, bool wanted) {
@@ -110,16 +104,19 @@ bool BoxBorder::updateOutline(const BoxStyle &style) {
 }
 
 void BoxBorder::paintPattern(const PixelRect &box) {
-  const auto *patch = patternedRingPatch(style_.corners, style_.borderWidths, box.width, box.height, style_.borderPattern);
-  setNinePatch(ring_, patch != nullptr ? *patch : ringPatch(style_.corners, style_.borderWidths));
+  for (std::size_t i = 0; i < rings_.size(); ++i) {
+    const auto *patch =
+        patternedRingPatch(style_.corners, style_.borderWidths, box.width, box.height, style_.borderPattern, parts_[i]);
+    setNinePatch(rings_[i], patch != nullptr ? *patch : solidPatch(style_, parts_[i]));
+  }
   patterned_ = box;
 }
 
 void BoxBorder::layout(const PixelRect &box) {
-  if (ring_ != nullptr) {
+  if (!rings_.empty()) {
     const bool resized = box.width != patterned_.width || box.height != patterned_.height;
     if (style_.borderPattern != StrokePattern::Solid && resized) paintPattern(box);
-    setGeometry(ring_, box);
+    for (auto *ring : rings_) setGeometry(ring, box);
   }
   if (sides_[0] != nullptr) {
     const auto &w = style_.borderWidths;
@@ -139,8 +136,7 @@ void BoxBorder::layout(const PixelRect &box) {
 }
 
 std::vector<Evas_Object *> BoxBorder::objects() const {
-  std::vector<Evas_Object *> objects;
-  if (ring_ != nullptr) objects.push_back(ring_);
+  auto objects = rings_;
   if (sides_[0] != nullptr) objects.insert(objects.end(), sides_.begin(), sides_.end());
   if (outline_ != nullptr) objects.push_back(outline_);
   return objects;
