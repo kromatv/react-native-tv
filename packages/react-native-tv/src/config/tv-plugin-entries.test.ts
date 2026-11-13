@@ -1,5 +1,7 @@
+import { realpathSync } from 'node:fs';
+import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { testApp, type TestApp } from '../app.fixtures.ts';
+import { testApp, TV_PACKAGE_DIR, type TestApp } from '../app.fixtures.ts';
 import { tvPlatformPackages } from '../platforms/tv-platform-packages.ts';
 import { tvPluginEntries, TVOS_PLUGIN } from './tv-plugin-entries.ts';
 import { tvProps } from './tv-props.ts';
@@ -34,21 +36,40 @@ describe('tvPluginEntries', () => {
       tizen: { preview: true, locales: ['en'] },
     };
 
-    expect(entries(props)).toEqual({
+    const platforms = [
+      ['tizen', { package: 'tv.example.app', locales: ['en'], preview: true }],
+      ['webos', { package: 'tv.example.app', locales: ['fr'] }],
+    ];
+    expect(entries(props)).toEqual({ platforms, tvos: null, applied: platforms });
+  });
+
+  it('has Expo apply a plugin the app cannot reach by its file, and keeps its entry by name', () => {
+    app.dependOn('@kromatv/react-native-tv', 'webos');
+    app.bring({ roku: { platform: 'roku' }, [TVOS_PLUGIN]: {} });
+    const brought = join(realpathSync(app.root), TV_PACKAGE_DIR, 'node_modules');
+
+    expect(entries({ package: 'tv.example.app' })).toEqual({
       platforms: [
-        ['tizen', { package: 'tv.example.app', locales: ['en'], preview: true }],
-        ['webos', { package: 'tv.example.app', locales: ['fr'] }],
+        ['roku', { package: 'tv.example.app' }],
+        ['webos', { package: 'tv.example.app' }],
       ],
-      tvos: null,
+      tvos: [TVOS_PLUGIN, { isTV: true }],
+      applied: [
+        [join(brought, 'roku/app.plugin.js'), { package: 'tv.example.app' }],
+        ['webos', { package: 'tv.example.app' }],
+        [join(brought, TVOS_PLUGIN, 'app.plugin.js'), { isTV: true }],
+      ],
     });
   });
 
   it('gives a platform no entry without a package for it, and one from its block alone', () => {
+    const platforms = [['webos', { locales: ['fr'], package: 'tv.example.lg' }]];
     expect(entries({ locales: ['fr'], webos: { package: 'tv.example.lg' } })).toEqual({
-      platforms: [['webos', { locales: ['fr'], package: 'tv.example.lg' }]],
+      platforms,
       tvos: null,
+      applied: platforms,
     });
-    expect(entries(undefined)).toEqual({ platforms: [], tvos: null });
+    expect(entries(undefined)).toEqual({ platforms: [], tvos: null, applied: [] });
   });
 
   it("turns react-native-tvos' plugin on when the app has it, with the tvos block", () => {
@@ -64,9 +85,11 @@ describe('tvPluginEntries', () => {
   it('leaves a platform, or Apple TV and Android TV, to an entry the app lists itself', () => {
     installTvosPlugin();
 
+    const platforms = [['tizen', { package: 'tv.example.app' }]];
     expect(entries({ package: 'tv.example.app' }, ['webos', TVOS_PLUGIN])).toEqual({
-      platforms: [['tizen', { package: 'tv.example.app' }]],
+      platforms,
       tvos: null,
+      applied: platforms,
     });
   });
 

@@ -7,13 +7,15 @@ commands, and one `t` key in `expo start`. Published as
 code: Samsung Tizen is
 [react-native-tizen](https://github.com/kromatv/react-native-tv/tree/main/packages/react-native-tizen), LG webOS is
 [react-native-webos](https://github.com/kromatv/react-native-tv/tree/main/packages/react-native-webos), and Apple
-TV and Android TV are react-native-tvos. Nothing here may depend on a platform
-package, on KROMA or on any other app.
+TV and Android TV are react-native-tvos. Its `package.json` brings those
+packages to an app, and its code names none of them: it finds a platform by
+what the platform's `package.json` declares. Nothing here may depend on KROMA
+or on any other app.
 
 ## Read the decisions, then the reference
 
 [`docs/decisions.md`](docs/decisions.md) records the choices the package is
-built on (no platform in the package, a platform's `run` in its own process,
+built on (one dependency for an app and no platform in the code, a platform's `run` in its own process,
 Expo CLI patched through the app's package manager, one `app.json` entry that
 stands for each platform's own, one owner for the keys of `expo start`). Follow them; change one
 only by changing that file in the same change.

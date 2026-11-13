@@ -3,13 +3,32 @@
 The choices this package is built on. Change one only by changing this file in
 the same change.
 
-## The package holds no platform
+## One dependency for an app, and no platform in the code
 
-It depends on no TV platform package and names none in its code. A package is a
-TV platform when its `package.json` has `reactNativeTvPlatform`
-([platform-packages.md](platform-packages.md)), and the app's own dependencies
-say which platforms it has. A third platform joins by shipping that
-declaration, with no release of this package.
+An app installs this package and has every TV. Its `dependencies` bring the
+Samsung and LG platform packages and react-native-tvos' config plugin, so the
+app lists none of them. The first version brought nothing, and an app on four
+TVs then listed four packages to get one setup.
+
+The code still names no platform. A package is a TV platform when its
+`package.json` has `reactNativeTvPlatform`
+([platform-packages.md](platform-packages.md)). The platforms of an app are
+its own dependencies that declare one, and the dependencies of this package
+that do. Which platforms come with the package is a line in its `package.json`
+and nothing else.
+
+- A platform the app lists itself wins over the copy this package brings, so
+  an app can pin a version or try a branch.
+- A platform this package does not bring joins by being a dependency of the
+  app, with no release of this package.
+- A brought package is looked for from the app first, then from this package's
+  own location. An install that does not hoist (pnpm, Yarn Plug'n'Play) puts it
+  where only this package reaches it; its Metro entry, its command and its
+  config plugin are then loaded from there
+  ([reference/expo-config-and-start.md](reference/expo-config-and-start.md)).
+- An app that imports a platform's own API, such as
+  `@kromatv/react-native-tizen/preview`, imports from that platform's package.
+  Under an install that does not hoist it lists that package too.
 
 `withTV` started in `@kromatv/react-native-tizen` and
 `@kromatv/react-native-webos`, each exporting it. An app then imported the
@@ -69,10 +88,10 @@ the platform packages change nothing for this.
   business and goes in its block, as it is.
 - This package validates no platform's props. The platform's own plugin does,
   with its own messages.
-- `tvos` is react-native-tvos' plugin, the one package named here: it is what
-  makes an Expo app an Apple TV and Android TV app, and it is not a platform
-  package in this package's sense. Its props pass through as they are, with
-  `isTV` on.
+- `tvos` is react-native-tvos' plugin, the one package named in the code: it
+  is what makes an Expo app an Apple TV and Android TV app, and it is not a
+  platform package in this package's sense. This package brings it. Its props
+  pass through as they are, with `isTV` on.
 - An entry the app lists itself wins, and a block beside it is an error rather
   than a silent merge.
 

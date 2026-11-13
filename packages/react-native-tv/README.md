@@ -6,9 +6,9 @@ Samsung Tizen from
 [`@kromatv/react-native-tizen`](https://github.com/kromatv/react-native-tv/tree/main/packages/react-native-tizen)
 and LG webOS from
 [`@kromatv/react-native-webos`](https://github.com/kromatv/react-native-tv/tree/main/packages/react-native-webos).
-This package is what an app sets up once for all of them. It holds no platform
-code and depends on none of them: it finds the TV platform packages among the
-app's dependencies.
+This package is the one dependency an app adds for all of them. It holds no
+platform code: it brings the Samsung and LG packages and react-native-tvos'
+config plugin, and sets them up together.
 
 ## Install
 
@@ -16,10 +16,16 @@ app's dependencies.
 npm install @kromatv/react-native-tv
 ```
 
-Add the platform packages for the TVs the app runs on, each set up as its own
-README says. The shared `t` key and the Metro setup from `app.json` need
-`@kromatv/react-native-tizen` 0.1.0-alpha.5 or later and
-`@kromatv/react-native-webos` 0.1.0-alpha.3 or later.
+That is every TV: `@kromatv/react-native-tizen`,
+`@kromatv/react-native-webos` and `@react-native-tvos/config-tv` come with it.
+The app itself still runs on react-native-tvos, as an Apple TV or Android TV
+app does. Building for a TV needs that platform's toolchain: the README of
+each platform package says what to install.
+
+An app that lists a platform package itself keeps its own copy, which is how
+to pin a version. An app that imports a platform's own API, such as
+`@kromatv/react-native-tizen/preview`, and installs with pnpm or Yarn
+Plug'n'Play lists that package too.
 
 ## One entry in `app.json`
 
@@ -43,7 +49,7 @@ README says. The shared `t` key and the Metro setup from `app.json` need
 
 | Key | Goes to |
 |---|---|
-| `package`, `version`, `icon`, `locales` | every TV platform package of the app |
+| `package`, `version`, `icon`, `locales` | every TV platform package the app has |
 | a platform's name: `tizen`, `webos` | that platform's own props, over the shared ones |
 | `tvos` | `@react-native-tvos/config-tv`, for Apple TV and Android TV, with `isTV` on, so no script needs `EXPO_TV=1` |
 
@@ -67,8 +73,8 @@ import { withTV } from '@kromatv/react-native-tv/metro';
 export default withTV(getDefaultConfig(import.meta.dirname));
 ```
 
-`withTV` teaches Metro the platform of every TV platform package the app
-depends on, and leaves alone a platform the config knows already. Calling it
+`withTV` teaches Metro the platform of every TV platform package the app has,
+and leaves alone a platform the config knows already. Calling it
 in an app that also lists the plugin changes nothing.
 
 ## Run on a TV
@@ -135,12 +141,13 @@ With this package in an app, `npx expo start` has one `t` for every TV:
 | **t** | Opens the app where this project opened last. With nothing remembered, an app with one platform opens on that platform's TV used last, and an app with several asks |
 | **shift+t** | Lists the TVs and simulators of every platform in one list, and opens the app on the one whose number you press; Esc cancels |
 
-It needs versions of the platform packages that register with it. An older one
-keeps its own `t`.
+A platform package the app pins to a version from before it registered with
+this package keeps its own `t`.
 
 ## What a platform package declares
 
-A package is a TV platform when its `package.json` says so:
+A package is a TV platform when its `package.json` says so. One this package
+does not bring joins by being a dependency of the app:
 
 ```json
 {

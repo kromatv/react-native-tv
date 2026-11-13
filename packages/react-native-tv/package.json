@@ -63,6 +63,9 @@
     "check:fix": "oxlint --ignore-path .gitignore --fix . && oxfmt ."
   },
   "dependencies": {
+    "@kromatv/react-native-tizen": "^0.1.0-alpha.5",
+    "@kromatv/react-native-webos": "^0.1.0-alpha.3",
+    "@react-native-tvos/config-tv": "^0.1.7",
     "zod": "^4.6.7"
   },
   "devDependencies": {

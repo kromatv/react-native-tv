@@ -1,5 +1,4 @@
 import { createRequire } from 'node:module';
-import { join } from 'node:path';
 import { z } from 'zod';
 import type { TvPlatformPackage } from '../platforms/tv-platform-packages.ts';
 import type { TvPlatformWrapper } from './metro-config-like.ts';
@@ -11,14 +10,9 @@ const entrySchema = z.looseObject({
   [TV_PLATFORM_EXPORT]: z.custom<TvPlatformWrapper>((value) => typeof value === 'function'),
 });
 
-/** The wrapper `platform` exports, loaded as the app at `projectRoot` resolves it. */
-export function loadTvPlatform(
-  projectRoot: string,
-  platform: TvPlatformPackage,
-): TvPlatformWrapper {
-  const entry = entrySchema.safeParse(
-    createRequire(join(projectRoot, 'package.json'))(platform.metro),
-  );
+/** The wrapper `platform` exports, loaded from where the platform was found. */
+export function loadTvPlatform(platform: TvPlatformPackage): TvPlatformWrapper {
+  const entry = entrySchema.safeParse(createRequire(platform.from)(platform.metro));
   if (!entry.success) {
     throw new Error(
       `${platform.name} declares a TV platform, but ${platform.metro} exports no ${TV_PLATFORM_EXPORT} function`,

@@ -6,13 +6,14 @@ reference file covers which code, and how to check a change.
 
 | Directory | Package | What |
 |-----------|---------|------|
-| `packages/react-native-tv` | `@kromatv/react-native-tv` | one setup for every TV platform; holds no platform code |
+| `packages/react-native-tv` | `@kromatv/react-native-tv` | the one dependency an app adds: brings the platform packages and sets every TV up; holds no platform code |
 | `packages/react-native-tizen` | `@kromatv/react-native-tizen` | Samsung Tizen TVs: the runtime, the `rn-tizen` CLI, the simulator |
 | `packages/react-native-webos` | `@kromatv/react-native-webos` | LG webOS TVs: the runtime, the `rn-webos` CLI, the simulator |
 
 ## Across packages
 
-- No package imports another. `react-native-tv` finds a platform package through
+- No package imports another. `react-native-tv` lists the platform packages in
+  its `dependencies`, so an app installs one package, and finds each through
   `reactNativeTvPlatform` in its `package.json`. Nothing here may depend on
   KROMA or any other app.
 - A pull request's title becomes its squash commit and, for `feat`, `fix`,

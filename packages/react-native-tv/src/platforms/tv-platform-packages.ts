@@ -6,11 +6,16 @@ import { z } from 'zod';
 /** The `package.json` key a TV platform package describes itself under. */
 export const TV_PLATFORM_KEY = 'reactNativeTvPlatform';
 
-/** A dependency of the app that is a TV platform. */
+/** This package, whose own dependencies are the platforms it brings to an app. */
+export const TV_PACKAGE = '@kromatv/react-native-tv';
+
+/** A TV platform the app has: one of its dependencies, or one this package brings. */
 export interface TvPlatformPackage {
   readonly name: string;
-  /** The module that holds its Metro wrapper, as the app requires it. */
+  /** The module that holds its Metro wrapper, as `from` requires it. */
   readonly metro: string;
+  /** The `package.json` it resolves from: the app's, or this package's when the app cannot reach it. */
+  readonly from: string;
   /** The platform it adds to Metro, such as `webos`, when it names one. */
   readonly platform: string | null;
   /** The script of the command it names, when its `bin` has that command. */
@@ -32,6 +37,7 @@ const appManifestSchema = z.looseObject({
   optionalDependencies: dependencyNames,
   peerDependencies: dependencyNames,
 });
+const ownManifestSchema = z.looseObject({ dependencies: dependencyNames });
 const platformManifestSchema = z.looseObject({
   [TV_PLATFORM_KEY]: z.object({
     metro: z.string().startsWith('./').max(256),
@@ -60,38 +66,66 @@ function scriptInside(dir: string, script: string | undefined): string | null {
   return fromDir.startsWith('..') || isAbsolute(fromDir) ? null : file;
 }
 
-function platformPackage(fromApp: NodeJS.Require, name: string): TvPlatformPackage | null {
-  let manifest: string;
-  try {
-    manifest = fromApp.resolve(`${name}/package.json`);
-  } catch {
-    return null;
+/** The first of `manifests` that `specifier` resolves from, with the file it resolves to. */
+export function resolvedFrom(
+  manifests: readonly string[],
+  specifier: string,
+): { readonly from: string; readonly file: string } | null {
+  for (const from of manifests) {
+    try {
+      return { from, file: createRequire(from).resolve(specifier) };
+    } catch {
+      continue;
+    }
   }
-  const parsed = platformManifestSchema.safeParse(readManifest(manifest));
+  return null;
+}
+
+/**
+ * The `package.json` files the TV packages of the app at `projectRoot` resolve
+ * from, in order: the app's, then this package's as the app has it.
+ */
+export function tvManifests(projectRoot: string): string[] {
+  const appManifest = join(projectRoot, 'package.json');
+  const own = resolvedFrom([appManifest], `${TV_PACKAGE}/package.json`);
+  return own === null ? [appManifest] : [appManifest, own.file];
+}
+
+function platformPackage(manifests: readonly string[], name: string): TvPlatformPackage | null {
+  const found = resolvedFrom(manifests, `${name}/package.json`);
+  if (found === null) return null;
+  const parsed = platformManifestSchema.safeParse(readManifest(found.file));
   if (!parsed.success) return null;
   const declared = parsed.data[TV_PLATFORM_KEY];
   const script = declared.cli === undefined ? undefined : parsed.data.bin?.[declared.cli];
   return {
     name,
     metro: `${name}/${declared.metro.slice(2)}`,
+    from: found.from,
     platform: declared.platform ?? null,
-    cli: scriptInside(dirname(manifest), script),
+    cli: scriptInside(dirname(found.file), script),
   };
 }
 
 /**
- * The TV platforms among the dependencies of the app at `projectRoot`, by
- * name: every package whose `package.json` has a `reactNativeTvPlatform` with
- * the subpath of its Metro entry, as in
- * `{ "metro": "./metro", "platform": "webos", "cli": "rn-webos" }`. A package
- * that keeps its `package.json` out of its `exports` is not found.
+ * The TV platforms of the app at `projectRoot`, by name: every dependency of
+ * the app, and of this package as the app has it, whose `package.json` has a
+ * `reactNativeTvPlatform` with the subpath of its Metro entry, as in
+ * `{ "metro": "./metro", "platform": "webos", "cli": "rn-webos" }`. The copy
+ * the app resolves wins over the one this package brings. A package that keeps
+ * its `package.json` out of its `exports` is not found.
  */
 export function tvPlatformPackages(projectRoot: string): TvPlatformPackage[] {
-  const app = appManifestSchema.safeParse(readManifest(join(projectRoot, 'package.json')));
-  if (!app.success) return [];
-  const fromApp = createRequire(join(projectRoot, 'package.json'));
-  const names = new Set(DEPENDENCY_FIELDS.flatMap((field) => Object.keys(app.data[field] ?? {})));
+  const manifests = tvManifests(projectRoot);
+  const [app, own] = manifests.map((manifest) => readManifest(manifest));
+  const appDependencies = appManifestSchema.safeParse(app);
+  if (!appDependencies.success) return [];
+  const brought = ownManifestSchema.safeParse(own);
+  const names = new Set([
+    ...DEPENDENCY_FIELDS.flatMap((field) => Object.keys(appDependencies.data[field] ?? {})),
+    ...Object.keys((brought.success ? brought.data.dependencies : undefined) ?? {}),
+  ]);
   return [...names]
     .sort((first, second) => first.localeCompare(second))
-    .flatMap((name) => platformPackage(fromApp, name) ?? []);
+    .flatMap((name) => platformPackage(manifests, name) ?? []);
 }

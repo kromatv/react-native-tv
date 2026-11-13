@@ -1,9 +1,16 @@
 # What a TV platform package declares
 
-`@kromatv/react-native-tv` names no platform. It reads the `package.json` of
-each dependency of the app (`dependencies`, `devDependencies`,
-`optionalDependencies`, `peerDependencies`) and takes the ones that have a
-`reactNativeTvPlatform`:
+`@kromatv/react-native-tv` names no platform in its code. It reads the
+`package.json` of each dependency of the app (`dependencies`,
+`devDependencies`, `optionalDependencies`, `peerDependencies`) and of each of
+its own `dependencies`, and takes the ones that have a
+`reactNativeTvPlatform`. Its own dependencies are how
+`@kromatv/react-native-tizen` and `@kromatv/react-native-webos` come with it;
+any other platform joins as a dependency of the app.
+
+Each is looked for from the app first, then from where the app has
+`@kromatv/react-native-tv`, so the app's own copy wins and a package only this
+one reaches is still found:
 
 ```json
 {
@@ -26,7 +33,9 @@ each dependency of the app (`dependencies`, `devDependencies`,
 | `platform` | for `run` | The name the platform has in Metro and in `Platform.OS`: lowercase letters and digits, starting with a letter. It names the command, `run:<platform>` |
 | `cli` | for `run` | A command of the package's `bin`. `run:<platform> [options]` starts its script with Node as `<script> run [options]`, on the terminal of the caller, and exits with its code |
 
-The package must list `./package.json` in its `exports`, or it is not found.
+The package must list `./package.json` in its `exports`, or it is not found,
+and `./app.plugin.js`, which Expo is given as a file when the app cannot reach
+the package by name.
 A package that declares `metro` alone still joins `withTV`; it has no `run`
 command until it names `platform` and `cli`.
 
