@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.4](https://github.com/kromatv/react-native-tv/compare/react-native-webos-v0.1.0-alpha.3...react-native-webos-v0.1.0-alpha.4) (2026-11-13)
+
+
+### Documentation
+
+* point the changelog's links at this repository ([#10](https://github.com/kromatv/react-native-tv/issues/10)) ([c6a2825](https://github.com/kromatv/react-native-tv/commit/c6a282524de244731100f428b8084f248cdb9666))
+
 ## [0.1.0-alpha.3](https://github.com/kromatv/react-native-tv/compare/react-native-webos-v0.1.0-alpha.2...react-native-webos-v0.1.0-alpha.3) (2026-11-12)
 
 
