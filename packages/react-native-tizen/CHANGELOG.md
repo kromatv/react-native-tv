@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.6](https://github.com/kromatv/react-native-tv/compare/react-native-tizen-v0.1.0-alpha.5...react-native-tizen-v0.1.0-alpha.6) (2026-11-13)
+
+
+### Documentation
+
+* point the changelog's links at this repository ([#9](https://github.com/kromatv/react-native-tv/issues/9)) ([5f61f6a](https://github.com/kromatv/react-native-tv/commit/5f61f6a4f963b3f45bee55fb5a58f86317a45c93))
+
 ## [0.1.0-alpha.5](https://github.com/kromatv/react-native-tv/compare/react-native-tizen-v0.1.0-alpha.4...react-native-tizen-v0.1.0-alpha.5) (2026-11-13)
 
 
