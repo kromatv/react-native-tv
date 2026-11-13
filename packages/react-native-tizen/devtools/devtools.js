@@ -1,4 +1,4 @@
-const base = `${location.pathname.replace(/\/(index\.html)?$/, '')}/`;
+const base = new URL('.', document.currentScript.src);
 const elements = {
   jobs: document.getElementById('jobs'),
   title: document.getElementById('title'),
@@ -12,7 +12,7 @@ let selected = requested !== null && JOB_ID.test(requested) ? requested : null;
 let offset = 0;
 
 async function getJson(path, init) {
-  const response = await fetch(`${base}${path}`, init);
+  const response = await fetch(new URL(path, base), init);
   return response.json();
 }
 
