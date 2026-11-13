@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.1](https://github.com/kromatv/react-native-tv/compare/react-native-tv-v0.1.0-alpha.0...react-native-tv-v0.1.0-alpha.1) (2026-11-13)
+
+
+### Features
+
+* **react-native-tv:** one dependency brings every TV platform to an app ([#2](https://github.com/kromatv/react-native-tv/issues/2)) ([2e07bed](https://github.com/kromatv/react-native-tv/commit/2e07bed850951aae997e872a441259f2f95e2d95))
+
 ## 0.1.0-alpha.0 (2026-11-13)
 
 
