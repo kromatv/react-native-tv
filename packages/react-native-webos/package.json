@@ -1,6 +1,6 @@
 {
   "name": "@kromatv/react-native-webos",
-  "version": "0.1.0-alpha.2",
+  "version": "0.1.0-alpha.3",
   "type": "module",
   "description": "React Native and Expo for LG webOS TVs: Hermes and Fabric run natively, with no web runtime in between.",
   "license": "MIT",
