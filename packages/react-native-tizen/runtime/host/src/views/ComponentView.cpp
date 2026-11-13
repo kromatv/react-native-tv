@@ -133,7 +133,7 @@ void ComponentView::mountChild(ComponentView &child, std::size_t index) {
     child.placed_ = false;
     child.place();
   }
-  if (!child.isOverlay()) stackChild(index);
+  if (stacksInRoot(child)) stackChild(index);
   child.didMount();
   didChangeChildren();
 }
@@ -153,7 +153,8 @@ void ComponentView::attach(ComponentView &child) {
     evas_object_layer_set(child.root_, kOverlayLayer);
     evas_object_raise(child.root_);
   } else {
-    evas_object_smart_member_add(child.root_, root_);
+    auto *host = hostFor(child);
+    evas_object_smart_member_add(child.root_, host != nullptr ? host : root_);
     hangChild(child);
   }
   child.applyVisibility();
@@ -166,7 +167,7 @@ void ComponentView::detach(ComponentView &child) {
 }
 
 void ComponentView::applyVisibility() {
-  const bool hidden = detached_ || layoutMetrics_.displayType == facebook::react::DisplayType::None;
+  const bool hidden = detached_ || culled_ || layoutMetrics_.displayType == facebook::react::DisplayType::None;
   if (hidden) {
     evas_object_hide(root_);
   } else {
@@ -210,6 +211,10 @@ Evas_Object *ComponentView::clipperFor(const ComponentView &) const {
   return nullptr;
 }
 
+Evas_Object *ComponentView::hostFor(const ComponentView &) const {
+  return nullptr;
+}
+
 void ComponentView::didChangeChildren() {
   // A plain view treats every child alike.
 }
@@ -224,60 +229,12 @@ void ComponentView::setAlwaysClips(bool alwaysClips) {
 void ComponentView::refreshBox() {
   if (!props_) return;
   const auto &viewProps = static_cast<const facebook::react::ViewProps &>(*props_);
-  if (!box_.update(resolveBoxStyle(viewProps, layoutMetrics_, alwaysClips_))) return;
+  const auto reach = box_.overflow();
+  const bool changed = box_.update(resolveBoxStyle(viewProps, layoutMetrics_, alwaysClips_));
+  if (box_.overflow() != reach) growMappedAncestors();
+  if (!changed) return;
   refreshClips();
   restack();
-}
-
-void ComponentView::refreshClips() {
-  for (auto *content : contents_) hangFromClipper(content);
-  for (auto *child : children_) {
-    if (!child->isOverlay()) hangChild(*child);
-  }
-}
-
-void ComponentView::hangFromClipper(Evas_Object *object) const {
-  auto *clipper = box_.clipper();
-  evas_object_clip_set(object, clipper != nullptr ? clipper : evas_object_smart_clipped_clipper_get(root_));
-}
-
-void ComponentView::hangChild(const ComponentView &child) const {
-  auto *clipper = clipperFor(child);
-  if (clipper != nullptr) {
-    evas_object_clip_set(child.root_, clipper);
-  } else {
-    hangFromClipper(child.root_);
-  }
-}
-
-void ComponentView::stackChild(std::size_t index) {
-  const auto underneath = contents_.empty() ? box_.objectsBelowContent() : contents_;
-  Evas_Object *below = underneath.empty() ? nullptr : underneath.back();
-  for (auto i = index; i > 0; --i) {
-    if (!children_[i - 1]->isOverlay()) {
-      below = children_[i - 1]->root_;
-      break;
-    }
-  }
-  if (below != nullptr) {
-    evas_object_stack_above(children_[index]->root_, below);
-  } else {
-    evas_object_lower(children_[index]->root_);
-  }
-}
-
-void ComponentView::restack() {
-  auto order = box_.objectsBelowContent();
-  order.insert(order.end(), contents_.begin(), contents_.end());
-  for (auto *child : children_) {
-    if (!child->isOverlay()) order.push_back(child->root_);
-  }
-  const auto above = box_.objectsAboveChildren();
-  order.insert(order.end(), above.begin(), above.end());
-  order.insert(order.end(), overlays_.begin(), overlays_.end());
-  if (order.empty()) return;
-  evas_object_lower(order.front());
-  for (std::size_t i = 1; i < order.size(); ++i) evas_object_stack_above(order[i], order[i - 1]);
 }
 
 } // namespace rntizen

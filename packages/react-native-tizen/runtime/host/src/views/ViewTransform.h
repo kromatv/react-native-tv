@@ -22,9 +22,12 @@ class ViewTransform final {
   /// The offset a translation-only transform moves the view by, else zero.
   PixelPoint translation(facebook::react::Float scale) const;
 
+  /// Whether the transform needs a map: it is more than a translation.
+  bool isMapped() const;
+
   /// Maps `root` so that its `bounds` show transformed around `box`, the
   /// view's untransformed box; removes any map when none is needed.
-  void apply(Evas_Object *root, const PixelRect &box, const PixelRect &bounds, facebook::react::Float scale) const;
+  void apply(Evas_Object *root, const PixelRect &box, const PixelRect &bounds, facebook::react::Float scale);
 
   /// Where `point`, in window pixels, shows once `apply` mapped the view whose
   /// untransformed box is `box`. A translation is already in `box`, so it
@@ -34,6 +37,7 @@ class ViewTransform final {
  private:
   facebook::react::Transform matrix_;
   bool isTranslation_{true};
+  bool mapEnabled_{false};
 };
 
 } // namespace rntizen

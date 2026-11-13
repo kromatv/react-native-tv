@@ -33,6 +33,26 @@ NinePatch makeFilled(const Corners &corners) {
   return patch;
 }
 
+int stretchedIndex(int at, int length, int sourceLength, int before, int after) {
+  if (at < before) return at;
+  if (at >= length - after) return sourceLength - (length - at);
+  return before;
+}
+
+NinePatch stretched(const NinePatch &patch, int width, int height) {
+  NinePatch whole{.width = width, .height = height};
+  whole.pixels.resize(static_cast<std::size_t>(width) * static_cast<std::size_t>(height));
+  for (int y = 0; y < height; ++y) {
+    const auto row = static_cast<std::size_t>(stretchedIndex(y, height, patch.height, patch.border.top, patch.border.bottom));
+    const auto *source = patch.pixels.data() + row * static_cast<std::size_t>(patch.width);
+    auto *target = whole.pixels.data() + static_cast<std::size_t>(y) * static_cast<std::size_t>(width);
+    for (int x = 0; x < width; ++x) {
+      target[x] = source[stretchedIndex(x, width, patch.width, patch.border.left, patch.border.right)];
+    }
+  }
+  return whole;
+}
+
 NinePatch makeRing(const Corners &corners, const Edges &widths) {
   const auto extents = corners.extents();
   auto patch = blankPatch({
@@ -101,6 +121,13 @@ int shadowPadding(int blur) {
 
 const NinePatch &filledPatch(const Corners &corners) {
   return cachedPatch(patchKey(PatchKind::Filled, corners), [&corners] { return makeFilled(corners); });
+}
+
+const NinePatch &wholeFilledPatch(const Corners &corners, int width, int height) {
+  auto key = patchKey(PatchKind::WholeFilled, corners);
+  key.push_back(static_cast<float>(width));
+  key.push_back(static_cast<float>(height));
+  return cachedPatch(key, [&corners, width, height] { return stretched(filledPatch(corners), width, height); });
 }
 
 const NinePatch &ringPatch(const Corners &corners, const Edges &widths) {

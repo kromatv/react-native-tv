@@ -9,25 +9,11 @@
 
 namespace rntizen {
 
-namespace {
-
-using WeakLoop = std::weak_ptr<AnimationFrameLoop>;
-
-void deleteAnimator(Ecore_Animator *animator) {
-  const std::unique_ptr<WeakLoop> loop(static_cast<WeakLoop *>(ecore_animator_del(animator)));
-}
-
-} // namespace
-
 AnimationFrameLoop::AnimationFrameLoop() = default;
 
 AnimationFrameLoop::~AnimationFrameLoop() {
-  if (animator_ == nullptr) return;
-  if (isMainThread()) {
-    deleteAnimator(animator_);
-  } else {
-    runOnMainThread([animator = animator_] { deleteAnimator(animator); });
-  }
+  if (isMainThread()) return;
+  runOnMainThread([ticker = std::move(ticker_)] { ticker->stop(); });
 }
 
 void AnimationFrameLoop::follow(std::weak_ptr<const void> owner) {
@@ -54,15 +40,17 @@ void AnimationFrameLoop::stop() {
 
 void AnimationFrameLoop::startOnMainThread(std::function<void()> onFrame) {
   onFrame_ = std::move(onFrame);
-  if (animator_ != nullptr) return;
-  animator_ = ecore_animator_add(tick, std::make_unique<WeakLoop>(weak_from_this()).release());
+  if (ticker_->isRunning()) return;
+  ticker_->start([weak = weak_from_this()] {
+    if (const auto self = weak.lock()) self->frame();
+  });
   frames_ = 0;
   startedAt_ = std::chrono::steady_clock::now();
 }
 
 void AnimationFrameLoop::stopOnMainThread() {
-  if (animator_ != nullptr) {
-    deleteAnimator(std::exchange(animator_, nullptr));
+  if (ticker_->isRunning()) {
+    ticker_->stop();
     const auto elapsed =
         std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - startedAt_).count();
     log(LogLevel::Debug, std::format("Native animated: {} frames in {} ms on the main loop", frames_, elapsed));
@@ -70,21 +58,17 @@ void AnimationFrameLoop::stopOnMainThread() {
   if (!ticking_) onFrame_ = nullptr;
 }
 
-Eina_Bool AnimationFrameLoop::tick(void *data) {
-  auto self = static_cast<WeakLoop *>(data)->lock();
-  if (!self || self->animator_ == nullptr) return ECORE_CALLBACK_RENEW;
-  const auto owner = self->owner_.lock();
-  if (!owner || !self->onFrame_) {
-    self->stopOnMainThread();
-    return ECORE_CALLBACK_RENEW;
+void AnimationFrameLoop::frame() {
+  if (const auto owner = owner_.lock(); owner && onFrame_) {
+    ticking_ = true;
+    ++frames_;
+    auto onFrame = onFrame_;
+    onFrame();
+    ticking_ = false;
+    if (!ticker_->isRunning()) onFrame_ = nullptr;
+    return;
   }
-  self->ticking_ = true;
-  ++self->frames_;
-  auto onFrame = self->onFrame_;
-  onFrame();
-  self->ticking_ = false;
-  if (self->animator_ == nullptr) self->onFrame_ = nullptr;
-  return ECORE_CALLBACK_RENEW;
+  stopOnMainThread();
 }
 
 } // namespace rntizen

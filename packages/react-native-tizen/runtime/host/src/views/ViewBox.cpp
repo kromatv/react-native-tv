@@ -12,7 +12,7 @@ ViewBox::ViewBox(Evas *evas, Evas_Object *smart)
       border_(evas, smart),
       gradients_(evas, smart),
       background_(evas, smart),
-      clipper_(evas, smart) {}
+      clipper_(evas, smart, true) {}
 
 bool ViewBox::update(const BoxStyle &style) {
   if (updated_ && style == style_) return false;
@@ -40,9 +40,8 @@ bool ViewBox::updateBackground(const BoxStyle &style) {
 }
 
 void ViewBox::layout(const PixelRect &box) {
-  for (const auto *shape : {&background_, &clipper_}) {
-    if (auto *object = shape->object()) setGeometry(object, box);
-  }
+  background_.layout(box);
+  clipper_.layout(box);
   shadows_.layout(box);
   border_.layout(box);
   gradients_.layout(box);

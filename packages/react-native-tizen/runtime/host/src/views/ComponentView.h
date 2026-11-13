@@ -13,6 +13,7 @@
 
 #include <Evas.h>
 
+#include <optional>
 #include <span>
 #include <string>
 #include <vector>
@@ -79,6 +80,12 @@ class ComponentView {
   /// scroll view's content offset.
   virtual facebook::react::Point childrenOffset() const;
   void placeChildren();
+  /// The canvas rectangle outside which no child shows, or nothing when a
+  /// child may show anywhere, given `outside`, what the parent says of this
+  /// view. A view that clips narrows it to its own box and some room around
+  /// it; any other passes `outside` on. A child wholly out of it is hidden and
+  /// what it holds is left where it was, placed again once the child is back.
+  virtual std::optional<PixelRect> visibleRegionForChildren(const std::optional<PixelRect> &outside) const;
   /// Clips content and children to the box even when `overflow` is visible.
   void setAlwaysClips(bool alwaysClips);
   /// Whether the view is drawn above every other view, at the screen's
@@ -92,11 +99,17 @@ class ComponentView {
   /// What `child` is clipped to instead of the box, or null for the box (a
   /// MaskedView's content hangs from its mask).
   virtual Evas_Object *clipperFor(const ComponentView &child) const;
+  /// The smart object `child` is a member of instead of the view's own, or
+  /// null for the view's own (a MaskedView's mask joins the stage its picture
+  /// is taken of). Such a child is stacked by its host.
+  virtual Evas_Object *hostFor(const ComponentView &child) const;
   /// Runs once a child joined or left.
   virtual void didChangeChildren();
   /// Hangs every member and child from its clipper again, after
   /// `clipperFor` changed its answer.
   void refreshClips();
+  /// Moves every child to its host again, after `hostFor` changed its answer.
+  void rehostChildren();
   /// The smart object holding `view` and everything it draws.
   static Evas_Object *rootOf(const ComponentView &view);
 
@@ -113,11 +126,15 @@ class ComponentView {
   void stackChild(std::size_t index);
   void hangFromClipper(Evas_Object *object) const;
   void hangChild(const ComponentView &child) const;
+  bool stacksInRoot(const ComponentView &child) const;
   void attach(ComponentView &child);
   void detach(ComponentView &child);
   void applyVisibility();
   PixelPoint childrenOrigin() const;
   PixelRect bounds() const;
+  Edges ownOverflow() const;
+  Edges paintedOverflow() const;
+  void growMappedAncestors() const;
 
   Evas *const evas_;
   const facebook::react::Tag tag_;
@@ -133,7 +150,9 @@ class ComponentView {
   facebook::react::Props::Shared props_;
   facebook::react::EventEmitter::Shared eventEmitter_;
   PixelRect rect_;
+  std::optional<PixelRect> childrenRegion_;
   bool placed_{false};
+  bool culled_{false};
   bool rooted_{false};
   bool detached_{false};
   bool alwaysClips_{false};
