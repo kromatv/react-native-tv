@@ -14,8 +14,9 @@ reference in `docs/reference/` and its own guide:
 | `packages/react-native-tizen` | `@kromatv/react-native-tizen` | [`CONTRIBUTING.md`](packages/react-native-tizen/CONTRIBUTING.md) |
 | `packages/react-native-webos` | `@kromatv/react-native-webos` | [`CONTRIBUTING.md`](packages/react-native-webos/CONTRIBUTING.md) |
 
-No package depends on another: `@kromatv/react-native-tv` finds the platform
-packages among an app's dependencies.
+`@kromatv/react-native-tv` lists the two platform packages in its
+`dependencies`, as a version range, and imports nothing from them: it finds a
+platform by what the platform's `package.json` declares.
 
 ## Set up
 

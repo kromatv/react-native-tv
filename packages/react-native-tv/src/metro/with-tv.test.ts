@@ -28,6 +28,17 @@ describe('withTV', () => {
     });
   });
 
+  it('applies the wrapper of a platform this package brings, loaded from this package', () => {
+    app.dependOn('@kromatv/react-native-tv', 'tv-webos');
+    app.platformPackage('tv-webos', {}, addsPlatform('webos'));
+    app.bring({ 'tv-tizen': {} }, () => addsPlatform('tizen'));
+
+    expect(withTV({ projectRoot: app.root, platforms: ['ios'] })).toEqual({
+      projectRoot: app.root,
+      platforms: ['ios', 'tizen', 'webos'],
+    });
+  });
+
   it('leaves a platform the config knows already, so a second call changes nothing', () => {
     const adds = (platform: string) =>
       `exports.withTvPlatform = (config) => ({ ...config, resolver: { platforms: [...(config.resolver?.platforms ?? []), '${platform}'] } });`;

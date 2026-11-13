@@ -1,7 +1,7 @@
 import { realpathSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { testApp, type TestApp } from '../app.fixtures.ts';
+import { testApp, TV_PACKAGE_DIR, type TestApp } from '../app.fixtures.ts';
 import { tvPlatformPackages } from './tv-platform-packages.ts';
 
 let app: TestApp;
@@ -25,9 +25,37 @@ describe('tvPlatformPackages', () => {
     app.platformPackage('not-a-dependency', {});
     app.write('node_modules/plain/package.json', { name: 'plain' });
 
+    const from = join(app.root, 'package.json');
     expect(tvPlatformPackages(app.root)).toEqual([
-      { name: '@scope/tv-a', metro: '@scope/tv-a/metro', platform: null, cli: null },
-      { name: 'tv-b', metro: 'tv-b/metro', platform: null, cli: null },
+      { name: '@scope/tv-a', metro: '@scope/tv-a/metro', from, platform: null, cli: null },
+      { name: 'tv-b', metro: 'tv-b/metro', from, platform: null, cli: null },
+    ]);
+  });
+
+  it('finds the platforms this package brings, where the app cannot reach them, from this package', () => {
+    app.dependOn('@kromatv/react-native-tv');
+    app.bring({ tizen: { platform: 'tizen', cli: 'rn-tizen' } });
+    const tvPackage = join(realpathSync(app.root), TV_PACKAGE_DIR);
+
+    expect(tvPlatformPackages(app.root)).toEqual([
+      {
+        name: 'tizen',
+        metro: 'tizen/metro',
+        from: join(tvPackage, 'package.json'),
+        platform: 'tizen',
+        cli: join(tvPackage, 'node_modules/tizen/cli.js'),
+      },
+    ]);
+  });
+
+  it("takes the app's copy of a platform over the one this package brings", () => {
+    app.dependOn('@kromatv/react-native-tv');
+    app.bring({ tizen: { platform: 'tizen' }, webos: { platform: 'webos' } });
+    app.platformPackage('webos', { platform: 'webos' });
+
+    expect(tvPlatformPackages(app.root).map(({ name, from }) => [name, from])).toEqual([
+      ['tizen', join(realpathSync(app.root), TV_PACKAGE_DIR, 'package.json')],
+      ['webos', join(app.root, 'package.json')],
     ]);
   });
 
@@ -39,6 +67,7 @@ describe('tvPlatformPackages', () => {
       {
         name: 'webos',
         metro: 'webos/metro',
+        from: join(app.root, 'package.json'),
         platform: 'webos',
         cli: join(realpathSync(app.root), 'node_modules/webos/cli.js'),
       },

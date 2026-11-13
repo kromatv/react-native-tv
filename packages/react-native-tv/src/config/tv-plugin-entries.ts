@@ -1,13 +1,15 @@
-import { createRequire } from 'node:module';
-import { join } from 'node:path';
-import type { TvPlatformPackage } from '../platforms/tv-platform-packages.ts';
+import {
+  resolvedFrom,
+  tvManifests,
+  type TvPlatformPackage,
+} from '../platforms/tv-platform-packages.ts';
 import { TVOS_BLOCK, TvPropsError, type TvProps } from './tv-props.ts';
 
 /** react-native-tvos' config plugin, which sets an Expo app up for Apple TV and Android TV. */
 export const TVOS_PLUGIN = '@react-native-tvos/config-tv';
 
-/** One entry of `expo.plugins`: a plugin's name and its props. */
-export type PluginEntry = readonly [name: string, props: Readonly<Record<string, unknown>>];
+/** One entry of `expo.plugins`: a plugin's name, or its file, and its props. */
+export type PluginEntry = readonly [plugin: string, props: Readonly<Record<string, unknown>>];
 
 /** The entries the plugin's props stand for. */
 export interface TvPluginEntries {
@@ -15,19 +17,23 @@ export interface TvPluginEntries {
   readonly platforms: readonly PluginEntry[];
   /** The entry of react-native-tvos' plugin, when the app has it and does not list it itself. */
   readonly tvos: PluginEntry | null;
+  /** Those entries as Expo applies them: by name, or by the plugin's file when the app cannot reach the package. */
+  readonly applied: readonly PluginEntry[];
 }
 
-function isInstalled(projectRoot: string, name: string): boolean {
-  try {
-    createRequire(join(projectRoot, 'package.json')).resolve(`${name}/package.json`);
-    return true;
-  } catch {
-    return false;
-  }
+/**
+ * What Expo resolves `name`'s config plugin from: the name when the app at
+ * `manifests[0]` reaches the package, else the file of its `app.plugin.js`.
+ */
+function pluginReference(manifests: readonly string[], name: string): string | null {
+  const found = resolvedFrom(manifests, `${name}/package.json`);
+  if (found === null) return null;
+  if (found.from === manifests[0]) return name;
+  return resolvedFrom([found.from], `${name}/app.plugin.js`)?.file ?? null;
 }
 
 function tvosEntry(
-  projectRoot: string,
+  installed: boolean,
   props: TvProps,
   listed: ReadonlySet<string>,
 ): PluginEntry | null {
@@ -38,7 +44,7 @@ function tvosEntry(
       `"${TVOS_BLOCK}" and the app's own ${TVOS_PLUGIN} entry both configure Apple TV and Android TV: keep one`,
     );
   }
-  if (isInstalled(projectRoot, TVOS_PLUGIN)) return [TVOS_PLUGIN, { isTV: true, ...block }];
+  if (installed) return [TVOS_PLUGIN, { isTV: true, ...block }];
   if (block === undefined) return null;
   throw new TvPropsError(`"${TVOS_BLOCK}" needs ${TVOS_PLUGIN}: install it`);
 }
@@ -71,6 +77,7 @@ export function tvPluginEntries(
   packages: readonly TvPlatformPackage[],
   listed: ReadonlySet<string>,
 ): TvPluginEntries {
+  const manifests = tvManifests(projectRoot);
   const named = packages.flatMap((entry) =>
     entry.platform === null ? [] : [{ ...entry, platform: entry.platform }],
   );
@@ -80,11 +87,20 @@ export function tvPluginEntries(
     const platforms = [...known].sort((first, second) => first.localeCompare(second)).join(', ');
     throw new TvPropsError(`"${key}" is no TV platform this app depends on. It has ${platforms}`);
   }
+  const platforms = named.flatMap((entry) => {
+    const listedEntry = platformEntry(entry, props, listed);
+    return listedEntry === null ? [] : [listedEntry];
+  });
+  const tvosReference = pluginReference(manifests, TVOS_PLUGIN);
+  const tvos = tvosEntry(tvosReference !== null, props, listed);
   return {
-    platforms: named.flatMap((entry) => {
-      const listedEntry = platformEntry(entry, props, listed);
-      return listedEntry === null ? [] : [listedEntry];
-    }),
-    tvos: tvosEntry(projectRoot, props, listed),
+    platforms,
+    tvos,
+    applied: [
+      ...platforms.map(
+        ([name, entryProps]) => [pluginReference(manifests, name) ?? name, entryProps] as const,
+      ),
+      ...(tvos === null || tvosReference === null ? [] : [[tvosReference, tvos[1]] as const]),
+    ],
   };
 }

@@ -1,6 +1,6 @@
 import { realpathSync } from 'node:fs';
 import { join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { testApp, type TestApp } from '../app.fixtures.ts';
 import {
   extendExpoCli,
@@ -52,6 +52,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.restoreAllMocks();
   app.remove();
 });
 
@@ -138,6 +139,7 @@ describe('extendExpoCli', () => {
   });
 
   it('reads the app in the current directory, and adds nothing where there is none', () => {
+    vi.spyOn(process, 'cwd').mockReturnValue(join(app.root, 'nowhere'));
     const commands: Record<string, ExpoCommandLoader> = {};
     extendExpoCli(commands);
 

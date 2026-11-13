@@ -22,21 +22,20 @@ export function withTvPlatforms<Config extends MetroConfigLike>(
   config: Config,
   packages: readonly TvPlatformPackage[],
 ): Config {
-  const projectRoot = config.projectRoot ?? process.cwd();
   const known = knownPlatforms(config);
   return packages
     .filter(({ platform }) => platform === null || !known.has(platform))
-    .map((each) => loadTvPlatform(projectRoot, each))
+    .map((each) => loadTvPlatform(each))
     .reduce((wrapped, wrap) => wrap(wrapped), config);
 }
 
 /**
- * Teaches a Metro config every TV platform the app depends on, in one call:
- * the platform of each dependency that declares one, such as
- * `@kromatv/react-native-tizen` and `@kromatv/react-native-webos`. Adding a
- * platform to an app is then installing its package. The platforms are applied
- * in the order of their package names. An app that lists this package's config
- * plugin needs no call: Expo is given a Metro config that makes it.
+ * Teaches a Metro config every TV platform the app has, in one call: the ones
+ * this package brings, and the platform of each dependency of the app that
+ * declares one. Another platform joins an app by installing its package. The
+ * platforms are applied in the order of their package names. An app that lists
+ * this package's config plugin needs no call: Expo is given a Metro config
+ * that makes it.
  */
 export function withTV<Config extends MetroConfigLike>(config: Config): Config {
   return withTvPlatforms(config, tvPlatformPackages(config.projectRoot ?? process.cwd()));

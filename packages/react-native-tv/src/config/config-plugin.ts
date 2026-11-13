@@ -34,7 +34,7 @@ function expoWithPlugins(projectRoot: string): WithPlugins {
 /**
  * The config plugin `app.plugin.js` exports: one entry in `expo.plugins` for
  * every TV. A shared field (`package`, `version`, `icon`, `locales`) goes to
- * each TV platform package the app depends on, a block named after a platform
+ * each TV platform package the app has, a block named after a platform
  * goes to that platform, and `tvos` goes to react-native-tvos' plugin, with
  * `isTV` on. It applies those plugins, and adds each platform's entry to the
  * evaluated config, where that platform's own command reads its settings. It
@@ -53,9 +53,8 @@ export default function withReactNativeTV<Config extends ExpoConfigLike>(
     tvPlatformPackages(projectRoot),
     listedPlugins(config.plugins),
   );
-  const applied = [...entries.platforms, ...(entries.tvos === null ? [] : [entries.tvos])];
-  if (applied.length === 0) return config;
-  const configured = expoWithPlugins(projectRoot)(config, applied);
+  if (entries.applied.length === 0) return config;
+  const configured = expoWithPlugins(projectRoot)(config, entries.applied);
   const listed = z.array(z.unknown()).catch([]).parse(configured.plugins);
   return { ...configured, plugins: [...listed, ...entries.platforms] };
 }

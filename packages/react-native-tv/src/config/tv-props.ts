@@ -1,7 +1,8 @@
+import { TV_PACKAGE } from '../platforms/tv-platform-packages.ts';
 import { z } from 'zod';
 
 /** The name apps list this package's config plugin under in `expo.plugins`. */
-export const TV_PLUGIN = '@kromatv/react-native-tv';
+export const TV_PLUGIN = TV_PACKAGE;
 
 /** The block that holds the props of react-native-tvos' config plugin, for Apple TV and Android TV. */
 export const TVOS_BLOCK = 'tvos';

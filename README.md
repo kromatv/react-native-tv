@@ -15,7 +15,7 @@ none of them goes through a browser.
 
 | Package | What it does | npm |
 |---|---|---|
-| [`@kromatv/react-native-tv`](packages/react-native-tv) | One setup for every TV: one entry in `app.json`, `run:<platform>` commands in Expo CLI and one `t` key in `expo start`. It holds no platform code | [![npm](https://img.shields.io/npm/v/@kromatv/react-native-tv?label=npm)](https://www.npmjs.com/package/@kromatv/react-native-tv) |
+| [`@kromatv/react-native-tv`](packages/react-native-tv) | The one dependency an app adds: it brings the two packages below and sets every TV up with one entry in `app.json`, `run:<platform>` commands in Expo CLI and one `t` key in `expo start` | [![npm](https://img.shields.io/npm/v/@kromatv/react-native-tv?label=npm)](https://www.npmjs.com/package/@kromatv/react-native-tv) |
 | [`@kromatv/react-native-tizen`](packages/react-native-tizen) | Samsung TVs. A small .NET app, which Samsung's store accepts, loads a native library with Hermes, React Native's C++ core and a host that draws with EFL | [![npm](https://img.shields.io/npm/v/@kromatv/react-native-tizen?label=npm)](https://www.npmjs.com/package/@kromatv/react-native-tizen) |
 | [`@kromatv/react-native-webos`](packages/react-native-webos) | LG TVs. One native executable with Hermes, React Native's C++ core and a host that draws with Skia on OpenGL ES | [![npm](https://img.shields.io/npm/v/@kromatv/react-native-webos?label=npm)](https://www.npmjs.com/package/@kromatv/react-native-webos) |
 
@@ -23,14 +23,14 @@ Apple TV and Android TV come from
 [react-native-tvos](https://github.com/react-native-tvos/react-native-tvos),
 which `@kromatv/react-native-tv` sets up with the other two.
 
-Each package is installed on its own, and none depends on another. An app that
-targets only Samsung TVs needs `@kromatv/react-native-tizen` and nothing else
-from here.
+The two platform packages also work on their own. An app that targets only
+Samsung TVs can depend on `@kromatv/react-native-tizen` and nothing else from
+here.
 
 ## Start
 
 ```sh
-npm install @kromatv/react-native-tv @kromatv/react-native-tizen @kromatv/react-native-webos
+npm install @kromatv/react-native-tv
 ```
 
 One entry in `app.json` configures every TV platform and sets Metro up:
