@@ -4,15 +4,13 @@ import { dirname, join } from 'node:path';
 import { z } from 'zod';
 import { platformApiModules } from './platform-api.ts';
 
-const MAX_MANIFEST_BYTES = 1024 * 1024;
 const ownManifestSchema = z.looseObject({
   dependencies: z.record(z.string(), z.unknown()).optional(),
 });
 
 function readManifest(file: string): unknown {
   try {
-    const text = readFileSync(file, 'utf8');
-    return text.length > MAX_MANIFEST_BYTES ? null : JSON.parse(text);
+    return JSON.parse(readFileSync(file, 'utf8'));
   } catch {
     return null;
   }

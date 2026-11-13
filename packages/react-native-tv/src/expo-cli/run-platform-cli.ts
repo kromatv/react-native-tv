@@ -30,10 +30,6 @@ export function runPlatformCommand(
 }
 
 /** Runs `run` of a TV platform's command with `argv`, as `runPlatformCommand` does. */
-export function runPlatformCli(
-  script: string,
-  argv: readonly string[],
-  run: RunScript = runWithNode,
-): number {
+export function runPlatformCli(script: string, argv: readonly string[], run?: RunScript): number {
   return runPlatformCommand(script, ['run', ...argv], run);
 }
