@@ -8,6 +8,8 @@ on:
       - '.github/workflows/release.yml'
       - 'release-please-config.json'
       - '.release-please-manifest.json'
+      - 'packages/react-native-tizen/scripts/canary.ts'
+      - 'packages/react-native-tizen/scripts/stamp-canary.ts'
   workflow_dispatch:
 
 permissions:
@@ -213,3 +215,97 @@ jobs:
         run: |
           gh release upload "$TAG" "$RUNNER_TEMP"/package/*.tgz --clobber --repo "$GITHUB_REPOSITORY"
           gh release edit "$TAG" --draft=false --repo "$GITHUB_REPOSITORY"
+
+  canary:
+    name: Check and pack the canaries
+    needs: release-please
+    if: >-
+      !cancelled()
+      && (github.event_name == 'pull_request' || needs.release-please.result == 'success')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      version: ${{ steps.stamp.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: package.json
+          no-cache: true
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - run: bun install --frozen-lockfile
+
+      - id: stamp
+        name: Stamp the canary version
+        env:
+          BUILD: ${{ github.run_number }}
+          SHA: ${{ github.sha }}
+        run: bun packages/react-native-tizen/scripts/stamp-canary.ts "$BUILD" "$SHA" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Pack the tarballs
+        run: |
+          mkdir "$RUNNER_TEMP/canary"
+          for package in react-native-tizen react-native-webos react-native-tv; do
+            (cd "packages/$package" && npm pack --pack-destination "$RUNNER_TEMP/canary")
+          done
+
+      - name: Publish, as a dry run
+        run: |
+          for tarball in "$RUNNER_TEMP"/canary/*.tgz; do
+            npm publish "$tarball" --dry-run --access public --tag canary
+          done
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: canaries
+          path: ${{ runner.temp }}/canary/
+          if-no-files-found: error
+          retention-days: 7
+
+  publish-canary:
+    name: Publish the canaries to npm
+    needs: canary
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: npm
+      url: https://www.npmjs.com/package/@kromatv/react-native-tv/v/${{ needs.canary.outputs.version }}
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+
+      - name: npm supports trusted publishing
+        run: |
+          npm --version
+          node -e "const [a, b, c] = process.argv[1].split('.').map(Number); process.exit(a > 11 || (a === 11 && (b > 5 || (b === 5 && c >= 1))) ? 0 : 1)" "$(npm --version)"
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: canaries
+          path: ${{ runner.temp }}/canary
+
+      - name: Publish, renderers first
+        env:
+          VERSION: ${{ needs.canary.outputs.version }}
+        run: |
+          for package in react-native-tizen react-native-webos react-native-tv; do
+            if npm view "@kromatv/$package@$VERSION" version >/dev/null 2>&1; then
+              echo "@kromatv/$package@$VERSION is on npm already: a re-run."
+            else
+              npm publish "$RUNNER_TEMP/canary/kromatv-$package-$VERSION.tgz" --provenance --access public --tag canary
+            fi
+          done

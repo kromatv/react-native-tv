@@ -109,6 +109,20 @@ END_COMMIT_OVERRIDE
 
 To choose the next version, end a squash commit's body with `Release-As: 1.0.0`.
 
+### Canaries
+
+Every push to `main` also publishes all three packages to npm under the
+`canary` dist-tag, as `0.0.0-canary.<run>.g<sha>`: `<run>` is the `Release`
+workflow's run number and `<sha>` the commit's first seven characters. The
+canary of `react-native-tv` depends on the renderers' canaries of the same
+commit, so `@kromatv/react-native-tv@canary` installs what is on `main`.
+
+A canary sits on `0.0.0`, below every release, so no `^` or `~` range on a
+release resolves to it and `latest` never moves: only an install that names the
+`canary` tag gets one. It publishes through the same trusted publisher and `npm`
+environment as a release, and a pull request that changes `release.yml` or the
+canary scripts packs one as a dry run.
+
 ### One-time setup
 
 - A GitHub App opens the release pull requests, because CI does not run on one

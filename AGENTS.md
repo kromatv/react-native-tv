@@ -43,6 +43,6 @@ shellcheck -x scripts/*.sh
 | Path | What |
 |------|------|
 | `.github/workflows/ci.yml` | finds the changed packages (`scripts/changed-packages.sh`) and calls `package.yml` for each; `CI result` is the one required check |
-| `.github/workflows/release.yml` | Release Please, then pack and publish each released package |
+| `.github/workflows/release.yml` | Release Please, then pack and publish each released package; on every push to `main`, a canary of all three under the `canary` dist-tag |
 | `release-please-config.json`, `.release-please-manifest.json` | one entry per package |
 | `scripts/import-history.sh` | how the Tizen and webOS repositories were imported with their history |
