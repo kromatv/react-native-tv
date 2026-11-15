@@ -97,6 +97,28 @@ std::string decorationFormat(const TextAttributes &attributes, Float opacity) {
   return format;
 }
 
+std::string shadowFormat(const TextAttributes &attributes, Float opacity, Float scale) {
+  const auto &color = attributes.textShadowColor;
+  if (!color || facebook::react::colorComponentsFromColor(color).alpha <= 0) return {};
+  const auto offset = attributes.textShadowOffset.value_or(facebook::react::Size{});
+  const auto dx = static_cast<int>(std::lround(offset.width * scale));
+  const auto dy = static_cast<int>(std::lround(offset.height * scale));
+  const auto radius = std::isnan(attributes.textShadowRadius) ? Float{0} : attributes.textShadowRadius * scale;
+  const auto hex = hexColor(color, opacity, "#000000ff");
+  if (dx == 0 && dy == 0) {
+    if (radius < 0.5f) return {};
+    return " style=soft_outline outline_color=" + hex;
+  }
+  const bool far = std::max(std::abs(dx), std::abs(dy)) >= 2;
+  const bool soft = radius >= 1;
+  std::string effect = far ? "far_" : "";
+  effect += soft ? "soft_shadow" : "shadow";
+  std::string direction;
+  if (dy != 0) direction = dy > 0 ? "bottom" : "top";
+  if (dx != 0) direction += std::string(direction.empty() ? "" : "_") + (dx > 0 ? "right" : "left");
+  return " style=" + effect + "," + direction + " shadow_color=" + hex;
+}
+
 int pixelCount(Float points, Float scale) {
   return std::max(1, static_cast<int>(std::lround(points * scale)));
 }
@@ -169,6 +191,7 @@ FragmentFormat fragmentFormat(const TextAttributes &attributes, Float scale) {
     format += " linesize=" + pixels(attributes.lineHeight, scale);
   }
   format += decorationFormat(attributes, opacity);
+  format += shadowFormat(attributes, opacity, scale);
   if (attributes.backgroundColor) {
     format += " backing=on backing_color=" + hexColor(attributes.backgroundColor, opacity, "#00000000");
   }
