@@ -111,11 +111,12 @@ std::string shadowFormat(const TextAttributes &attributes, Float opacity, Float 
   }
   const bool far = std::max(std::abs(dx), std::abs(dy)) >= 2;
   const bool soft = radius >= 1;
-  const char *effect = soft ? (far ? "far_soft_shadow" : "soft_shadow") : (far ? "far_shadow" : "shadow");
+  std::string effect = far ? "far_" : "";
+  effect += soft ? "soft_shadow" : "shadow";
   std::string direction;
   if (dy != 0) direction = dy > 0 ? "bottom" : "top";
   if (dx != 0) direction += std::string(direction.empty() ? "" : "_") + (dx > 0 ? "right" : "left");
-  return std::string(" style=") + effect + "," + direction + " shadow_color=" + hex;
+  return " style=" + effect + "," + direction + " shadow_color=" + hex;
 }
 
 int pixelCount(Float points, Float scale) {
