@@ -209,6 +209,58 @@ TEST_CASE("fragmentFormat backs the run with its background color") {
   CHECK(has(fragmentFormat(attributes, 1).format, " backing=on backing_color=#0000ffff"));
 }
 
+namespace {
+
+TextAttributes shadowed(facebook::react::Size offset, facebook::react::Float radius) {
+  TextAttributes attributes;
+  attributes.textShadowColor = colorFromRGBA(0, 0, 0, 255);
+  attributes.textShadowOffset = offset;
+  attributes.textShadowRadius = radius;
+  return attributes;
+}
+
+} // namespace
+
+TEST_CASE("fragmentFormat rings a centred blurred shadow as a soft outline in its color") {
+  auto attributes = shadowed({0, 0}, 3);
+  attributes.textShadowColor = colorFromRGBA(255, 0, 0, 255);
+
+  CHECK(has(fragmentFormat(attributes, 1).format, " style=soft_outline outline_color=#ff0000ff"));
+}
+
+TEST_CASE("fragmentFormat draws nothing for a shadow hidden under the glyphs or with no color") {
+  auto clear = shadowed({2, 2}, 4);
+  clear.textShadowColor = colorFromRGBA(0, 0, 0, 0);
+  auto uncolored = shadowed({2, 2}, 4);
+  uncolored.textShadowColor = {};
+
+  CHECK_FALSE(has(fragmentFormat(shadowed({0, 0}, 0), 1).format, "style="));
+  CHECK_FALSE(has(fragmentFormat(clear, 1).format, "style="));
+  CHECK_FALSE(has(fragmentFormat(uncolored, 1).format, "style="));
+}
+
+TEST_CASE("fragmentFormat casts a sharp shadow one pixel away, or two from two pixels on") {
+  CHECK(has(fragmentFormat(shadowed({1, 1}, 0), 1).format, " style=shadow,bottom_right shadow_color=#000000ff"));
+  CHECK(has(fragmentFormat(shadowed({-2, -2}, 0.01f), 1).format, " style=far_shadow,top_left "));
+  CHECK(has(fragmentFormat(shadowed({-3, 0}, 0), 1).format, " style=far_shadow,left "));
+}
+
+TEST_CASE("fragmentFormat softens a shadow with a radius of a pixel or more") {
+  CHECK(has(fragmentFormat(shadowed({0, 2}, 10), 1).format, " style=far_soft_shadow,bottom "));
+  CHECK(has(fragmentFormat(shadowed({1, -1}, 1), 1).format, " style=soft_shadow,top_right "));
+}
+
+TEST_CASE("fragmentFormat measures the shadow in pixels") {
+  CHECK(has(fragmentFormat(shadowed({0, 1}, 0.5f), 2).format, " style=far_soft_shadow,bottom "));
+}
+
+TEST_CASE("fragmentFormat fades the shadow with the run's opacity") {
+  auto attributes = shadowed({1, 1}, 0);
+  attributes.opacity = 0.5;
+
+  CHECK(has(fragmentFormat(attributes, 1).format, " shadow_color=#00000080"));
+}
+
 TEST_CASE("fragmentFormat keeps the family when letter spacing names no app font") {
   TextAttributes attributes;
   attributes.fontFamily = "Unregistered";
