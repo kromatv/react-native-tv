@@ -90,19 +90,20 @@ std::string videoData(const std::string &mediaId, const VideoStream &video, int 
 } // namespace
 
 AcbSession::AcbSession(const AcbApi &api, const std::string &appId) : api_(api) {
+  using enum LogLevel;
   const long handle = api_.create();
   if (handle == 0) {
-    log(LogLevel::Warning, "[video] the TV made no control block: sound without a picture");
+    log(Warning, "[video] the TV made no control block: sound without a picture");
     return;
   }
   // Another app's id would bind the plane to that app.
   if (!api_.initialize(handle, kPlayerTypeVideo, appId.c_str(), onTask)) {
-    log(LogLevel::Warning, "[video] the control block refused to start: sound without a picture");
+    log(Warning, "[video] the control block refused to start: sound without a picture");
     return;
   }
   api_.setSinkType(handle, kSinkMain);
   handle_ = handle;
-  log(LogLevel::Info, std::format("[video] control block {} for {}", handle_, appId));
+  log(Info, std::format("[video] control block {} for {}", handle_, appId));
 }
 
 AcbPlane::AcbPlane(AcbSession &session, int player) : session_(session), player_(player) {}
@@ -132,22 +133,21 @@ void AcbPlane::hide() {
 }
 
 void AcbPlane::bind(const std::string &mediaId, const VideoStream &video) {
-  ++generation_;
   pace_.cancel();
   bound_ = false;
   mediaId_ = mediaId;
   video_ = video;
   if (session_.handle() == 0) return;
-  advance(generation_, 0);
+  advance(0);
 }
 
-void AcbPlane::advance(unsigned generation, int step) {
-  if (generation != generation_) return;
+// A bind or a release cancels the pace, so a step never runs for a media that is gone.
+void AcbPlane::advance(int step) {
   const auto &api = session_.api();
   const long acb = session_.handle();
   long task = 0;
-  const auto next = [this, generation, step](std::chrono::milliseconds wait) {
-    pace_.start(wait, [this, generation, step] { advance(generation, step + 1); });
+  const auto next = [this, step](std::chrono::milliseconds wait) {
+    pace_.start(wait, [this, step] { advance(step + 1); });
   };
   switch (step) {
     case 0:
@@ -156,11 +156,9 @@ void AcbPlane::advance(unsigned generation, int step) {
     case 1:
       playerLog(player_, std::format("control block loaded: {}", api.setState(acb, kForeground, kLoaded, &task)));
       return next(kPace);
-    case 2: {
-      const auto data = videoData(mediaId_, video_, player_);
-      playerLog(player_, std::format("control block video data: {}", api.setMediaVideoData(acb, data.c_str(), &task)));
+    case 2:
+      playerLog(player_, std::format("control block video data: {}", sendVideoData()));
       return next(kBeforeWindow);
-    }
     default:
       bound_ = true;
       showFullScreen();
@@ -178,7 +176,6 @@ void AcbPlane::playingChanged(bool playing) {
 }
 
 void AcbPlane::release() {
-  ++generation_;
   pace_.cancel();
   bound_ = false;
   playing_ = false;
@@ -186,13 +183,19 @@ void AcbPlane::release() {
   setState(kUnloaded);
 }
 
-void AcbPlane::setState(int playState) {
+int AcbPlane::sendVideoData() const {
+  long task = 0;
+  const auto data = videoData(mediaId_, video_, player_);
+  return session_.api().setMediaVideoData(session_.handle(), data.c_str(), &task);
+}
+
+void AcbPlane::setState(int playState) const {
   long task = 0;
   const int sent = session_.api().setState(session_.handle(), kForeground, playState, &task);
   playerLog(player_, std::format("control block play state {}: {}", playState, sent), LogLevel::Debug);
 }
 
-void AcbPlane::showFullScreen() {
+void AcbPlane::showFullScreen() const {
   long task = 0;
   const int sent =
       session_.api().setDisplayWindow(session_.handle(), 0, 0, kScreenWidth, kScreenHeight, true, &task);

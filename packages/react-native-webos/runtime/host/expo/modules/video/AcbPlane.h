@@ -52,13 +52,13 @@ class AcbPlane final : public VideoPlane {
   void release() override;
 
  private:
-  void advance(unsigned generation, int step);
-  void setState(int playState);
-  void showFullScreen();
+  void advance(int step);
+  int sendVideoData() const;
+  void setState(int playState) const;
+  void showFullScreen() const;
 
   AcbSession &session_;
   const int player_;
-  unsigned generation_{0};
   std::string mediaId_;
   VideoStream video_;
   bool bound_{false};

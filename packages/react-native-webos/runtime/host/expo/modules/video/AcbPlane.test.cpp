@@ -21,6 +21,7 @@ std::vector<std::string> calls;
 long nextHandle = 7;
 bool initializes = true;
 AcbApi::Callback reportTask = nullptr;
+std::string videoData;
 
 class RecordingSink final : public LogSink {
  public:
@@ -52,6 +53,7 @@ AcbApi recordingApi() {
   };
   api.setMediaVideoData = [](long acb, const char *json, long *task) {
     const std::string text = json;
+    videoData = text;
     calls.push_back(std::format(
         "video data {} {} {} {}",
         acb,
@@ -70,6 +72,8 @@ AcbApi recordingApi() {
 struct AcbFixture {
   AcbFixture() {
     calls.clear();
+    videoData.clear();
+    nextHandle = 7;
     initializes = true;
   }
 
@@ -104,14 +108,29 @@ TEST_CASE_FIXTURE(AcbFixture, "what the control block reports from its own threa
   std::thread([] {
     reportTask(7, 5, -1, 1, 1, R"({"errorCode":-1})");
     reportTask(7, 6, 1, 1, 2, nullptr);
+    reportTask(7, 7, 0, 1, 2, "");
+    reportTask(7, 8, -2, 1, 2, "");
+    reportTask(7, 9, 4, 1, 2, "");
   }).join();
   setLogSink(nullptr);
 
-  REQUIRE(sink->lines.size() == 2);
+  REQUIRE(sink->lines.size() == 5);
   CHECK(sink->lines[0].first == LogLevel::Warning);
   CHECK(sink->lines[0].second == R"([video] control block task 5 failed, play state 1: {"errorCode":-1})");
   CHECK(sink->lines[1].first == LogLevel::Debug);
   CHECK(sink->lines[1].second == "[video] control block task 6 done, play state 2: ");
+  CHECK(sink->lines[2].second == "[video] control block task 7 cancelled, play state 2: ");
+  CHECK(sink->lines[3].second == "[video] control block task 8 timed out, play state 2: ");
+  CHECK(sink->lines[4].second == "[video] control block task 9 answered, play state 2: ");
+}
+
+TEST_CASE_FIXTURE(AcbFixture, "a TV that makes no control block starts none") {
+  nextHandle = 0;
+
+  AcbSession session(api, "com.example.app");
+
+  CHECK(session.handle() == 0);
+  CHECK(calls.empty());
 }
 
 TEST_CASE_FIXTURE(AcbFixture, "a control block that refuses to start binds nothing") {
@@ -122,6 +141,8 @@ TEST_CASE_FIXTURE(AcbFixture, "a control block that refuses to start binds nothi
 
   plane.bind("_xyz", kVideo);
   pumpFor(std::chrono::milliseconds(900));
+  plane.playingChanged(true);
+  plane.release();
 
   CHECK(session.handle() == 0);
   CHECK(calls.empty());
@@ -194,6 +215,53 @@ TEST_CASE_FIXTURE(AcbFixture, "a release with nothing bound sends nothing") {
   plane.release();
 
   CHECK(calls.empty());
+}
+
+TEST_CASE_FIXTURE(AcbFixture, "the plane stays full screen whatever rectangle a view asks for") {
+  AcbSession session(api, "com.example.app");
+  AcbPlane plane(session, 1);
+  plane.bind("_xyz", kVideo);
+  pumpFor(std::chrono::milliseconds(900));
+  calls.clear();
+  Scene scene{PixelSize{1920, 1080}};
+
+  plane.show(scene, {}, PixelRect{.x = 100, .y = 50, .width = 640, .height = 360});
+  plane.hide();
+
+  CHECK(calls.empty());
+}
+
+TEST_CASE_FIXTURE(AcbFixture, "the video data names the picture the pipeline described") {
+  AcbSession session(api, "com.example.app");
+  AcbPlane plane(session, 1);
+
+  plane.bind("_xyz", kVideo);
+  pumpFor(std::chrono::milliseconds(900));
+
+  CHECK(videoData.find(R"("bitRate":3000000,)") != std::string::npos);
+  CHECK(videoData.find(R"("frameRate":25.0,"hdrType":"none","height":1080,"width":1920,)") != std::string::npos);
+  CHECK(videoData.find(R"("mediaVui":{"colorPrimaries":2,)") != std::string::npos);
+}
+
+TEST_CASE_FIXTURE(AcbFixture, "what the pipeline left out of the picture is described as 24 fps at 8 Mbps") {
+  AcbSession session(api, "com.example.app");
+  AcbPlane plane(session, 1);
+
+  plane.bind("_xyz", {.width = 1280, .height = 720, .fps = 0, .bitrate = 0, .codec = "h264"});
+  pumpFor(std::chrono::milliseconds(900));
+  const auto noRate = videoData;
+  plane.bind("_xyz", {.width = 1280, .height = 720, .fps = 30, .bitrate = 0, .codec = "h264"});
+  pumpFor(std::chrono::milliseconds(900));
+  const auto noBitRate = videoData;
+  plane.bind("_xyz", {.width = 1280, .height = 0, .fps = 30, .bitrate = 2000000, .codec = "h264"});
+  pumpFor(std::chrono::milliseconds(900));
+
+  CHECK(noRate.find(R"("bitRate":8000000,)") != std::string::npos);
+  CHECK(noRate.find(R"("frameRate":24.0,"hdrType":"none","height":720,"width":1280,)") != std::string::npos);
+  CHECK(noBitRate.find(R"("bitRate":8000000,)") != std::string::npos);
+  CHECK(noBitRate.find(R"("frameRate":30.0,)") != std::string::npos);
+  CHECK(videoData.find(R"("bitRate":2000000,)") != std::string::npos);
+  CHECK(videoData.find(R"("height":1080,"width":1920,)") != std::string::npos);
 }
 
 TEST_CASE_FIXTURE(AcbFixture, "a picture the pipeline did not size is described as 1080p") {

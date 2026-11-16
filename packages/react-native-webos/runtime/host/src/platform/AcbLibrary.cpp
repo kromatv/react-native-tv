@@ -21,14 +21,14 @@ const AcbApi *loadApi() {
   void *library = dlopen("libAcbAPI.so.1", RTLD_NOW | RTLD_LOCAL);
   if (library == nullptr) return nullptr;
   static AcbApi api;
-  const bool complete = bind(library, "AcbAPI_create", api.create) &&
-                        bind(library, "AcbAPI_initialize", api.initialize) &&
-                        bind(library, "AcbAPI_setSinkType", api.setSinkType) &&
-                        bind(library, "AcbAPI_setMediaId", api.setMediaId) &&
-                        bind(library, "AcbAPI_setState", api.setState) &&
-                        bind(library, "AcbAPI_setMediaVideoData", api.setMediaVideoData) &&
-                        bind(library, "AcbAPI_setDisplayWindow", api.setDisplayWindow);
-  if (!complete) {
+  if (const bool complete = bind(library, "AcbAPI_create", api.create) &&
+                            bind(library, "AcbAPI_initialize", api.initialize) &&
+                            bind(library, "AcbAPI_setSinkType", api.setSinkType) &&
+                            bind(library, "AcbAPI_setMediaId", api.setMediaId) &&
+                            bind(library, "AcbAPI_setState", api.setState) &&
+                            bind(library, "AcbAPI_setMediaVideoData", api.setMediaVideoData) &&
+                            bind(library, "AcbAPI_setDisplayWindow", api.setDisplayWindow);
+      !complete) {
     log(LogLevel::Warning, "libAcbAPI.so.1 lacks a call the video plane needs: no picture on this TV");
     return nullptr;
   }
