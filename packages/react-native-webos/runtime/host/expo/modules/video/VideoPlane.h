@@ -1,5 +1,7 @@
 #pragma once
 
+#include "PlayerModel.h"
+
 #include "render/Scene.h"
 #include "views/PixelGeometry.h"
 
@@ -25,6 +27,28 @@ class VideoPlane {
 
   /// The plane has no view to show in any more.
   virtual void hide() = 0;
+
+  /// Whether a load may name its transport, `mediaTransportType`: a webOS 4
+  /// pipeline answers such a load and never fetches.
+  virtual bool namesTransport() const {
+    return true;
+  }
+
+  /// The pipeline prepared `mediaId`, whose picture is `video`: a plane that
+  /// has to be told which media it shows is told now.
+  virtual void bind(const std::string & /*mediaId*/, const VideoStream & /*video*/) {
+    // A plane the window id binds needs nothing more.
+  }
+
+  /// The media this plane shows started or stopped playing.
+  virtual void playingChanged(bool /*playing*/) {
+    // A plane the window id binds follows the pipeline by itself.
+  }
+
+  /// The media this plane showed is unloaded.
+  virtual void release() {
+    // A plane the window id binds is freed with the media.
+  }
 };
 
 } // namespace rnwebos::expo

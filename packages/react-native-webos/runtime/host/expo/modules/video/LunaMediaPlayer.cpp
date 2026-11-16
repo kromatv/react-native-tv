@@ -103,7 +103,7 @@ void LunaMediaPlayer::start(const MediaSource &source) {
   sourceKnown_ = false;
   playing_ = false;
   textTrack_ = -1;
-  const auto payload = pipeline::loadPayload(source, appId_, plane_->windowId(), number_);
+  const auto payload = pipeline::loadPayload(source, appId_, plane_->windowId(), plane_->namesTransport(), number_);
   playerLog(number_, "load " + loggable(payload));
   const auto answered = holdLoads(number_);
   // A player destroyed before the answer never learns its media: the answer unloads it without the player.
@@ -163,6 +163,7 @@ void LunaMediaPlayer::unload() {
   if (mediaId_.empty()) return;
   playerLog(number_, "unload " + mediaId_);
   unloadMedia(bus_, std::exchange(mediaId_, {}), std::move(events_), std::move(sink_), plane_, number_);
+  plane_->release();
 }
 
 void LunaMediaPlayer::play() {

@@ -17,7 +17,7 @@ std::string sorted(const folly::dynamic &value) {
 
 TEST_CASE("an HLS load names its transport beside the options, with the app and the window in them") {
   const MediaSource source{.uri = "https://example.com/live/master.m3u8", .headers = {}};
-  CHECK(sorted(pipeline::loadPayload(source, "com.example.app", "_Window_Id_39", 1)) ==
+  CHECK(sorted(pipeline::loadPayload(source, "com.example.app", "_Window_Id_39", true, 1)) ==
         R"({"payload":{"mediaTransportType":"HLS","option":{"appId":"com.example.app",)"
         R"("bufferControl":{"userBufferCtrl":false},"useSeekableRanges":true,"windowId":"_Window_Id_39"}},)"
         R"("type":"media","uri":"https://example.com/live/master.m3u8"})");
@@ -25,9 +25,17 @@ TEST_CASE("an HLS load names its transport beside the options, with the app and 
 
 TEST_CASE("a file load sends no transport, and no window id when the plane has none") {
   const MediaSource source{.uri = "https://example.com/a.mp4", .headers = {}};
-  CHECK(sorted(pipeline::loadPayload(source, "com.example.app", "", 1)) ==
+  CHECK(sorted(pipeline::loadPayload(source, "com.example.app", "", true, 1)) ==
         R"({"payload":{"option":{"appId":"com.example.app","bufferControl":{"userBufferCtrl":false},)"
         R"("useSeekableRanges":true}},"type":"media","uri":"https://example.com/a.mp4"})");
+}
+
+TEST_CASE("a webOS 4 HLS load names the placeholder window and no transport") {
+  const MediaSource source{.uri = "https://example.com/live/master.m3u8", .headers = {}};
+  CHECK(sorted(pipeline::loadPayload(source, "com.example.app", "window_id_dummy", false, 1)) ==
+        R"({"payload":{"option":{"appId":"com.example.app","bufferControl":{"userBufferCtrl":false},)"
+        R"("useSeekableRanges":true,"windowId":"window_id_dummy"}},)"
+        R"("type":"media","uri":"https://example.com/live/master.m3u8"})");
 }
 
 TEST_CASE("only User-Agent, Cookie and Referer reach the pipeline, and a resolution cap limits the stream") {
@@ -38,7 +46,7 @@ TEST_CASE("only User-Agent, Cookie and Referer reach the pipeline, and a resolut
       .maxWidth = 1280,
       .maxHeight = 720,
   };
-  const auto option = pipeline::loadPayload(source, "app", "_Window_Id_1", 1)["payload"]["option"];
+  const auto option = pipeline::loadPayload(source, "app", "_Window_Id_1", true, 1)["payload"]["option"];
   CHECK(sorted(option["transmission"]) ==
         R"({"httpHeader":{"cookies":"a=b","referer":"https://example.com/","userAgent":"TV"}})");
   CHECK(sorted(option["adaptiveStreaming"]) == R"({"maxHeight":720,"maxWidth":1280})");
