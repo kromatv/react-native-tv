@@ -52,8 +52,14 @@ std::vector<std::string> busNames(const std::string &appId, int processId) {
 }
 
 // Open question 2. As LG's plugin: `mediaTransportType` beside `option` for an
-// HLS URL, nothing for a file. nuvio puts it inside `option`, plx-native sends none.
-folly::dynamic loadPayload(const MediaSource &source, const std::string &appId, const std::string &windowId, int player) {
+// HLS URL, nothing for a file. nuvio puts it inside `option`, plx-native sends none;
+// a webOS 4 pipeline answers a load that names it and never fetches.
+folly::dynamic loadPayload(
+    const MediaSource &source,
+    const std::string &appId,
+    const std::string &windowId,
+    bool namesTransport,
+    int player) {
   folly::dynamic option = folly::dynamic::object("appId", appId)("useSeekableRanges", true)(
       "bufferControl", folly::dynamic::object("userBufferCtrl", false));
   if (windowId.empty()) {
@@ -71,9 +77,13 @@ folly::dynamic loadPayload(const MediaSource &source, const std::string &appId, 
     option["adaptiveStreaming"] = folly::dynamic::object("maxWidth", source.maxWidth)("maxHeight", source.maxHeight);
   }
   folly::dynamic payload = folly::dynamic::object("option", std::move(option));
-  if (lowered(source.uri).find("m3u8") != std::string::npos) {
+  if (lowered(source.uri).find("m3u8") == std::string::npos) {
+    // A file names no transport on any release.
+  } else if (namesTransport) {
     payload["mediaTransportType"] = "HLS";
     openQuestion(player, "mediaTransportType HLS sent beside option, as LG's plugin does");
+  } else {
+    openQuestion(player, "no mediaTransportType for this HLS URL: webOS 4 is left to find the playlist itself");
   }
   return folly::dynamic::object("uri", source.uri)("type", "media")("payload", std::move(payload));
 }

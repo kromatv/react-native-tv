@@ -75,6 +75,7 @@ void LunaMediaPlayer::onLoadCompleted() {
   if (std::exchange(loadCompleted_, true)) return;
   if (!sourceKnown_) pipeline::openQuestion(number_, "loadCompleted before any sourceInfo: ready without a duration");
   listener_.backendLoaded(media_);
+  plane_->bind(mediaId_, currentVideo());
 }
 
 void LunaMediaPlayer::onSourceInfo(const LunaMediaEvent &event) {
@@ -128,6 +129,7 @@ void LunaMediaPlayer::onError(const LunaMediaEvent &event) {
 void LunaMediaPlayer::onUnloaded() {
   pipeline::openQuestion(number_, "unloadCompleted nobody asked for: the pipeline was taken away");
   mediaId_.clear();
+  plane_->release();
   later([this] {
     if (mediaId_.empty()) events_.reset();
   });
@@ -140,6 +142,7 @@ void LunaMediaPlayer::setPlaying(bool playing) {
     awaited_.playWait.cancel();
   }
   if (std::exchange(playing_, playing) != playing) listener_.backendPlayingChanged(playing);
+  plane_->playingChanged(playing);
 }
 
 void LunaMediaPlayer::finishSeek() {

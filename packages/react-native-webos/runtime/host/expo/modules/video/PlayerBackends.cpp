@@ -1,5 +1,6 @@
 #include "PlayerBackends.h"
 
+#include "AcbPlane.h"
 #include "ExportedWindowPlane.h"
 #include "LunaMediaPlayer.h"
 #include "PipelineQuestions.h"
@@ -47,11 +48,20 @@ LunaConnection *mediaConnection() {
   return connection;
 }
 
+// webOS 4 has no exported window and still has the control block; webOS 5 deleted the block.
+std::unique_ptr<VideoPlane> makePlane(int number) {
+  if (const auto *api = acbApi()) {
+    static AcbSession session(*api, appId());
+    return std::make_unique<AcbPlane>(session, number);
+  }
+  return std::make_unique<ExportedWindowPlane>(number);
+}
+
 } // namespace
 
 std::unique_ptr<PlayerBackend> makePlayerBackend(PlayerBackendListener &listener, int number) {
   if (auto *bus = mediaConnection()) {
-    return std::make_unique<LunaMediaPlayer>(*bus, std::make_unique<ExportedWindowPlane>(number), listener, appId(), number);
+    return std::make_unique<LunaMediaPlayer>(*bus, makePlane(number), listener, appId(), number);
   }
   return std::make_unique<SimulatedPlayer>(listener, number);
 }

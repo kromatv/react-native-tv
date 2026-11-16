@@ -22,7 +22,12 @@ void openQuestion(int player, const std::string &what);
 std::vector<std::string> busNames(const std::string &appId, int processId);
 
 /// The payload of `luna://com.webos.media/load`.
-folly::dynamic loadPayload(const MediaSource &source, const std::string &appId, const std::string &windowId, int player);
+folly::dynamic loadPayload(
+    const MediaSource &source,
+    const std::string &appId,
+    const std::string &windowId,
+    bool namesTransport,
+    int player);
 
 folly::dynamic subscribePayload(const std::string &mediaId);
 

@@ -1,5 +1,6 @@
 #include "HostWindow.h"
 
+#include "AcbLibrary.h"
 #include "../logging/Log.h"
 
 #include "include/core/SkColorSpace.h"
@@ -59,10 +60,15 @@ HostWindow::HostWindow(const std::string &title, PixelSize size, const std::stri
   SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
   SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
   SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 0);
+  // On webOS 4 the compositor drops the window's alpha under an opaque region, which SDL sets over the
+  // whole window unless it is transparent, and the video plane shows only through that alpha
+  // (docs/reference/webos-window-input.md).
+  SDL_WindowFlags flags = SDL_WINDOW_OPENGL | SDL_WINDOW_FULLSCREEN;
+  if (acbApi() != nullptr) flags |= SDL_WINDOW_TRANSPARENT;
   for (const int version : kContextVersions) {
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, version);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
-    window_ = SDL_CreateWindow(title.c_str(), size.width, size.height, SDL_WINDOW_OPENGL | SDL_WINDOW_FULLSCREEN);
+    window_ = SDL_CreateWindow(title.c_str(), size.width, size.height, flags);
     if (window_ == nullptr) continue;
     context_ = SDL_GL_CreateContext(window_);
     if (context_ != nullptr) break;

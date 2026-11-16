@@ -211,8 +211,34 @@ TV's capture service never contain the picture. S [FL: README.md], S-report
 | LG's plugin hides the hole while the rectangle moves and sets the exported rectangle again 100 ms after the last move | S [FL: lib/video_player_webos.dart:72, 100-135]. I: the plane does not follow the UI frame by frame |
 | Graphics are 1920x1080 on UHD models and video is 3840x2160; `"resolution"` in `appinfo.json` can select 1280x720 | D [LG-RES]. Some models grant a 3840x2160 graphics surface (S-report [NUV-E:4-9]) |
 | A hardware plane does not clip: on the ACB path a negative origin or a size beyond the panel blanks it | S-report [NUV-H:70-73] (C9). U on the exported window |
-| webOS 4.x and earlier have no window in the media path. The plane is bound with `libAcbAPI`: `AcbAPI_create`, `AcbAPI_initialize(id, PLAYER_TYPE_MSE, appId, callback)`, `AcbAPI_setMediaId(id, mediaId)`, `AcbAPI_setSinkType(id, SINK_TYPE_MAIN)`, `AcbAPI_setState(id, APPSTATE_FOREGROUND, PLAYSTATE_LOADED, &task)`, `AcbAPI_setMediaVideoData(id, videoInfoJson, &task)`, `AcbAPI_setDisplayWindow(id, x, y, w, h, fullScreen, &task)` or `AcbAPI_setCustomDisplayWindow(id, sx, sy, sw, sh, dx, dy, dw, dh, fullScreen, &task)`, then `PLAYSTATE_PLAYING` | S [UL: include/appswitching-control-block/AcbAPI.h:9-74], [SS4S: modules/webos/smp/src/smp_resource_acb.c:14-136], [KODI-M:667, 1693-1751] |
-| On 4.x the load still needs a non-empty `windowId` (any string): with an empty one it answers true, allocates a `mediaId` and never fetches | S-report [NUV:2675-2676] (C9) |
+| webOS 4.x and earlier have no window in the media path: the plane is bound with `libAcbAPI`, section 2.1. Kodi and ss4s initialize it as `PLAYER_TYPE_MSE` because they feed the pipeline in their own process; the URI path is the plain video player, type 0 | S [UL: include/appswitching-control-block/AcbAPI.h:9-74], [SS4S: modules/webos/smp/src/smp_resource_acb.c:14-136], [KODI-M:667, 1693-1751]; section 2.1 |
+| On 4.x the load needs `option.windowId` with any non-empty string, which nothing reads: the apps that show a picture send `window_id_dummy`. With an empty string the load answers true, allocates a `mediaId` and never fetches; without the key a 4.10.2 set fetched and decoded with no picture | S-report [NUV:2675-2676] (C9), [STR:309-310] (4.4), [PLXN: docs/uri-mode.md:68-92] (4.10.2) |
+
+### 2.1 webOS 4: the app-switching control block
+
+`libAcbAPI.so.1` is on 2.2.3 to 4.10.0 and gone from 5.3.1 (section 1.1). It
+has no public header; webosbrew's is written from the library. Three native
+apps play a `com.webos.media` URI on a webOS 4 set this way and showed a
+picture: nuvio (C9, 4.10), Stremio's native client (4.4) and plx-native
+(4.10.2).
+
+| Fact | Known |
+|------|-------|
+| Signatures: `long AcbAPI_create(void)`; `bool AcbAPI_initialize(long, int playerType, const char *appId, AcbCallback)`; `bool AcbAPI_setSinkType(long, int)`; `bool AcbAPI_setMediaId(long, const char *)`; `int AcbAPI_setState(long, int appState, int playState, long *task)`; `int AcbAPI_setMediaVideoData(long, const char *json, long *task)`; `int AcbAPI_setDisplayWindow(long, long x, long y, long w, long h, bool fullScreen, long *task)`; the callback is `void (long acb, long task, long eventType, long appState, long playState, const char *reply)` | S [UL: AcbAPI.h:9, 50-74]; 4.4.2 and 4.10.0 export each of them [FW] |
+| Opened with `dlopen("libAcbAPI.so.1")`, never linked: a `DT_NEEDED` on it stops the executable before `main` on 5 and later | S-report [NUV:514-516], [PLXN: src/video_plane.c:26-28] |
+| Constants: player type `VIDEO` 0, `MSE` 10; sink `MAIN` 0, `SUB` 1; app state `FOREGROUND` 1, `BACKGROUND` 2; play state `UNLOADED` 0, `LOADED` 1, `PLAYING` 2, `PAUSED` 3; a callback's `eventType` is -2 timeout, -1 error, 0 cancel, 1 complete | S [UL: AcbAPI.h:11-48]; [PLXN: docs/measurements/acb-release-fence-2026-11-04.md:33-35] |
+| The URI path initializes type 0 on sink 0, once per process, under the app's own id. nuvio's trial of type 10 on sink 1 put the picture on the sub plane, black; another app's id binds the plane to that app, sound over black | S-report [NUV:681-683, 1746-1768], [STR:271-273], [PLXN: src/video_plane.c:238-246] |
+| A real `long *task` is passed to every verb (none segfaults), and the callback is never null (null crashes at the first event). It arrives on a thread of the library's own | S-report [PLXN: src/video_plane.c:50-51], [NUV:1735-1737]; I from the `std::thread` over a `GMainLoop` both images export [FW] |
+| The bind follows `loadCompleted`, with the size from `videoInfo`: `setMediaId`, 200 ms, `setState(FOREGROUND, LOADED)`, 200 ms, the video data, 300 ms, the window, then `setState(FOREGROUND, PLAYING or PAUSED)`. Unpaced, the video data overtook the registration and the plane stayed black with sound | S-report [NUV:876-965, 1322-1327], [STR:127-137], [PLXN: rust-modules/play-uri/src/acb_bind.rs:4-11] |
+| Bound again at every `loadCompleted`: a control block left on the previous `mediaId` gives a black second play with sound | S-report [NUV:868-872, 1328-1329] |
+| Video data, SDR, as the three apps send it: `{"content":"movie","context":M,"video":{"adaptive":false,"bitRate":B,"data3D":{"currentPattern":"2d","originalPattern":"2d","typeLR":"LR"},"frameRate":F.0,"hdrType":"none","height":H,"width":W,"mediaSei":{twelve fields at 0},"mediaVui":{"colorPrimaries":2,"matrixCoeffs":2,"transferCharacteristics":2,"videoFullRangeFlag":false},"hfr":false,"path":"network","pixelAspectRatio":{"height":1,"width":1},"rotation":"0","scanType":"VIDEO_PROGRESSIVE","specificRendering":"none"}}`. Without it the plane never lights; without `context` the display answers `ERROR_06`. Below 5 the keys are `mediaSei` and `mediaVui`, from 5 `sei` and `vui`. Stremio sends 8000000 for an unknown bit rate | S-report [NUV:772-856, 538-541], [STR:115-120]; S [KODI-M:1108, 1115] |
+| Window: `setDisplayWindow` only after the bind. With `fullScreen` true the rectangle is ignored. A partial rectangle reads 1920x1080 on a C9 and 1280x720 on a 4.4 set, where a 1920-wide one gave sound over black, so Stremio stays full screen on ACB | S-report [NUV: src/video_escala.h:11-12], [STR:15-18, 100-106], [PLXN: src/video_plane.c:398] |
+| The window is sent again at each `playing` event; Kodi and plx-native send `setState` `PLAYING` and `PAUSED` with the media's own play and pause | S-report [NUV:1360-1380], [STR:194]; S [KODI-M:1734-1751], [PLXN: src/video_plane.c:415-418] |
+| Release: `unload`, then `setState(FOREGROUND, UNLOADED)`, answered in about 100 ms. Nothing refuses a second binding, and the next `setMediaId` replaces the first | S-report [PLXN: docs/measurements/acb-release-fence-2026-11-04.md:24-57] |
+| `setState` before a `mediaId` is registered returns -2 and sends nothing | S-report [PLXN: docs/measurements/acb-release-fence-2026-11-04.md:24-27] |
+| The app's window must have no opaque region: on 4.x the compositor drops the surface's alpha under one, and with it the hole the plane shows through. SDL sets one over the whole window unless the window is `SDL_WINDOW_TRANSPARENT` | S-report [NUVM:1338-1381]; S [SDL3: src/video/wayland/SDL_waylandwindow.c:296-307, 436, 3083] |
+| `videoInfo`, `loadCompleted` and `currentTime` all arrive over a black plane: nothing in the pipeline's events says the picture shows | S-report [NUV-H:479-486], [PLXN: docs/measurements/uri-acb-dass-2026-11-02.md:56-58] |
+| `mediaTransportType` beside `option` on a C9: the load answered a `mediaId` and never fetched. plx-native never sends it | S-report [NUV-H:33-35], [PLXN: docs/measurements/uri-acb-envelope-2026-11-05.md:96-97] |
 
 ## 3. Formats
 
@@ -356,7 +382,9 @@ Only a TV settles these.
 2. `mediaTransportType`: LG's plugin sends `HLS` beside `option` for `m3u8`
    URLs. nuvio saw a 4.10 set return a `mediaId` and never fetch when the
    field was sent [NUV-H:33-36], and sends it inside `option` in a later mode
-   [NUV:2628-2635]. Which form each release needs is not known.
+   [NUV:2628-2635]. Which form each release needs is not known. On webOS 4
+   nothing is sent, as plx-native does (section 2.1); that an `m3u8` URL
+   plays without it there is not known.
 3. Is the destination rectangle in surface pixels on every release, also on a
    1280x720 or 3840x2160 surface?
 4. Does the plane follow a moving view, and how often may the rectangle change?
@@ -391,8 +419,8 @@ same underneath, nuvio ships on it, and it is C and JSON only:
 `libluna-service2.so.3` and `libwayland-webos-client.so.1` are on every
 firmware, so no C++ ABI and no missing symbol can stop the binary from
 loading. The TV's own demuxers and decoders give HLS, files, tracks, subtitles
-and seeking. It covers webOS 5 and later; 4.x would add the ACB binding
-through `dlopen("libAcbAPI.so.1")`, a separate decision.
+and seeking. It covers webOS 5 and later through the exported window, and
+4.x through the control block, `dlopen("libAcbAPI.so.1")` (section 2.1).
 
 **Fallback: `libNDL_media.so.1` through `dlsym`,** probed at startup. LG ships
 its own native apps on it, and it is the only known route to DRM (webOS 26).
@@ -464,6 +492,7 @@ and seek; HEVC, HDR and DRM were not tried there with the example
 | Turns | `PipelineClaims.*`, `MediaPlayer.cpp` | one player holds the pipeline at a time, so that no media is loaded beside another (section 5; audio-only players wait too, since no TV has shown they need not): the player a view shows, the last shown first, and among players no view shows the one that loaded last. A player that loses it unloads, reports `loading` and not playing, and opens its source again at its position, playing if it was, when the pipeline comes back. A player that waits reports `loading` |
 | Bus | `platform/LunaClient.*`, `PlayerBackends.cpp` | registers `com.webos.media.client.<APPID>.<pid>` through luna-service2 on a thread of its own, once per process, never unregistered; falls back to the app's own `libhelpers` connection |
 | Plane | `ExportedWindowPlane.*` | one exported window per player, made at its first load with the whole window as its rectangle, then placed at the view's rectangle on screen; the source is the `contentFit` crop in frame pixels once `videoInfo` or `sourceInfo` gave the size |
+| Plane, webOS 4 | `AcbPlane.*`, `platform/AcbLibrary.*` | where `libAcbAPI.so.1` opens: one control block per process, type 0 on sink 0; the load names `window_id_dummy` and no transport; at each `loadCompleted` the paced bind of section 2.1, SDR video data, full screen whatever the view asks; `PLAYING` and `PAUSED` with the media, the window again at each `playing`, `UNLOADED` at the unload. The host's window is then transparent. Not seen on a TV |
 | Hole | `VideoView.*`, `VideoWindow.*` | the view clears its box with `SkBlendMode::kClear`, and the scene is cleared to transparent while a view shows a player. Fullscreen clears the whole window above every view |
 | Player | `MediaPlayer*.cpp` | what a pipeline does not do: one seek in flight, play held until ready, looping by `seek` to 0 and `play` at `endOfStream`, progress ticks, a pause the pipeline makes by itself taken over |
 | Open questions | `PipelineQuestions.*` | every guess below, in one file |
@@ -536,6 +565,9 @@ question: ...` when playback meets it:
 | SDL | [webosbrew/SDL-webOS](https://github.com/webosbrew/SDL-webOS/tree/ba4c86af391d1524d3ff0cb61dc3b10035933239) at `ba4c86a`, branch `webOS-2.30.x` |
 | KODI-M, KODI-W | [xbmc/xbmc](https://github.com/xbmc/xbmc/tree/383db99b78d5c81453fa3fd5783334b17d9ac984) at `383db99`: `xbmc/cores/VideoPlayer/MediaPipelineWebOS.cpp`, `xbmc/windowing/wayland/WinSystemWaylandWebOS.cpp` |
 | PLX, PLX-U, PLX-P, PLX-D, PLX-C | [GLinnik21/plx-native](https://github.com/GLinnik21/plx-native/tree/f8f6dbb75c783de7c790608653e212a14c2ec66c) at `f8f6dbb`: `docs/uri-mode.md`, `rust-modules/play-uri/src/uri_protocol.rs`, `docs/distribution.md`, `docs/compatibility.md`. Its author's set is an LG 49SM9000PLA on 4.5; other sets are its users' reports |
+| PLXN | [plxnative/plx-native](https://github.com/plxnative/plx-native/tree/8fc1b62) at `8fc1b62`: `src/video_plane.c`, `rust-modules/play-uri/src/acb_bind.rs`, `docs/uri-mode.md`, `docs/measurements/`. Its author's set is a W19H on 4.10.2 |
+| STR | [stremio-origin/webos](https://github.com/stremio-origin/webos/tree/051818e) at `051818e`: `src/platform/webos/video_webos.c`, tested on a 4.4 set |
+| NUVM | nuvio-native-legacy at `7cac4f2`, `src/main.c` |
 | NUV, NUV-H, NUV-E, NUV-R | [iqui27/nuvio-native-legacy](https://github.com/iqui27/nuvio-native-legacy/tree/7cac4f25d11931b56c41cfefb952e4e183c45c1a) at `7cac4f2`: `src/video.c`, `src/video.h`, `src/video_escala.h`, `README.md`. Its author's set is an LG C9 on 4.10; other sets are its users' reports |
 | JWN-N, JWN-M | [HookedBehemoth/jellyfin-webos-native](https://github.com/HookedBehemoth/jellyfin-webos-native/tree/c64e6ba0db) at `c64e6ba`: `docs/ndl.md`, `docs/multimedia.md` |
 | SDL3 | [webosbrew/SDL-webOS](https://github.com/webosbrew/SDL-webOS/tree/release-3.4.16-webos.5) at tag `release-3.4.16-webos.5`, branch `webOS-3.4.x` |
