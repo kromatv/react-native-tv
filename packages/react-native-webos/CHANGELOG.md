@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.5](https://github.com/kromatv/react-native-tv/compare/react-native-webos-v0.1.0-alpha.4...react-native-webos-v0.1.0-alpha.5) (2026-11-16)
+
+
+### Features
+
+* **video:** show the picture on webOS 4 through LG's control block ([#16](https://github.com/kromatv/react-native-tv/issues/16)) ([ad8cce3](https://github.com/kromatv/react-native-tv/commit/ad8cce3a2fc30e5d3d0f14c32375d276d6377e6b))
+
 ## [0.1.0-alpha.4](https://github.com/kromatv/react-native-tv/compare/react-native-webos-v0.1.0-alpha.3...react-native-webos-v0.1.0-alpha.4) (2026-11-13)
 
 
