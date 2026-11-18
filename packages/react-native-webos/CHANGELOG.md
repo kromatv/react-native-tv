@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.6](https://github.com/kromatv/react-native-tv/compare/react-native-webos-v0.1.0-alpha.5...react-native-webos-v0.1.0-alpha.6) (2026-11-18)
+
+
+### Bug fixes
+
+* **video:** audioTrack names the track the TV plays from the moment a video loads ([#18](https://github.com/kromatv/react-native-tv/issues/18)) ([151d403](https://github.com/kromatv/react-native-tv/commit/151d4034bdf6709d6b3df7a8064675c46f96771f))
+
 ## [0.1.0-alpha.5](https://github.com/kromatv/react-native-tv/compare/react-native-webos-v0.1.0-alpha.4...react-native-webos-v0.1.0-alpha.5) (2026-11-16)
 
 
