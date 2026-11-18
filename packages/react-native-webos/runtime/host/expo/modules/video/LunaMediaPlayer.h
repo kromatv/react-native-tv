@@ -98,7 +98,6 @@ class LunaMediaPlayer final : public PlayerBackend {
   bool foreground_{true};
   bool playing_{false};
   int textTrack_{-1};
-  std::optional<int> startAudio_;
   Awaited awaited_;
 };
 

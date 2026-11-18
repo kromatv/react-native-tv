@@ -85,10 +85,12 @@ void LunaMediaPlayer::onSourceInfo(const LunaMediaEvent &event) {
     playerLog(number_, "sourceInfo without a duration or a track: skipped", LogLevel::Debug);
     return;
   }
-  const int audioTrack = sourceKnown_ ? media_.audioTrack : startAudio_.value_or(event.media.audioTrack);
+  const bool named = sourceKnown_ || media_.audioTrack >= 0;
+  const int audioTrack = named ? media_.audioTrack : event.media.audioTrack;
+  const int defaultAudio = sourceKnown_ ? defaultTrack(media_.audioTracks) : audioTrack;
   media_ = event.media;
   media_.audioTrack = audioTrack;
-  if (startAudio_) markDefault(media_.audioTracks, *startAudio_);
+  markDefault(media_.audioTracks, defaultAudio);
   media_.textTrack = textTrack_;
   sourceVideo_ = event.media.video;
   media_.video = currentVideo();
@@ -101,7 +103,6 @@ void LunaMediaPlayer::onSourceInfo(const LunaMediaEvent &event) {
 void LunaMediaPlayer::onAudioInfo(int track) {
   if (track < 0) return;
   if (loadCompleted_) return confirmTrack(TrackKind::Audio, track);
-  startAudio_ = track;
   media_.audioTrack = track;
   markDefault(media_.audioTracks, track);
 }

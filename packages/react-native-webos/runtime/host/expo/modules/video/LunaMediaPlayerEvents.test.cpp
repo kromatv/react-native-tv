@@ -54,6 +54,19 @@ TEST_CASE("the audio track audioInfo names between sourceInfo and loadCompleted 
   CHECK(listener.loaded.audioTracks[1].isDefault);
 }
 
+TEST_CASE("a sourceInfo after the load keeps the track playing and the default the pipeline named") {
+  testing::LunaFixture fixture;
+  auto &[mainLoop, bus, listener, player] = fixture;
+  fixture.load();
+  bus.emit(R"({"audioInfo":{"track":1,"mediaId":"_xyz"}})");
+  bus.emit(kSourceInfo);
+  bus.emit(kLoadCompleted);
+  bus.emit(R"({"audioInfo":{"track":0,"mediaId":"_xyz"}})");
+  bus.emit(kSourceInfo);
+  CHECK(listener.loaded.audioTrack == 0);
+  CHECK(listener.loaded.audioTracks[1].isDefault);
+}
+
 TEST_CASE("a media no audioInfo describes is loaded playing its first audio track and no subtitle") {
   testing::LunaFixture fixture;
   auto &[mainLoop, bus, listener, player] = fixture;

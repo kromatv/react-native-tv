@@ -103,7 +103,6 @@ void LunaMediaPlayer::start(const MediaSource &source) {
   sourceKnown_ = false;
   playing_ = false;
   textTrack_ = -1;
-  startAudio_.reset();
   const auto payload = pipeline::loadPayload(source, appId_, plane_->windowId(), plane_->namesTransport(), number_);
   playerLog(number_, "load " + loggable(payload));
   const auto answered = holdLoads(number_);

@@ -25,6 +25,14 @@ inline void markDefault(std::vector<MediaTrack> &tracks, int index) {
   for (auto &track : tracks) track.isDefault = track.index == index;
 }
 
+/// The index of the track the media plays when none is selected, or -1.
+inline int defaultTrack(const std::vector<MediaTrack> &tracks) {
+  for (const auto &track : tracks) {
+    if (track.isDefault) return track.index;
+  }
+  return -1;
+}
+
 /// The video stream playing now; zero where the player does not say.
 struct VideoStream {
   int width{0};
