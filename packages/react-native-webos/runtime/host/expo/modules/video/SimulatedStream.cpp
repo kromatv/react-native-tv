@@ -69,6 +69,7 @@ SimulatedStream simulatedStreamFor(const std::string &uri) {
     rest = next == std::string_view::npos ? std::string_view() : rest.substr(next + 1);
   }
   if (stream.media.audioTracks.empty()) stream.media.audioTrack = -1;
+  markDefault(stream.media.audioTracks, stream.media.audioTrack);
   return stream;
 }
 

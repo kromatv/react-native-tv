@@ -31,6 +31,48 @@ TEST_CASE("sourceInfo then loadCompleted report the media once, with its duratio
   CHECK(listener.loaded.video.codec == "h264");
 }
 
+TEST_CASE("the audio track audioInfo names before sourceInfo is the one the media is loaded playing") {
+  testing::LunaFixture fixture;
+  auto &[mainLoop, bus, listener, player] = fixture;
+  fixture.load();
+  bus.emit(R"({"audioInfo":{"track":1,"channels":2,"mediaId":"_xyz"}})");
+  bus.emit(kSourceInfo);
+  bus.emit(kLoadCompleted);
+  CHECK(listener.loaded.audioTrack == 1);
+  CHECK(listener.loaded.audioTracks[1].isDefault);
+  CHECK_FALSE(listener.loaded.audioTracks[0].isDefault);
+}
+
+TEST_CASE("the audio track audioInfo names between sourceInfo and loadCompleted is the one the media is loaded playing") {
+  testing::LunaFixture fixture;
+  auto &[mainLoop, bus, listener, player] = fixture;
+  fixture.load();
+  bus.emit(kSourceInfo);
+  bus.emit(R"({"audioInfo":{"track":1,"channels":2,"mediaId":"_xyz"}})");
+  bus.emit(kLoadCompleted);
+  CHECK(listener.loaded.audioTrack == 1);
+  CHECK(listener.loaded.audioTracks[1].isDefault);
+}
+
+TEST_CASE("a media no audioInfo describes is loaded playing its first audio track and no subtitle") {
+  testing::LunaFixture fixture;
+  auto &[mainLoop, bus, listener, player] = fixture;
+  fixture.loadUntilReady();
+  CHECK(listener.loaded.audioTrack == 0);
+  CHECK(listener.loaded.audioTracks[0].isDefault);
+  CHECK_FALSE(listener.loaded.textTracks[0].isDefault);
+}
+
+TEST_CASE("an audioInfo after the load reports the track the pipeline moved to, once") {
+  testing::LunaFixture fixture;
+  auto &[mainLoop, bus, listener, player] = fixture;
+  fixture.loadUntilReady();
+  bus.emit(R"({"audioInfo":{"track":1,"mediaId":"_xyz"}})");
+  bus.emit(R"({"audioInfo":{"track":1,"mediaId":"_xyz"}})");
+  bus.emit(R"({"audioInfo":{"codec":"aac","bitrate":128000,"sample_rate":48000}})");
+  CHECK(listener.lines == std::vector<std::string>{"loaded 120.0 1920x1080 2+1", "audio track 1"});
+}
+
 TEST_CASE("a sourceInfo that comes after loadCompleted reports the media again") {
   testing::LunaFixture fixture;
   auto &[mainLoop, bus, listener, player] = fixture;

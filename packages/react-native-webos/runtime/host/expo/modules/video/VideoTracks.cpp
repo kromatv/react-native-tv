@@ -21,7 +21,7 @@ std::string stringField(const folly::dynamic &object, const char *name) {
 folly::dynamic trackPayload(TrackKind kind, const MediaTrack &track, int current) {
   const auto label = track.language == "und" ? std::format("Track {}", track.index + 1) : track.language;
   return folly::dynamic::object("id", trackId(kind, track.index))("language", track.language)("label", label)(
-      "name", label)("isDefault", track.index == 0)("autoSelect", track.index == current);
+      "name", label)("isDefault", track.isDefault)("autoSelect", track.index == current);
 }
 
 folly::dynamic tracksPayload(TrackKind kind, const std::vector<MediaTrack> &tracks, int current) {

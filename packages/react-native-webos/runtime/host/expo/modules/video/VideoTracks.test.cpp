@@ -6,7 +6,7 @@ namespace rnwebos::expo {
 
 namespace {
 
-const std::vector<MediaTrack> kTracks{{.index = 0, .language = "en"}, {.index = 1, .language = "und"}};
+const std::vector<MediaTrack> kTracks{{.index = 0, .language = "en", .isDefault = true}, {.index = 1, .language = "und"}};
 
 } // namespace
 
@@ -25,6 +25,12 @@ TEST_CASE("trackPayload names a track by its language, or by its position when t
   CHECK(unnamed["label"] == "Track 2");
   CHECK(unnamed["isDefault"] == false);
   CHECK(unnamed["autoSelect"] == false);
+}
+
+TEST_CASE("trackPayload calls default the track the media plays when none is selected, wherever it sits") {
+  const MediaTrack french{.index = 1, .language = "fr", .isDefault = true};
+  CHECK(trackPayload(TrackKind::Audio, french, 0)["isDefault"] == true);
+  CHECK(trackPayload(TrackKind::Audio, kTracks[1], 1)["isDefault"] == false);
 }
 
 TEST_CASE("tracksPayload lists every track and currentTrackPayload the selected one") {

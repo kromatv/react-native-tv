@@ -108,6 +108,18 @@ TEST_CASE("an audio track is selected by index and confirmed by trackSelected, o
   CHECK(pumpUntil([&] { return listener.has("audio track 0"); }));
 }
 
+TEST_CASE("an audioInfo naming the track a select asked for settles the select") {
+  testing::LunaFixture fixture;
+  auto &[mainLoop, bus, listener, player] = fixture;
+  fixture.loadUntilReady();
+  player.selectTrack(TrackKind::Audio, 1);
+  bus.answer("selectTrack", kAccepted);
+  bus.emit(R"({"audioInfo":{"track":1,"mediaId":"_xyz"}})");
+  bus.emit(R"({"audioInfo":{"track":0,"mediaId":"_xyz"}})");
+  pumpFor(pipeline::kTrackSelectedWait + std::chrono::milliseconds(500));
+  CHECK(listener.lines == std::vector<std::string>{"loaded 120.0 1920x1080 2+1", "audio track 1", "audio track 0"});
+}
+
 TEST_CASE("a text track is selected and the pipeline's own subtitles are turned on, and off again") {
   testing::LunaFixture fixture;
   auto &[mainLoop, bus, listener, player] = fixture;

@@ -11,12 +11,19 @@ enum class PlayerStatus { Idle, Loading, ReadyToPlay, Error };
 
 const char *statusName(PlayerStatus status);
 
-/// One audio or text track of the media: its index in the pipeline's list and
-/// the language the pipeline names, `und` when the file names none.
+/// One audio or text track of the media: its index in the pipeline's list,
+/// the language the pipeline names, `und` when the file names none, and
+/// whether the media plays it when the app selects no track.
 struct MediaTrack {
   int index{0};
   std::string language;
+  bool isDefault{false};
 };
+
+/// Makes the track at `index` the one the media plays when none is selected.
+inline void markDefault(std::vector<MediaTrack> &tracks, int index) {
+  for (auto &track : tracks) track.isDefault = track.index == index;
+}
 
 /// The video stream playing now; zero where the player does not say.
 struct VideoStream {

@@ -14,7 +14,7 @@ namespace {
 
 using Kind = LunaMediaEvent::Kind;
 
-constexpr std::array<std::pair<std::string_view, Kind>, 14> kEvents{{
+constexpr std::array<std::pair<std::string_view, Kind>, 15> kEvents{{
     {"loadCompleted", Kind::LoadCompleted},
     {"sourceInfo", Kind::SourceInfo},
     {"videoInfo", Kind::VideoInfo},
@@ -27,6 +27,7 @@ constexpr std::array<std::pair<std::string_view, Kind>, 14> kEvents{{
     {"seekDone", Kind::SeekDone},
     {"endOfStream", Kind::EndOfStream},
     {"trackSelected", Kind::TrackSelected},
+    {"audioInfo", Kind::AudioInfo},
     {"error", Kind::Error},
     {"unloadCompleted", Kind::UnloadCompleted},
 }};
@@ -110,6 +111,7 @@ void readSourceInfo(const folly::dynamic &info, LunaMediaEvent &event) {
   media.audioTracks = tracks(program, "audioTrackInfo", "numAudioTracks");
   media.textTracks = tracks(program, "subtitleTrackInfo", "numSubtitleTracks");
   media.audioTrack = media.audioTracks.empty() ? -1 : 0;
+  markDefault(media.audioTracks, media.audioTrack);
   const auto *video = field(program, "videoTrackInfo");
   const bool hasVideo = video != nullptr && video->isArray() && !video->empty();
   if (hasVideo) media.video = videoStream((*video)[0]);
@@ -134,6 +136,7 @@ void readBody(const folly::dynamic &body, LunaMediaEvent &event) {
   if (kind == CurrentTime) event.seconds = (body.isNumber() ? body.asDouble() : number(body, "currentTime")) / 1000;
   if (kind == BufferRange) readBufferRange(body, event);
   if (kind == Error) readError(body, event);
+  if (kind == AudioInfo) event.trackIndex = integer(body, "track", -1);
   if (kind == TrackSelected) {
     event.trackKind = text(body, "type") == "audio" ? TrackKind::Audio : TrackKind::Text;
     event.trackIndex = integer(body, "index", -1);

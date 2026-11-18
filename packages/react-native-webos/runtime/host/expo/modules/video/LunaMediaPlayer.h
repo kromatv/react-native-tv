@@ -69,6 +69,7 @@ class LunaMediaPlayer final : public PlayerBackend {
   void onEvent(const folly::dynamic &message);
   void onLoadCompleted();
   void onSourceInfo(const LunaMediaEvent &event);
+  void onAudioInfo(int track);
   void onVideoInfo(const VideoStream &video);
   void onError(const LunaMediaEvent &event);
   void onUnloaded();
@@ -97,6 +98,7 @@ class LunaMediaPlayer final : public PlayerBackend {
   bool foreground_{true};
   bool playing_{false};
   int textTrack_{-1};
+  std::optional<int> startAudio_;
   Awaited awaited_;
 };
 
