@@ -59,6 +59,8 @@ void LunaMediaPlayer::onEvent(const folly::dynamic &message) {
       return listener_.backendEnded();
     case TrackSelected:
       return confirmTrack(event.trackKind, event.trackIndex);
+    case AudioInfo:
+      return onAudioInfo(event.trackIndex);
     case Error:
       return onError(event);
     case UnloadCompleted:
@@ -83,9 +85,12 @@ void LunaMediaPlayer::onSourceInfo(const LunaMediaEvent &event) {
     playerLog(number_, "sourceInfo without a duration or a track: skipped", LogLevel::Debug);
     return;
   }
-  const int audioTrack = sourceKnown_ ? media_.audioTrack : event.media.audioTrack;
+  const bool named = sourceKnown_ || media_.audioTrack >= 0;
+  const int audioTrack = named ? media_.audioTrack : event.media.audioTrack;
+  const int defaultAudio = sourceKnown_ ? defaultTrack(media_.audioTracks) : audioTrack;
   media_ = event.media;
   media_.audioTrack = audioTrack;
+  markDefault(media_.audioTracks, defaultAudio);
   media_.textTrack = textTrack_;
   sourceVideo_ = event.media.video;
   media_.video = currentVideo();
@@ -93,6 +98,13 @@ void LunaMediaPlayer::onSourceInfo(const LunaMediaEvent &event) {
   if (!loadCompleted_) return;
   pipeline::openQuestion(number_, "sourceInfo after loadCompleted: the media is reported again");
   listener_.backendLoaded(media_);
+}
+
+void LunaMediaPlayer::onAudioInfo(int track) {
+  if (track < 0) return;
+  if (loadCompleted_) return confirmTrack(TrackKind::Audio, track);
+  media_.audioTrack = track;
+  markDefault(media_.audioTracks, track);
 }
 
 VideoStream LunaMediaPlayer::currentVideo() const {

@@ -311,6 +311,7 @@ uMediaserver.cpp:810-973, src/media_client/uMediaClient.cpp:202-684].
 | Seek | `seek` answers at once; `seekDone` follows on the subscription about 110 ms later. The web engine ignores `currentTime` while a seek is pending | S-report [PLX-U:163-171]; S [CHR:617-620] |
 | End | `endOfStream`. `unloadCompleted` is not the end of the stream | S [UMS: uMediaserver.cpp:833]; S-report [JWN-N] |
 | Track change | `selectTrack`, confirmed by `trackSelected` (`type`, `index`) or by an `audioInfo` naming the track. On a 4.5 set the default audio track's select is acknowledged with no event | S [UMS: uMediaserver.cpp:831]; S-report [PLX-U:146-159] |
+| Audio track playing | `audioInfo`: `track` (the index of the audio track playing), `channels`, `sampleRate`, `dualMono`, `immersive`. On a 4.5 set it names the track the pipeline chose at load before `loadCompleted`, with no select made; that was measured with a one-track file only. OSE's client built for its internal API 2 reads `codec`, `bitrate` and `sample_rate` instead, and no track | S [UMS: src/media_client/uMediaClient.cpp:467-489]; S-report [PLX-U:146-159] |
 | Rate | `setPlayRate`. The web engine keeps audio only at 1.0. LG documents other speeds as unsupported on streams | S [CHR:1143-1158]; D [LG-SP] |
 | Volume | `setVolume` on `com.webos.media`; unsupported in LG's webOS 26 plugin | S [UMS: uMediaClient.cpp:1189-1200], [FL-P:485-493] |
 | Error | `{"error":{"errorCode":n,"errorText":s,"mediaId":M}}` | S [UMS: uMediaserver.cpp:962-973] |
@@ -519,6 +520,7 @@ question: ...` when playback meets it:
 | Headers other than User-Agent, Cookie and Referer are dropped with a warning | 10 |
 | `bufferRange.endTime` is seconds | section 4 |
 | `sourceInfo` after `loadCompleted` reports the media a second time; `loadCompleted` without one makes the player ready with no duration | section 4 |
+| The audio track an `audioInfo` names before `loadCompleted` is the one the media starts on and its default track; a media no `audioInfo` describes starts on its first. After `loadCompleted`, an `audioInfo` is a track change and settles a select of that track | section 4 |
 | Errors 101, 210, 700, 701, 61441 and 61442 leave the media playing; every other one ends it and unloads | section 4 |
 | `minBufferForPlayback` is not sent: `bufferControl` counts bytes | section 1.3 |
 | Hiding the plane is the view no longer clearing its hole; no rectangle is sent for it | section 2 |

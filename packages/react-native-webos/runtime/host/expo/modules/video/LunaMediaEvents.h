@@ -26,6 +26,7 @@ struct LunaMediaEvent {
     SeekDone,
     EndOfStream,
     TrackSelected,
+    AudioInfo,
     Error,
     UnloadCompleted,
     /// The answer to the subscribe call itself.
@@ -47,7 +48,7 @@ struct LunaMediaEvent {
   double seconds{0};
   /// BufferRange: the whole media is buffered.
   bool complete{false};
-  /// TrackSelected.
+  /// TrackSelected, and AudioInfo: the audio track playing, -1 when it names none.
   TrackKind trackKind{TrackKind::Audio};
   int trackIndex{-1};
   /// Error, and a Reply that refuses.

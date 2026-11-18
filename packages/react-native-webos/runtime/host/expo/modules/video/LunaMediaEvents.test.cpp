@@ -102,6 +102,14 @@ TEST_CASE("trackSelected names the kind and the index") {
   CHECK(text.trackIndex == 0);
 }
 
+TEST_CASE("audioInfo names the audio track the pipeline plays, and one without a track names none") {
+  const auto playing = parse(R"({"audioInfo":{"track":1,"channels":2,"sampleRate":48000,"dualMono":false,"mediaId":"_xyz"}})");
+  CHECK(playing.kind == Kind::AudioInfo);
+  CHECK(playing.trackKind == TrackKind::Audio);
+  CHECK(playing.trackIndex == 1);
+  CHECK(parse(R"({"audioInfo":{"codec":"aac","bitrate":128000,"sample_rate":48000}})").trackIndex == -1);
+}
+
 TEST_CASE("an error carries its code and text, and a refused call reads the same way") {
   const auto error = parse(R"({"error":{"errorCode":202,"errorText":"Media not found","mediaId":"_xyz"}})");
   CHECK(error.kind == Kind::Error);
