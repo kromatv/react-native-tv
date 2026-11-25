@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.0-alpha.6](https://github.com/kromatv/react-native-tv/compare/react-native-webos-v0.1.0-alpha.5...react-native-webos-v0.1.0-alpha.6) (2026-11-25)
+
+
+### Bug fixes
+
+* **intl:** a regional locale such as pt-BR loads its language's FormatJS data ([#24](https://github.com/kromatv/react-native-tv/issues/24)) ([181cd23](https://github.com/kromatv/react-native-tv/commit/181cd235e8699fd35ea04f860335b97c3799353f))
+* **video:** audioTrack names the track the TV plays from the moment a video loads ([#18](https://github.com/kromatv/react-native-tv/issues/18)) ([151d403](https://github.com/kromatv/react-native-tv/commit/151d4034bdf6709d6b3df7a8064675c46f96771f))
+
 ## [0.1.0-alpha.5](https://github.com/kromatv/react-native-tv/compare/react-native-webos-v0.1.0-alpha.4...react-native-webos-v0.1.0-alpha.5) (2026-11-16)
 
 
