@@ -47,6 +47,7 @@ on a TV. Hermes is `hermes-v260318099.0.4`, ICU 78.3, FormatJS as pinned in
 |---|---|---|
 | `polyfill-force.js` of `@formatjs/intl-pluralrules`, `intl-numberformat` and `intl-relativetimeformat` replaces the service whatever the engine has; the `NumberFormat` one also replaces `Number.prototype.toLocaleString`. They need `Intl.getCanonicalLocales` and each other, in that order. | S | each package's `polyfill-force.js`; `intl-numberformat/polyfill-force.js:3085-3096` |
 | Each service's default locale is the first locale whose data loaded, kept in a static `__defaultLocale`. | S | `intl-pluralrules/polyfill-force.js:1292-1305`, `intl-numberformat/polyfill-force.js:3040-3054`, `intl-relativetimeformat/polyfill-force.js:668-681` |
+| A locale-data file is named by the tag CLDR keeps the data under, and a language's default region has none of its own: `pt.js` is Brazilian Portuguese and registers `pt-BR` too, and `intl-pluralrules` has `zh.js` but no `zh-Hans.js`. A service asked for a tag it lacks falls back subtag by subtag (`zh-Hans` to `zh`). | S | each package's `locale-data/`; `intl-pluralrules/polyfill-force.js:190,279-303` (`defaultContent`, `registerLocaleData`), `intl-localematcher/index.js:2420-2435` (`BestAvailableLocale`) |
 | FormatJS has no `Intl.Collator`. Its `DateTimeFormat` formats in UTC unless told a time zone, and needs FormatJS's own time zone data for any other (`add-golden-tz.js`, 803 KB). | S | `@formatjs/intl-datetimeformat@8.0.2/index.js:2528-2558` |
 
 ## webOS

@@ -64,7 +64,7 @@ config: Expo generates no webOS project.
 | `iconColor` | the TV's (white) | The color behind the icon on the launcher, as `appinfo.json` takes it, such as `#202020`. |
 | `splash` | none | A 1920x1080 PNG, relative to the app, shown while the app loads (`splashBackground`). Another size is refused. |
 | `permissions` | none | ACG groups of the Luna calls the app's own native code makes, such as `network.query`. They join the five the runtime always declares in `requiredACG`: `lunabus.query`, `application.launcher`, `settings.query`, `systemconfig.query` and `tts.operation`. webOS TV 26 Re:New refuses a call outside the declared groups. |
-| `locales` | `["en"]` | The locales `Intl` formats in and text is broken into lines for, as BCP 47 tags (`fr`, `pt-BR`). Each adds its ICU data (by language) to the package and FormatJS's data to the bundle; any other locale falls back to the device's, then to the first listed. Japanese, Chinese, Thai, Lao, Khmer and Burmese add their word dictionary, 2 MB for the first two. |
+| `locales` | `["en"]` | The locales `Intl` formats in and text is broken into lines for, as BCP 47 tags (`fr`, `pt-BR`). Each adds its ICU data (by language) to the package and FormatJS's data to the bundle, its language's where FormatJS files it there (`pt-BR` takes `pt`); any other locale falls back to the device's, then to the first listed. Japanese, Chinese, Thai, Lao, Khmer and Burmese add their word dictionary, 2 MB for the first two. |
 
 An unknown key is an error, so a typo does not pass silently.
 
