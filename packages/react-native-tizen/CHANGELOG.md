@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.0-alpha.7](https://github.com/kromatv/react-native-tv/compare/react-native-tizen-v0.1.0-alpha.6...react-native-tizen-v0.1.0-alpha.7) (2026-11-25)
+
+
+### Bug fixes
+
+* **intl:** a regional locale such as pt-BR loads its language's FormatJS data ([#23](https://github.com/kromatv/react-native-tv/issues/23)) ([893221f](https://github.com/kromatv/react-native-tv/commit/893221fdcda8428cc44c5fbe8cca5063332d1017))
+* **text:** draw a text shadow as the nearest textblock effect ([#14](https://github.com/kromatv/react-native-tv/issues/14)) ([e2ed153](https://github.com/kromatv/react-native-tv/commit/e2ed1531a69107715389f91c5c4296d5e5e10ed6))
+
 ## [0.1.0-alpha.6](https://github.com/kromatv/react-native-tv/compare/react-native-tizen-v0.1.0-alpha.5...react-native-tizen-v0.1.0-alpha.6) (2026-11-13)
 
 
