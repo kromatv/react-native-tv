@@ -35,6 +35,20 @@ describe('intlLocaleDataSource', () => {
     expect(intlLocaleDataSource(['en'])).toMatch(/^if \(typeof Intl === 'object'\) \{/);
   });
 
+  it('loads the data of the language a regional locale falls back to', () => {
+    const source = intlLocaleDataSource(['pt-BR', 'zh-Hans']);
+
+    expect(source).toContain("require('@formatjs/intl-pluralrules/locale-data/pt.js');");
+    expect(source).toContain("require('@formatjs/intl-pluralrules/locale-data/zh.js');");
+    expect(source).toContain("require('@formatjs/intl-numberformat/locale-data/zh-Hans.js');");
+  });
+
+  it('loads one locale data file once when two locales share it', () => {
+    const source = intlLocaleDataSource(['pt', 'pt-BR']);
+
+    expect(source.split('intl-pluralrules/locale-data/pt.js')).toHaveLength(2);
+  });
+
   it('stays an empty module without locales', () => {
     expect(intlLocaleDataSource([])).toBe('export {};\n');
   });
@@ -43,6 +57,10 @@ describe('intlLocaleDataSource', () => {
 describe('localesWithoutIntlData', () => {
   it('names a locale no polyfill has data for', () => {
     expect(localesWithoutIntlData(['fr', 'xx-Nope'])).toEqual(['xx-Nope']);
+  });
+
+  it('accepts a regional locale whose language has data', () => {
+    expect(localesWithoutIntlData(['pt-BR', 'zh-Hans', 'fr-CH'])).toEqual([]);
   });
 
   it('names a locale that is not a path inside the polyfill', () => {
